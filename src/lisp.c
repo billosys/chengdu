@@ -1,0 +1,392 @@
+/***
+ * cpddl
+ * -------
+ * Copyright (c)2016 Daniel Fiser <danfis@danfis.cz>,
+ * AI Center, Department of Computer Science,
+ * Faculty of Electrical Engineering, Czech Technical University in Prague.
+ * All rights reserved.
+ *
+ * This file is part of cpddl.
+ *
+ * Distributed under the OSI-approved BSD License (the "License");
+ * see accompanying file BDS-LICENSE for details or see
+ * <http://www.opensource.org/licenses/bsd-license.php>.
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License for more information.
+ */
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
+
+#include <boruvka/alloc.h>
+
+#include "pddl/lisp.h"
+#include "err.h"
+
+#define IS_WS(c) ((c) == ' ' || (c) == '\n' || (c) == '\r' || (c) == '\t')
+#define IS_ALPHA(c) (!IS_WS(c) && (c) != ')' && (c) != '(' && (c) != ';')
+
+struct _kw_t {
+    const char *text;
+    int kw;
+};
+typedef struct _kw_t kw_t;
+
+static kw_t kw[] = {
+    { "define", PDDL_KW_DEFINE },
+    { "domain", PDDL_KW_DOMAIN },
+    { ":domain", PDDL_KW_DOMAIN },
+    { ":requirements", PDDL_KW_REQUIREMENTS },
+    { ":types", PDDL_KW_TYPES },
+    { ":predicates", PDDL_KW_PREDICATES },
+    { ":constants", PDDL_KW_CONSTANTS },
+    { ":action", PDDL_KW_ACTION },
+    { ":parameters", PDDL_KW_PARAMETERS },
+    { ":precondition", PDDL_KW_PRE },
+    { ":effect", PDDL_KW_EFF },
+
+    { ":strips", PDDL_KW_STRIPS },
+    { ":typing", PDDL_KW_TYPING },
+    { ":negative-preconditions", PDDL_KW_NEGATIVE_PRE },
+    { ":disjunctive-preconditions", PDDL_KW_DISJUNCTIVE_PRE },
+    { ":equality", PDDL_KW_EQUALITY },
+    { ":existential-preconditions", PDDL_KW_EXISTENTIAL_PRE },
+    { ":universal-preconditions", PDDL_KW_UNIVERSAL_PRE },
+    { ":conditional-effects", PDDL_KW_CONDITIONAL_EFF },
+    { ":numeric-fluents", PDDL_KW_NUMERIC_FLUENT },
+    { ":numeric-fluents", PDDL_KW_OBJECT_FLUENT },
+    { ":durative-actions", PDDL_KW_DURATIVE_ACTION },
+    { ":duration-inequalities", PDDL_KW_DURATION_INEQUALITY },
+    { ":continuous-effects", PDDL_KW_CONTINUOUS_EFF },
+    { ":derived-predicates", PDDL_KW_DERIVED_PRED },
+    { ":timed-initial-literals", PDDL_KW_TIMED_INITIAL_LITERAL },
+    { ":durative-actions", PDDL_KW_DURATIVE_ACTION },
+    { ":preferences", PDDL_KW_PREFERENCE },
+    { ":constraints", PDDL_KW_CONSTRAINT },
+    { ":action-costs", PDDL_KW_ACTION_COST },
+    { ":multi-agent", PDDL_KW_MULTI_AGENT },
+    { ":unfactored-privacy", PDDL_KW_UNFACTORED_PRIVACY },
+    { ":factored_privacy", PDDL_KW_FACTORED_PRIVACY },
+    { ":quantified-preconditions", PDDL_KW_QUANTIFIED_PRE },
+    { ":fluents", PDDL_KW_FLUENTS },
+    { ":adl", PDDL_KW_ADL },
+    { ":multi-agent", PDDL_KW_MULTI_AGENT },
+    { ":unfactored-privacy", PDDL_KW_UNFACTORED_PRIVACY },
+    { ":factored-privacy", PDDL_KW_FACTORED_PRIVACY },
+
+    { ":functions", PDDL_KW_FUNCTIONS },
+    { "number", PDDL_KW_NUMBER },
+    { "problem", PDDL_KW_PROBLEM },
+    { ":objects", PDDL_KW_OBJECTS },
+    { ":init", PDDL_KW_INIT },
+    { ":goal", PDDL_KW_GOAL },
+    { ":metric", PDDL_KW_METRIC },
+    { "minimize", PDDL_KW_MINIMIZE },
+    { "maximize", PDDL_KW_MAXIMIZE },
+    { "increase", PDDL_KW_INCREASE },
+
+    { "and", PDDL_KW_AND },
+    { "or", PDDL_KW_OR },
+    { "not", PDDL_KW_NOT },
+    { "imply", PDDL_KW_IMPLY },
+    { "exists", PDDL_KW_EXISTS },
+    { "forall", PDDL_KW_FORALL },
+    { "when", PDDL_KW_WHEN },
+
+    { ":private", PDDL_KW_PRIVATE },
+    { ":agent", PDDL_KW_AGENT },
+};
+static int kw_size = sizeof(kw) / sizeof(kw_t);
+
+static int recongnizeKeyword(const char *text)
+{
+    int i;
+
+    for (i = 0; i < kw_size; ++i){
+        if (strcmp(text, kw[i].text) == 0)
+            return kw[i].kw;
+    }
+
+    return -1;
+}
+
+static pddl_lisp_node_t *lispNodeInit(pddl_lisp_node_t *n)
+{
+    n->value = NULL;
+    n->kw = -1;
+    n->lineno = -1;
+    n->child = NULL;
+    n->child_size = 0;
+    return n;
+}
+
+static void lispNodeFree(pddl_lisp_node_t *n)
+{
+    int i;
+
+    for (i = 0; i < n->child_size; ++i)
+        lispNodeFree(n->child + i);
+    if (n->child != NULL)
+        BOR_FREE(n->child);
+}
+
+static pddl_lisp_node_t *lispNodeAddChild(pddl_lisp_node_t *r)
+{
+    pddl_lisp_node_t *n;
+
+    ++r->child_size;
+    r->child = BOR_REALLOC_ARR(r->child, pddl_lisp_node_t,
+                               r->child_size);
+    n = r->child + r->child_size - 1;
+    lispNodeInit(n);
+    return n;
+}
+
+static int parseExp(pddl_lisp_node_t *root, int *lineno,
+                    char *data, int from, int size, int *cont)
+{
+    pddl_lisp_node_t *sub;
+    int i = from;
+    char c;
+
+    if (i >= size){
+        fprintf(stderr, "Error PDDL: Error on line %d\n", *lineno);
+        return -1;
+    }
+
+    c = data[i];
+    while (i < size){
+        if (IS_WS(c)){
+            // Skip whitespace
+            if (c == '\n')
+                *lineno += 1;
+            c = data[++i];
+            continue;
+
+        }else if (c == ';'){
+            // Skip comments
+            for (++i; i < size && data[i] != '\n'; ++i);
+            if (i < size)
+                c = data[i];
+            continue;
+
+        }else if (c == '('){
+            // Parse subexpression
+            sub = lispNodeAddChild(root);
+            sub->lineno = *lineno;
+            if (parseExp(sub, lineno, data, i + 1, size, &i) != 0){
+                fprintf(stderr, "Error PDDL: Error on line %d\n", *lineno);
+                return -1;
+            }
+
+            c = data[i];
+            continue;
+
+        }else if (c == ')'){
+            // Finalize expression
+            if (cont != NULL)
+                *cont = i + 1;
+            return 0;
+
+        }else{
+            sub = lispNodeAddChild(root);
+            sub->value = data + i;
+            sub->lineno = *lineno;
+            for (; i < size && IS_ALPHA(data[i]); ++i){
+                if (data[i] >= 'A' && data[i] <= 'Z')
+                    data[i] = data[i] - 'A' + 'a';
+            }
+            if (i == size){
+                fprintf(stderr, "Error PDDL: Error on line %d\n", *lineno);
+                return -1;
+            }
+
+            c = data[i];
+            data[i] = 0x0;
+            sub->kw = recongnizeKeyword(sub->value);
+        }
+    }
+
+    return 0;
+}
+
+pddl_lisp_t *pddlLispParse(const char *fn)
+{
+    int fd, i, lineno;
+    struct stat st;
+    char *data;
+    pddl_lisp_t *lisp;
+    pddl_lisp_node_t root;
+
+    fd = open(fn, O_RDONLY);
+    if (fd == -1){
+        fprintf(stderr, "Error: Could not open `%s'.\n", fn);
+        fflush(stderr);
+        return NULL;
+    }
+
+    if (fstat(fd, &st) != 0){
+        fprintf(stderr, "Error: Could fstat `%s'.\n", fn);
+        fflush(stderr);
+        close(fd);
+        return NULL;
+    }
+
+    data = mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    if (data == MAP_FAILED){
+        fprintf(stderr, "Error: Could not mmap `%s' to memory.\n", fn);
+        fflush(stderr);
+        close(fd);
+        return NULL;
+    }
+
+    lineno = 1;
+    for (i = 0; i < (int)st.st_size && data[i] != '('; ++i){
+        if (data[i] == ';')
+            for (; i < (int)st.st_size && data[i] != '\n'; ++i);
+        if (data[i] == '\n')
+            ++lineno;
+    }
+    lispNodeInit(&root);
+    root.lineno = lineno;
+    if (parseExp(&root, &lineno, data, i + 1, st.st_size, NULL) != 0){
+        fprintf(stderr, "Error: Could not parse file `%s'.\n", fn);
+        fflush(stderr);
+        munmap((void *)data, st.st_size);
+        lispNodeFree(&root);
+        close(fd);
+        return NULL;
+    }
+
+    lisp = BOR_ALLOC(pddl_lisp_t);
+    lisp->fd = fd;
+    lisp->data = data;
+    lisp->size = st.st_size;
+    lisp->root = root;
+
+    return lisp;
+}
+
+void pddlLispDel(pddl_lisp_t *lisp)
+{
+    if (lisp->data)
+        munmap((void *)lisp->data, lisp->size);
+    if (lisp->fd >= 0)
+        close(lisp->fd);
+    lispNodeFree(&lisp->root);
+    BOR_FREE(lisp);
+}
+
+static void nodeDump(const pddl_lisp_node_t *node, FILE *fout, int prefix)
+{
+    int i;
+
+    for (i = 0; i < prefix; ++i)
+        fprintf(fout, " ");
+
+    if (node->value != NULL){
+        fprintf(fout, "%s [%d] :: %d\n", node->value, node->kw,
+                node->lineno);
+    }else{
+        fprintf(fout, "( :: %d\n", node->lineno);
+
+        for (i = 0; i < node->child_size; ++i){
+            nodeDump(node->child + i, fout, prefix + 4);
+        }
+
+        for (i = 0; i < prefix; ++i)
+            fprintf(fout, " ");
+        fprintf(fout, ")\n");
+    }
+}
+
+void pddlLispDump(const pddl_lisp_t *lisp, FILE *fout)
+{
+    nodeDump(&lisp->root, fout, 0);
+}
+
+void pddlLispNodeCopy(pddl_lisp_node_t *dst,
+                          const pddl_lisp_node_t *src)
+{
+    int i;
+
+    lispNodeInit(dst);
+    dst->value = src->value;
+    dst->kw = src->kw;
+    dst->lineno = src->lineno;
+
+    dst->child_size = src->child_size;
+    dst->child = BOR_ALLOC_ARR(pddl_lisp_node_t, dst->child_size);
+    for (i = 0; i < dst->child_size; ++i){
+        lispNodeInit(dst->child + i);
+        pddlLispNodeCopy(dst->child + i, src->child + i);
+    }
+}
+
+void pddlLispNodeFree(pddl_lisp_node_t *node)
+{
+    lispNodeFree(node);
+}
+
+const pddl_lisp_node_t *pddlLispFindNode(
+            const pddl_lisp_node_t *root, int kw)
+{
+    int i;
+
+    for (i = 0; i < root->child_size; ++i){
+        if (pddlLispNodeHeadKw(root->child + i) == kw)
+            return root->child + i;
+    }
+    return NULL;
+}
+
+int pddlLispParseTypedList(const pddl_lisp_node_t *root,
+                               int from, int to,
+                               pddl_lisp_parse_typed_list_fn cb,
+                               void *ud)
+{
+    pddl_lisp_node_t *n;
+    int i, itfrom, itto, ittype;
+
+    ittype = -1;
+    itfrom = from;
+    itto = from;
+    for (i = from; i < to; ++i){
+        n = root->child + i;
+
+        if (n->value == NULL){
+            ERRN2(n, "Unexpected token.");
+            return -1;
+        }
+
+        if (strcmp(n->value, "-") == 0){
+            itto = i;
+            ittype = ++i;
+            if (ittype >= to){
+                ERRN2(root, "Invalid typed list.");
+                return -1;
+            }
+            if (cb(root, itfrom, itto, ittype, ud) != 0)
+                return -1;
+            itfrom = i + 1;
+            itto = i + 1;
+            ittype = -1;
+
+        }else{
+            ++itto;
+        }
+    }
+
+    if (itfrom < itto){
+        if (cb(root, itfrom, itto, -1, ud) != 0)
+            return -1;
+    }
+
+    return 0;
+}

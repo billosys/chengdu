@@ -1,0 +1,71 @@
+/***
+ * cpddl
+ * -------
+ * Copyright (c)2016 Daniel Fiser <danfis@danfis.cz>,
+ * AI Center, Department of Computer Science,
+ * Faculty of Electrical Engineering, Czech Technical University in Prague.
+ * All rights reserved.
+ *
+ * This file is part of cpddl.
+ *
+ * Distributed under the OSI-approved BSD License (the "License");
+ * see accompanying file BDS-LICENSE for details or see
+ * <http://www.opensource.org/licenses/bsd-license.php>.
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License for more information.
+ */
+
+#ifndef __PDDL_ERR_H__
+#define __PDDL_ERR_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+#define ERR(format, ...) do { \
+    fprintf(stderr, "Error PDDL: " format "\n", __VA_ARGS__); \
+    fflush(stderr); \
+    } while (0)
+#define ERR2(text) do { \
+    fprintf(stderr, "Error PDDL: " text "\n"); \
+    fflush(stderr); \
+    } while (0)
+
+#define ERRN(NODE, format, ...) do { \
+    fprintf(stderr, "Error PDDL: Line %d: " format "\n", \
+            (NODE)->lineno, __VA_ARGS__); \
+    fflush(stderr); \
+    } while (0)
+#define ERRN2(NODE, text) do { \
+    fprintf(stderr, "Error PDDL: Line %d: " text "\n", \
+            (NODE)->lineno); \
+    fflush(stderr); \
+    } while (0)
+
+#define WARN(format, ...) do { \
+    fprintf(stderr, "Warning PDDL: " format "\n", __VA_ARGS__); \
+    fflush(stderr); \
+    } while (0)
+#define WARN2(text) do { \
+    fprintf(stderr, "Warning PDDL: " text "\n"); \
+    fflush(stderr); \
+    } while (0)
+
+#define ERR_F(comm, format, ...) do { \
+    fprintf(stderr, "[%d] Error Factored PDDL: " format "\n", \
+            (comm)->node_id, __VA_ARGS__); \
+    fflush(stderr); \
+    } while (0)
+#define ERR2_F(comm, text) do { \
+    fprintf(stderr, "[%d] Error PDDL: " text "\n", (comm)->node_id); \
+    fflush(stderr); \
+    } while (0)
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif /* __cplusplus */
+
+#endif /* __PDDL_ERR_H__ */
+
