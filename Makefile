@@ -8,6 +8,13 @@ CFLAGS += $(LP_CFLAGS)
 TARGETS  = libpddl.a
 
 OBJS  = lisp
+OBJS += require
+OBJS += type
+OBJS += obj
+OBJS += predicate
+OBJS += fact
+OBJS += action
+OBJS += pddl
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
