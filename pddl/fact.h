@@ -20,6 +20,7 @@
 #ifndef __PDDL_FACT_H__
 #define __PDDL_FACT_H__
 
+#include <boruvka/alloc.h>
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
 #include <pddl/predicate.h>
@@ -28,7 +29,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct _pddl_fact_t {
+struct pddl_fact {
     int pred;       /*!< Predicate ID */
     int *arg;       /*!< Object IDs are arguments */
     int arg_size;   /*!< Number of arguments */
@@ -38,14 +39,21 @@ struct _pddl_fact_t {
     int is_private; /*!< True if the fact is private */
     int owner;      /*!< Owner object ID in case the fact is private */
 };
-typedef struct _pddl_fact_t pddl_fact_t;
+typedef struct pddl_fact pddl_fact_t;
 
-struct _pddl_facts_t {
+struct pddl_facts {
     pddl_fact_t *fact;
     int size;
     int alloc_size;
 };
-typedef struct _pddl_facts_t pddl_facts_t;
+typedef struct pddl_facts pddl_facts_t;
+
+struct pddl_fact_id_arr {
+    int *fact;
+    int size;
+};
+typedef struct pddl_fact_id_arr pddl_fact_id_arr_t;
+
 
 /**
  * Parses :init into list of instantiated predicates and instantiated
@@ -119,6 +127,24 @@ void pddlFactsPrintGoal(const pddl_predicates_t *predicates,
                         const pddl_objs_t *objs,
                         const pddl_facts_t *in,
                         FILE *fout);
+
+_bor_inline void pddlFactIdArrInit(pddl_fact_id_arr_t *arr);
+_bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size);
+
+
+/**** INLINES: ****/
+_bor_inline void pddlFactIdArrInit(pddl_fact_id_arr_t *arr)
+{
+    arr->fact = NULL;
+    arr->size = 0;
+}
+
+_bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size)
+{
+    arr->fact = BOR_REALLOC_ARR(arr->fact, int, size);
+    arr->size = size;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

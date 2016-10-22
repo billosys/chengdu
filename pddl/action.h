@@ -28,19 +28,19 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct _pddl_cond_eff_t {
+struct pddl_cond_eff {
     pddl_facts_t pre;
     pddl_facts_t eff;
 };
-typedef struct _pddl_cond_eff_t pddl_cond_eff_t;
+typedef struct pddl_cond_eff pddl_cond_eff_t;
 
-struct _pddl_cond_effs_t {
+struct pddl_cond_effs {
     pddl_cond_eff_t *cond_eff;
     int size;
 };
-typedef struct _pddl_cond_effs_t pddl_cond_effs_t;
+typedef struct pddl_cond_effs pddl_cond_effs_t;
 
-struct _pddl_action_t {
+struct pddl_action {
     const char *name;
     pddl_objs_t param;
     pddl_facts_t pre;
@@ -48,13 +48,13 @@ struct _pddl_action_t {
     pddl_facts_t cost;
     pddl_cond_effs_t cond_eff;
 };
-typedef struct _pddl_action_t pddl_action_t;
+typedef struct pddl_action pddl_action_t;
 
-struct _pddl_actions_t {
+struct pddl_actions {
     pddl_action_t *action;
     int size;
 };
-typedef struct _pddl_actions_t pddl_actions_t;
+typedef struct pddl_actions pddl_actions_t;
 
 /**
  * Parses actions from domain PDDL.

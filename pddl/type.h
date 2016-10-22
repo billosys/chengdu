@@ -26,17 +26,17 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct _pddl_type_t {
+struct pddl_type {
     const char *name;
     int parent;
 };
-typedef struct _pddl_type_t pddl_type_t;
+typedef struct pddl_type pddl_type_t;
 
-struct _pddl_types_t {
+struct pddl_types {
     pddl_type_t *type;
     int size;
 };
-typedef struct _pddl_types_t pddl_types_t;
+typedef struct pddl_types pddl_types_t;
 
 /**
  * Parses :types into type array.

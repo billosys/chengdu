@@ -32,7 +32,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct _pddl_t {
+struct pddl {
     pddl_lisp_t *domain_lisp;
     pddl_lisp_t *problem_lisp;
     const char *domain_name;
@@ -49,7 +49,7 @@ struct _pddl_t {
     pddl_actions_t action;
     int metric;
 };
-typedef struct _pddl_t pddl_t;
+typedef struct pddl pddl_t;
 
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn);
 void pddlDel(pddl_t *pddl);

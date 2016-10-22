@@ -27,22 +27,22 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct _pddl_predicate_t {
+struct pddl_predicate {
     const char *name;
     int *param;
     int param_size;
     int is_private;
     int owner_param;
 };
-typedef struct _pddl_predicate_t pddl_predicate_t;
+typedef struct pddl_predicate pddl_predicate_t;
 
-struct _pddl_predicates_t {
+struct pddl_predicates {
     pddl_predicate_t *pred;
     int size;
     int eq_pred;
     int alloc_size;
 };
-typedef struct _pddl_predicates_t pddl_predicates_t;
+typedef struct pddl_predicates pddl_predicates_t;
 
 /**
  * Parse :predicates from domain PDDL.

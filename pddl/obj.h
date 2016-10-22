@@ -26,7 +26,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct _pddl_obj_t {
+struct pddl_obj {
     const char *name;
     int type;
     int is_constant;
@@ -34,14 +34,14 @@ struct _pddl_obj_t {
     int owner;
     int is_agent;
 };
-typedef struct _pddl_obj_t pddl_obj_t;
+typedef struct pddl_obj pddl_obj_t;
 
-struct _pddl_objs_t {
+struct pddl_objs {
     pddl_obj_t *obj;
     int size;
     int alloc_size;
 };
-typedef struct _pddl_objs_t pddl_objs_t;
+typedef struct pddl_objs pddl_objs_t;
 
 /**
  * Parse :constants and :objects from domain and problem PDDLs.
@@ -76,12 +76,12 @@ void pddlObjsPrint(const pddl_objs_t *objs, FILE *fout);
 /**
  * Mapping between type and objects.
  */
-struct _pddl_type_obj_t {
+struct pddl_type_obj {
     int **map;
     int *map_size;
     int size;
 };
-typedef struct _pddl_type_obj_t pddl_type_obj_t;
+typedef struct pddl_type_obj pddl_type_obj_t;
 
 /**
  * Initializes mapping between types and objects.

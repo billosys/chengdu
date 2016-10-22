@@ -87,8 +87,8 @@ typedef enum {
     PDDL_KW_AGENT,
 } pddl_kw_t;
 
-typedef struct _pddl_lisp_node_t pddl_lisp_node_t;
-struct _pddl_lisp_node_t {
+typedef struct pddl_lisp_node pddl_lisp_node_t;
+struct pddl_lisp_node {
     const char *value;
     int kw;
     int lineno;
@@ -96,13 +96,13 @@ struct _pddl_lisp_node_t {
     int child_size;
 };
 
-struct _pddl_lisp_t {
+struct pddl_lisp {
     pddl_lisp_node_t root;
     int fd;
     char *data;
     size_t size;
 };
-typedef struct _pddl_lisp_t pddl_lisp_t;
+typedef struct pddl_lisp pddl_lisp_t;
 
 /**
  * Parses the input file and returns the parsed pddl-lisp object.
