@@ -1,0 +1,15 @@
+dist: trusty
+sudo: required
+
+language: c
+compiler:
+  - gcc
+  - clang
+
+env:
+  global:
+    - PREFIX="$TRAVIS_BUILD_DIR/build/install"
+
+script:
+  - mkdir -p "$PREFIX"
+  - make && make install

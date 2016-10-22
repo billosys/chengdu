@@ -1,0 +1,139 @@
+#BASEPATH_ := $(dir $(realpath $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
+BASEPATH_ := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
+
+CC ?= gcc
+M4 ?= m4
+SCAN_BUILD ?= scan-build
+PYTHON2 ?= python2
+
+SYSTEM = $(shell uname)
+
+SYSTEM_LDFLAGS =
+CONFIG_FLAGS =
+
+DEBUG ?= no
+PROFIL ?= no
+WERROR ?= no
+
+ifeq '$(PROFIL)' 'yes'
+  DEBUG = yes
+endif
+
+ifeq '$(DEBUG)' 'yes'
+  CFLAGS = -g -Wno-unused-function
+  CONFIG_FLAGS += -DDEBUG
+else
+  # force to use optimizations
+  CFLAGS += -O3
+endif
+ifeq '$(PROFIL)' 'yes'
+  CFLAGS += -pg
+endif
+CFLAGS += -Wall -pedantic --std=gnu99
+
+ifeq '$(WERROR)' 'yes'
+  CFLAGS += -Werror
+endif
+
+LDFLAGS += -pthread
+LDFLAGS += $(SYSTEM_LDFLAGS)
+
+OPTS_CFLAGS ?=
+OPTS_LDFLGS ?=
+USE_LOCAL_OPTS ?= $(shell if test -f $(BASEPATH_)/third-party/opts/libopts.a; then echo "yes"; else echo "no"; fi;)
+ifeq '$(USE_LOCAL_OPTS)' 'yes'
+  OPTS_CFLAGS := -I$(BASEPATH_)/third-party/opts
+  OPTS_LDFLAGS := -L$(BASEPATH_)/third-party/opts -lopts
+endif
+
+BORUVKA_CFLAGS ?=
+BORUVKA_LDFLAGS ?=
+USE_LOCAL_BORUVKA ?= $(shell if test -f $(BASEPATH_)/third-party/boruvka/libboruvka.a; then echo "yes"; else echo "no"; fi;)
+ifeq '$(USE_LOCAL_BORUVKA)' 'yes'
+  BORUVKA_CFLAGS := -I$(BASEPATH_)/third-party/boruvka
+  BORUVKA_LDFLAGS := -L$(BASEPATH_)/third-party/boruvka -lboruvka
+endif
+
+
+LP_SOLVE_CFLAGS ?=
+LP_SOLVE_LDFLAGS ?=
+ifneq '$(LP_SOLVE_CFLAGS)$(LP_SOLVE_LDFLAGS)' ''
+  USE_LP_SOLVE := yes
+else
+  ifeq '$(shell if test -f /usr/lib/liblpsolve55.so; then echo "yes"; fi;)' 'yes'
+    LP_SOLVE_LDFLAGS = -llpsolve55
+    USE_LP_SOLVE := yes
+  endif
+endif
+
+CPLEX_CFLAGS ?=
+CPLEX_LDFLAGS ?=
+ifneq '$(CPLEX_CFLAGS)$(CPLEX_LDFLAGS)' ''
+  USE_CPLEX := yes
+  USE_LP_SOLVE := no # CPLEX has precedence over lp-solve
+endif
+
+LP := no
+ifeq '$(USE_CPLEX)' 'yes'
+  LP := yes
+endif
+ifeq '$(USE_LP_SOLVE)' 'yes'
+  LP := yes
+endif
+
+ifeq '$(LP)' 'yes'
+  CONFIG_FLAGS += -DLP
+  ifeq '$(USE_CPLEX)' 'yes'
+    CONFIG_FLAGS += -DUSE_CPLEX
+    LP_CFLAGS = $(CPLEX_CFLAGS)
+    LP_LDFLAGS = $(CPLEX_LDFLAGS)
+  endif
+  ifeq '$(USE_LP_SOLVE)' 'yes'
+    CONFIG_FLAGS += -DUSE_LP_SOLVE
+    LP_CFLAGS = $(LP_SOLVE_CFLAGS)
+    LP_LDFLAGS = $(LP_SOLVE_LDFLAGS)
+  endif
+endif
+
+.DEFAULT_GOAL := all
+
+help:
+	@echo "Targets:"
+	@echo "    all            - Build library"
+	@echo "    doc            - Build documentation"
+	@echo "    check          - Build & Run automated tests"
+	@echo "    check-valgrind - Build & Run automated tests in valgrind(1)"
+	@echo "    check-segfault - Build & Run automated tests in valgrind(1) set up to detect only segfaults"
+	@echo "    clean          - Remove all generated files"
+	@echo "    analyze        - Perform static analysis using Clang Static Analyzer"
+	@echo "    submodule      - Fetch all submodules using git."
+	@echo "    third-party    - Build all third-party projects."
+	@echo "    third-party-clean - Clean all third-party projects."
+	@echo ""
+	@echo "Options:"
+	@echo "    CC         - Path to C compiler          (=$(CC))"
+	@echo "    M4         - Path to m4 macro processor  (=$(M4))"
+	@echo "    SCAN_BUILD - Path to scan-build          (=$(SCAN_BUILD))"
+	@echo "    PYTHON2    - Path to python v2 interpret (=$(PYTHON2))"
+	@echo ""
+	@echo "    DEBUG      'yes'/'no' - Turn on/off debugging   (=$(DEBUG))"
+	@echo "    PROFIL     'yes'/'no' - Compiles profiling info (=$(PROFIL))"
+	@echo ""
+	@echo "Variables:"
+	@echo "  Note that most of can be preset or changed by user"
+	@echo "    SYSTEM            = $(SYSTEM)"
+	@echo "    CFLAGS            = $(CFLAGS)"
+	@echo "    LDFLAGS           = $(LDFLAGS)"
+	@echo "    CONFIG_FLAGS      = $(CONFIG_FLAGS)"
+	@echo "    USE_LOCAL_OPTS    = $(USE_LOCAL_OPTS)"
+	@echo "    OPTS_CFLAGS       = $(OPTS_CFLAGS)"
+	@echo "    OPTS_LDFLAGS      = $(OPTS_LDFLAGS)"
+	@echo "    USE_LOCAL_BORUVKA = $(USE_LOCAL_BORUVKA)"
+	@echo "    BORUVKA_CFLAGS    = $(BORUVKA_CFLAGS)"
+	@echo "    BORUVKA_LDFLAGS   = $(BORUVKA_LDFLAGS)"
+	@echo ""
+	@echo "    LP                 = $(LP)"
+	@echo "    LP_CFLAGS          = $(LP_CFLAGS)"
+	@echo "    LP_LDFLAGS         = $(LP_LDFLAGS)"
+	@echo "    USE_CPLEX          = $(USE_CPLEX)"
+	@echo "    USE_LP_SOLVE       = $(USE_LP_SOLVE)"

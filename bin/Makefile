@@ -1,0 +1,37 @@
+-include ../Makefile.local
+-include ../Makefile.include
+
+CFLAGS += -I../
+CFLAGS += $(BORUVKA_CFLAGS)
+CFLAGS += $(OPTS_CFLAGS)
+CFLAGS += $(LP_CFLAGS)
+LDFLAGS += -L../ -lpddl
+LDFLAGS += $(BORUVKA_LDFLAGS)
+LDFLAGS += $(OPTS_LDFLAGS)
+LDFLAGS += -pthread -lrt -lm
+LDFLAGS += $(LP_LDFLAGS)
+
+ifeq '$(BIN_STATIC)' 'yes'
+  LDFLAGS += -static
+endif
+
+OBJS  = search.o
+OBJS += options.o
+
+TARGETS =
+
+all: $(TARGETS)
+
+search: ../libpddl.a $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+
+%.o: %.c %.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	rm -f $(TARGETS)
+	rm -f *.o
+
+.PHONY: all
