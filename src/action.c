@@ -22,10 +22,41 @@
 #include "err.h"
 
 struct _set_param_t {
-    pddl_objs_t *param;
+    pddl_action_params_t *param;
     const pddl_types_t *types;
 };
 typedef struct _set_param_t set_param_t;
+
+
+static void paramsFree(pddl_action_params_t *ps);
+static pddl_action_param_t *paramsAdd(pddl_action_params_t *ps);
+
+
+static void predFree(pddl_action_pred_t *p);
+static void predCopy(pddl_action_pred_t *dst, const pddl_action_pred_t *src);
+
+static void predsFree(pddl_action_preds_t *ps);
+static pddl_action_pred_t *predsAdd(pddl_action_preds_t *ps);
+/** Free unneeded memory */
+static void predsSqueeze(pddl_action_preds_t *ps);
+static void predsCopy(pddl_action_preds_t *dst, const pddl_action_preds_t *src);
+static int predNonNegCmp(const pddl_action_pred_t *p1,
+                         const pddl_action_pred_t *p2);
+static int predCmp(const pddl_action_pred_t *p1, const pddl_action_pred_t *p2);
+static void sortPreds(pddl_action_preds_t *eff);
+/** Keep only predicates having .neg != 2 */
+static void reorderPreds(pddl_action_preds_t *ps);
+static int predInPreds(const pddl_action_pred_t *p,
+                       const pddl_action_preds_t *ps);
+
+
+void condEffFree(pddl_action_cond_eff_t *ce);
+void condEffsFree(pddl_action_cond_effs_t *ce);
+void condEffCopy(pddl_action_cond_eff_t *dst,
+                 const pddl_action_cond_eff_t *src);
+void condEffsCopy(pddl_action_cond_effs_t *dst,
+                  const pddl_action_cond_effs_t *src);
+
 
 static int parsePreEff(const pddl_types_t *types,
                        const pddl_objs_t *objs,
@@ -36,7 +67,7 @@ static int parsePreEff(const pddl_types_t *types,
                        const pddl_lisp_node_t *root,
                        const char *errname,
                        pddl_action_t *a,
-                       pddl_facts_t *facts,
+                       pddl_action_preds_t *preds,
                        int parse_cost, int parse_cond_eff);
 
 static pddl_action_t *addAction(pddl_actions_t *as, const char *name)
@@ -47,13 +78,13 @@ static pddl_action_t *addAction(pddl_actions_t *as, const char *name)
     return a;
 }
 
-static pddl_cond_eff_t *addCondEff(pddl_action_t *a)
+static pddl_action_cond_eff_t *addCondEff(pddl_action_t *a)
 {
-    pddl_cond_eff_t *ce;
+    pddl_action_cond_eff_t *ce;
 
     ++a->cond_eff.size;
     a->cond_eff.cond_eff = BOR_REALLOC_ARR(a->cond_eff.cond_eff,
-                                           pddl_cond_eff_t,
+                                           pddl_action_cond_eff_t,
                                            a->cond_eff.size);
     ce = a->cond_eff.cond_eff + a->cond_eff.size - 1;
     bzero(ce, sizeof(*ce));
@@ -65,7 +96,7 @@ static int getParam(const pddl_action_t *a, const char *var_name)
     int i;
 
     for (i = 0; i < a->param.size; ++i){
-        if (strcmp(a->param.obj[i].name, var_name) == 0)
+        if (strcmp(a->param.param[i].name, var_name) == 0)
             return i;
     }
     return -1;
@@ -74,9 +105,9 @@ static int getParam(const pddl_action_t *a, const char *var_name)
 static int setParams(const pddl_lisp_node_t *root,
                      int child_from, int child_to, int child_type, void *ud)
 {
-    pddl_objs_t *param = ((set_param_t *)ud)->param;
+    pddl_action_params_t *params = ((set_param_t *)ud)->param;
     const pddl_types_t *types = ((set_param_t *)ud)->types;
-    pddl_obj_t *obj;
+    pddl_action_param_t *param;
     int i, tid;
 
     tid = 0;
@@ -103,153 +134,91 @@ static int setParams(const pddl_lisp_node_t *root,
             return -1;
         }
 
-        obj = pddlObjsAdd(param);
-        obj->name = root->child[i].value;
-        obj->type = tid;
-        obj->is_constant = 0;
-        obj->is_private = 0;
-        obj->owner = -1;
-        obj->is_agent = 0;
+        param = paramsAdd(params);
+        param->name = root->child[i].value;
+        param->type = tid;
+        param->is_agent = 0;
     }
 
     return 0;
 }
 
-static int factNonNegCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
-{
-    int cmp;
-
-    cmp = f1->pred - f2->pred;
-    if (cmp == 0)
-        cmp = f1->arg_size - f2->arg_size;
-    if (cmp == 0)
-        cmp = memcmp(f1->arg, f2->arg, sizeof(int) * f1->arg_size);
-    return cmp;
-}
-
-static int factCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
-{
-    int cmp;
-
-    cmp = factNonNegCmp(f1, f2);
-    if (cmp == 0)
-        cmp = f1->neg - f2->neg;
-    return cmp;
-}
-
-static int sortFactsCmp(const void *a, const void *b)
-{
-    const pddl_fact_t *f1 = a;
-    const pddl_fact_t *f2 = b;
-    return factCmp(f1, f2);
-}
-
-static void sortFacts(pddl_facts_t *eff)
-{
-    // Sort effects so the same ones are next to each other
-    qsort(eff->fact, eff->size, sizeof(pddl_fact_t), sortFactsCmp);
-}
-
-static void reorderFacts(pddl_facts_t *fs)
-{
-    int ins, i;
-
-    for (ins = 0, i = 0; i < fs->size; ++i){
-        if (fs->fact[i].neg != 2){
-            fs->fact[ins++] = fs->fact[i];
-        }
-    }
-
-    fs->size = ins;
-    pddlFactsSqueeze(fs);
-}
-
-static int factInFacts(const pddl_fact_t *fact, const pddl_facts_t *fs)
-{
-    int i;
-
-    for (i = 0; i < fs->size && fs->fact[i].pred <= fact->pred; ++i){
-        if (factCmp(fact, fs->fact + i) == 0)
-            return 1;
-    }
-    return 0;
-}
 
 static void simplifyAction(pddl_action_t *a)
 {
-    pddl_fact_t *f1, *f2;
+    pddl_action_pred_t *p1, *p2;
     int i, cmp, del;
 
     // First sort facts in precondition and effect
-    sortFacts(&a->pre);
-    sortFacts(&a->eff);
+    sortPreds(&a->pre);
+    sortPreds(&a->eff);
 
     // Delete duplicate preconditions
     del = 0;
     for (i = 1; i < a->pre.size; ++i){
-        f1 = a->pre.fact + i - 1;
-        f2 = a->pre.fact + i;
+        p1 = a->pre.pred + i - 1;
+        p2 = a->pre.pred + i;
 
-        cmp = factNonNegCmp(f1, f2);
-        if (cmp == 0 && f1->neg == f2->neg){
-            // Remove duplicate facts
-            pddlFactFree(f1);
-            f1->neg = 2;
+        cmp = predNonNegCmp(p1, p2);
+        if (cmp == 0 && p1->neg == p2->neg){
+            // Remove duplicate predicates
+            predFree(p1);
+            p1->neg = 2;
             del = 1;
         }
     }
 
     if (del)
-        reorderFacts(&a->pre);
+        reorderPreds(&a->pre);
 
     del = 0;
     for (i = 1; i < a->eff.size; ++i){
-        f1 = a->eff.fact + i - 1;
-        f2 = a->eff.fact + i;
+        p1 = a->eff.pred + i - 1;
+        p2 = a->eff.pred + i;
 
-        cmp = factNonNegCmp(f1, f2);
-        if (cmp == 0 && f1->neg != f2->neg){
+        cmp = predNonNegCmp(p1, p2);
+        if (cmp == 0 && p1->neg != p2->neg){
             // Remove delete effects if they are also in add effects.
             // This is "add-after-delete semantics" which seems to be
             // accepted as de-facto standard -- see rovers domain.
 
             // Delete effect
-            pddlFactFree(f1);
+            predFree(p1);
             // and use .neg flag as "remove it later flag"
-            f1->neg = 2;
+            p1->neg = 2;
             // Force the second fact to positive fact because we use
             // "add-after-delete" semantics.
-            f2->neg = 0;
+            p2->neg = 0;
             del = 1;
 
-        }else if (cmp == 0 && f1->neg == f2->neg){
+        }else if (cmp == 0 && p1->neg == p2->neg){
             // Remove duplicate facts
-            pddlFactFree(f1);
-            f1->neg = 2;
+            predFree(p1);
+            p1->neg = 2;
             del = 1;
         }
     }
 
     // Delete effects that are already in preconditions
     for (i = 0; i < a->eff.size; ++i){
-        f1 = a->eff.fact + i;
-        if (f1->neg == 2)
+        p1 = a->eff.pred + i;
+        if (p1->neg == 2)
             continue;
 
-        if (factInFacts(f1, &a->pre)){
-            pddlFactFree(f1);
-            f1->neg = 2;
+        if (predInPreds(p1, &a->pre)){
+            predFree(p1);
+            p1->neg = 2;
             del = 1;
         }
     }
 
     if (del)
-        reorderFacts(&a->eff);
+        reorderPreds(&a->eff);
 }
 
 static int parseAgentParams(const pddl_types_t *types,
                             const pddl_lisp_node_t *n, int nid,
-                            pddl_objs_t *param)
+                            pddl_action_params_t *param)
 {
     set_param_t set_param;
     int to;
@@ -267,13 +236,13 @@ static int parseAgentParams(const pddl_types_t *types,
     if (pddlLispParseTypedList(n, nid + 1, to, setParams, &set_param) != 0)
         return -1;
 
-    param->obj[param->size - 1].is_agent = 1;
+    param->param[param->size - 1].is_agent = 1;
     return to;
 }
 
 static int parseParams(const pddl_types_t *types,
                        const pddl_lisp_node_t *n,
-                       pddl_objs_t *param)
+                       pddl_action_params_t *param)
 {
     set_param_t set_param;
     set_param.param = param;
@@ -308,13 +277,13 @@ static int parseVarConst(const pddl_lisp_node_t *root,
     return 0;
 }
 
-static pddl_fact_t *parseFact(const pddl_objs_t *objs,
-                              const pddl_predicates_t *predicates,
-                              const pddl_lisp_node_t *root,
-                              pddl_action_t *a,
-                              pddl_facts_t *fs)
+static pddl_action_pred_t *parsePred(const pddl_objs_t *objs,
+                                     const pddl_predicates_t *predicates,
+                                     const pddl_lisp_node_t *root,
+                                     pddl_action_t *a,
+                                     pddl_action_preds_t *ps)
 {
-    pddl_fact_t *f;
+    pddl_action_pred_t *p;
     const char *name;
     int pred, i;
 
@@ -326,7 +295,7 @@ static pddl_fact_t *parseFact(const pddl_objs_t *objs,
         return NULL;
     }
 
-    // And resolve it agains known predicates
+    // And resolve it against known predicates
     pred = pddlPredicatesGet(predicates, name);
     if (pred == -1){
         ERRN(root, "Unkown predicate `%s'", name);
@@ -342,16 +311,16 @@ static pddl_fact_t *parseFact(const pddl_objs_t *objs,
     }
 
     // Add fact to preconditions
-    f = pddlFactsAdd(fs);
-    f->pred = pred;
-    f->arg_size = root->child_size - 1;
-    f->arg = BOR_ALLOC_ARR(int, f->arg_size);
-    for (i = 0; i < f->arg_size; ++i){
-        if (parseVarConst(root->child + i + 1, objs, a, f->arg + i) != 0)
+    p = predsAdd(ps);
+    p->pred = pred;
+    p->arg_size = root->child_size - 1;
+    p->arg = BOR_ALLOC_ARR(int, p->arg_size);
+    for (i = 0; i < p->arg_size; ++i){
+        if (parseVarConst(root->child + i + 1, objs, a, p->arg + i) != 0)
             return NULL;
     }
 
-    return f;
+    return p;
 }
 
 static int parseCost(const pddl_objs_t *objs,
@@ -360,7 +329,7 @@ static int parseCost(const pddl_objs_t *objs,
                      const pddl_lisp_node_t *root,
                      pddl_action_t *a)
 {
-    pddl_fact_t *f;
+    pddl_action_pred_t *p;
 
     if (!(require & PDDL_REQUIRE_ACTION_COST)){
         ERRN2(root, "(increase ...) is supported only under"
@@ -383,12 +352,12 @@ static int parseCost(const pddl_objs_t *objs,
     }
 
     if (root->child[2].value != NULL){
-        f = pddlFactsAdd(&a->cost);
-        f->pred = -1;
-        f->func_val = atoi(root->child[2].value);
+        p = predsAdd(&a->cost);
+        p->pred = -1;
+        p->func_val = atoi(root->child[2].value);
     }else{
-        f = parseFact(objs, functions, root->child + 2, a, &a->cost);
-        if (f == NULL)
+        p = parsePred(objs, functions, root->child + 2, a, &a->cost);
+        if (p == NULL)
             return -1;
     }
 
@@ -402,7 +371,7 @@ static int parseCondEff(const pddl_types_t *types,
                         const pddl_lisp_node_t *root,
                         pddl_action_t *a)
 {
-    pddl_cond_eff_t *ce;
+    pddl_action_cond_eff_t *ce;
 
     if (root->child_size != 3
             || root->child[1].value != NULL
@@ -421,7 +390,7 @@ static int parseCondEff(const pddl_types_t *types,
     return 0;
 }
 
-static void parseForallReplace(const pddl_objs_t *params,
+static void parseForallReplace(const pddl_action_params_t *params,
                                const int *bound_var,
                                const pddl_objs_t *objs,
                                pddl_lisp_node_t *n)
@@ -430,7 +399,7 @@ static void parseForallReplace(const pddl_objs_t *params,
 
     if (n->kw == -1 && n->value != NULL){
         for (i = 0; i < params->size; ++i){
-            if (strcmp(n->value, params->obj[i].name) == 0){
+            if (strcmp(n->value, params->param[i].name) == 0){
                 n->value = objs->obj[bound_var[i]].name;
             }
         }
@@ -440,7 +409,7 @@ static void parseForallReplace(const pddl_objs_t *params,
         parseForallReplace(params, bound_var, objs, n->child + i);
 }
 
-static int parseForallEval(const pddl_objs_t *params,
+static int parseForallEval(const pddl_action_params_t *params,
                            int *bound_var,
                            const pddl_types_t *types,
                            const pddl_objs_t *objs,
@@ -451,7 +420,7 @@ static int parseForallEval(const pddl_objs_t *params,
                            const pddl_lisp_node_t *root,
                            const char *errname,
                            pddl_action_t *a,
-                           pddl_facts_t *facts,
+                           pddl_action_preds_t *preds,
                            int parse_cost, int parse_cond_eff)
 {
     pddl_lisp_node_t arg;
@@ -460,13 +429,13 @@ static int parseForallEval(const pddl_objs_t *params,
     pddlLispNodeCopy(&arg, root->child + 2);
     parseForallReplace(params, bound_var, objs, &arg);
     ret = parsePreEff(types, objs, type_obj, predicates, functions,
-                      require, &arg, errname, a, facts, parse_cost,
+                      require, &arg, errname, a, preds, parse_cost,
                       parse_cond_eff);
     pddlLispNodeFree(&arg);
     return ret;
 }
 
-static int parseForallRec(const pddl_objs_t *params,
+static int parseForallRec(const pddl_action_params_t *params,
                           int *bound_var, int var_id,
                           const pddl_types_t *types,
                           const pddl_objs_t *objs,
@@ -477,25 +446,25 @@ static int parseForallRec(const pddl_objs_t *params,
                           const pddl_lisp_node_t *root,
                           const char *errname,
                           pddl_action_t *a,
-                          pddl_facts_t *facts,
+                          pddl_action_preds_t *preds,
                           int parse_cost, int parse_cond_eff)
 {
     const int *obj;
     int obj_size, i;
 
-    obj = pddlTypeObjGet(type_obj, params->obj[var_id].type, &obj_size);
+    obj = pddlTypeObjGet(type_obj, params->param[var_id].type, &obj_size);
     for (i = 0; i < obj_size; ++i){
         bound_var[var_id] = obj[i];
         if (var_id == params->size - 1){
             if (parseForallEval(params, bound_var, types, objs, type_obj,
                                 predicates, functions, require, root,
-                                errname, a, facts, parse_cost,
+                                errname, a, preds, parse_cost,
                                 parse_cond_eff) != 0)
                 return -1;
         }else{
             if (parseForallRec(params, bound_var, var_id + 1, types,
                                objs, type_obj, predicates, functions,
-                               require, root, errname, a, facts,
+                               require, root, errname, a, preds,
                                parse_cost, parse_cond_eff) != 0)
                 return -1;
         }
@@ -513,10 +482,10 @@ static int parseForall(const pddl_types_t *types,
                        const pddl_lisp_node_t *root,
                        const char *errname,
                        pddl_action_t *a,
-                       pddl_facts_t *facts,
+                       pddl_action_preds_t *preds,
                        int parse_cost, int parse_cond_eff)
 {
-    pddl_objs_t params;
+    pddl_action_params_t params;
     int *bound_var;
     int ret;
 
@@ -529,7 +498,7 @@ static int parseForall(const pddl_types_t *types,
 
     bzero(&params, sizeof(params));
     if (parseParams(types, root->child + 1, &params) != 0){
-        pddlObjsFree(&params);
+        paramsFree(&params);
         return -1;
     }
     if (params.size == 0){
@@ -539,11 +508,11 @@ static int parseForall(const pddl_types_t *types,
 
     bound_var = BOR_ALLOC_ARR(int, params.size);
     ret = parseForallRec(&params, bound_var, 0, types, objs, type_obj,
-                         predicates, functions, require, root, errname, a, facts,
+                         predicates, functions, require, root, errname, a, preds,
                          parse_cost, parse_cond_eff);
 
     BOR_FREE(bound_var);
-    pddlObjsFree(&params);
+    paramsFree(&params);
     return ret;
 }
 
@@ -556,17 +525,17 @@ static int parsePreEff(const pddl_types_t *types,
                        const pddl_lisp_node_t *root,
                        const char *errname,
                        pddl_action_t *a,
-                       pddl_facts_t *facts,
+                       pddl_action_preds_t *preds,
                        int parse_cost, int parse_cond_eff)
 {
-    pddl_fact_t *f;
+    pddl_action_pred_t *p;
     int i, kw;
 
     kw = pddlLispNodeHeadKw(root);
     if (kw == PDDL_KW_AND){
         for (i = 1; i < root->child_size; ++i){
             if (parsePreEff(types, objs, type_obj, predicates, functions,
-                            require, root->child + i, errname, a, facts,
+                            require, root->child + i, errname, a, preds,
                             parse_cost, parse_cond_eff) != 0)
                 return -1;
         }
@@ -579,13 +548,13 @@ static int parsePreEff(const pddl_types_t *types,
             return -1;
         }
 
-        if ((f = parseFact(objs, predicates, root->child + 1, a, facts)) == NULL)
+        if ((p = parsePred(objs, predicates, root->child + 1, a, preds)) == NULL)
             return -1;
-        f->neg = 1;
+        p->neg = 1;
 
     }else if (kw == PDDL_KW_FORALL){
         if (parseForall(types, objs, type_obj, predicates, functions,
-                        require, root, errname, a, facts, parse_cost,
+                        require, root, errname, a, preds, parse_cost,
                         parse_cond_eff) != 0)
             return -1;
 
@@ -620,7 +589,7 @@ static int parsePreEff(const pddl_types_t *types,
             return -1;
 
     }else if (kw == -1){
-        if (parseFact(objs, predicates, root, a, facts) == NULL)
+        if (parsePred(objs, predicates, root, a, preds) == NULL)
             return -1;
 
     }else{
@@ -738,52 +707,50 @@ void pddlActionsFree(pddl_actions_t *actions)
     int i;
 
     for (i = 0; i < actions->size; ++i){
-        pddlObjsFree(&actions->action[i].param);
-        pddlFactsFree(&actions->action[i].pre);
-        pddlFactsFree(&actions->action[i].eff);
-        pddlFactsFree(&actions->action[i].cost);
-        pddlCondEffsFree(&actions->action[i].cond_eff);
+        paramsFree(&actions->action[i].param);
+        predsFree(&actions->action[i].pre);
+        predsFree(&actions->action[i].eff);
+        predsFree(&actions->action[i].cost);
+        condEffsFree(&actions->action[i].cond_eff);
     }
     if (actions->action != NULL)
         BOR_FREE(actions->action);
 }
 
-void pddlActionFactPrint(const pddl_predicates_t *predicates,
+void pddlActionPredPrint(const pddl_predicates_t *predicates,
                          const pddl_objs_t *objs,
                          const pddl_action_t *a,
-                         const pddl_fact_t *f,
+                         const pddl_action_pred_t *p,
                          FILE *fout)
 {
     int j, id;
 
-    if (f->neg)
+    if (p->neg)
         fprintf(fout, "N:");
-    if (f->stat)
-        fprintf(fout, "S:");
-    fprintf(fout, "%s:", predicates->pred[f->pred].name);
-    for (j = 0; j < f->arg_size; ++j){
-        if (f->arg[j] < 0){
-            id = f->arg[j] + objs->size;
+    fprintf(fout, "%s:", predicates->pred[p->pred].name);
+    for (j = 0; j < p->arg_size; ++j){
+        if (p->arg[j] < 0){
+            id = p->arg[j] + objs->size;
             fprintf(fout, " %s", objs->obj[id].name);
         }else{
-            fprintf(fout, " %s", a->param.obj[f->arg[j]].name);
+            fprintf(fout, " %s", a->param.param[p->arg[j]].name);
         }
     }
 }
 
-static void printFacts(const pddl_action_t *a,
+static void printPreds(const pddl_action_t *a,
                        const pddl_objs_t *objs,
                        const pddl_predicates_t *predicates,
-                       const pddl_facts_t *fs,
+                       const pddl_action_preds_t *ps,
                        FILE *fout)
 {
-    const pddl_fact_t *f;
+    const pddl_action_pred_t *p;
     int i;
 
-    for (i = 0; i < fs->size; ++i){
-        f = fs->fact + i;
+    for (i = 0; i < ps->size; ++i){
+        p = ps->pred + i;
         fprintf(fout, "            ");
-        pddlActionFactPrint(predicates, objs, a, f, fout);
+        pddlActionPredPrint(predicates, objs, a, p, fout);
         fprintf(fout, "\n");
     }
 }
@@ -799,39 +766,39 @@ static void pddlActionPrint(const pddl_action_t *a,
     fprintf(fout, "    %s:", a->name);
     for (i = 0; i < a->param.size; ++i){
         fprintf(fout, " ");
-        if (a->param.obj[i].is_agent)
+        if (a->param.param[i].is_agent)
             fprintf(fout, "A:");
-        fprintf(fout, "%s:%d", a->param.obj[i].name, a->param.obj[i].type);
+        fprintf(fout, "%s:%d", a->param.param[i].name, a->param.param[i].type);
     }
     fprintf(fout, "\n");
 
     fprintf(fout, "        pre[%d]:\n", a->pre.size);
-    printFacts(a, objs, predicates, &a->pre, fout);
+    printPreds(a, objs, predicates, &a->pre, fout);
 
     fprintf(fout, "        eff[%d]:\n", a->eff.size);
-    printFacts(a, objs, predicates, &a->eff, fout);
+    printPreds(a, objs, predicates, &a->eff, fout);
 
     fprintf(fout, "        cond-eff[%d]:\n", a->cond_eff.size);
     for (i = 0; i < a->cond_eff.size; ++i){
         fprintf(fout, "          pre[%d]:\n",
                 a->cond_eff.cond_eff[i].pre.size);
-        printFacts(a, objs, predicates, &a->cond_eff.cond_eff[i].pre, fout);
+        printPreds(a, objs, predicates, &a->cond_eff.cond_eff[i].pre, fout);
         fprintf(fout, "          eff[%d]:\n",
                 a->cond_eff.cond_eff[i].eff.size);
-        printFacts(a, objs, predicates, &a->cond_eff.cond_eff[i].eff, fout);
+        printPreds(a, objs, predicates, &a->cond_eff.cond_eff[i].eff, fout);
     }
 
     for (i = 0; i < a->cost.size; ++i){
         fprintf(fout, "        cost: ");
-        if (a->cost.fact[i].pred == -1){
-            fprintf(fout, "%d", a->cost.fact[i].func_val);
+        if (a->cost.pred[i].pred == -1){
+            fprintf(fout, "%d", a->cost.pred[i].func_val);
         }else{
-            fprintf(fout, "%s", functions->pred[a->cost.fact[i].pred].name);
-            for (j = 0; j < a->cost.fact[i].arg_size; ++j){
-                if (a->cost.fact[i].arg[j] >= 0){
-                    fprintf(fout, " %s", a->param.obj[a->cost.fact[i].arg[j]].name);
+            fprintf(fout, "%s", functions->pred[a->cost.pred[i].pred].name);
+            for (j = 0; j < a->cost.pred[i].arg_size; ++j){
+                if (a->cost.pred[i].arg[j] >= 0){
+                    fprintf(fout, " %s", a->param.param[a->cost.pred[i].arg[j]].name);
                 }else{
-                    id = a->cost.fact[i].arg[j] + objs->size;
+                    id = a->cost.pred[i].arg[j] + objs->size;
                     fprintf(fout, " %s", objs->obj[id].name);
                 }
             }
@@ -854,35 +821,189 @@ void pddlActionsPrint(const pddl_actions_t *actions,
                             predicates, functions, fout);
 }
 
-void pddlCondEffFree(pddl_cond_eff_t *ce)
+
+
+/*** PARAM ***/
+static void paramsFree(pddl_action_params_t *ps)
 {
-    pddlFactsFree(&ce->pre);
-    pddlFactsFree(&ce->eff);
+    if (ps->param != NULL)
+        BOR_FREE(ps->param);
 }
 
-void pddlCondEffsFree(pddl_cond_effs_t *ce)
+static pddl_action_param_t *paramsAdd(pddl_action_params_t *ps)
+{
+    pddl_action_param_t *p;
+
+    if (ps->size >= ps->alloc){
+        if (ps->alloc == 0){
+            ps->alloc = 2;
+        }else{
+            ps->alloc *= 2;
+        }
+        ps->param = BOR_REALLOC_ARR(ps->param, pddl_action_param_t, ps->alloc);
+    }
+
+    p = ps->param + ps->size++;
+    bzero(p, sizeof(*p));
+    return p;
+}
+
+
+/*** PRED ***/
+static void predFree(pddl_action_pred_t *p)
+{
+    if (p->arg != NULL)
+        BOR_FREE(p->arg);
+}
+
+static void predCopy(pddl_action_pred_t *dst, const pddl_action_pred_t *src)
+{
+    *dst = *src;
+    dst->arg = BOR_ALLOC_ARR(int, dst->arg_size);
+    memcpy(dst->arg, src->arg, sizeof(int) * dst->arg_size);
+}
+
+static void predsFree(pddl_action_preds_t *ps)
+{
+    int i;
+
+    for (i = 0; i < ps->size; ++i)
+        predFree(ps->pred + i);
+    if (ps->pred != NULL)
+        BOR_FREE(ps->pred);
+}
+
+static pddl_action_pred_t *predsAdd(pddl_action_preds_t *ps)
+{
+    pddl_action_pred_t *p;
+
+    if (ps->size >= ps->alloc){
+        if (ps->alloc == 0){
+            ps->alloc = 2;
+        }else{
+            ps->alloc *= 2;
+        }
+        ps->pred = BOR_REALLOC_ARR(ps->pred, pddl_action_pred_t, ps->alloc);
+    }
+
+    p = ps->pred + ps->size++;
+    bzero(p, sizeof(*p));
+    return p;
+}
+
+static void predsSqueeze(pddl_action_preds_t *ps)
+{
+    ps->alloc = ps->size;
+    ps->pred = BOR_REALLOC_ARR(ps->pred, pddl_action_pred_t, ps->alloc);
+}
+
+
+static void predsCopy(pddl_action_preds_t *dst, const pddl_action_preds_t *src)
+{
+    int i;
+
+    *dst = *src;
+    if (src->pred != NULL)
+        dst->pred = BOR_ALLOC_ARR(pddl_action_pred_t, src->size);
+    for (i = 0; i < dst->size; ++i)
+        predCopy(dst->pred + i, src->pred + i);
+}
+
+static int predNonNegCmp(const pddl_action_pred_t *p1,
+                         const pddl_action_pred_t *p2)
+{
+    int cmp;
+
+    cmp = p1->pred - p2->pred;
+    if (cmp == 0)
+        cmp = p1->arg_size - p2->arg_size;
+    if (cmp == 0)
+        cmp = memcmp(p1->arg, p2->arg, sizeof(int) * p1->arg_size);
+    return cmp;
+}
+
+static int predCmp(const pddl_action_pred_t *p1, const pddl_action_pred_t *p2)
+{
+    int cmp;
+
+    cmp = predNonNegCmp(p1, p2);
+    if (cmp == 0)
+        cmp = p1->neg - p2->neg;
+    return cmp;
+}
+
+static int sortPredsCmp(const void *a, const void *b)
+{
+    const pddl_action_pred_t *p1 = a;
+    const pddl_action_pred_t *p2 = b;
+    return predCmp(p1, p2);
+}
+
+static void sortPreds(pddl_action_preds_t *eff)
+{
+    // Sort effects so the same ones are next to each other
+    qsort(eff->pred, eff->size, sizeof(pddl_action_pred_t), sortPredsCmp);
+}
+
+static void reorderPreds(pddl_action_preds_t *ps)
+{
+    int ins, i;
+
+    for (ins = 0, i = 0; i < ps->size; ++i){
+        if (ps->pred[i].neg != 2){
+            ps->pred[ins++] = ps->pred[i];
+        }
+    }
+
+    ps->size = ins;
+    predsSqueeze(ps);
+}
+
+static int predInPreds(const pddl_action_pred_t *p,
+                       const pddl_action_preds_t *ps)
+{
+    int i;
+
+    for (i = 0; i < ps->size && ps->pred[i].pred <= p->pred; ++i){
+        if (predCmp(p, ps->pred + i) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+
+/*** COND-EFF ***/
+void condEffFree(pddl_action_cond_eff_t *ce)
+{
+    predsFree(&ce->pre);
+    predsFree(&ce->eff);
+}
+
+void condEffsFree(pddl_action_cond_effs_t *ce)
 {
     int i;
 
     for (i = 0; i < ce->size; ++i)
-        pddlCondEffFree(ce->cond_eff + i);
+        condEffFree(ce->cond_eff + i);
     if (ce->cond_eff != NULL)
         BOR_FREE(ce->cond_eff);
 }
 
-void pddlCondEffCopy(pddl_cond_eff_t *dst, const pddl_cond_eff_t *src)
+void condEffCopy(pddl_action_cond_eff_t *dst,
+                 const pddl_action_cond_eff_t *src)
 {
-    pddlFactsCopy(&dst->pre, &src->pre);
-    pddlFactsCopy(&dst->eff, &src->eff);
+    predsCopy(&dst->pre, &src->pre);
+    predsCopy(&dst->eff, &src->eff);
 }
 
-void pddlCondEffsCopy(pddl_cond_effs_t *dst, const pddl_cond_effs_t *src)
+void condEffsCopy(pddl_action_cond_effs_t *dst,
+                  const pddl_action_cond_effs_t *src)
 {
     int i;
 
     *dst = *src;
     if (src->cond_eff != NULL)
-        dst->cond_eff = BOR_ALLOC_ARR(pddl_cond_eff_t, dst->size);
+        dst->cond_eff = BOR_ALLOC_ARR(pddl_action_cond_eff_t, dst->size);
     for (i = 0; i < dst->size; ++i)
-        pddlCondEffCopy(dst->cond_eff + i, src->cond_eff + i);
+        condEffCopy(dst->cond_eff + i, src->cond_eff + i);
 }

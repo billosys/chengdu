@@ -28,25 +28,71 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct pddl_cond_eff {
-    pddl_facts_t pre;
-    pddl_facts_t eff;
+/**
+ * Action parameter
+ */
+struct pddl_action_param {
+    const char *name;
+    int type;
+    int is_agent;
 };
-typedef struct pddl_cond_eff pddl_cond_eff_t;
+typedef struct pddl_action_param pddl_action_param_t;
 
-struct pddl_cond_effs {
-    pddl_cond_eff_t *cond_eff;
+struct pddl_action_params {
+    pddl_action_param_t *param;
+    int size;
+    int alloc;
+};
+typedef struct pddl_action_params pddl_action_params_t;
+
+
+/**
+ * Predicate with arguments bound to an action parameter or a constant.
+ */
+struct pddl_action_pred {
+    int pred; /*!< Predicate ID */
+    int *arg; /*!< Positive number is idx of action parameter,
+                   negative number refers to object ID (constant) */
+    int arg_size;
+    int neg; /*!< True if it is in negative form */
+    int func_val; /*!< Assigned value in the case of a function */
+};
+typedef struct pddl_action_pred pddl_action_pred_t;
+
+struct pddl_action_preds {
+    pddl_action_pred_t *pred;
+    int size;
+    int alloc;
+};
+typedef struct pddl_action_preds pddl_action_preds_t;
+
+
+/**
+ * Conditional effect
+ */
+struct pddl_action_cond_eff {
+    pddl_action_preds_t pre;
+    pddl_action_preds_t eff;
+};
+typedef struct pddl_action_cond_eff pddl_action_cond_eff_t;
+
+struct pddl_action_cond_effs {
+    pddl_action_cond_eff_t *cond_eff;
     int size;
 };
-typedef struct pddl_cond_effs pddl_cond_effs_t;
+typedef struct pddl_action_cond_effs pddl_action_cond_effs_t;
 
+
+/**
+ * Lifted action
+ */
 struct pddl_action {
     const char *name;
-    pddl_objs_t param;
-    pddl_facts_t pre;
-    pddl_facts_t eff;
-    pddl_facts_t cost;
-    pddl_cond_effs_t cond_eff;
+    pddl_action_params_t param;
+    pddl_action_preds_t pre;
+    pddl_action_preds_t eff;
+    pddl_action_preds_t cost;
+    pddl_action_cond_effs_t cond_eff;
 };
 typedef struct pddl_action pddl_action_t;
 
@@ -55,6 +101,7 @@ struct pddl_actions {
     int size;
 };
 typedef struct pddl_actions pddl_actions_t;
+
 
 /**
  * Parses actions from domain PDDL.
@@ -72,10 +119,10 @@ void pddlActionsFree(pddl_actions_t *actions);
 
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
 
-void pddlActionFactPrint(const pddl_predicates_t *predicates,
+void pddlActionPredPrint(const pddl_predicates_t *predicates,
                          const pddl_objs_t *objs,
                          const pddl_action_t *a,
-                         const pddl_fact_t *f,
+                         const pddl_action_pred_t *f,
                          FILE *fout);
 
 void pddlActionsPrint(const pddl_actions_t *actions,
@@ -83,11 +130,6 @@ void pddlActionsPrint(const pddl_actions_t *actions,
                       const pddl_predicates_t *predicates,
                       const pddl_predicates_t *functions,
                       FILE *fout);
-
-void pddlCondEffFree(pddl_cond_eff_t *ce);
-void pddlCondEffsFree(pddl_cond_effs_t *ce);
-void pddlCondEffCopy(pddl_cond_eff_t *dst, const pddl_cond_eff_t *src);
-void pddlCondEffsCopy(pddl_cond_effs_t *dst, const pddl_cond_effs_t *src);
 
 #ifdef __cplusplus
 } /* extern "C" */

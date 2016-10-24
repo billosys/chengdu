@@ -129,6 +129,7 @@ void pddlFactsPrintGoal(const pddl_predicates_t *predicates,
                         FILE *fout);
 
 _bor_inline void pddlFactIdArrInit(pddl_fact_id_arr_t *arr);
+_bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr);
 _bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size);
 
 
@@ -143,6 +144,12 @@ _bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size)
 {
     arr->fact = BOR_REALLOC_ARR(arr->fact, int, size);
     arr->size = size;
+}
+
+_bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr)
+{
+    if (arr->fact)
+        BOR_FREE(arr->fact);
 }
 
 #ifdef __cplusplus
