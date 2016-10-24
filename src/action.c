@@ -662,6 +662,8 @@ static int parseAction(const pddl_types_t *types,
         }
     }
 
+    // TODO: Check compatibility of types of parameters and types of
+    //       arguments of all predicates.
     simplifyAction(a);
 
     return 0;
