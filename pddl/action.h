@@ -32,9 +32,9 @@ extern "C" {
  * Action parameter
  */
 struct pddl_action_param {
-    const char *name;
-    int type;
-    int is_agent;
+    const char *name; /*!< Name of the paramter (w/o '?') */
+    int type;         /*!< Type ID */
+    int is_agent;     /*!< True if this is :agent parameter */
 };
 typedef struct pddl_action_param pddl_action_param_t;
 
@@ -54,7 +54,7 @@ struct pddl_action_pred {
     int *arg; /*!< Positive number is idx of action parameter,
                    negative number refers to object ID (constant) */
     int arg_size;
-    int neg; /*!< True if it is in negative form */
+    int neg; /*!< True if it is negative form */
     int func_val; /*!< Assigned value in the case of a function */
 };
 typedef struct pddl_action_pred pddl_action_pred_t;
