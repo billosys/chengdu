@@ -256,22 +256,27 @@ static int parseParams(const pddl_types_t *types,
 static int parseVarConst(const pddl_lisp_node_t *root,
                          const pddl_objs_t *objs,
                          const pddl_action_t *a,
-                         int *dst)
+                         pddl_action_pred_arg_t *dst)
 {
+    int v;
+
     if (root->value[0] == '?'){
-        *dst = getParam(a, root->value);
-        if (*dst < 0){
+        v = getParam(a, root->value);
+        if (v < 0){
             ERRN(root, "Invalid paramenter name `%s'", root->value);
             return -1;
         }
+        dst->param = v;
+        dst->obj = -1;
 
     }else{
-        *dst = pddlObjsGet(objs, root->value);
-        if (*dst < 0){
+        v = pddlObjsGet(objs, root->value);
+        if (v < 0){
             ERRN(root, "Unkown constant `%s'", root->value);
             return -1;
         }
-        *dst -= objs->size;
+        dst->param = -1;
+        dst->obj = v;
     }
 
     return 0;
@@ -314,7 +319,7 @@ static pddl_action_pred_t *parsePred(const pddl_objs_t *objs,
     p = predsAdd(ps);
     p->pred = pred;
     p->arg_size = root->child_size - 1;
-    p->arg = BOR_ALLOC_ARR(int, p->arg_size);
+    p->arg = BOR_ALLOC_ARR(pddl_action_pred_arg_t, p->arg_size);
     for (i = 0; i < p->arg_size; ++i){
         if (parseVarConst(root->child + i + 1, objs, a, p->arg + i) != 0)
             return NULL;
@@ -725,17 +730,16 @@ void pddlActionPredPrint(const pddl_preds_t *predicates,
                          const pddl_action_pred_t *p,
                          FILE *fout)
 {
-    int j, id;
+    int j;
 
     if (p->neg)
         fprintf(fout, "N:");
     fprintf(fout, "%s:", predicates->pred[p->pred].name);
     for (j = 0; j < p->arg_size; ++j){
-        if (p->arg[j] < 0){
-            id = p->arg[j] + objs->size;
-            fprintf(fout, " %s", objs->obj[id].name);
+        if (p->arg[j].param < 0){
+            fprintf(fout, " %s", objs->obj[p->arg[j].obj].name);
         }else{
-            fprintf(fout, " %s", a->param.param[p->arg[j]].name);
+            fprintf(fout, " %s", a->param.param[p->arg[j].param].name);
         }
     }
 }
@@ -797,10 +801,11 @@ static void pddlActionPrint(const pddl_action_t *a,
         }else{
             fprintf(fout, "%s", functions->pred[a->cost.pred[i].pred].name);
             for (j = 0; j < a->cost.pred[i].arg_size; ++j){
-                if (a->cost.pred[i].arg[j] >= 0){
-                    fprintf(fout, " %s", a->param.param[a->cost.pred[i].arg[j]].name);
+                if (a->cost.pred[i].arg[j].param >= 0){
+                    id = a->cost.pred[i].arg[j].param;
+                    fprintf(fout, " %s", a->param.param[id].name);
                 }else{
-                    id = a->cost.pred[i].arg[j] + objs->size;
+                    id = a->cost.pred[i].arg[j].obj;
                     fprintf(fout, " %s", objs->obj[id].name);
                 }
             }
@@ -861,8 +866,8 @@ static void predFree(pddl_action_pred_t *p)
 static void predCopy(pddl_action_pred_t *dst, const pddl_action_pred_t *src)
 {
     *dst = *src;
-    dst->arg = BOR_ALLOC_ARR(int, dst->arg_size);
-    memcpy(dst->arg, src->arg, sizeof(int) * dst->arg_size);
+    dst->arg = BOR_ALLOC_ARR(pddl_action_pred_arg_t, dst->arg_size);
+    memcpy(dst->arg, src->arg, sizeof(pddl_action_pred_arg_t) * dst->arg_size);
 }
 
 static void predsFree(pddl_action_preds_t *ps)
@@ -911,6 +916,26 @@ static void predsCopy(pddl_action_preds_t *dst, const pddl_action_preds_t *src)
         predCopy(dst->pred + i, src->pred + i);
 }
 
+static int predArgCmp(const pddl_action_pred_arg_t *arg1,
+                      const pddl_action_pred_arg_t *arg2,
+                      int size)
+{
+    int i;
+
+    for (i = 0; i < size; ++i){
+        if (arg1[i].obj >= 0 && arg2[i].obj < 0)
+            return 1;
+        if (arg2[i].obj >= 0 && arg1[i].obj < 0)
+            return -1;
+        if (arg1[i].obj >= 0 && arg1[i].obj != arg2[i].obj)
+            return arg1[i].obj - arg2[i].obj;
+        if (arg1[i].param >= 0 && arg1[i].param != arg2[i].param)
+            return arg1[i].param - arg2[i].param;
+    }
+
+    return 0;
+}
+
 static int predNonNegCmp(const pddl_action_pred_t *p1,
                          const pddl_action_pred_t *p2)
 {
@@ -920,7 +945,7 @@ static int predNonNegCmp(const pddl_action_pred_t *p1,
     if (cmp == 0)
         cmp = p1->arg_size - p2->arg_size;
     if (cmp == 0)
-        cmp = memcmp(p1->arg, p2->arg, sizeof(int) * p1->arg_size);
+        cmp = predArgCmp(p1->arg, p2->arg, p1->arg_size);
     return cmp;
 }
 

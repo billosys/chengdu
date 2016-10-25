@@ -32,7 +32,7 @@ extern "C" {
  * Action parameter
  */
 struct pddl_action_param {
-    const char *name; /*!< Name of the paramter (w/o '?') */
+    const char *name; /*!< Name of the paramter */
     int type;         /*!< Type ID */
     int is_agent;     /*!< True if this is :agent parameter */
 };
@@ -47,12 +47,20 @@ typedef struct pddl_action_params pddl_action_params_t;
 
 
 /**
+ * Argument of an action predicate
+ */
+struct pddl_action_pred_arg {
+    int param; /*!< -1 or index of a parameter */
+    int obj;   /*!< -1 or index of an object (constant) */
+};
+typedef struct pddl_action_pred_arg pddl_action_pred_arg_t;
+
+/**
  * Predicate with arguments bound to an action parameter or a constant.
  */
 struct pddl_action_pred {
     int pred; /*!< Predicate ID */
-    int *arg; /*!< Positive number is idx of action parameter,
-                   negative number refers to object ID (constant) */
+    pddl_action_pred_arg_t *arg;
     int arg_size;
     int neg; /*!< True if it is negative form */
     int func_val; /*!< Assigned value in the case of a function */
