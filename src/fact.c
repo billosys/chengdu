@@ -292,13 +292,13 @@ pddl_fact_t *pddlFactsAdd(pddl_facts_t *fs)
 {
     pddl_fact_t *f;
 
-    if (fs->size >= fs->alloc_size){
-        if (fs->alloc_size == 0){
-            fs->alloc_size = 2;
+    if (fs->size >= fs->alloc){
+        if (fs->alloc == 0){
+            fs->alloc = 2;
         }else{
-            fs->alloc_size *= 2;
+            fs->alloc *= 2;
         }
-        fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc_size);
+        fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc);
     }
 
     f = fs->fact + fs->size++;
@@ -309,16 +309,16 @@ pddl_fact_t *pddlFactsAdd(pddl_facts_t *fs)
 
 void pddlFactsSqueeze(pddl_facts_t *fs)
 {
-    fs->alloc_size = fs->size;
-    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc_size);
+    fs->alloc = fs->size;
+    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc);
 }
 
-void pddlFactsReserve(pddl_facts_t *fs, int alloc_size)
+void pddlFactsReserve(pddl_facts_t *fs, int alloc)
 {
-    if (fs->alloc_size >= alloc_size)
+    if (fs->alloc >= alloc)
         return;
-    fs->alloc_size = alloc_size;
-    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc_size);
+    fs->alloc = alloc;
+    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc);
 }
 
 void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)

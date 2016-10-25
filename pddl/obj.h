@@ -39,7 +39,7 @@ typedef struct pddl_obj pddl_obj_t;
 struct pddl_objs {
     pddl_obj_t *obj;
     int size;
-    int alloc_size;
+    int alloc;
 };
 typedef struct pddl_objs pddl_objs_t;
 

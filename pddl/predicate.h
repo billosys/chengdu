@@ -40,7 +40,7 @@ struct pddl_predicates {
     pddl_predicate_t *pred;
     int size;
     int eq_pred;
-    int alloc_size;
+    int alloc;
 };
 typedef struct pddl_predicates pddl_predicates_t;
 

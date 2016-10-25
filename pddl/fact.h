@@ -44,7 +44,7 @@ typedef struct pddl_fact pddl_fact_t;
 struct pddl_facts {
     pddl_fact_t *fact;
     int size;
-    int alloc_size;
+    int alloc;
 };
 typedef struct pddl_facts pddl_facts_t;
 
@@ -86,14 +86,14 @@ void pddlFactFree(pddl_fact_t *f);
 pddl_fact_t *pddlFactsAdd(pddl_facts_t *fs);
 
 /**
- * Reallocate array so that .alloc_size == .size.
+ * Reallocate array so that .alloc == .size.
  */
 void pddlFactsSqueeze(pddl_facts_t *fs);
 
 /**
- * Reserve at least alloc_size members in array.
+ * Reserve at least alloc members in array.
  */
-void pddlFactsReserve(pddl_facts_t *fs, int alloc_size);
+void pddlFactsReserve(pddl_facts_t *fs, int alloc);
 
 /**
  * Copies fact from src to dst.

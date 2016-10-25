@@ -269,14 +269,14 @@ pddl_predicate_t *pddlPredicatesAdd(pddl_predicates_t *ps)
 {
     pddl_predicate_t *p;
 
-    if (ps->size >= ps->alloc_size){
-        if (ps->alloc_size == 0){
-            ps->alloc_size = 2;
+    if (ps->size >= ps->alloc){
+        if (ps->alloc == 0){
+            ps->alloc = 2;
         }else{
-            ps->alloc_size *= 2;
+            ps->alloc *= 2;
         }
         ps->pred = BOR_REALLOC_ARR(ps->pred, pddl_predicate_t,
-                                   ps->alloc_size);
+                                   ps->alloc);
     }
 
     p = ps->pred + ps->size++;

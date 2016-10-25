@@ -191,14 +191,14 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs)
 {
     pddl_obj_t *o;
 
-    if (objs->size >= objs->alloc_size){
-        if (objs->alloc_size == 0){
-            objs->alloc_size = 2;
+    if (objs->size >= objs->alloc){
+        if (objs->alloc == 0){
+            objs->alloc = 2;
         }else{
-            objs->alloc_size *= 2;
+            objs->alloc *= 2;
         }
         objs->obj = BOR_REALLOC_ARR(objs->obj, pddl_obj_t,
-                                    objs->alloc_size);
+                                    objs->alloc);
     }
 
     o = objs->obj + objs->size++;
