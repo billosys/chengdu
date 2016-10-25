@@ -61,8 +61,8 @@ void condEffsCopy(pddl_action_cond_effs_t *dst,
 static int parsePreEff(const pddl_types_t *types,
                        const pddl_objs_t *objs,
                        const pddl_type_obj_t *type_obj,
-                       const pddl_predicates_t *predicates,
-                       const pddl_predicates_t *functions,
+                       const pddl_preds_t *predicates,
+                       const pddl_preds_t *functions,
                        unsigned require,
                        const pddl_lisp_node_t *root,
                        const char *errname,
@@ -278,7 +278,7 @@ static int parseVarConst(const pddl_lisp_node_t *root,
 }
 
 static pddl_action_pred_t *parsePred(const pddl_objs_t *objs,
-                                     const pddl_predicates_t *predicates,
+                                     const pddl_preds_t *predicates,
                                      const pddl_lisp_node_t *root,
                                      pddl_action_t *a,
                                      pddl_action_preds_t *ps)
@@ -296,7 +296,7 @@ static pddl_action_pred_t *parsePred(const pddl_objs_t *objs,
     }
 
     // And resolve it against known predicates
-    pred = pddlPredicatesGet(predicates, name);
+    pred = pddlPredsGet(predicates, name);
     if (pred == -1){
         ERRN(root, "Unkown predicate `%s'", name);
         return NULL;
@@ -324,7 +324,7 @@ static pddl_action_pred_t *parsePred(const pddl_objs_t *objs,
 }
 
 static int parseCost(const pddl_objs_t *objs,
-                     const pddl_predicates_t *functions,
+                     const pddl_preds_t *functions,
                      unsigned require,
                      const pddl_lisp_node_t *root,
                      pddl_action_t *a)
@@ -367,7 +367,7 @@ static int parseCost(const pddl_objs_t *objs,
 static int parseCondEff(const pddl_types_t *types,
                         const pddl_objs_t *objs,
                         const pddl_type_obj_t *type_obj,
-                        const pddl_predicates_t *predicates,
+                        const pddl_preds_t *predicates,
                         const pddl_lisp_node_t *root,
                         pddl_action_t *a)
 {
@@ -414,8 +414,8 @@ static int parseForallEval(const pddl_action_params_t *params,
                            const pddl_types_t *types,
                            const pddl_objs_t *objs,
                            const pddl_type_obj_t *type_obj,
-                           const pddl_predicates_t *predicates,
-                           const pddl_predicates_t *functions,
+                           const pddl_preds_t *predicates,
+                           const pddl_preds_t *functions,
                            unsigned require,
                            const pddl_lisp_node_t *root,
                            const char *errname,
@@ -440,8 +440,8 @@ static int parseForallRec(const pddl_action_params_t *params,
                           const pddl_types_t *types,
                           const pddl_objs_t *objs,
                           const pddl_type_obj_t *type_obj,
-                          const pddl_predicates_t *predicates,
-                          const pddl_predicates_t *functions,
+                          const pddl_preds_t *predicates,
+                          const pddl_preds_t *functions,
                           unsigned require,
                           const pddl_lisp_node_t *root,
                           const char *errname,
@@ -476,8 +476,8 @@ static int parseForallRec(const pddl_action_params_t *params,
 static int parseForall(const pddl_types_t *types,
                        const pddl_objs_t *objs,
                        const pddl_type_obj_t *type_obj,
-                       const pddl_predicates_t *predicates,
-                       const pddl_predicates_t *functions,
+                       const pddl_preds_t *predicates,
+                       const pddl_preds_t *functions,
                        unsigned require,
                        const pddl_lisp_node_t *root,
                        const char *errname,
@@ -519,8 +519,8 @@ static int parseForall(const pddl_types_t *types,
 static int parsePreEff(const pddl_types_t *types,
                        const pddl_objs_t *objs,
                        const pddl_type_obj_t *type_obj,
-                       const pddl_predicates_t *predicates,
-                       const pddl_predicates_t *functions,
+                       const pddl_preds_t *predicates,
+                       const pddl_preds_t *functions,
                        unsigned require,
                        const pddl_lisp_node_t *root,
                        const char *errname,
@@ -608,8 +608,8 @@ static int parsePreEff(const pddl_types_t *types,
 static int parseAction(const pddl_types_t *types,
                        const pddl_objs_t *objs,
                        const pddl_type_obj_t *type_obj,
-                       const pddl_predicates_t *predicates,
-                       const pddl_predicates_t *functions,
+                       const pddl_preds_t *predicates,
+                       const pddl_preds_t *functions,
                        unsigned require,
                        const pddl_lisp_node_t *root,
                        pddl_actions_t *actions)
@@ -673,8 +673,8 @@ int pddlActionsParse(const pddl_lisp_t *domain,
                      const pddl_types_t *types,
                      const pddl_objs_t *objs,
                      const pddl_type_obj_t *type_obj,
-                     const pddl_predicates_t *predicates,
-                     const pddl_predicates_t *functions,
+                     const pddl_preds_t *predicates,
+                     const pddl_preds_t *functions,
                      unsigned require,
                      pddl_actions_t *actions)
 {
@@ -719,7 +719,7 @@ void pddlActionsFree(pddl_actions_t *actions)
         BOR_FREE(actions->action);
 }
 
-void pddlActionPredPrint(const pddl_predicates_t *predicates,
+void pddlActionPredPrint(const pddl_preds_t *predicates,
                          const pddl_objs_t *objs,
                          const pddl_action_t *a,
                          const pddl_action_pred_t *p,
@@ -742,7 +742,7 @@ void pddlActionPredPrint(const pddl_predicates_t *predicates,
 
 static void printPreds(const pddl_action_t *a,
                        const pddl_objs_t *objs,
-                       const pddl_predicates_t *predicates,
+                       const pddl_preds_t *predicates,
                        const pddl_action_preds_t *ps,
                        FILE *fout)
 {
@@ -759,8 +759,8 @@ static void printPreds(const pddl_action_t *a,
 
 static void pddlActionPrint(const pddl_action_t *a,
                             const pddl_objs_t *objs,
-                            const pddl_predicates_t *predicates,
-                            const pddl_predicates_t *functions,
+                            const pddl_preds_t *predicates,
+                            const pddl_preds_t *functions,
                             FILE *fout)
 {
     int i, j, id;
@@ -811,8 +811,8 @@ static void pddlActionPrint(const pddl_action_t *a,
 
 void pddlActionsPrint(const pddl_actions_t *actions,
                       const pddl_objs_t *objs,
-                      const pddl_predicates_t *predicates,
-                      const pddl_predicates_t *functions,
+                      const pddl_preds_t *predicates,
+                      const pddl_preds_t *functions,
                       FILE *fout)
 {
     int i;

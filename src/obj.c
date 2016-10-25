@@ -139,6 +139,7 @@ static int parsePrivate(const pddl_lisp_t *lisp,
                                    " Unkown owner `%s'.\n", p->child[1].value);
                 return -1;
             }
+            objs->obj[owner].is_agent = 1;
         }
 
         for (; pi < objs->size; ++pi){

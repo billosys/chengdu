@@ -22,7 +22,7 @@
 #include "err.h"
 
 static int factSetPrivate(pddl_fact_t *fact,
-                          const pddl_predicates_t *pred,
+                          const pddl_preds_t *pred,
                           const pddl_objs_t *objs)
 {
     int ret;
@@ -67,7 +67,7 @@ static int parseObjsIntoArr(const pddl_lisp_node_t *n,
 }
 
 static int parseFunc(const pddl_lisp_node_t *n,
-                     const pddl_predicates_t *functions,
+                     const pddl_preds_t *functions,
                      const pddl_objs_t *objs,
                      pddl_facts_t *fs)
 {
@@ -86,7 +86,7 @@ static int parseFunc(const pddl_lisp_node_t *n,
 
     func = pddlFactsAdd(fs);
     func->func_val = atoi(nval->value);
-    func->pred = pddlPredicatesGet(functions, nfunc->child[0].value);
+    func->pred = pddlPredsGet(functions, nfunc->child[0].value);
     if (func->pred < 0){
         ERRN(nfunc, "Unknown function `%s'", nfunc->child[0].value);
         return -1;
@@ -103,14 +103,14 @@ static int parseFunc(const pddl_lisp_node_t *n,
 }
 
 static int parseFact(const pddl_lisp_node_t *n,
-                     const pddl_predicates_t *predicates,
+                     const pddl_preds_t *predicates,
                      const pddl_objs_t *objs,
                      const char *head, pddl_facts_t *fs)
 {
     pddl_fact_t *fact;
 
     fact = pddlFactsAdd(fs);
-    fact->pred = pddlPredicatesGet(predicates, head);
+    fact->pred = pddlPredsGet(predicates, head);
     if (fact->pred < 0){
         ERRN(n, "Unkwnown predicate `%s'.", head);
         return -1;
@@ -127,8 +127,8 @@ static int parseFact(const pddl_lisp_node_t *n,
 }
 
 static int parseFactFunc(const pddl_lisp_node_t *n,
-                         const pddl_predicates_t *predicates,
-                         const pddl_predicates_t *functions,
+                         const pddl_preds_t *predicates,
+                         const pddl_preds_t *functions,
                          const pddl_objs_t *objs,
                          pddl_facts_t *init_fact,
                          pddl_facts_t *init_func)
@@ -151,8 +151,8 @@ static int parseFactFunc(const pddl_lisp_node_t *n,
 }
 
 int pddlFactsParseInit(const pddl_lisp_t *problem,
-                       const pddl_predicates_t *predicates,
-                       const pddl_predicates_t *functions,
+                       const pddl_preds_t *predicates,
+                       const pddl_preds_t *functions,
                        const pddl_objs_t *objs,
                        pddl_facts_t *init_fact,
                        pddl_facts_t *init_func)
@@ -177,7 +177,7 @@ int pddlFactsParseInit(const pddl_lisp_t *problem,
 }
 
 static pddl_fact_t *parseGoalFact(const pddl_lisp_node_t *root,
-                                  const pddl_predicates_t *predicates,
+                                  const pddl_preds_t *predicates,
                                   const pddl_objs_t *objs,
                                   pddl_facts_t *goal)
 {
@@ -196,7 +196,7 @@ static pddl_fact_t *parseGoalFact(const pddl_lisp_node_t *root,
 }
 
 int parseGoal(const pddl_lisp_node_t *root,
-              const pddl_predicates_t *predicates,
+              const pddl_preds_t *predicates,
               const pddl_objs_t *objs,
               pddl_facts_t *goal)
 {
@@ -251,7 +251,7 @@ int parseGoal(const pddl_lisp_node_t *root,
 }
 
 int pddlFactsParseGoal(const pddl_lisp_t *problem,
-                       const pddl_predicates_t *predicates,
+                       const pddl_preds_t *predicates,
                        const pddl_objs_t *objs,
                        pddl_facts_t *goal)
 {
@@ -340,10 +340,10 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)
 }
 
 int pddlFactSetPrivate(pddl_fact_t *fact,
-                       const pddl_predicates_t *pred,
+                       const pddl_preds_t *pred,
                        const pddl_objs_t *objs)
 {
-    const pddl_predicate_t *pr;
+    const pddl_pred_t *pr;
     const pddl_obj_t *obj;
     int i;
 
@@ -372,7 +372,7 @@ int pddlFactSetPrivate(pddl_fact_t *fact,
     return fact->is_private;
 }
 
-void pddlFactPrint(const pddl_predicates_t *predicates,
+void pddlFactPrint(const pddl_preds_t *predicates,
                    const pddl_objs_t *objs,
                    const pddl_fact_t *f,
                    FILE *fout)
@@ -395,7 +395,7 @@ void pddlFactPrint(const pddl_predicates_t *predicates,
     }
 }
 
-static void printFact(const pddl_predicates_t *predicates,
+static void printFact(const pddl_preds_t *predicates,
                       const pddl_objs_t *objs,
                       const pddl_fact_t *f,
                       int func_val, FILE *fout)
@@ -407,7 +407,7 @@ static void printFact(const pddl_predicates_t *predicates,
     fprintf(fout, "\n");
 }
 
-static void pddlFactsPrint(const pddl_predicates_t *predicates,
+static void pddlFactsPrint(const pddl_preds_t *predicates,
                            const pddl_objs_t *objs,
                            const pddl_facts_t *in,
                            const char *header,
@@ -421,7 +421,7 @@ static void pddlFactsPrint(const pddl_predicates_t *predicates,
         printFact(predicates, objs, in->fact + i, func_val, fout);
 }
 
-void pddlFactsPrintInit(const pddl_predicates_t *predicates,
+void pddlFactsPrintInit(const pddl_preds_t *predicates,
                         const pddl_objs_t *objs,
                         const pddl_facts_t *in,
                         FILE *fout)
@@ -429,7 +429,7 @@ void pddlFactsPrintInit(const pddl_predicates_t *predicates,
     pddlFactsPrint(predicates, objs, in, "Init", 0, fout);
 }
 
-void pddlFactsPrintInitFunc(const pddl_predicates_t *predicates,
+void pddlFactsPrintInitFunc(const pddl_preds_t *predicates,
                             const pddl_objs_t *objs,
                             const pddl_facts_t *in,
                             FILE *fout)
@@ -437,7 +437,7 @@ void pddlFactsPrintInitFunc(const pddl_predicates_t *predicates,
     pddlFactsPrint(predicates, objs, in, "Init Func", 1, fout);
 }
 
-void pddlFactsPrintGoal(const pddl_predicates_t *predicates,
+void pddlFactsPrintGoal(const pddl_preds_t *predicates,
                         const pddl_objs_t *objs,
                         const pddl_facts_t *in,
                         FILE *fout)

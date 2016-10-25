@@ -27,60 +27,60 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct pddl_predicate {
+struct pddl_pred {
     const char *name;
     int *param;
     int param_size;
     int is_private;
     int owner_param;
 };
-typedef struct pddl_predicate pddl_predicate_t;
+typedef struct pddl_pred pddl_pred_t;
 
-struct pddl_predicates {
-    pddl_predicate_t *pred;
+struct pddl_preds {
+    pddl_pred_t *pred;
     int size;
     int eq_pred;
     int alloc;
 };
-typedef struct pddl_predicates pddl_predicates_t;
+typedef struct pddl_preds pddl_preds_t;
 
 /**
  * Parse :predicates from domain PDDL.
  */
-int pddlPredicatesParse(const pddl_lisp_t *domain,
-                        unsigned require,
-                        const pddl_types_t *types,
-                        pddl_predicates_t *ps);
+int pddlPredsParse(const pddl_lisp_t *domain,
+                   unsigned require,
+                   const pddl_types_t *types,
+                   pddl_preds_t *ps);
 
 /**
  * Parse :functions from domain PDDL.
  */
 int pddlFunctionsParse(const pddl_lisp_t *domain,
                        const pddl_types_t *types,
-                       pddl_predicates_t *ps);
+                       pddl_preds_t *ps);
 
 /**
  * Frees allocated resources.
  */
-void pddlPredicatesFree(pddl_predicates_t *ps);
+void pddlPredsFree(pddl_preds_t *ps);
 
 /**
  * Returns ID of the predicate with the specified name.
  */
-int pddlPredicatesGet(const pddl_predicates_t *ps, const char *name);
+int pddlPredsGet(const pddl_preds_t *ps, const char *name);
 
 /**
  * Adds a new predicate to the end.
  */
-pddl_predicate_t *pddlPredicatesAdd(pddl_predicates_t *ps);
+pddl_pred_t *pddlPredsAdd(pddl_preds_t *ps);
 
 /**
  * Removes last predicate from the array.
  */
-void pddlPredicatesRemoveLast(pddl_predicates_t *ps);
+void pddlPredsRemoveLast(pddl_preds_t *ps);
 
-void pddlPredicatesPrint(const pddl_predicates_t *ps,
-                         const char *title, FILE *fout);
+void pddlPredsPrint(const pddl_preds_t *ps,
+                    const char *title, FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */

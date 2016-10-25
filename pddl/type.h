@@ -27,8 +27,8 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_type {
-    const char *name;
-    int parent;
+    const char *name; /*!< Name of the type */
+    int parent;       /*!< ID of the parent type */
 };
 typedef struct pddl_type pddl_type_t;
 

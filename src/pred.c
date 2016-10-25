@@ -18,11 +18,11 @@
  */
 
 #include <boruvka/alloc.h>
-#include "pddl/predicate.h"
+#include "pddl/pred.h"
 #include "err.h"
 
 struct _set_t {
-    pddl_predicate_t *pred;
+    pddl_pred_t *pred;
     const pddl_types_t *types;
     const char *owner_var;
 };
@@ -33,7 +33,7 @@ static const char *eq_name = "=";
 static int setCB(const pddl_lisp_node_t *root,
                  int child_from, int child_to, int child_type, void *ud)
 {
-    pddl_predicate_t *pred = ((set_t *)ud)->pred;
+    pddl_pred_t *pred = ((set_t *)ud)->pred;
     const pddl_types_t *types = ((set_t *)ud)->types;
     const char *owner_var = ((set_t *)ud)->owner_var;
     int i, j, tid;
@@ -60,7 +60,7 @@ static int setCB(const pddl_lisp_node_t *root,
     return 0;
 }
 
-static int checkDuplicate(const pddl_predicates_t *ps, const char *name)
+static int checkDuplicate(const pddl_preds_t *ps, const char *name)
 {
     int i;
 
@@ -75,9 +75,9 @@ static int parsePredicate(const pddl_types_t *types,
                           const pddl_lisp_node_t *n,
                           const char *owner_var,
                           const char *errname,
-                          pddl_predicates_t *ps)
+                          pddl_preds_t *ps)
 {
-    pddl_predicate_t *p;
+    pddl_pred_t *p;
     set_t set;
 
     if (n->child_size < 1 || n->child[0].value == NULL){
@@ -90,12 +90,12 @@ static int parsePredicate(const pddl_types_t *types,
         return -1;
     }
 
-    p = pddlPredicatesAdd(ps);
+    p = pddlPredsAdd(ps);
     set.pred = p;
     set.types = types;
     set.owner_var = owner_var;
     if (pddlLispParseTypedList(n, 1, n->child_size, setCB, &set) != 0){
-        pddlPredicatesRemoveLast(ps);
+        pddlPredsRemoveLast(ps);
         return -1;
     }
 
@@ -105,7 +105,7 @@ static int parsePredicate(const pddl_types_t *types,
 
 static int parsePrivatePredicates(const pddl_types_t *types,
                                   const pddl_lisp_node_t *n,
-                                  pddl_predicates_t *ps,
+                                  pddl_preds_t *ps,
                                   unsigned require)
 {
     const char *owner_var;
@@ -153,21 +153,21 @@ static int parsePrivatePredicates(const pddl_types_t *types,
     return 0;
 }
 
-static void addEqPredicate(pddl_predicates_t *ps)
+static void addEqPredicate(pddl_preds_t *ps)
 {
-    pddl_predicate_t *p;
+    pddl_pred_t *p;
 
-    p = pddlPredicatesAdd(ps);
+    p = pddlPredsAdd(ps);
     p->name = eq_name;
     p->param_size = 2;
     p->param = BOR_CALLOC_ARR(int, 2);
     ps->eq_pred = ps->size - 1;
 }
 
-int pddlPredicatesParse(const pddl_lisp_t *domain,
-                        unsigned require,
-                        const pddl_types_t *types,
-                        pddl_predicates_t *ps)
+int pddlPredsParse(const pddl_lisp_t *domain,
+                   unsigned require,
+                   const pddl_types_t *types,
+                   pddl_preds_t *ps)
 {
     const pddl_lisp_node_t *n;
     int i, to, private;
@@ -214,7 +214,7 @@ int pddlPredicatesParse(const pddl_lisp_t *domain,
 
 int pddlFunctionsParse(const pddl_lisp_t *domain,
                        const pddl_types_t *types,
-                       pddl_predicates_t *ps)
+                       pddl_preds_t *ps)
 {
     const pddl_lisp_node_t *n;
     int i;
@@ -242,7 +242,7 @@ int pddlFunctionsParse(const pddl_lisp_t *domain,
     return 0;
 }
 
-void pddlPredicatesFree(pddl_predicates_t *ps)
+void pddlPredsFree(pddl_preds_t *ps)
 {
     int i;
 
@@ -254,7 +254,7 @@ void pddlPredicatesFree(pddl_predicates_t *ps)
         BOR_FREE(ps->pred);
 }
 
-int pddlPredicatesGet(const pddl_predicates_t *ps, const char *name)
+int pddlPredsGet(const pddl_preds_t *ps, const char *name)
 {
     int i;
 
@@ -265,9 +265,9 @@ int pddlPredicatesGet(const pddl_predicates_t *ps, const char *name)
     return -1;
 }
 
-pddl_predicate_t *pddlPredicatesAdd(pddl_predicates_t *ps)
+pddl_pred_t *pddlPredsAdd(pddl_preds_t *ps)
 {
-    pddl_predicate_t *p;
+    pddl_pred_t *p;
 
     if (ps->size >= ps->alloc){
         if (ps->alloc == 0){
@@ -275,7 +275,7 @@ pddl_predicate_t *pddlPredicatesAdd(pddl_predicates_t *ps)
         }else{
             ps->alloc *= 2;
         }
-        ps->pred = BOR_REALLOC_ARR(ps->pred, pddl_predicate_t,
+        ps->pred = BOR_REALLOC_ARR(ps->pred, pddl_pred_t,
                                    ps->alloc);
     }
 
@@ -285,17 +285,17 @@ pddl_predicate_t *pddlPredicatesAdd(pddl_predicates_t *ps)
     return p;
 }
 
-void pddlPredicatesRemoveLast(pddl_predicates_t *ps)
+void pddlPredsRemoveLast(pddl_preds_t *ps)
 {
-    pddl_predicate_t *p;
+    pddl_pred_t *p;
 
     p = ps->pred + --ps->size;
     if (p->param != NULL)
         BOR_FREE(p->param);
 }
 
-void pddlPredicatesPrint(const pddl_predicates_t *ps,
-                         const char *title, FILE *fout)
+void pddlPredsPrint(const pddl_preds_t *ps,
+                    const char *title, FILE *fout)
 {
     int i, j;
 

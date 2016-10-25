@@ -23,7 +23,7 @@
 #include <boruvka/alloc.h>
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
-#include <pddl/predicate.h>
+#include <pddl/pred.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,8 +60,8 @@ typedef struct pddl_fact_id_arr pddl_fact_id_arr_t;
  * functions.
  */
 int pddlFactsParseInit(const pddl_lisp_t *problem,
-                       const pddl_predicates_t *predicates,
-                       const pddl_predicates_t *functions,
+                       const pddl_preds_t *predicates,
+                       const pddl_preds_t *functions,
                        const pddl_objs_t *objs,
                        pddl_facts_t *init_fact,
                        pddl_facts_t *init_func);
@@ -70,7 +70,7 @@ int pddlFactsParseInit(const pddl_lisp_t *problem,
  * Parses :goal into list of facts.
  */
 int pddlFactsParseGoal(const pddl_lisp_t *problem,
-                       const pddl_predicates_t *predicates,
+                       const pddl_preds_t *predicates,
                        const pddl_objs_t *objs,
                        pddl_facts_t *goal);
 
@@ -108,22 +108,22 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
  * if there is conflict in owners of the fact (thus this is invalid fact).
  */
 int pddlFactSetPrivate(pddl_fact_t *fact,
-                       const pddl_predicates_t *pred,
+                       const pddl_preds_t *pred,
                        const pddl_objs_t *objs);
 
-void pddlFactPrint(const pddl_predicates_t *predicates,
+void pddlFactPrint(const pddl_preds_t *predicates,
                    const pddl_objs_t *objs,
                    const pddl_fact_t *f,
                    FILE *fout);
-void pddlFactsPrintInit(const pddl_predicates_t *predicates,
+void pddlFactsPrintInit(const pddl_preds_t *predicates,
                         const pddl_objs_t *objs,
                         const pddl_facts_t *in,
                         FILE *fout);
-void pddlFactsPrintInitFunc(const pddl_predicates_t *predicates,
+void pddlFactsPrintInitFunc(const pddl_preds_t *predicates,
                             const pddl_objs_t *objs,
                             const pddl_facts_t *in,
                             FILE *fout);
-void pddlFactsPrintGoal(const pddl_predicates_t *predicates,
+void pddlFactsPrintGoal(const pddl_preds_t *predicates,
                         const pddl_objs_t *objs,
                         const pddl_facts_t *in,
                         FILE *fout);

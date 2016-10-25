@@ -110,8 +110,8 @@ int pddlActionsParse(const pddl_lisp_t *domain,
                      const pddl_types_t *types,
                      const pddl_objs_t *objs,
                      const pddl_type_obj_t *type_obj,
-                     const pddl_predicates_t *predicates,
-                     const pddl_predicates_t *functions,
+                     const pddl_preds_t *predicates,
+                     const pddl_preds_t *functions,
                      unsigned require,
                      pddl_actions_t *actions);
 
@@ -119,7 +119,7 @@ void pddlActionsFree(pddl_actions_t *actions);
 
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
 
-void pddlActionPredPrint(const pddl_predicates_t *predicates,
+void pddlActionPredPrint(const pddl_preds_t *predicates,
                          const pddl_objs_t *objs,
                          const pddl_action_t *a,
                          const pddl_action_pred_t *f,
@@ -127,8 +127,8 @@ void pddlActionPredPrint(const pddl_predicates_t *predicates,
 
 void pddlActionsPrint(const pddl_actions_t *actions,
                       const pddl_objs_t *objs,
-                      const pddl_predicates_t *predicates,
-                      const pddl_predicates_t *functions,
+                      const pddl_preds_t *predicates,
+                      const pddl_preds_t *functions,
                       FILE *fout);
 
 #ifdef __cplusplus

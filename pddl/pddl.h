@@ -24,7 +24,7 @@
 #include <pddl/require.h>
 #include <pddl/type.h>
 #include <pddl/obj.h>
-#include <pddl/predicate.h>
+#include <pddl/pred.h>
 #include <pddl/fact.h>
 #include <pddl/action.h>
 
@@ -41,8 +41,8 @@ struct pddl {
     pddl_types_t type;
     pddl_objs_t obj;
     pddl_type_obj_t type_obj;
-    pddl_predicates_t predicate;
-    pddl_predicates_t function;
+    pddl_preds_t predicate;
+    pddl_preds_t function;
     pddl_facts_t init_fact;
     pddl_facts_t init_func;
     pddl_facts_t goal;

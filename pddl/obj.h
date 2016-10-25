@@ -27,12 +27,14 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_obj {
-    const char *name;
-    int type;
-    int is_constant;
-    int is_private;
-    int owner;
-    int is_agent;
+    const char *name; /*!< Name of the object */
+    int type;         /*!< Type of the object */
+    int is_constant;  /*!< True if it is constant (defined in domain) */
+    int is_private;   /*!< True if the object is private to an agent */
+    int owner;        /*!< -1 or ID of the object corresponding to an agent
+                           in unfactored privacy model */
+    int is_agent;     /*!< True if the object correspondnds to an agent in
+                           unfactored privacy model */
 };
 typedef struct pddl_obj pddl_obj_t;
 
