@@ -28,19 +28,21 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_pred {
-    const char *name;
-    int *param;
-    int param_size;
-    int is_private;
-    int owner_param;
+    const char *name; /*!< Name of the predicate */
+    int *param;       /*!< IDs of types of parameters */
+    int param_size;   /*!< Number of parameters */
+    int is_private;   /*!< True if the predicate is private */
+    int owner_param;  /*!< Index of the parameter that corresponds to the
+                           owner object */
 };
 typedef struct pddl_pred pddl_pred_t;
 
 struct pddl_preds {
     pddl_pred_t *pred;
     int size;
-    int eq_pred;
     int alloc;
+    int eq_pred; /*!< -1 or index of the predicate that corresponds to
+                      (= .  .) predicate */
 };
 typedef struct pddl_preds pddl_preds_t;
 
