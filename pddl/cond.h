@@ -37,12 +37,12 @@ extern "C" {
 /**
  * Types of conditions
  */
-#define PDDL_COND_AND  1u /*!< Conjuction */
-#define PDDL_COND_OR  2u /*!< Disjunction */
+#define PDDL_COND_AND    1u /*!< Conjuction */
+#define PDDL_COND_OR     2u /*!< Disjunction */
 #define PDDL_COND_FORALL 4u /*!< Universal quantifier */
-#define PDDL_COND_EXIST 5u /*!< Existential quantifier */
-#define PDDL_COND_WHEN 6u
-#define PDDL_COND_ATOM 7u
+#define PDDL_COND_EXIST  5u /*!< Existential quantifier */
+#define PDDL_COND_WHEN   6u /*!< Conditional effect */
+#define PDDL_COND_ATOM   7u
 #define PDDL_COND_ASSIGN 8u
 
 /**
@@ -118,8 +118,14 @@ struct pddl_cond_assign {
 typedef struct pddl_cond_assign pddl_cond_assign_t;
 
 
+/**
+ * Free memory.
+ */
 void pddlCondDel(pddl_cond_t *cond);
 
+/**
+ * Parse condition from PDDL lisp.
+ */
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
                            const pddl_types_t *types,
                            const pddl_objs_t *objs,
@@ -143,6 +149,11 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
 int pddlCondCheckEff(const pddl_cond_t *cond,
                      int require,
                      int verbose);
+
+/**
+ * Flattens dis/conjunctions.
+ */
+int pddlCondFlatten(pddl_cond_t *cond);
 
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,

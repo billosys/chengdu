@@ -18,12 +18,16 @@ endif
 OBJS  = search.o
 OBJS += options.o
 
-TARGETS =
+TARGETS = pddl-check
 
 all: $(TARGETS)
 
+
 search: ../libpddl.a $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+
+pddl-%: %.c ../libpddl.a
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c -o $@ $<

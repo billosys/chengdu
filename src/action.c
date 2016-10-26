@@ -69,6 +69,8 @@ static int parseAction(const pddl_types_t *types,
                 return -1;
             if (pddlCondCheckPre(a->pre, require, 1) != 0)
                 return -1;
+            if (pddlCondFlatten(a->pre) != 0)
+                return -1;
 
         }else if (root->child[i].kw == PDDL_KW_EFF){
             a->eff = pddlCondParse(n, types, objs, type_obj, predicates,
@@ -77,6 +79,8 @@ static int parseAction(const pddl_types_t *types,
                 return -1;
             if (pddlCondCheckEff(a->eff, require, 1) != 0)
                 return -1;
+            //if (pddlCondFlatten(a->eff) != 0)
+            //    return -1;
 
         }else{
             ERRN(root->child + i, "Invalid definition of action `%s'."

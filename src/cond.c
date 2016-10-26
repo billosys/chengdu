@@ -729,6 +729,85 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
 
 
 
+/*** FLATTEN ***/
+static void condPartStealPart(pddl_cond_part_t *dst,
+                              pddl_cond_part_t *src)
+{
+    bor_list_t *item;
+
+    while (!borListEmpty(&src->part)){
+        item = borListNext(&src->part);
+        borListDel(item);
+        borListAppend(&dst->part, item);
+    }
+}
+
+int pddlCondFlatten(pddl_cond_t *cond)
+{
+    pddl_cond_part_t *part, *p;
+    pddl_cond_quant_t *q;
+    pddl_cond_when_t *w;
+    pddl_cond_t *c;
+    bor_list_t *item, *tmp;
+
+    if (cond->type == PDDL_COND_AND
+            || cond->type == PDDL_COND_OR){
+        part = bor_container_of(cond, pddl_cond_part_t, cls);
+        BOR_LIST_FOR_EACH_SAFE(&part->part, item, tmp){
+            c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+            if (pddlCondFlatten(c) != 0)
+                return -1;
+
+            if (c->type == cond->type){
+                // Flatten con/disjunctions
+                p = bor_container_of(c, pddl_cond_part_t, cls);
+                condPartStealPart(part, p);
+
+                borListDel(item);
+                pddlCondDel(c);
+
+            }else if (c->type == PDDL_COND_AND
+                        || c->type == PDDL_COND_OR){
+                p = bor_container_of(c, pddl_cond_part_t, cls);
+
+                // If con/disjunction has only one atom, the parent one can
+                // safely take that atom
+                if (borListPrev(&p->part) == borListNext(&p->part)){
+                    condPartStealPart(part, p);
+                    borListDel(item);
+                    pddlCondDel(c);
+                }
+            }
+        }
+
+        // If disjunction has only one atom change it do conjuction.
+        if (borListPrev(&part->part) == borListNext(&part->part))
+            part->cls.type = PDDL_COND_AND;
+
+        return 0;
+
+    }else if (cond->type == PDDL_COND_FORALL
+                || cond->type == PDDL_COND_EXIST){
+        q = bor_container_of(cond, pddl_cond_quant_t, cls);
+        return pddlCondFlatten(q->cond);
+
+    }else if (cond->type == PDDL_COND_WHEN){
+        w = bor_container_of(cond, pddl_cond_when_t, cls);
+        if (pddlCondFlatten(w->pre) == 0
+                && pddlCondFlatten(w->eff) == 0)
+            return 0;
+        return -1;
+
+    }else if (cond->type == PDDL_COND_ATOM
+                || cond->type == PDDL_COND_ASSIGN){
+        return 0;
+
+    }else{
+        fprintf(stderr, "Fatal Error: Unkown cond type!\n");
+        exit(-1);
+    }
+}
+
 /*** PRINT ***/
 static void condPartPrint(const pddl_cond_part_t *cond,
                           const char *name,
@@ -791,9 +870,10 @@ static void condAtomPrint(const pddl_cond_atom_t *atom,
 {
     int i;
 
+    fprintf(fout, "(");
     if (atom->neg)
-        fprintf(fout, "(not ");
-    fprintf(fout, "(%s", preds->pred[atom->pred].name);
+        fprintf(fout, "N:");
+    fprintf(fout, "%s", preds->pred[atom->pred].name);
 
     for (i = 0; i < atom->arg_size; ++i){
         fprintf(fout, " ");
@@ -805,8 +885,6 @@ static void condAtomPrint(const pddl_cond_atom_t *atom,
     }
 
     fprintf(fout, ")");
-    if (atom->neg)
-        fprintf(fout, ")");
 }
 
 static void condAssignPrint(const pddl_cond_assign_t *assign,
