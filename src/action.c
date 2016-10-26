@@ -21,11 +21,169 @@
 #include "pddl/action.h"
 #include "err.h"
 
-struct _set_param_t {
-    pddl_action_params_t *param;
-    const pddl_types_t *types;
-};
-typedef struct _set_param_t set_param_t;
+
+static int parseAction(const pddl_types_t *types,
+                       const pddl_objs_t *objs,
+                       const pddl_type_obj_t *type_obj,
+                       const pddl_preds_t *predicates,
+                       const pddl_preds_t *functions,
+                       unsigned require,
+                       const pddl_lisp_node_t *root,
+                       pddl_actions_t *actions)
+{
+    const pddl_lisp_node_t *n;
+    pddl_action_t *a;
+    int i, ret;
+
+    if (root->child_size < 4
+            || root->child_size / 2 == 1
+            || root->child[1].value == NULL){
+        ERRN2(root, "Invalid definition of :action");
+        return -1;
+    }
+
+    a = pddlActionsAdd(actions);
+    a->name = root->child[1].value;
+    for (i = 2; i < root->child_size; i += 2){
+        n = root->child + i + 1;
+        if (root->child[i].kw == PDDL_KW_AGENT){
+            if (!(require & PDDL_REQUIRE_MULTI_AGENT)){
+                ERRN2(root->child + i, ":agent is allowed only with"
+                                       " :multi-agent requirement.");
+                return -1;
+            }
+
+            ret = pddlParamsParseAgent(&a->param, root, i, types);
+            if (ret < 0)
+                return -1;
+            i = ret - 2;
+
+        }else if (root->child[i].kw == PDDL_KW_PARAMETERS){
+            if (pddlParamsParse(&a->param, n, types) != 0)
+                return -1;
+
+        }else if (root->child[i].kw == PDDL_KW_PRE){
+            a->pre = pddlCondParse(n, types, objs, type_obj, predicates,
+                                   functions, &a->param, a->name);
+            if (a->pre == NULL)
+                return -1;
+            if (pddlCondCheckPre(a->pre, require, 1) != 0)
+                return -1;
+
+        }else if (root->child[i].kw == PDDL_KW_EFF){
+            a->eff = pddlCondParse(n, types, objs, type_obj, predicates,
+                                   functions, &a->param, a->name);
+            if (a->eff == NULL)
+                return -1;
+            if (pddlCondCheckEff(a->eff, require, 1) != 0)
+                return -1;
+
+        }else{
+            ERRN(root->child + i, "Invalid definition of action `%s'."
+                                  " Unexpected token: %s",
+                                  a->name, root->child[i].value);
+            return -1;
+        }
+    }
+
+#if 0
+    // TODO: Check compatibility of types of parameters and types of
+    //       arguments of all predicates.
+    simplifyAction(a);
+#endif
+
+    return 0;
+}
+
+int pddlActionsParse(const pddl_lisp_t *domain,
+                     const pddl_types_t *types,
+                     const pddl_objs_t *objs,
+                     const pddl_type_obj_t *type_obj,
+                     const pddl_preds_t *predicates,
+                     const pddl_preds_t *functions,
+                     unsigned require,
+                     pddl_actions_t *actions)
+{
+    const pddl_lisp_node_t *root = &domain->root;
+    const pddl_lisp_node_t *n;
+    int i;
+
+    for (i = 0; i < root->child_size; ++i){
+        n = root->child + i;
+        if (pddlLispNodeHeadKw(n) == PDDL_KW_ACTION){
+            if (parseAction(types, objs, type_obj, predicates,
+                            functions, require, n, actions) != 0){
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
+{
+    pddl_action_t *a;
+
+    ++as->size;
+    as->action = BOR_REALLOC_ARR(as->action, pddl_action_t, as->size);
+    a = as->action + as->size - 1;
+    bzero(a, sizeof(*a));
+    return a;
+}
+
+void pddlActionsFree(pddl_actions_t *actions)
+{
+    pddl_action_t *a;
+    int i;
+
+    for (i = 0; i < actions->size; ++i){
+        a = actions->action + i;
+
+        pddlParamsFree(&a->param);
+        if (a->pre != NULL)
+            pddlCondDel(a->pre);
+        if (a->eff != NULL)
+            pddlCondDel(a->eff);
+    }
+    if (actions->action != NULL)
+        BOR_FREE(actions->action);
+}
+
+
+static void pddlActionPrint(const pddl_action_t *a,
+                            const pddl_objs_t *objs,
+                            const pddl_preds_t *predicates,
+                            const pddl_preds_t *functions,
+                            FILE *fout)
+{
+    fprintf(fout, "    %s: ", a->name);
+    pddlParamsPrint(&a->param, fout);
+    fprintf(fout, "\n");
+
+    fprintf(fout, "        pre: ");
+    pddlCondPrint(a->pre, objs, predicates, functions, &a->param, fout);
+    fprintf(fout, "\n");
+
+    fprintf(fout, "        eff: ");
+    pddlCondPrint(a->eff, objs, predicates, functions, &a->param, fout);
+    fprintf(fout, "\n");
+}
+
+void pddlActionsPrint(const pddl_actions_t *actions,
+                      const pddl_objs_t *objs,
+                      const pddl_preds_t *predicates,
+                      const pddl_preds_t *functions,
+                      FILE *fout)
+{
+    int i;
+
+    fprintf(fout, "Action[%d]:\n", actions->size);
+    for (i = 0; i < actions->size; ++i)
+        pddlActionPrint(actions->action + i, objs,
+                            predicates, functions, fout);
+}
+
+#if 0
 
 
 static void paramsFree(pddl_action_params_t *ps);
@@ -70,13 +228,6 @@ static int parsePreEff(const pddl_types_t *types,
                        pddl_action_preds_t *preds,
                        int parse_cost, int parse_cond_eff);
 
-static pddl_action_t *addAction(pddl_actions_t *as, const char *name)
-{
-    pddl_action_t *a;
-    a = pddlActionsAdd(as);
-    a->name = name;
-    return a;
-}
 
 static pddl_action_cond_eff_t *addCondEff(pddl_action_t *a)
 {
@@ -102,46 +253,6 @@ static int getParam(const pddl_action_t *a, const char *var_name)
     return -1;
 }
 
-static int setParams(const pddl_lisp_node_t *root,
-                     int child_from, int child_to, int child_type, void *ud)
-{
-    pddl_action_params_t *params = ((set_param_t *)ud)->param;
-    const pddl_types_t *types = ((set_param_t *)ud)->types;
-    pddl_action_param_t *param;
-    int i, tid;
-
-    tid = 0;
-    if (child_type >= 0){
-        tid = pddlTypesGet(types, root->child[child_type].value);
-        if (tid < 0){
-            ERRN(root->child + child_type, "Unkown type `%s'",
-                 root->child[child_type].value);
-            return -1;
-        }
-    }
-
-    for (i = child_from; i < child_to; ++i){
-        if (root->child[i].value == NULL){
-            ERRN2(root->child + i, "Invalid parameter definition:"
-                                   " Unexpected expression.");
-            return -1;
-        }
-
-        if (root->child[i].value[0] != '?'){
-            ERRN(root->child + i, "Invalid parameter definition:"
-                                  " Expected variable, got %s.",
-                 root->child[i].value);
-            return -1;
-        }
-
-        param = paramsAdd(params);
-        param->name = root->child[i].value;
-        param->type = tid;
-        param->is_agent = 0;
-    }
-
-    return 0;
-}
 
 
 static void simplifyAction(pddl_action_t *a)
@@ -214,43 +325,6 @@ static void simplifyAction(pddl_action_t *a)
 
     if (del)
         reorderPreds(&a->eff);
-}
-
-static int parseAgentParams(const pddl_types_t *types,
-                            const pddl_lisp_node_t *n, int nid,
-                            pddl_action_params_t *param)
-{
-    set_param_t set_param;
-    int to;
-
-    if (nid + 2 < n->child_size
-            && n->child[nid + 2].value != NULL
-            && n->child[nid + 2].value[0] == '-'){
-        to = nid + 4;
-    }else{
-        to = nid + 2;
-    }
-
-    set_param.param = param;
-    set_param.types = types;
-    if (pddlLispParseTypedList(n, nid + 1, to, setParams, &set_param) != 0)
-        return -1;
-
-    param->param[param->size - 1].is_agent = 1;
-    return to;
-}
-
-static int parseParams(const pddl_types_t *types,
-                       const pddl_lisp_node_t *n,
-                       pddl_action_params_t *param)
-{
-    set_param_t set_param;
-    set_param.param = param;
-    set_param.types = types;
-    if (pddlLispParseTypedList(n, 0, n->child_size,
-                                   setParams, &set_param) != 0)
-        return -1;
-    return 0;
 }
 
 static int parseVarConst(const pddl_lisp_node_t *root,
@@ -761,72 +835,6 @@ static void printPreds(const pddl_action_t *a,
     }
 }
 
-static void pddlActionPrint(const pddl_action_t *a,
-                            const pddl_objs_t *objs,
-                            const pddl_preds_t *predicates,
-                            const pddl_preds_t *functions,
-                            FILE *fout)
-{
-    int i, j, id;
-
-    fprintf(fout, "    %s:", a->name);
-    for (i = 0; i < a->param.size; ++i){
-        fprintf(fout, " ");
-        if (a->param.param[i].is_agent)
-            fprintf(fout, "A:");
-        fprintf(fout, "%s:%d", a->param.param[i].name, a->param.param[i].type);
-    }
-    fprintf(fout, "\n");
-
-    fprintf(fout, "        pre[%d]:\n", a->pre.size);
-    printPreds(a, objs, predicates, &a->pre, fout);
-
-    fprintf(fout, "        eff[%d]:\n", a->eff.size);
-    printPreds(a, objs, predicates, &a->eff, fout);
-
-    fprintf(fout, "        cond-eff[%d]:\n", a->cond_eff.size);
-    for (i = 0; i < a->cond_eff.size; ++i){
-        fprintf(fout, "          pre[%d]:\n",
-                a->cond_eff.cond_eff[i].pre.size);
-        printPreds(a, objs, predicates, &a->cond_eff.cond_eff[i].pre, fout);
-        fprintf(fout, "          eff[%d]:\n",
-                a->cond_eff.cond_eff[i].eff.size);
-        printPreds(a, objs, predicates, &a->cond_eff.cond_eff[i].eff, fout);
-    }
-
-    for (i = 0; i < a->cost.size; ++i){
-        fprintf(fout, "        cost: ");
-        if (a->cost.pred[i].pred == -1){
-            fprintf(fout, "%d", a->cost.pred[i].func_val);
-        }else{
-            fprintf(fout, "%s", functions->pred[a->cost.pred[i].pred].name);
-            for (j = 0; j < a->cost.pred[i].arg_size; ++j){
-                if (a->cost.pred[i].arg[j].param >= 0){
-                    id = a->cost.pred[i].arg[j].param;
-                    fprintf(fout, " %s", a->param.param[id].name);
-                }else{
-                    id = a->cost.pred[i].arg[j].obj;
-                    fprintf(fout, " %s", objs->obj[id].name);
-                }
-            }
-        }
-        fprintf(fout, "\n");
-    }
-}
-
-void pddlActionsPrint(const pddl_actions_t *actions,
-                      const pddl_objs_t *objs,
-                      const pddl_preds_t *predicates,
-                      const pddl_preds_t *functions,
-                      FILE *fout)
-{
-    int i;
-
-    fprintf(fout, "Action[%d]:\n", actions->size);
-    for (i = 0; i < actions->size; ++i)
-        pddlActionPrint(actions->action + i, objs,
-                            predicates, functions, fout);
-}
 
 
 
@@ -1034,3 +1042,4 @@ void condEffsCopy(pddl_action_cond_effs_t *dst,
     for (i = 0; i < dst->size; ++i)
         condEffCopy(dst->cond_eff + i, src->cond_eff + i);
 }
+#endif

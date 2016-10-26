@@ -1,0 +1,97 @@
+/***
+ * cpddl
+ * -------
+ * Copyright (c)2016 Daniel Fiser <danfis@danfis.cz>,
+ * AI Center, Department of Computer Science,
+ * Faculty of Electrical Engineering, Czech Technical University in Prague.
+ * All rights reserved.
+ *
+ * This file is part of cpddl.
+ *
+ * Distributed under the OSI-approved BSD License (the "License");
+ * see accompanying file BDS-LICENSE for details or see
+ * <http://www.opensource.org/licenses/bsd-license.php>.
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License for more information.
+ */
+
+#ifndef __PDDL_PARAM_H__
+#define __PDDL_PARAM_H__
+
+#include <pddl/type.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+
+/**
+ * Typed parameter
+ */
+struct pddl_param {
+    const char *name; /*!< Name of the parameter */
+    int type;         /*!< Type ID */ // TODO <-- add support for (either ..)
+    int is_agent;     /*!< True if this is :agent parameter */
+    int inherit;      /*!< True if this parameter was inherited from parent
+                           structure */
+};
+typedef struct pddl_param pddl_param_t;
+
+struct pddl_params {
+    pddl_param_t *param;
+    int size;
+    int alloc;
+};
+typedef struct pddl_params pddl_params_t;
+
+
+/**
+ * Copies src to dst.
+ */
+void pddlParamCopy(pddl_param_t *dst, const pddl_param_t *src);
+
+/**
+ * Initialize list of parameters
+ */
+void pddlParamsInit(pddl_params_t *params);
+
+/**
+ * Free allocated memory.
+ */
+void pddlParamsFree(pddl_params_t *params);
+
+/**
+ * Adds a new empty parameter object at the end of params.
+ */
+pddl_param_t *pddlParamsAdd(pddl_params_t *params);
+
+/**
+ * Returns index of the parameter with the specified name or -1 if such a
+ * parameter is not stored in the list.
+ */
+int pddlParamsGetId(const pddl_params_t *param, const char *name);
+
+/**
+ * Parse typed parameters from lisp.
+ */
+int pddlParamsParse(pddl_params_t *params,
+                    const pddl_lisp_node_t *root,
+                    const pddl_types_t *types);
+
+/**
+ * Parse :agent var - type parameters
+ */
+int pddlParamsParseAgent(pddl_params_t *params,
+                         const pddl_lisp_node_t *root,
+                         int agent_node_index,
+                         const pddl_types_t *types);
+
+void pddlParamsPrint(const pddl_params_t *params, FILE *fout);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif /* __cplusplus */
+
+#endif /* __PDDL_PARAM_H__ */

@@ -10,11 +10,13 @@ TARGETS  = libpddl.a
 OBJS  = lisp
 OBJS += require
 OBJS += type
+OBJS += param
 OBJS += obj
 OBJS += pred
 OBJS += fact
 OBJS += action
 OBJS += pddl
+OBJS += cond
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
