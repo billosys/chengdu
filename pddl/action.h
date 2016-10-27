@@ -47,6 +47,15 @@ struct pddl_actions {
 };
 typedef struct pddl_actions pddl_actions_t;
 
+/**
+ * Initializes empty action
+ */
+void pddlActionInit(pddl_action_t *a);
+
+/**
+ * Frees allocated memory
+ */
+void pddlActionFree(pddl_action_t *a);
 
 /**
  * Parses actions from domain PDDL.

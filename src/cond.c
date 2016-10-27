@@ -73,6 +73,20 @@ static void condPartDel(pddl_cond_part_t *p)
     BOR_FREE(p);
 }
 
+/** Moves all parts of src to dst */
+static void condPartStealPart(pddl_cond_part_t *dst,
+                              pddl_cond_part_t *src)
+{
+    bor_list_t *item;
+
+    while (!borListEmpty(&src->part)){
+        item = borListNext(&src->part);
+        borListDel(item);
+        borListAppend(&dst->part, item);
+    }
+}
+
+
 static pddl_cond_quant_t *condQuantNew(int type)
 {
     return condNew(pddl_cond_quant_t, type);
@@ -728,19 +742,6 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
 }
 
 
-
-/*** FLATTEN ***/
-static void condPartStealPart(pddl_cond_part_t *dst,
-                              pddl_cond_part_t *src)
-{
-    bor_list_t *item;
-
-    while (!borListEmpty(&src->part)){
-        item = borListNext(&src->part);
-        borListDel(item);
-        borListAppend(&dst->part, item);
-    }
-}
 
 int pddlCondFlatten(pddl_cond_t *cond)
 {
