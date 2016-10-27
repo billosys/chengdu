@@ -22,6 +22,26 @@
 #include "pddl/cond.h"
 #include "err.h"
 
+typedef void (*pddl_cond_method_del_fn)(pddl_cond_t *);
+typedef pddl_cond_t *(*pddl_cond_method_clone_fn)(const pddl_cond_t *);
+typedef void (*pddl_cond_method_traverse_fn)(pddl_cond_t *, int post,
+                        void (*cb)(pddl_cond_t *, void *), void *);
+
+struct pddl_cond_cls {
+    pddl_cond_method_del_fn del;
+    pddl_cond_method_clone_fn clone;
+    pddl_cond_method_traverse_fn traverse;
+};
+typedef struct pddl_cond_cls pddl_cond_cls_t;
+
+#define METHOD(X, NAME) ((pddl_cond_method_##NAME##_fn)(X))
+#define MCLS(NAME) \
+    { .del = METHOD(cond##NAME##Del, del), \
+      .clone = METHOD(cond##NAME##Clone, clone), \
+      .traverse = METHOD(cond##NAME##Traverse, traverse), \
+    }
+
+
 struct parse_ctx {
     const pddl_types_t *types;
     const pddl_objs_t *objs;
@@ -33,6 +53,44 @@ struct parse_ctx {
 };
 typedef struct parse_ctx parse_ctx_t;
 
+#define OBJ(C, T) \
+    bor_container_of((C), pddl_cond_##T##_t, cls)
+
+
+static void condPartDel(pddl_cond_part_t *);
+static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p);
+static void condPartTraverse(pddl_cond_part_t *, int post,
+                             void (*cb)(pddl_cond_t *, void *), void *);
+
+static void condQuantDel(pddl_cond_quant_t *);
+static pddl_cond_quant_t *condQuantClone(const pddl_cond_quant_t *q);
+static void condQuantTraverse(pddl_cond_quant_t *, int post,
+                              void (*cb)(pddl_cond_t *, void *), void *);
+
+static void condWhenDel(pddl_cond_when_t *);
+static pddl_cond_when_t *condWhenClone(const pddl_cond_when_t *w);
+static void condWhenTraverse(pddl_cond_when_t *, int post,
+                             void (*cb)(pddl_cond_t *, void *), void *);
+
+static void condAtomDel(pddl_cond_atom_t *);
+static pddl_cond_atom_t *condAtomClone(const pddl_cond_atom_t *a);
+static void condAtomTraverse(pddl_cond_atom_t *, int post,
+                             void (*cb)(pddl_cond_t *, void *), void *);
+
+static void condAssignDel(pddl_cond_assign_t *);
+static pddl_cond_assign_t *condAssignClone(const pddl_cond_assign_t *a);
+static void condAssignTraverse(pddl_cond_assign_t *, int post,
+                               void (*cb)(pddl_cond_t *, void *), void *);
+
+static pddl_cond_cls_t cond_cls[7] = {
+    MCLS(Part),  // PDDL_COND_AND
+    MCLS(Part),  // PDDL_COND_OR
+    MCLS(Quant), // PDDL_COND_FORALL
+    MCLS(Quant), // PDDL_COND_EXIST
+    MCLS(When),  // PDDL_COND_WHEN
+    MCLS(Atom),  // PDDL_COND_ATOM
+    MCLS(Assign) // PDDL_COND_ASSIGN
+};
 
 static pddl_cond_t *parse(const pddl_lisp_node_t *root,
                           const parse_ctx_t *ctx,
@@ -52,6 +110,8 @@ static pddl_cond_t *_condNew(int size, unsigned type)
     return c;
 }
 
+
+/*** PART ***/
 static pddl_cond_part_t *condPartNew(int type)
 {
     pddl_cond_part_t *p;
@@ -73,6 +133,33 @@ static void condPartDel(pddl_cond_part_t *p)
     BOR_FREE(p);
 }
 
+static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p)
+{
+    pddl_cond_part_t *n;
+    pddl_cond_t *c, *nc;
+    bor_list_t *item;
+
+    n = condPartNew(p->cls.type);
+    BOR_LIST_FOR_EACH(&p->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        nc = pddlCondClone(c);
+        borListAppend(&n->part, &nc->conn);
+    }
+    return n;
+}
+
+static void condPartTraverse(pddl_cond_part_t *p, int post,
+                             void (*cb)(pddl_cond_t *, void *), void *u)
+{
+    pddl_cond_t *c;
+    bor_list_t *item, *tmp;
+
+    BOR_LIST_FOR_EACH_SAFE(&p->part, item, tmp){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        pddlCondTraverse(c, post, cb, u);
+    }
+}
+
 /** Moves all parts of src to dst */
 static void condPartStealPart(pddl_cond_part_t *dst,
                               pddl_cond_part_t *src)
@@ -87,6 +174,7 @@ static void condPartStealPart(pddl_cond_part_t *dst,
 }
 
 
+/*** QUANT ***/
 static pddl_cond_quant_t *condQuantNew(int type)
 {
     return condNew(pddl_cond_quant_t, type);
@@ -100,6 +188,24 @@ static void condQuantDel(pddl_cond_quant_t *q)
     BOR_FREE(q);
 }
 
+static pddl_cond_quant_t *condQuantClone(const pddl_cond_quant_t *q)
+{
+    pddl_cond_quant_t *n;
+
+    n = condQuantNew(q->cls.type);
+    pddlParamsCopy(&n->param, &q->param);
+    n->cond = pddlCondClone(q->cond);
+    return n;
+}
+
+static void condQuantTraverse(pddl_cond_quant_t *q, int post,
+                              void (*cb)(pddl_cond_t *, void *), void *u)
+{
+    pddlCondTraverse(q->cond, post, cb, u);
+}
+
+
+/*** WHEN ***/
 static pddl_cond_when_t *condWhenNew(void)
 {
     return condNew(pddl_cond_when_t, PDDL_COND_WHEN);
@@ -114,7 +220,25 @@ static void condWhenDel(pddl_cond_when_t *w)
     BOR_FREE(w);
 }
 
+static pddl_cond_when_t *condWhenClone(const pddl_cond_when_t *w)
+{
+    pddl_cond_when_t *n;
 
+    n = condWhenNew();
+    n->pre = pddlCondClone(w->pre);
+    n->eff = pddlCondClone(w->eff);
+    return n;
+}
+
+static void condWhenTraverse(pddl_cond_when_t *w, int post,
+                             void (*cb)(pddl_cond_t *, void *), void *u)
+{
+    pddlCondTraverse(w->pre, post, cb, u);
+    pddlCondTraverse(w->eff, post, cb, u);
+}
+
+
+/*** ATOM ***/
 static pddl_cond_atom_t *condAtomNew(void)
 {
     return condNew(pddl_cond_atom_t, PDDL_COND_ATOM);
@@ -127,6 +251,27 @@ static void condAtomDel(pddl_cond_atom_t *a)
     BOR_FREE(a);
 }
 
+static pddl_cond_atom_t *condAtomClone(const pddl_cond_atom_t *a)
+{
+    pddl_cond_atom_t *n;
+
+    n = condAtomNew();
+    n->pred = a->pred;
+    n->arg_size = a->arg_size;
+    n->arg = BOR_ALLOC_ARR(pddl_cond_atom_arg_t, n->arg_size);
+    memcpy(n->arg, a->arg, sizeof(pddl_cond_atom_arg_t) * n->arg_size);
+    n->neg = a->neg;
+
+    return n;
+}
+
+static void condAtomTraverse(pddl_cond_atom_t *a, int post,
+                             void (*cb)(pddl_cond_t *, void *), void *u)
+{
+}
+
+
+/*** ASSIGN ***/
 static pddl_cond_assign_t *condAssignNew(void)
 {
     return condNew(pddl_cond_assign_t, PDDL_COND_ASSIGN);
@@ -139,35 +284,48 @@ static void condAssignDel(pddl_cond_assign_t *assign)
     BOR_FREE(assign);
 }
 
-
-void pddlCondDel(pddl_cond_t *cond)
+static pddl_cond_assign_t *condAssignClone(const pddl_cond_assign_t *a)
 {
-    if (cond->type == PDDL_COND_OR
-            || cond->type == PDDL_COND_AND){
-        condPartDel(bor_container_of(cond, pddl_cond_part_t, cls));
+    pddl_cond_assign_t *n;
+    n = condAssignNew();
+    n->value = a->value;
+    if (a->fvalue)
+        n->fvalue = condAtomClone(a->fvalue);
+    return n;
+}
 
-    }else if (cond->type == PDDL_COND_FORALL
-                || cond->type == PDDL_COND_EXIST){
-        condQuantDel(bor_container_of(cond, pddl_cond_quant_t, cls));
-
-    }else if (cond->type == PDDL_COND_WHEN){
-        condWhenDel(bor_container_of(cond, pddl_cond_when_t, cls));
-
-    }else if (cond->type == PDDL_COND_ATOM){
-        condAtomDel(bor_container_of(cond, pddl_cond_atom_t, cls));
-
-    }else if (cond->type == PDDL_COND_ASSIGN){
-        condAssignDel(bor_container_of(cond, pddl_cond_assign_t, cls));
-
-    }else{
-        fprintf(stderr, "Fatal Error: Unkown type of condition!\n");
-        exit(-1);
-    }
+static void condAssignTraverse(pddl_cond_assign_t *a, int post,
+                               void (*cb)(pddl_cond_t *, void *), void *u)
+{
+    if (a->fvalue)
+        pddlCondTraverse(&a->fvalue->cls, post, cb, u);
 }
 
 
 
 
+void pddlCondDel(pddl_cond_t *cond)
+{
+    cond_cls[cond->type].del(cond);
+}
+
+pddl_cond_t *pddlCondClone(const pddl_cond_t *cond)
+{
+    return cond_cls[cond->type].clone(cond);
+}
+
+
+void pddlCondTraverse(pddl_cond_t *c, int post,
+                      void (*cb)(pddl_cond_t *, void *), void *u)
+{
+    if (!post)
+        cb(c, u);
+
+    cond_cls[c->type].traverse(c, post, cb, u);
+
+    if (post)
+        cb(c, u);
+}
 
 /*** PARSE ***/
 static int parseAtomArg(pddl_cond_atom_arg_t *arg,
@@ -366,7 +524,7 @@ static int parseQuantParams(pddl_params_t *params,
         if (use){
             param = pddlParamsAdd(params);
             pddlParamCopy(param, ctx->params->param + i);
-            param->inherit = 1;
+            param->inherit = i;
         }
     }
 
@@ -576,7 +734,7 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
             return -1;
         }
 
-        p = bor_container_of(cond, pddl_cond_part_t, cls);
+        p = OBJ(cond, part);
         BOR_LIST_FOR_EACH(&p->part, item){
             c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
             if (pddlCondCheckPre(c, require, verbose) != 0)
@@ -594,7 +752,7 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
             return -1;
         }
 
-        q = bor_container_of(cond, pddl_cond_quant_t, cls);
+        q = OBJ(cond, quant);
         return pddlCondCheckPre(q->cond, require, verbose);
 
     }else if (cond->type == PDDL_COND_EXIST){
@@ -606,7 +764,7 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
             return -1;
         }
 
-        q = bor_container_of(cond, pddl_cond_quant_t, cls);
+        q = OBJ(cond, quant);
         return pddlCondCheckPre(q->cond, require, verbose);
 
     }else if (cond->type == PDDL_COND_WHEN){
@@ -616,7 +774,7 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
         return -1;
 
     }else if (cond->type == PDDL_COND_ATOM){
-        atom = bor_container_of(cond, pddl_cond_atom_t, cls);
+        atom = OBJ(cond, atom);
         if (atom->neg && !(require & PDDL_REQUIRE_NEGATIVE_PRE)){
             if (verbose){
                 ERR2("For negative preconditions add :negative-preconditions");
@@ -652,7 +810,7 @@ static int checkCEffect(const pddl_cond_t *cond, int require, int verbose)
             return -1;
         }
 
-        forall = bor_container_of(cond, pddl_cond_quant_t, cls);
+        forall = OBJ(cond, quant);
         return pddlCondCheckEff(forall->cond, require, verbose);
 
     }else if (cond->type == PDDL_COND_WHEN){
@@ -664,8 +822,7 @@ static int checkCEffect(const pddl_cond_t *cond, int require, int verbose)
             return -1;
         }
 
-        when = bor_container_of(cond, pddl_cond_when_t, cls);
-
+        when = OBJ(cond, when);
         if (pddlCondCheckPre(when->pre, require, verbose) != 0)
             return -1;
         return checkCondEffect(when->eff, require, verbose);
@@ -700,7 +857,7 @@ static int checkCondEffect(const pddl_cond_t *cond, int require, int verbose)
         return 0;
 
     if (cond->type == PDDL_COND_AND){
-        part = bor_container_of(cond, pddl_cond_part_t, cls);
+        part = OBJ(cond, part);
         BOR_LIST_FOR_EACH(&part->part, item){
             sub = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
             if (checkPEffect(sub, require, verbose) != 0){
@@ -727,7 +884,7 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
     bor_list_t *item;
 
     if (cond->type == PDDL_COND_AND){
-        and = bor_container_of(cond, pddl_cond_part_t, cls);
+        and = OBJ(cond, part);
         BOR_LIST_FOR_EACH(&and->part, item){
             sub = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
             if (checkCEffect(sub, require, verbose) != 0)
@@ -753,7 +910,7 @@ int pddlCondFlatten(pddl_cond_t *cond)
 
     if (cond->type == PDDL_COND_AND
             || cond->type == PDDL_COND_OR){
-        part = bor_container_of(cond, pddl_cond_part_t, cls);
+        part = OBJ(cond, part);
         BOR_LIST_FOR_EACH_SAFE(&part->part, item, tmp){
             c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
             if (pddlCondFlatten(c) != 0)
@@ -761,7 +918,7 @@ int pddlCondFlatten(pddl_cond_t *cond)
 
             if (c->type == cond->type){
                 // Flatten con/disjunctions
-                p = bor_container_of(c, pddl_cond_part_t, cls);
+                p = OBJ(c, part);
                 condPartStealPart(part, p);
 
                 borListDel(item);
@@ -769,7 +926,7 @@ int pddlCondFlatten(pddl_cond_t *cond)
 
             }else if (c->type == PDDL_COND_AND
                         || c->type == PDDL_COND_OR){
-                p = bor_container_of(c, pddl_cond_part_t, cls);
+                p = OBJ(c, part);
 
                 // If con/disjunction has only one atom, the parent one can
                 // safely take that atom
@@ -789,11 +946,11 @@ int pddlCondFlatten(pddl_cond_t *cond)
 
     }else if (cond->type == PDDL_COND_FORALL
                 || cond->type == PDDL_COND_EXIST){
-        q = bor_container_of(cond, pddl_cond_quant_t, cls);
+        q = OBJ(cond, quant);
         return pddlCondFlatten(q->cond);
 
     }else if (cond->type == PDDL_COND_WHEN){
-        w = bor_container_of(cond, pddl_cond_when_t, cls);
+        w = OBJ(cond, when);
         if (pddlCondFlatten(w->pre) == 0
                 && pddlCondFlatten(w->eff) == 0)
             return 0;
@@ -805,6 +962,99 @@ int pddlCondFlatten(pddl_cond_t *cond)
 
     }else{
         fprintf(stderr, "Fatal Error: Unkown cond type!\n");
+        exit(-1);
+    }
+}
+
+
+void instantiateForallSetParam(pddl_cond_t *cond,
+                               int param_id, int obj_id)
+{
+    // TODO
+}
+
+pddl_cond_t *instantiateForallCond(pddl_cond_t *cond,
+                                   int param_id, int obj_id)
+{
+    pddl_cond_t *n;
+
+    n = pddlCondClone(cond);
+    return n;
+}
+
+pddl_cond_t *instantiateForall(pddl_cond_quant_t *forall,
+                               const pddl_type_obj_t *type_obj,
+                               const pddl_params_t *params)
+{
+    pddl_cond_part_t *top;
+    const pddl_param_t *param;
+    int i;
+
+    for (i = 0; i < forall->param.size; ++i){
+        param = forall->param.param + i;
+        if (param->inherit == -1){
+            fprintf(stderr, "XXX: %d\n", i);
+        }
+    }
+
+    fprintf(stderr, "YYY\n");
+    return &forall->cls;
+}
+
+pddl_cond_t *instantiateForallPart(pddl_cond_part_t *p,
+                                   const pddl_type_obj_t *type_obj,
+                                   const pddl_params_t *params)
+{
+    pddl_cond_t *c;
+    bor_list_t *item, *last;
+
+    if (borListEmpty(&p->part))
+        return &p->cls;
+
+    last = borListPrev(&p->part);
+    do {
+        item = borListNext(&p->part);
+        borListDel(item);
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        c = pddlCondInstantiateForall(c, type_obj, params);
+        borListAppend(&p->part, &c->conn);
+    } while (item != last);
+
+    return &p->cls;
+}
+
+pddl_cond_t *pddlCondInstantiateForall(pddl_cond_t *cond,
+                                       const pddl_type_obj_t *type_obj,
+                                       const pddl_params_t *params)
+{
+    pddl_cond_quant_t *q;
+    pddl_cond_when_t *w;
+
+    if (cond->type == PDDL_COND_OR
+            || cond->type == PDDL_COND_AND){
+        return instantiateForallPart(OBJ(cond, part), type_obj, params);
+
+    }else if (cond->type == PDDL_COND_FORALL){
+        q = OBJ(cond, quant);
+        return instantiateForall(q, type_obj, params);
+
+    }else if (cond->type == PDDL_COND_EXIST){
+        q = OBJ(cond, quant);
+        q->cond = pddlCondInstantiateForall(q->cond, type_obj, &q->param);
+        return cond;
+
+    }else if (cond->type == PDDL_COND_WHEN){
+        w = OBJ(cond, when);
+        w->pre = pddlCondInstantiateForall(w->pre, type_obj, params);
+        w->eff = pddlCondInstantiateForall(w->eff, type_obj, params);
+        return cond;
+
+    }else if (cond->type == PDDL_COND_ATOM
+                || cond->type == PDDL_COND_ASSIGN){
+        return cond;
+
+    }else{
+        fprintf(stderr, "Fatal Error: Unkown type of condition!\n");
         exit(-1);
     }
 }
@@ -823,7 +1073,7 @@ static void condPartPrint(const pddl_cond_part_t *cond,
 
     fprintf(fout, "(%s", name);
     BOR_LIST_FOR_EACH(&cond->part, item){
-        child = bor_container_of(item, pddl_cond_t, conn);
+        child = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
         fprintf(fout, " ");
         pddlCondPrint(child, objs, preds, funcs, params, fout);
     }
@@ -911,32 +1161,27 @@ void pddlCondPrint(const pddl_cond_t *cond,
                    FILE *fout)
 {
     if (cond->type == PDDL_COND_AND){
-        condPartPrint(bor_container_of(cond, pddl_cond_part_t, cls), "and",
-                      objs, preds, funcs, params, fout);
+        condPartPrint(OBJ(cond, part), "and", objs, preds, funcs, params, fout);
 
     }else if (cond->type == PDDL_COND_OR){
-        condPartPrint(bor_container_of(cond, pddl_cond_part_t, cls), "or",
-                      objs, preds, funcs, params, fout);
+        condPartPrint(OBJ(cond, part), "or", objs, preds, funcs, params, fout);
 
     }else if (cond->type == PDDL_COND_FORALL){
-        condQuantPrint(bor_container_of(cond, pddl_cond_quant_t, cls),
-                       "forall", objs, preds, funcs, params, fout);
+        condQuantPrint(OBJ(cond, quant), "forall", objs,
+                       preds, funcs, params, fout);
 
     }else if (cond->type == PDDL_COND_EXIST){
-        condQuantPrint(bor_container_of(cond, pddl_cond_quant_t, cls),
-                       "exists", objs, preds, funcs, params, fout);
+        condQuantPrint(OBJ(cond, quant), "exists", objs,
+                       preds, funcs, params, fout);
 
     }else if (cond->type == PDDL_COND_WHEN){
-        condWhenPrint(bor_container_of(cond, pddl_cond_when_t, cls),
-                      objs, preds, funcs, params, fout);
+        condWhenPrint(OBJ(cond, when), objs, preds, funcs, params, fout);
 
     }else if (cond->type == PDDL_COND_ATOM){
-        condAtomPrint(bor_container_of(cond, pddl_cond_atom_t, cls),
-                      objs, preds, params, fout);
+        condAtomPrint(OBJ(cond, atom), objs, preds, params, fout);
 
     }else if (cond->type == PDDL_COND_ASSIGN){
-        condAssignPrint(bor_container_of(cond, pddl_cond_assign_t, cls),
-                        objs, funcs, params, fout);
+        condAssignPrint(OBJ(cond, assign), objs, funcs, params, fout);
 
     }else{
         fprintf(stderr, "Fatal Error: Unkown type!\n");

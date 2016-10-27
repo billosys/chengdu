@@ -58,6 +58,11 @@ void pddlActionInit(pddl_action_t *a);
 void pddlActionFree(pddl_action_t *a);
 
 /**
+ * Instantiate .pre and .eff (see pddlCondInstantiateForall()).
+ */
+void pddlActionInstantiateForall(pddl_action_t *a, const pddl_type_obj_t *to);
+
+/**
  * Parses actions from domain PDDL.
  */
 int pddlActionsParse(const pddl_lisp_t *domain,
@@ -69,9 +74,27 @@ int pddlActionsParse(const pddl_lisp_t *domain,
                      unsigned require,
                      pddl_actions_t *actions);
 
+/**
+ * Free allocated memory.
+ */
 void pddlActionsFree(pddl_actions_t *actions);
 
+/**
+ * Adds an empty action to the list.
+ */
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
+
+/**
+ * Call pddlActionInstantiateForall() on each action.
+ */
+void pddlActionsInstantiateForall(pddl_actions_t *a, const pddl_type_obj_t *to);
+
+/**
+ * Find disjunctions in preconditions and split those actions into more
+ * actions with the same name. Note that this may generate exponential
+ * number of actions.
+ */
+int pddlActionsSplitDisjunctions(pddl_actions_t *as);
 
 void pddlActionsPrint(const pddl_actions_t *actions,
                       const pddl_objs_t *objs,

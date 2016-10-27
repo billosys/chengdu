@@ -34,8 +34,8 @@ struct pddl_param {
     const char *name; /*!< Name of the parameter */
     int type;         /*!< Type ID */ // TODO <-- add support for (either ..)
     int is_agent;     /*!< True if this is :agent parameter */
-    int inherit;      /*!< True if this parameter was inherited from parent
-                           structure */
+    int inherit;      /*!< -1 or ID of the parent parameter of which this
+                           is a copy */
 };
 typedef struct pddl_param pddl_param_t;
 
@@ -46,6 +46,11 @@ struct pddl_params {
 };
 typedef struct pddl_params pddl_params_t;
 
+
+/**
+ * Initialzie empty parameter
+ */
+void pddlParamInit(pddl_param_t *param);
 
 /**
  * Copies src to dst.
@@ -66,6 +71,11 @@ void pddlParamsFree(pddl_params_t *params);
  * Adds a new empty parameter object at the end of params.
  */
 pddl_param_t *pddlParamsAdd(pddl_params_t *params);
+
+/**
+ * Copies src to dst.
+ */
+void pddlParamsCopy(pddl_params_t *dst, const pddl_params_t *src);
 
 /**
  * Returns index of the parameter with the specified name or -1 if such a

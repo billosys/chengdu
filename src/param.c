@@ -22,6 +22,12 @@
 #include "pddl/param.h"
 #include "err.h"
 
+void pddlParamInit(pddl_param_t *param)
+{
+    bzero(param, sizeof(*param));
+    param->inherit = -1;
+}
+
 void pddlParamCopy(pddl_param_t *dst, const pddl_param_t *src)
 {
     *dst = *src;
@@ -51,8 +57,18 @@ pddl_param_t *pddlParamsAdd(pddl_params_t *params)
     }
 
     param = params->param + params->size++;
-    bzero(param, sizeof(*param));
+    pddlParamInit(param);
     return param;
+}
+
+void pddlParamsCopy(pddl_params_t *dst, const pddl_params_t *src)
+{
+    int i;
+
+    dst->size = dst->alloc = src->size;
+    dst->param = BOR_ALLOC_ARR(pddl_param_t, dst->alloc);
+    for (i = 0; i < dst->size; ++i)
+        pddlParamCopy(dst->param + i, src->param + i);
 }
 
 int pddlParamsGetId(const pddl_params_t *param, const char *name)
@@ -161,8 +177,8 @@ void pddlParamsPrint(const pddl_params_t *params, FILE *fout)
             fprintf(fout, " ");
         if (params->param[i].is_agent)
             fprintf(fout, "A:");
-        if (params->param[i].inherit)
-            fprintf(fout, "I:");
+        if (params->param[i].inherit >= 0)
+            fprintf(fout, "I[%d]:", params->param[i].inherit);
         fprintf(fout, "%s:%d", params->param[i].name, params->param[i].type);
     }
 }

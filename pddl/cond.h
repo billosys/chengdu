@@ -37,13 +37,13 @@ extern "C" {
 /**
  * Types of conditions
  */
-#define PDDL_COND_AND    1u /*!< Conjuction */
-#define PDDL_COND_OR     2u /*!< Disjunction */
-#define PDDL_COND_FORALL 4u /*!< Universal quantifier */
-#define PDDL_COND_EXIST  5u /*!< Existential quantifier */
-#define PDDL_COND_WHEN   6u /*!< Conditional effect */
-#define PDDL_COND_ATOM   7u
-#define PDDL_COND_ASSIGN 8u
+#define PDDL_COND_AND    0u /*!< Conjuction */
+#define PDDL_COND_OR     1u /*!< Disjunction */
+#define PDDL_COND_FORALL 2u /*!< Universal quantifier */
+#define PDDL_COND_EXIST  3u /*!< Existential quantifier */
+#define PDDL_COND_WHEN   4u /*!< Conditional effect */
+#define PDDL_COND_ATOM   5u
+#define PDDL_COND_ASSIGN 6u
 
 /**
  * General condition
@@ -124,6 +124,17 @@ typedef struct pddl_cond_assign pddl_cond_assign_t;
 void pddlCondDel(pddl_cond_t *cond);
 
 /**
+ * Creates an exact copy of the condition.
+ */
+pddl_cond_t *pddlCondClone(const pddl_cond_t *cond);
+
+/**
+ * Traverse all conditionals in a tree.
+ */
+void pddlCondTraverse(pddl_cond_t *c, int post,
+                      void (*cb)(pddl_cond_t *, void *), void *u);
+
+/**
  * Parse condition from PDDL lisp.
  */
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
@@ -154,6 +165,16 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
  * Flattens dis/conjunctions.
  */
 int pddlCondFlatten(pddl_cond_t *cond);
+
+/**
+ * Instantiate universal quantifiers by unrolling them using objects in
+ * listed in type_obj according to typed parameters.
+ * The input cond is consumed and a new replacement is generated (may be
+ * the same object), i.e., don't use cond after this call anymore.
+ */
+pddl_cond_t *pddlCondInstantiateForall(pddl_cond_t *cond,
+                                       const pddl_type_obj_t *type_obj,
+                                       const pddl_params_t *params);
 
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,
