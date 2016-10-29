@@ -129,10 +129,15 @@ void pddlCondDel(pddl_cond_t *cond);
 pddl_cond_t *pddlCondClone(const pddl_cond_t *cond);
 
 /**
- * Traverse all conditionals in a tree.
+ * Traverse all conditionals in a tree and call in pre/post order callbacks
+ * if non-NULL. If pre returns non-zero value, the traversing stops.
+ * The function returns or'ed values returned by post callback or 0 if post
+ * is not defined.
  */
-void pddlCondTraverse(pddl_cond_t *c, int post,
-                      void (*cb)(pddl_cond_t *, void *), void *u);
+int pddlCondTraverse(pddl_cond_t *c,
+                     int (*pre)(pddl_cond_t *, void *),
+                     int (*post)(pddl_cond_t *, void *),
+                     void *u);
 
 /**
  * Parse condition from PDDL lisp.
@@ -173,8 +178,7 @@ int pddlCondFlatten(pddl_cond_t *cond);
  * the same object), i.e., don't use cond after this call anymore.
  */
 pddl_cond_t *pddlCondInstantiateForall(pddl_cond_t *cond,
-                                       const pddl_type_obj_t *type_obj,
-                                       const pddl_params_t *params);
+                                       const pddl_type_obj_t *type_obj);
 
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,

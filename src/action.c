@@ -138,8 +138,8 @@ void pddlActionFree(pddl_action_t *a)
 
 void pddlActionInstantiateForall(pddl_action_t *a, const pddl_type_obj_t *to)
 {
-    a->pre = pddlCondInstantiateForall(a->pre, to, &a->param);
-    a->eff = pddlCondInstantiateForall(a->eff, to, &a->param);
+    a->pre = pddlCondInstantiateForall(a->pre, to);
+    a->eff = pddlCondInstantiateForall(a->eff, to);
 }
 
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
