@@ -4,3 +4,6 @@
 [submodule "third-party/opts"]
 	path = third-party/opts
 	url = https://github.com/danfis/opts
+[submodule "testsuites/pddl-data"]
+	path = testsuites/pddl-data
+	url = https://github.com/danfis/pddl-data

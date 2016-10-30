@@ -136,10 +136,10 @@ void pddlActionFree(pddl_action_t *a)
         pddlCondDel(a->eff);
 }
 
-void pddlActionInstantiateForall(pddl_action_t *a, const pddl_type_obj_t *to)
+void pddlActionInstantiateQuant(pddl_action_t *a, const pddl_type_obj_t *to)
 {
-    a->pre = pddlCondInstantiateForall(a->pre, to);
-    a->eff = pddlCondInstantiateForall(a->eff, to);
+    a->pre = pddlCondInstantiateQuant(a->pre, to);
+    a->eff = pddlCondInstantiateQuant(a->eff, to);
 }
 
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
@@ -166,12 +166,12 @@ void pddlActionsFree(pddl_actions_t *actions)
         BOR_FREE(actions->action);
 }
 
-void pddlActionsInstantiateForall(pddl_actions_t *a, const pddl_type_obj_t *to)
+void pddlActionsInstantiateQuant(pddl_actions_t *a, const pddl_type_obj_t *to)
 {
     int i;
 
     for (i = 0; i < a->size; ++i)
-        pddlActionInstantiateForall(a->action + i, to);
+        pddlActionInstantiateQuant(a->action + i, to);
 }
 
 

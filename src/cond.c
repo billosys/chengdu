@@ -1177,29 +1177,27 @@ static pddl_cond_part_t *instantiatePart(pddl_cond_part_t *p,
     return out;
 }
 
-static pddl_cond_t *instantiateForall(pddl_cond_t *c, void *data)
+static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
+                                     const pddl_type_obj_t *type_obj)
 {
-    const pddl_type_obj_t *type_obj = data;
-    pddl_cond_quant_t *forall;
     pddl_cond_part_t *top;
     const pddl_param_t *param;
     const int *obj;
     int i, obj_size;
 
-    if (c->type != PDDL_COND_FORALL)
-        return c;
-
-    forall = OBJ(c, quant);
-
-    // The instantiation of universal quantifier is conjuction of all
-    // instances.
-    top = condPartNew(PDDL_COND_AND);
-    condPartAdd(top, forall->cond);
-    forall->cond = NULL;
+    // The instantiation of universal/existential quantifier is a
+    // conjuction/disjunction of all instances.
+    if (q->cls.type == PDDL_COND_FORALL){
+        top = condPartNew(PDDL_COND_AND);
+    }else{
+        top = condPartNew(PDDL_COND_OR);
+    }
+    condPartAdd(top, q->cond);
+    q->cond = NULL;
 
     // Apply object to each (non-inherited) parameter according to its type
-    for (i = 0; i < forall->param.size; ++i){
-        param = forall->param.param + i;
+    for (i = 0; i < q->param.size; ++i){
+        param = q->param.param + i;
         if (param->inherit >= 0)
             continue;
 
@@ -1209,17 +1207,46 @@ static pddl_cond_t *instantiateForall(pddl_cond_t *c, void *data)
 
     // Replace all parameters inherited from the parent with IDs of the
     // parent parameters.
-    pddlCondTraverse(&top->cls, NULL, instantiateParentParam, &forall->param);
+    pddlCondTraverse(&top->cls, NULL, instantiateParentParam, &q->param);
 
-    pddlCondDel(&forall->cls);
+    // TODO: Check in case of existential quantifier whether any parameter
+    // was bound.
+
+    pddlCondDel(&q->cls);
     return &top->cls;
 }
 
-pddl_cond_t *pddlCondInstantiateForall(pddl_cond_t *cond,
-                                       const pddl_type_obj_t *type_obj)
+static pddl_cond_t *instantiateForall(pddl_cond_t *c, void *data)
 {
-    return condRebuild(cond, instantiateForall, (void *)type_obj);
+    const pddl_type_obj_t *type_obj = data;
+    pddl_cond_quant_t *forall;
+
+    if (c->type != PDDL_COND_FORALL)
+        return c;
+
+    forall = OBJ(c, quant);
+    return instantiateQuant(forall, type_obj);
 }
+
+static pddl_cond_t *instantiateExist(pddl_cond_t *c, void *data)
+{
+    const pddl_type_obj_t *type_obj = data;
+    pddl_cond_quant_t *q;
+
+    if (c->type != PDDL_COND_EXIST)
+        return c;
+
+    q = OBJ(c, quant);
+    return instantiateQuant(q, type_obj);
+}
+
+pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
+                                      const pddl_type_obj_t *type_obj)
+{
+    cond = condRebuild(cond, instantiateForall, (void *)type_obj);
+    return condRebuild(cond, instantiateExist, (void *)type_obj);
+}
+
 
 /*** PRINT ***/
 static void condPartPrint(const pddl_cond_part_t *cond,

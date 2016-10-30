@@ -58,9 +58,9 @@ void pddlActionInit(pddl_action_t *a);
 void pddlActionFree(pddl_action_t *a);
 
 /**
- * Instantiate .pre and .eff (see pddlCondInstantiateForall()).
+ * Instantiate quantifiers in .pre and .eff (see pddlCondInstantiateQuant()).
  */
-void pddlActionInstantiateForall(pddl_action_t *a, const pddl_type_obj_t *to);
+void pddlActionInstantiateQuant(pddl_action_t *a, const pddl_type_obj_t *to);
 
 /**
  * Parses actions from domain PDDL.
@@ -85,9 +85,9 @@ void pddlActionsFree(pddl_actions_t *actions);
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
 
 /**
- * Call pddlActionInstantiateForall() on each action.
+ * Call pddlActionInstantiateQuant() on each action.
  */
-void pddlActionsInstantiateForall(pddl_actions_t *a, const pddl_type_obj_t *to);
+void pddlActionsInstantiateQuant(pddl_actions_t *a, const pddl_type_obj_t *to);
 
 /**
  * Find disjunctions in preconditions and split those actions into more

@@ -172,13 +172,13 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
 int pddlCondFlatten(pddl_cond_t *cond);
 
 /**
- * Instantiate universal quantifiers by unrolling them using objects in
+ * Instantiate quantifiers by unrolling them using objects in
  * listed in type_obj according to typed parameters.
  * The input cond is consumed and a new replacement is generated (may be
  * the same object), i.e., don't use cond after this call anymore.
  */
-pddl_cond_t *pddlCondInstantiateForall(pddl_cond_t *cond,
-                                       const pddl_type_obj_t *type_obj);
+pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
+                                      const pddl_type_obj_t *type_obj);
 
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,
