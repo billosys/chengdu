@@ -116,18 +116,29 @@ static pddl_cond_t *condAssignRebuild(pddl_cond_assign_t *a,
                             pddl_cond_t *(*cb)(pddl_cond_t *, void *),
                             void *userdata);
 
+static void condBoolDel(pddl_cond_bool_t *);
+static pddl_cond_bool_t *condBoolClone(const pddl_cond_bool_t *a);
+static int condBoolTraverse(pddl_cond_bool_t *,
+                            int (*pre)(pddl_cond_t *, void *),
+                            int (*post)(pddl_cond_t *, void *),
+                            void *userdata);
+static pddl_cond_t *condBoolRebuild(pddl_cond_bool_t *a,
+                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+                            void *userdata);
+
 
 #define condRebuild(C, CB, UD) \
     cond_cls[(C)->type].rebuild((C), (CB), (UD))
 
-static pddl_cond_cls_t cond_cls[7] = {
-    MCLS(Part),  // PDDL_COND_AND
-    MCLS(Part),  // PDDL_COND_OR
-    MCLS(Quant), // PDDL_COND_FORALL
-    MCLS(Quant), // PDDL_COND_EXIST
-    MCLS(When),  // PDDL_COND_WHEN
-    MCLS(Atom),  // PDDL_COND_ATOM
-    MCLS(Assign) // PDDL_COND_ASSIGN
+static pddl_cond_cls_t cond_cls[8] = {
+    MCLS(Part),   // PDDL_COND_AND
+    MCLS(Part),   // PDDL_COND_OR
+    MCLS(Quant),  // PDDL_COND_FORALL
+    MCLS(Quant),  // PDDL_COND_EXIST
+    MCLS(When),   // PDDL_COND_WHEN
+    MCLS(Atom),   // PDDL_COND_ATOM
+    MCLS(Assign), // PDDL_COND_ASSIGN
+    MCLS(Bool),   // PDDL_COND_BOOL
 };
 
 static pddl_cond_t *parse(const pddl_lisp_node_t *root,
@@ -415,6 +426,41 @@ static int condAssignTraverse(pddl_cond_assign_t *a,
 }
 
 static pddl_cond_t *condAssignRebuild(pddl_cond_assign_t *a,
+                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+                            void *userdata)
+{
+    return cb(&a->cls, userdata);
+}
+
+
+/*** BOOL ***/
+static pddl_cond_bool_t *condBoolNew(int val)
+{
+    pddl_cond_bool_t *b;
+    b = condNew(pddl_cond_bool_t, PDDL_COND_BOOL);
+    b->val = val;
+    return b;
+}
+
+static void condBoolDel(pddl_cond_bool_t *a)
+{
+    BOR_FREE(a);
+}
+
+static pddl_cond_bool_t *condBoolClone(const pddl_cond_bool_t *a)
+{
+    return condBoolNew(a->val);
+}
+
+static int condBoolTraverse(pddl_cond_bool_t *a,
+                            int (*pre)(pddl_cond_t *, void *),
+                            int (*post)(pddl_cond_t *, void *),
+                            void *u)
+{
+    return 0;
+}
+
+static pddl_cond_t *condBoolRebuild(pddl_cond_bool_t *a,
                             pddl_cond_t *(*cb)(pddl_cond_t *, void *),
                             void *userdata)
 {
@@ -1183,7 +1229,7 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
     pddl_cond_part_t *top;
     const pddl_param_t *param;
     const int *obj;
-    int i, obj_size;
+    int i, obj_size, bval;
 
     // The instantiation of universal/existential quantifier is a
     // conjuction/disjunction of all instances.
@@ -1202,7 +1248,15 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
             continue;
 
         obj = pddlTypeObjGet(type_obj, param->type, &obj_size);
-        top = instantiatePart(top, i, obj, obj_size);
+        if (obj_size == 0){
+            bval = q->cls.type == PDDL_COND_FORALL;
+            pddlCondDel(&top->cls);
+            pddlCondDel(&q->cls);
+            return &condBoolNew(bval)->cls;
+
+        }else{
+            top = instantiatePart(top, i, obj, obj_size);
+        }
     }
 
     // Replace all parameters inherited from the parent with IDs of the
@@ -1342,6 +1396,15 @@ static void condAssignPrint(const pddl_cond_assign_t *assign,
     fprintf(fout, ")");
 }
 
+static void condBoolPrint(const pddl_cond_bool_t *b, FILE *fout)
+{
+    if (b->val){
+        fprintf(fout, "TRUE");
+    }else{
+        fprintf(fout, "FALSE");
+    }
+}
+
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,
                    const pddl_preds_t *preds,
@@ -1372,8 +1435,11 @@ void pddlCondPrint(const pddl_cond_t *cond,
     }else if (cond->type == PDDL_COND_ASSIGN){
         condAssignPrint(OBJ(cond, assign), objs, funcs, params, fout);
 
+    }else if (cond->type == PDDL_COND_BOOL){
+        condBoolPrint(OBJ(cond, bool), fout);
+
     }else{
-        fprintf(stderr, "Fatal Error: Unkown type!\n");
+        fprintf(stderr, "Fatal Error: Unknown type!\n");
         exit(-1);
     }
 }

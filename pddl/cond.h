@@ -44,6 +44,7 @@ extern "C" {
 #define PDDL_COND_WHEN   4u /*!< Conditional effect */
 #define PDDL_COND_ATOM   5u
 #define PDDL_COND_ASSIGN 6u
+#define PDDL_COND_BOOL   7u
 
 /**
  * General condition
@@ -116,6 +117,15 @@ struct pddl_cond_assign {
     pddl_cond_atom_t *fvalue; /*!< Assigned value through function symbol */
 };
 typedef struct pddl_cond_assign pddl_cond_assign_t;
+
+/**
+ * Boolean value
+ */
+struct pddl_cond_bool {
+    pddl_cond_t cls;
+    int val;
+};
+typedef struct pddl_cond_bool pddl_cond_bool_t;
 
 
 /**
