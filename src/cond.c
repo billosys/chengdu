@@ -320,8 +320,10 @@ static pddl_cond_when_t *condWhenClone(const pddl_cond_when_t *w)
     pddl_cond_when_t *n;
 
     n = condWhenNew();
-    n->pre = pddlCondClone(w->pre);
-    n->eff = pddlCondClone(w->eff);
+    if (w->pre)
+        n->pre = pddlCondClone(w->pre);
+    if (w->eff)
+        n->eff = pddlCondClone(w->eff);
     return n;
 }
 
@@ -1141,6 +1143,7 @@ int pddlCondFlatten(pddl_cond_t *cond)
 }
 
 
+/*** INSTANTIATE QUANTIFIERS ***/
 struct instantiate_cond {
     int param_id;
     int obj_id;
@@ -1263,9 +1266,6 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
     // parent parameters.
     pddlCondTraverse(&top->cls, NULL, instantiateParentParam, &q->param);
 
-    // TODO: Check in case of existential quantifier whether any parameter
-    // was bound.
-
     pddlCondDel(&q->cls);
     return &top->cls;
 }
@@ -1300,6 +1300,257 @@ pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
     cond = condRebuild(cond, instantiateForall, (void *)type_obj);
     return condRebuild(cond, instantiateExist, (void *)type_obj);
 }
+
+
+
+/*** SIMPLIFY ***/
+static pddl_cond_t *removeBoolPart(pddl_cond_part_t *part)
+{
+    bor_list_t *item, *tmp;
+    pddl_cond_t *c;
+    int bval;
+
+    BOR_LIST_FOR_EACH_SAFE(&part->part, item, tmp){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type != PDDL_COND_BOOL)
+            continue;
+
+        bval = OBJ(c, bool)->val;
+        if (part->cls.type == PDDL_COND_AND){
+            if (!bval){
+                pddlCondDel(&part->cls);
+                return &condBoolNew(0)->cls;
+            }else{
+                borListDel(item);
+                pddlCondDel(c);
+            }
+
+        }else{ // PDDL_COND_OR
+            if (bval){
+                pddlCondDel(&part->cls);
+                return &condBoolNew(1)->cls;
+            }else{
+                borListDel(item);
+                pddlCondDel(c);
+            }
+        }
+    }
+
+    return &part->cls;
+}
+
+static pddl_cond_t *removeBoolWhen(pddl_cond_when_t *when)
+{
+    pddl_cond_t *c;
+    int bval;
+
+    if (when->pre->type != PDDL_COND_BOOL)
+        return &when->cls;
+
+    bval = OBJ(when->pre, bool)->val;
+    if (bval){
+        c = when->eff;
+        when->eff = NULL;
+        pddlCondDel(&when->cls);
+        return c;
+
+    }else{ // !bval
+        pddlCondDel(&when->cls);
+        return &condBoolNew(1)->cls;
+    }
+}
+
+static pddl_cond_t *removeBool(pddl_cond_t *c, void *data)
+{
+
+    if (c->type == PDDL_COND_AND
+            || c->type == PDDL_COND_OR){
+        return removeBoolPart(OBJ(c, part));
+
+    }else if (c->type == PDDL_COND_WHEN){
+        return removeBoolWhen(OBJ(c, when));
+
+    }else{
+        return c;
+    }
+}
+
+static pddl_cond_t *flattenPart(pddl_cond_part_t *part)
+{
+    bor_list_t *item, *tmp;
+    pddl_cond_t *c;
+    pddl_cond_part_t *p;
+
+    if (borListEmpty(&part->part))
+        return &part->cls;
+
+    BOR_LIST_FOR_EACH_SAFE(&part->part, item, tmp){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+
+        if (c->type == part->cls.type){
+            // Flatten con/disjunctions
+            p = OBJ(c, part);
+            condPartStealPart(part, p);
+
+            borListDel(item);
+            pddlCondDel(c);
+
+        }else if ((c->type == PDDL_COND_AND || c->type == PDDL_COND_OR)
+                    && borListEmpty(&OBJ(c, part)->part)){
+            borListDel(item);
+            pddlCondDel(c);
+        }
+
+    }
+
+    // If the con/disjunction contains only one atom, remove the
+    // con/disjunction and return the atom directly
+    if (borListPrev(&part->part) == borListNext(&part->part)){
+        item = borListNext(&part->part);
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        borListDel(item);
+        pddlCondDel(&part->cls);
+        return c;
+    }
+
+    return &part->cls;
+}
+
+/** Splits (when ...) if its precondition is disjunction */
+static pddl_cond_t *flattenWhen(pddl_cond_when_t *when)
+{
+    bor_list_t *item;
+    pddl_cond_t *c;
+    pddl_cond_part_t *pre;
+    pddl_cond_part_t *and;
+    pddl_cond_when_t *add;
+
+    if (!when->pre || when->pre->type != PDDL_COND_OR)
+        return &when->cls;
+
+    and = condPartNew(PDDL_COND_AND);
+    pre = OBJ(when->pre, part);
+    when->pre = NULL;
+
+    while (!borListEmpty(&pre->part)){
+        item = borListNext(&pre->part);
+        borListDel(item);
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        add = condWhenClone(when);
+        add->pre = c;
+        condPartAdd(and, &add->cls);
+    }
+
+    pddlCondDel(&pre->cls);
+    pddlCondDel(&when->cls);
+
+    return &and->cls;
+}
+
+static pddl_cond_t *flatten(pddl_cond_t *c, void *data)
+{
+    if (c->type == PDDL_COND_AND
+            || c->type == PDDL_COND_OR){
+        return flattenPart(OBJ(c, part));
+
+    }else if (c->type == PDDL_COND_WHEN){
+        return flattenWhen(OBJ(c, when));
+
+    }else{
+        return c;
+    }
+}
+
+static pddl_cond_part_t *moveDisjunctionsCreate1(pddl_cond_part_t *top,
+                                                 pddl_cond_part_t *or)
+{
+    pddl_cond_part_t *ret;
+    bor_list_t *item1, *item2;
+    pddl_cond_t *c1, *c2;
+    pddl_cond_part_t *add;
+
+    ret = condPartNew(PDDL_COND_OR);
+    BOR_LIST_FOR_EACH(&top->part, item1){
+        c1 = BOR_LIST_ENTRY(item1, pddl_cond_t, conn);
+        BOR_LIST_FOR_EACH(&or->part, item2){
+            c2 = BOR_LIST_ENTRY(item2, pddl_cond_t, conn);
+            add = OBJ(c1, part);
+            add = condPartClone(add);
+            condPartAdd(add, pddlCondClone(c2));
+            condPartAdd(ret, &add->cls);
+        }
+    }
+
+    pddlCondDel(&top->cls);
+    return ret;
+}
+
+static pddl_cond_t *moveDisjunctionsCreate(pddl_cond_part_t *and,
+                                           bor_list_t *or_list)
+{
+    bor_list_t *or_item;
+    pddl_cond_part_t *or;
+    pddl_cond_part_t *ret;
+
+    ret = condPartNew(PDDL_COND_OR);
+    condPartAdd(ret, &and->cls);
+    while (!borListEmpty(or_list)){
+        or_item = borListNext(or_list);
+        borListDel(or_item);
+        or = OBJ(BOR_LIST_ENTRY(or_item, pddl_cond_t, conn), part);
+        ret = moveDisjunctionsCreate1(ret, or);
+        pddlCondDel(&or->cls);
+    }
+
+    return &ret->cls;
+}
+
+static pddl_cond_t *moveDisjunctionsUpAnd(pddl_cond_part_t *and)
+{
+    bor_list_t *item, *tmp;
+    bor_list_t or_list;
+    pddl_cond_t *c;
+
+    borListInit(&or_list);
+    BOR_LIST_FOR_EACH_SAFE(&and->part, item, tmp){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type != PDDL_COND_OR)
+            continue;
+
+        borListDel(item);
+        borListAppend(&or_list, item);
+    }
+
+    if (borListEmpty(&or_list)){
+        return &and->cls;
+    }
+
+    return moveDisjunctionsCreate(and, &or_list);
+}
+
+static pddl_cond_t *moveDisjunctionsUp(pddl_cond_t *c, void *data)
+{
+    if (c->type == PDDL_COND_AND)
+        c = moveDisjunctionsUpAnd(OBJ(c, part));
+
+    if (c->type == PDDL_COND_OR)
+        c = flattenPart(OBJ(c, part));
+    return c;
+}
+
+pddl_cond_t *pddlCondSimplify(pddl_cond_t *cond,
+                              const pddl_type_obj_t *type_obj)
+{
+    pddl_cond_t *c;
+    c = pddlCondInstantiateQuant(cond, type_obj);
+    c = condRebuild(c, removeBool, NULL);
+    c = condRebuild(c, flatten, NULL);
+    c = condRebuild(c, moveDisjunctionsUp, NULL);
+    c = condRebuild(c, flatten, NULL);
+    // Remove identical atoms
+    return c;
+}
+
 
 
 /*** PRINT ***/

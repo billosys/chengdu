@@ -58,6 +58,11 @@ void pddlActionInit(pddl_action_t *a);
 void pddlActionFree(pddl_action_t *a);
 
 /**
+ * TODO
+ */
+void pddlActionSimplify(pddl_action_t *a, const pddl_type_obj_t *to);
+
+/**
  * Instantiate quantifiers in .pre and .eff (see pddlCondInstantiateQuant()).
  */
 void pddlActionInstantiateQuant(pddl_action_t *a, const pddl_type_obj_t *to);
@@ -83,6 +88,11 @@ void pddlActionsFree(pddl_actions_t *actions);
  * Adds an empty action to the list.
  */
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
+
+/**
+ * TODO
+ */
+void pddlActionsSimplify(pddl_actions_t *a, const pddl_type_obj_t *to);
 
 /**
  * Call pddlActionInstantiateQuant() on each action.

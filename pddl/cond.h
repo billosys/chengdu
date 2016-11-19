@@ -190,6 +190,12 @@ int pddlCondFlatten(pddl_cond_t *cond);
 pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
                                       const pddl_type_obj_t *type_obj);
 
+/**
+ * TODO
+ */
+pddl_cond_t *pddlCondSimplify(pddl_cond_t *cond,
+                              const pddl_type_obj_t *type_obj);
+
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,
                    const pddl_preds_t *predicates,

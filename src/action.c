@@ -69,8 +69,6 @@ static int parseAction(const pddl_types_t *types,
                 return -1;
             if (pddlCondCheckPre(a->pre, require, 1) != 0)
                 return -1;
-            if (pddlCondFlatten(a->pre) != 0)
-                return -1;
 
         }else if (root->child[i].kw == PDDL_KW_EFF){
             a->eff = pddlCondParse(n, types, objs, type_obj, predicates,
@@ -79,8 +77,6 @@ static int parseAction(const pddl_types_t *types,
                 return -1;
             if (pddlCondCheckEff(a->eff, require, 1) != 0)
                 return -1;
-            //if (pddlCondFlatten(a->eff) != 0)
-            //    return -1;
 
         }else{
             ERRN(root->child + i, "Invalid definition of action `%s'."
@@ -136,6 +132,12 @@ void pddlActionFree(pddl_action_t *a)
         pddlCondDel(a->eff);
 }
 
+void pddlActionSimplify(pddl_action_t *a, const pddl_type_obj_t *to)
+{
+    a->pre = pddlCondSimplify(a->pre, to);
+    a->eff = pddlCondSimplify(a->eff, to);
+}
+
 void pddlActionInstantiateQuant(pddl_action_t *a, const pddl_type_obj_t *to)
 {
     a->pre = pddlCondInstantiateQuant(a->pre, to);
@@ -164,6 +166,14 @@ void pddlActionsFree(pddl_actions_t *actions)
     }
     if (actions->action != NULL)
         BOR_FREE(actions->action);
+}
+
+void pddlActionsSimplify(pddl_actions_t *a, const pddl_type_obj_t *to)
+{
+    int i;
+
+    for (i = 0; i < a->size; ++i)
+        pddlActionSimplify(a->action + i, to);
 }
 
 void pddlActionsInstantiateQuant(pddl_actions_t *a, const pddl_type_obj_t *to)
