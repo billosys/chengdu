@@ -18,9 +18,31 @@
  */
 
 #include <boruvka/alloc.h>
+#include <boruvka/hfunc.h>
 #include "pddl/obj.h"
 #include "pddl/require.h"
 #include "err.h"
+
+struct obj_key {
+    int obj_id;
+    const char *name;
+    uint32_t hash;
+    bor_list_t htable;
+};
+typedef struct obj_key obj_key_t;
+
+static bor_htable_key_t objHash(const bor_list_t *key, void *_)
+{
+    const obj_key_t *obj = bor_container_of(key, obj_key_t, htable);
+    return obj->hash;
+}
+
+static int objEq(const bor_list_t *key1, const bor_list_t *key2, void *_)
+{
+    const obj_key_t *obj1 = bor_container_of(key1, obj_key_t, htable);
+    const obj_key_t *obj2 = bor_container_of(key2, obj_key_t, htable);
+    return strcmp(obj1->name, obj2->name) == 0;
+}
 
 struct _set_t {
     pddl_objs_t *objs;
@@ -50,8 +72,13 @@ static int setCB(const pddl_lisp_node_t *root,
 
 
     for (i = child_from; i < child_to; ++i){
-        o = pddlObjsAdd(objs);
-        o->name = root->child[i].value;
+        o = pddlObjsAdd(objs, root->child[i].value);
+        if (o == NULL){
+            ERRN(root->child + i, "Duplicate object `%s'",
+                 root->child[i].value);
+            return -1;
+        }
+
         o->type = tid;
         o->is_constant = is_const;
         o->is_private = 0;
@@ -158,6 +185,8 @@ int pddlObjsParse(const pddl_lisp_t *domain,
                   pddl_objs_t *objs)
 {
     bzero(objs, sizeof(*objs));
+    objs->htable = borHTableNew(objHash, objEq, NULL);
+
     if (parse(domain, PDDL_KW_CONSTANTS, 1, types, objs) != 0
             || parse(problem, PDDL_KW_OBJECTS, 0, types, objs) != 0)
         return -1;
@@ -173,24 +202,46 @@ int pddlObjsParse(const pddl_lisp_t *domain,
 
 void pddlObjsFree(pddl_objs_t *objs)
 {
+    bor_list_t list;
+    bor_list_t *item;
+    obj_key_t *key;
+
     if (objs->obj != NULL)
         BOR_FREE(objs->obj);
+
+    borListInit(&list);
+    borHTableGather(objs->htable, &list);
+    while (!borListEmpty(&list)){
+        item = borListNext(&list);
+        borListDel(item);
+        key = BOR_LIST_ENTRY(item, obj_key_t, htable);
+        BOR_FREE(key);
+    }
+    borHTableDel(objs->htable);
 }
 
 int pddlObjsGet(const pddl_objs_t *objs, const char *name)
 {
-    int i;
+    bor_list_t *item;
+    obj_key_t *key, keyin;
 
-    for (i = 0; i < objs->size; ++i){
-        if (strcmp(objs->obj[i].name, name) == 0)
-            return i;
-    }
-    return -1;
+    keyin.name = name;
+    keyin.hash = borHashSDBM(name);
+    item = borHTableFind(objs->htable, &keyin.htable);
+    if (item == NULL)
+        return -1;
+
+    key = BOR_LIST_ENTRY(item, obj_key_t, htable);
+    return key->obj_id;
 }
 
-pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs)
+pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name)
 {
     pddl_obj_t *o;
+    obj_key_t *key;
+
+    if (pddlObjsGet(objs, name) != -1)
+        return NULL;
 
     if (objs->size >= objs->alloc){
         if (objs->alloc == 0){
@@ -204,7 +255,16 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs)
 
     o = objs->obj + objs->size++;
     bzero(o, sizeof(*o));
+    o->name = name;
     o->owner = -1;
+
+    key = BOR_ALLOC(obj_key_t);
+    key->obj_id = objs->size - 1;
+    key->name = name;
+    key->hash = borHashSDBM(name);
+    borListInit(&key->htable);
+    borHTableInsert(objs->htable, &key->htable);
+
     return o;
 }
 

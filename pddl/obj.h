@@ -20,6 +20,7 @@
 #ifndef __PDDL_OBJ_H__
 #define __PDDL_OBJ_H__
 
+#include <boruvka/htable.h>
 #include <pddl/type.h>
 
 #ifdef __cplusplus
@@ -42,6 +43,7 @@ struct pddl_objs {
     pddl_obj_t *obj;
     int size;
     int alloc;
+    bor_htable_t *htable;
 };
 typedef struct pddl_objs pddl_objs_t;
 
@@ -67,7 +69,7 @@ int pddlObjsGet(const pddl_objs_t *objs, const char *name);
 /**
  * Adds a new obj at the end of the array.
  */
-pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs);
+pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name);
 
 /**
  * Print formated objects.
