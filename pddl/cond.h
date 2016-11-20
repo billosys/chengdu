@@ -177,21 +177,8 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
                      int verbose);
 
 /**
- * Flattens dis/conjunctions.
- */
-int pddlCondFlatten(pddl_cond_t *cond);
-
-/**
- * Instantiate quantifiers by unrolling them using objects in
- * listed in type_obj according to typed parameters.
- * The input cond is consumed and a new replacement is generated (may be
- * the same object), i.e., don't use cond after this call anymore.
- */
-pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
-                                      const pddl_type_obj_t *type_obj);
-
-/**
- * TODO
+ * Simplify conditionals by instantiation qunatifiers and transformation to
+ * DNF so that the actions can be split.
  */
 pddl_cond_t *pddlCondSimplify(pddl_cond_t *cond,
                               const pddl_type_obj_t *type_obj);

@@ -1075,74 +1075,6 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
 }
 
 
-
-int pddlCondFlatten(pddl_cond_t *cond)
-{
-    pddl_cond_part_t *part, *p;
-    pddl_cond_quant_t *q;
-    pddl_cond_when_t *w;
-    pddl_cond_t *c;
-    bor_list_t *item, *tmp;
-
-    if (cond->type == PDDL_COND_AND
-            || cond->type == PDDL_COND_OR){
-        part = OBJ(cond, part);
-        BOR_LIST_FOR_EACH_SAFE(&part->part, item, tmp){
-            c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            if (pddlCondFlatten(c) != 0)
-                return -1;
-
-            if (c->type == cond->type){
-                // Flatten con/disjunctions
-                p = OBJ(c, part);
-                condPartStealPart(part, p);
-
-                borListDel(item);
-                pddlCondDel(c);
-
-            }else if (c->type == PDDL_COND_AND
-                        || c->type == PDDL_COND_OR){
-                p = OBJ(c, part);
-
-                // If con/disjunction has only one atom, the parent one can
-                // safely take that atom
-                if (borListPrev(&p->part) == borListNext(&p->part)){
-                    condPartStealPart(part, p);
-                    borListDel(item);
-                    pddlCondDel(c);
-                }
-            }
-        }
-
-        // If disjunction has only one atom change it do conjuction.
-        if (borListPrev(&part->part) == borListNext(&part->part))
-            part->cls.type = PDDL_COND_AND;
-
-        return 0;
-
-    }else if (cond->type == PDDL_COND_FORALL
-                || cond->type == PDDL_COND_EXIST){
-        q = OBJ(cond, quant);
-        return pddlCondFlatten(q->cond);
-
-    }else if (cond->type == PDDL_COND_WHEN){
-        w = OBJ(cond, when);
-        if (pddlCondFlatten(w->pre) == 0
-                && pddlCondFlatten(w->eff) == 0)
-            return 0;
-        return -1;
-
-    }else if (cond->type == PDDL_COND_ATOM
-                || cond->type == PDDL_COND_ASSIGN){
-        return 0;
-
-    }else{
-        fprintf(stderr, "Fatal Error: Unkown cond type!\n");
-        exit(-1);
-    }
-}
-
-
 /*** INSTANTIATE QUANTIFIERS ***/
 struct instantiate_cond {
     int param_id;
@@ -1294,8 +1226,8 @@ static pddl_cond_t *instantiateExist(pddl_cond_t *c, void *data)
     return instantiateQuant(q, type_obj);
 }
 
-pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
-                                      const pddl_type_obj_t *type_obj)
+static pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
+                                             const pddl_type_obj_t *type_obj)
 {
     cond = condRebuild(cond, instantiateForall, (void *)type_obj);
     return condRebuild(cond, instantiateExist, (void *)type_obj);
@@ -1547,7 +1479,7 @@ pddl_cond_t *pddlCondSimplify(pddl_cond_t *cond,
     c = condRebuild(c, flatten, NULL);
     c = condRebuild(c, moveDisjunctionsUp, NULL);
     c = condRebuild(c, flatten, NULL);
-    // Remove identical atoms
+    // TODO: Remove identical atoms
     return c;
 }
 

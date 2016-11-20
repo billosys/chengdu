@@ -18,8 +18,12 @@
  */
 
 #include <boruvka/alloc.h>
+#include "pddl/config.h"
 #include "pddl/action.h"
 #include "err.h"
+
+
+#define PDDL_ACTIONS_ALLOC_INIT 4
 
 
 static int parseAction(const pddl_types_t *types,
@@ -132,25 +136,36 @@ void pddlActionFree(pddl_action_t *a)
         pddlCondDel(a->eff);
 }
 
+void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src)
+{
+    pddlActionInit(dst);
+    dst->name = src->name;
+    pddlParamsCopy(&dst->param, &src->param);
+    if (src->pre != NULL)
+        dst->pre = pddlCondClone(src->pre);
+    if (src->eff != NULL)
+        dst->eff = pddlCondClone(src->eff);
+}
+
 void pddlActionSimplify(pddl_action_t *a, const pddl_type_obj_t *to)
 {
     a->pre = pddlCondSimplify(a->pre, to);
     a->eff = pddlCondSimplify(a->eff, to);
 }
 
-void pddlActionInstantiateQuant(pddl_action_t *a, const pddl_type_obj_t *to)
-{
-    a->pre = pddlCondInstantiateQuant(a->pre, to);
-    a->eff = pddlCondInstantiateQuant(a->eff, to);
-}
-
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
 {
     pddl_action_t *a;
 
+    if (as->size == as->alloc){
+        if (as->alloc == 0)
+            as->alloc = PDDL_ACTIONS_ALLOC_INIT;
+        as->alloc *= 2;
+        as->action = BOR_REALLOC_ARR(as->action, pddl_action_t, as->alloc);
+    }
+
+    a = as->action + as->size;
     ++as->size;
-    as->action = BOR_REALLOC_ARR(as->action, pddl_action_t, as->size);
-    a = as->action + as->size - 1;
     pddlActionInit(a);
     return a;
 }
@@ -176,18 +191,84 @@ void pddlActionsSimplify(pddl_actions_t *a, const pddl_type_obj_t *to)
         pddlActionSimplify(a->action + i, to);
 }
 
-void pddlActionsInstantiateQuant(pddl_actions_t *a, const pddl_type_obj_t *to)
+static void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as)
 {
-    int i;
+    pddl_action_t *newa;
+    pddl_cond_part_t *pre;
+    pddl_cond_t *first_cond, *cond;
+    bor_list_t *item;
+    int aidx;
 
-    for (i = 0; i < a->size; ++i)
-        pddlActionInstantiateQuant(a->action + i, to);
+    if (a->pre->type != PDDL_COND_OR)
+        return;
+
+    pre = bor_container_of(a->pre, pddl_cond_part_t, cls);
+    if (borListEmpty(&pre->part))
+        return;
+
+    item = borListNext(&pre->part);
+    borListDel(item);
+    first_cond = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+    a->pre = NULL;
+    aidx = a - as->action;
+    while (!borListEmpty(&pre->part)){
+        item = borListNext(&pre->part);
+        borListDel(item);
+        cond = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        newa = pddlActionsAdd(as);
+        pddlActionCopy(newa, as->action + aidx);
+        newa->pre = cond;
+    }
+    as->action[aidx].pre = first_cond;
+
+    pddlCondDel(&pre->cls);
 }
 
-
-int pddlActionsSplitDisjunctions(pddl_actions_t *as)
+#ifdef PDDL_DEBUG
+void pddlActionAssertPreConjuction(pddl_action_t *a)
 {
-    return -1;
+    bor_list_t *item;
+    pddl_cond_part_t *pre;
+    pddl_cond_t *c;
+
+    if (a->pre->type == PDDL_COND_ATOM)
+        return;
+
+    if (a->pre->type != PDDL_COND_AND){
+        fprintf(stderr, "Fatal Error: Precondition of the action `%s' is"
+                        " not a conjuction.\n", a->name);
+        exit(-1);
+    }
+
+    pre = bor_container_of(a->pre, pddl_cond_part_t, cls);
+    BOR_LIST_FOR_EACH(&pre->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type != PDDL_COND_ATOM){
+            fprintf(stderr, "Fatal Error: Precondition of the action `%s' is"
+                            " not a flatten conjuction (conjuction contains"
+                            " something else besides atoms).\n", a->name);
+            exit(-1);
+        }
+    }
+}
+#endif
+
+void pddlActionsSimplifyAndSplit(pddl_actions_t *a, const pddl_type_obj_t *to)
+{
+    int i, size;
+
+    pddlActionsSimplify(a, to);
+
+    size = a->size;
+    for (i = 0; i < size; ++i)
+        pddlActionSplit(a->action + i, a);
+
+#ifdef PDDL_DEBUG
+    // Check that all actions has only a flat conjuction as its
+    // precondition
+    for (i = 0; i < a->size; ++i)
+        pddlActionAssertPreConjuction(a->action + i);
+#endif
 }
 
 static void pddlActionPrint(const pddl_action_t *a,

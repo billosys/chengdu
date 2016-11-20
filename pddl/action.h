@@ -44,6 +44,7 @@ typedef struct pddl_action pddl_action_t;
 struct pddl_actions {
     pddl_action_t *action;
     int size;
+    int alloc;
 };
 typedef struct pddl_actions pddl_actions_t;
 
@@ -58,14 +59,14 @@ void pddlActionInit(pddl_action_t *a);
 void pddlActionFree(pddl_action_t *a);
 
 /**
- * TODO
+ * Creates an exact copy of the given action.
  */
-void pddlActionSimplify(pddl_action_t *a, const pddl_type_obj_t *to);
+void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src);
 
 /**
- * Instantiate quantifiers in .pre and .eff (see pddlCondInstantiateQuant()).
+ * Simplify .pre and .eff (see pddlCondSimplify()).
  */
-void pddlActionInstantiateQuant(pddl_action_t *a, const pddl_type_obj_t *to);
+void pddlActionSimplify(pddl_action_t *a, const pddl_type_obj_t *to);
 
 /**
  * Parses actions from domain PDDL.
@@ -90,21 +91,14 @@ void pddlActionsFree(pddl_actions_t *actions);
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
 
 /**
- * TODO
+ * Call pddlActionSimplify() on each action.
  */
 void pddlActionsSimplify(pddl_actions_t *a, const pddl_type_obj_t *to);
 
 /**
- * Call pddlActionInstantiateQuant() on each action.
+ * Simplify all actions and split them by disjunctions in .pre.
  */
-void pddlActionsInstantiateQuant(pddl_actions_t *a, const pddl_type_obj_t *to);
-
-/**
- * Find disjunctions in preconditions and split those actions into more
- * actions with the same name. Note that this may generate exponential
- * number of actions.
- */
-int pddlActionsSplitDisjunctions(pddl_actions_t *as);
+void pddlActionsSimplifyAndSplit(pddl_actions_t *a, const pddl_type_obj_t *to);
 
 void pddlActionsPrint(const pddl_actions_t *actions,
                       const pddl_objs_t *objs,
