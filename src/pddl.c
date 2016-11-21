@@ -88,7 +88,8 @@ static int parseMetric(pddl_t *pddl, const pddl_lisp_node_t *root)
     return 0;
 }
 
-pddl_t *pddlNew(const char *domain_fn, const char *problem_fn)
+pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
+                unsigned flags)
 {
     pddl_t *pddl;
     pddl_lisp_t *domain_lisp, *problem_lisp;
@@ -117,7 +118,7 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn)
 
 
     if (checkDomainName(pddl) != 0
-            || pddlRequireParse(domain_lisp, &pddl->require) != 0
+            || pddlRequireParse(domain_lisp, &pddl->require, flags) != 0
             || pddlTypesParse(domain_lisp, &pddl->type) != 0
             || pddlObjsParse(domain_lisp, problem_lisp,
                                  &pddl->type, pddl->require, &pddl->obj) != 0

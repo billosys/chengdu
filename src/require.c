@@ -17,6 +17,7 @@
  * See the License for more information.
  */
 
+#include "pddl/pddl.h"
 #include "pddl/require.h"
 
 #include "err.h"
@@ -29,6 +30,15 @@ struct _require_mask_t {
     unsigned mask;
 };
 typedef struct _require_mask_t require_mask_t;
+
+#define PDDL_REQUIRE_ADL (PDDL_REQUIRE_STRIPS \
+                            | PDDL_REQUIRE_TYPING \
+                            | PDDL_REQUIRE_NEGATIVE_PRE \
+                            | PDDL_REQUIRE_DISJUNCTIVE_PRE \
+                            | PDDL_REQUIRE_EQUALITY \
+                            | PDDL_REQUIRE_EXISTENTIAL_PRE \
+                            | PDDL_REQUIRE_UNIVERSAL_PRE \
+                            | PDDL_REQUIRE_CONDITIONAL_EFF)
 
 static require_mask_t require_mask[] = {
     { PDDL_KW_STRIPS, PDDL_REQUIRE_STRIPS },
@@ -58,14 +68,7 @@ static require_mask_t require_mask[] = {
                                    PDDL_REQUIRE_UNIVERSAL_PRE },
     { PDDL_KW_FLUENTS, PDDL_REQUIRE_NUMERIC_FLUENT |
                             PDDL_REQUIRE_OBJECT_FLUENT },
-    { PDDL_KW_ADL, PDDL_REQUIRE_STRIPS |
-                        PDDL_REQUIRE_TYPING |
-                        PDDL_REQUIRE_NEGATIVE_PRE |
-                        PDDL_REQUIRE_DISJUNCTIVE_PRE |
-                        PDDL_REQUIRE_EQUALITY |
-                        PDDL_REQUIRE_EXISTENTIAL_PRE |
-                        PDDL_REQUIRE_UNIVERSAL_PRE |
-                        PDDL_REQUIRE_CONDITIONAL_EFF },
+    { PDDL_KW_ADL, PDDL_REQUIRE_ADL },
 };
 static int require_mask_size = sizeof(require_mask) / sizeof(require_mask_t);
 
@@ -80,13 +83,16 @@ static unsigned requireMask(int kw)
     return 0u;
 }
 
-int pddlRequireParse(const pddl_lisp_t *domain, unsigned *req)
+int pddlRequireParse(const pddl_lisp_t *domain, unsigned *req, unsigned flags)
 {
     const pddl_lisp_node_t *req_node, *n;
     unsigned m;
     int i;
 
     *req = 0u;
+    if (flags & PDDL_FORCE_ADL)
+        *req = PDDL_REQUIRE_ADL;
+
     req_node = pddlLispFindNode(&domain->root, PDDL_KW_REQUIREMENTS);
     // No :requirements implies :strips
     if (req_node == NULL){

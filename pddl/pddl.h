@@ -32,6 +32,9 @@
 extern "C" {
 #endif /* __cplusplus */
 
+/** Flags: **/
+#define PDDL_FORCE_ADL 0x1u /*!< Force ADL to requirements */
+
 struct pddl {
     pddl_lisp_t *domain_lisp;
     pddl_lisp_t *problem_lisp;
@@ -51,7 +54,8 @@ struct pddl {
 };
 typedef struct pddl pddl_t;
 
-pddl_t *pddlNew(const char *domain_fn, const char *problem_fn);
+pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
+                unsigned flags);
 void pddlDel(pddl_t *pddl);
 void pddlDump(const pddl_t *pddl, FILE *fout);
 
