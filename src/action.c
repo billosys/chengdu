@@ -29,7 +29,7 @@
 static int parseAction(const pddl_types_t *types,
                        const pddl_objs_t *objs,
                        const pddl_type_obj_t *type_obj,
-                       const pddl_preds_t *predicates,
+                       pddl_preds_t *predicates,
                        const pddl_preds_t *functions,
                        unsigned require,
                        const pddl_lisp_node_t *root,
@@ -73,6 +73,7 @@ static int parseAction(const pddl_types_t *types,
                 return -1;
             if (pddlCondCheckPre(a->pre, require, 1) != 0)
                 return -1;
+            pddlCondSetPredRead(a->pre, predicates);
 
         }else if (root->child[i].kw == PDDL_KW_EFF){
             a->eff = pddlCondParse(n, types, objs, type_obj, predicates,
@@ -81,6 +82,7 @@ static int parseAction(const pddl_types_t *types,
                 return -1;
             if (pddlCondCheckEff(a->eff, require, 1) != 0)
                 return -1;
+            pddlCondSetPredWrite(a->eff, predicates);
 
         }else{
             ERRN(root->child + i, "Invalid definition of action `%s'."
@@ -100,7 +102,7 @@ int pddlActionsParse(const pddl_lisp_t *domain,
                      const pddl_types_t *types,
                      const pddl_objs_t *objs,
                      const pddl_type_obj_t *type_obj,
-                     const pddl_preds_t *predicates,
+                     pddl_preds_t *predicates,
                      const pddl_preds_t *functions,
                      unsigned require,
                      pddl_actions_t *actions)

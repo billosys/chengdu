@@ -307,6 +307,8 @@ void pddlPredsPrint(const pddl_preds_t *ps,
         }
         fprintf(fout, " :: is-private: %d, owner-param: %d",
                 ps->pred[i].is_private, ps->pred[i].owner_param);
+        fprintf(fout, ", read: %d, write: %d",
+                ps->pred[i].read, ps->pred[i].write);
         fprintf(fout, "\n");
     }
 }

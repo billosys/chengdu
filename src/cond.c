@@ -1075,6 +1075,41 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
 }
 
 
+static int setPredRead(pddl_cond_t *cond, void *data)
+{
+    pddl_cond_atom_t *atom;
+    pddl_preds_t *preds = data;
+
+    if (cond->type == PDDL_COND_ATOM){
+        atom = OBJ(cond, atom);
+        preds->pred[atom->pred].read = 1;
+    }
+    return 0;
+}
+
+void pddlCondSetPredRead(const pddl_cond_t *cond, pddl_preds_t *preds)
+{
+    pddlCondTraverse((pddl_cond_t *)cond, setPredRead, NULL, preds);
+}
+
+
+static int setPredWrite(pddl_cond_t *cond, void *data)
+{
+    pddl_cond_atom_t *atom;
+    pddl_preds_t *preds = data;
+
+    if (cond->type == PDDL_COND_ATOM){
+        atom = OBJ(cond, atom);
+        preds->pred[atom->pred].write = 1;
+    }
+    return 0;
+}
+
+void pddlCondSetPredWrite(const pddl_cond_t *cond, pddl_preds_t *preds)
+{
+    pddlCondTraverse((pddl_cond_t *)cond, setPredWrite, NULL, preds);
+}
+
 /*** INSTANTIATE QUANTIFIERS ***/
 struct instantiate_cond {
     int param_id;

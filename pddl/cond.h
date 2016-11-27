@@ -176,6 +176,17 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
                      int require,
                      int verbose);
 
+
+/**
+ * Set .read to true for all preconditions found as atoms.
+ */
+void pddlCondSetPredRead(const pddl_cond_t *cond, pddl_preds_t *preds);
+
+/**
+ * Set .write to true for all preconditions found as atoms.
+ */
+void pddlCondSetPredWrite(const pddl_cond_t *cond, pddl_preds_t *preds);
+
 /**
  * Simplify conditionals by instantiation qunatifiers and transformation to
  * DNF so that the actions can be split.

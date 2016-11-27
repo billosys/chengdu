@@ -35,6 +35,8 @@ struct pddl_pred {
     int is_private;   /*!< True if the predicate is private */
     int owner_param;  /*!< Index of the parameter that corresponds to the
                            owner object */
+    int read;         /*!< True if the predicate appears in some precondition */
+    int write;        /*!< True if the predicate appreas in some effect */
 };
 typedef struct pddl_pred pddl_pred_t;
 

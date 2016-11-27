@@ -75,7 +75,7 @@ int pddlActionsParse(const pddl_lisp_t *domain,
                      const pddl_types_t *types,
                      const pddl_objs_t *objs,
                      const pddl_type_obj_t *type_obj,
-                     const pddl_preds_t *predicates,
+                     pddl_preds_t *predicates,
                      const pddl_preds_t *functions,
                      unsigned require,
                      pddl_actions_t *actions);
