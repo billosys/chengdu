@@ -124,9 +124,7 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
             || pddlObjsParse(pddl) != 0
             || pddlPredsParse(pddl) != 0
             || pddlFuncsParse(pddl) != 0
-            || pddlFactsParseInit(problem_lisp, &pddl->pred,
-                                      &pddl->func, &pddl->obj,
-                                      &pddl->init_fact, &pddl->init_func) != 0
+            || pddlFactsParseInit(pddl) != 0
             || pddlFactsParseGoal(problem_lisp, &pddl->pred,
                                       &pddl->obj, &pddl->goal) != 0
             || pddlActionsParse(pddl) != 0

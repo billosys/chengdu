@@ -29,6 +29,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl;
+
 struct pddl_fact {
     int pred;       /*!< Predicate ID */
     int *arg;       /*!< Object IDs are arguments */
@@ -59,12 +61,7 @@ typedef struct pddl_fact_id_arr pddl_fact_id_arr_t;
  * Parses :init into list of instantiated predicates and instantiated
  * functions.
  */
-int pddlFactsParseInit(const pddl_lisp_t *problem,
-                       const pddl_preds_t *predicates,
-                       const pddl_preds_t *functions,
-                       const pddl_objs_t *objs,
-                       pddl_facts_t *init_fact,
-                       pddl_facts_t *init_func);
+int pddlFactsParseInit(struct pddl *pddl);
 
 /**
  * Parses :goal into list of facts.

@@ -18,6 +18,7 @@
  */
 
 #include <boruvka/alloc.h>
+#include "pddl/pddl.h"
 #include "pddl/fact.h"
 #include "err.h"
 
@@ -126,12 +127,7 @@ static int parseFact(const pddl_lisp_node_t *n,
     return 0;
 }
 
-static int parseFactFunc(const pddl_lisp_node_t *n,
-                         const pddl_preds_t *predicates,
-                         const pddl_preds_t *functions,
-                         const pddl_objs_t *objs,
-                         pddl_facts_t *init_fact,
-                         pddl_facts_t *init_func)
+static int parseFactFunc(pddl_t *pddl, const pddl_lisp_node_t *n)
 {
     const char *head;
 
@@ -144,23 +140,18 @@ static int parseFactFunc(const pddl_lisp_node_t *n,
     if (strcmp(head, "=") == 0
             && n->child_size == 3
             && n->child[1].value == NULL){
-        return parseFunc(n, functions, objs, init_func);
+        return parseFunc(n, &pddl->func, &pddl->obj, &pddl->init_func);
     }else{
-        return parseFact(n, predicates, objs, head, init_fact);
+        return parseFact(n, &pddl->pred, &pddl->obj, head, &pddl->init_fact);
     }
 }
 
-int pddlFactsParseInit(const pddl_lisp_t *problem,
-                       const pddl_preds_t *predicates,
-                       const pddl_preds_t *functions,
-                       const pddl_objs_t *objs,
-                       pddl_facts_t *init_fact,
-                       pddl_facts_t *init_func)
+int pddlFactsParseInit(pddl_t *pddl)
 {
     const pddl_lisp_node_t *ninit, *n;
     int i;
 
-    ninit = pddlLispFindNode(&problem->root, PDDL_KW_INIT);
+    ninit = pddlLispFindNode(&pddl->problem_lisp->root, PDDL_KW_INIT);
     if (ninit == NULL){
         ERR2("Missing :init.");
         return -1;
@@ -168,8 +159,7 @@ int pddlFactsParseInit(const pddl_lisp_t *problem,
 
     for (i = 1; i < ninit->child_size; ++i){
         n = ninit->child + i;
-        if (parseFactFunc(n, predicates, functions, objs,
-                          init_fact, init_func) != 0)
+        if (parseFactFunc(pddl, n) != 0)
             return -1;
     }
 
