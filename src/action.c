@@ -61,8 +61,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
                 return -1;
 
         }else if (root->child[i].kw == PDDL_KW_PRE){
-            a->pre = pddlCondParse(n, &pddl->type, &pddl->obj, &pddl->pred,
-                                   &pddl->func, &a->param, a->name);
+            a->pre = pddlCondParse(n, pddl, &a->param, a->name);
             if (a->pre == NULL)
                 return -1;
             if (pddlCondCheckPre(a->pre, pddl->require, 1) != 0)
@@ -70,8 +69,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
             pddlCondSetPredRead(a->pre, &pddl->pred);
 
         }else if (root->child[i].kw == PDDL_KW_EFF){
-            a->eff = pddlCondParse(n, &pddl->type, &pddl->obj, &pddl->pred,
-                                   &pddl->func, &a->param, a->name);
+            a->eff = pddlCondParse(n, pddl, &a->param, a->name);
             if (a->eff == NULL)
                 return -1;
             if (pddlCondCheckEff(a->eff, pddl->require, 1) != 0)

@@ -33,6 +33,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl;
 
 /**
  * Types of conditions
@@ -153,10 +154,7 @@ int pddlCondTraverse(pddl_cond_t *c,
  * Parse condition from PDDL lisp.
  */
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
-                           const pddl_types_t *types,
-                           const pddl_objs_t *objs,
-                           const pddl_preds_t *preds,
-                           const pddl_preds_t *funcs,
+                           const struct pddl *pddl,
                            const pddl_params_t *params,
                            const char *errname);
 

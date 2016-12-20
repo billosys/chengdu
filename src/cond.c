@@ -19,6 +19,7 @@
 
 #include <boruvka/alloc.h>
 
+#include "pddl/pddl.h"
 #include "pddl/cond.h"
 #include "err.h"
 
@@ -865,19 +866,16 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
 }
 
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
-                           const pddl_types_t *types,
-                           const pddl_objs_t *objs,
-                           const pddl_preds_t *preds,
-                           const pddl_preds_t *funcs,
+                           const pddl_t *pddl,
                            const pddl_params_t *params,
                            const char *err)
 {
     parse_ctx_t ctx;
 
-    ctx.types = types;
-    ctx.objs = objs;
-    ctx.preds = preds;
-    ctx.funcs = funcs;
+    ctx.types = &pddl->type;
+    ctx.objs = &pddl->obj;
+    ctx.preds = &pddl->pred;
+    ctx.funcs = &pddl->func;
     ctx.params = params;
     ctx.err = err;
 
