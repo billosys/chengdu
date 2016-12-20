@@ -53,7 +53,6 @@ typedef struct pddl_cond_cls pddl_cond_cls_t;
 struct parse_ctx {
     const pddl_types_t *types;
     const pddl_objs_t *objs;
-    const pddl_type_obj_t *type_obj;
     const pddl_preds_t *preds;
     const pddl_preds_t *funcs;
     const pddl_params_t *params;
@@ -868,7 +867,6 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
                            const pddl_types_t *types,
                            const pddl_objs_t *objs,
-                           const pddl_type_obj_t *type_obj,
                            const pddl_preds_t *preds,
                            const pddl_preds_t *funcs,
                            const pddl_params_t *params,
@@ -878,7 +876,6 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
 
     ctx.types = types;
     ctx.objs = objs;
-    ctx.type_obj = type_obj;
     ctx.preds = preds;
     ctx.funcs = funcs;
     ctx.params = params;
@@ -1194,7 +1191,7 @@ static pddl_cond_part_t *instantiatePart(pddl_cond_part_t *p,
 }
 
 static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
-                                     const pddl_type_obj_t *type_obj)
+                                     const pddl_types_t *types)
 {
     pddl_cond_part_t *top;
     const pddl_param_t *param;
@@ -1217,7 +1214,7 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
         if (param->inherit >= 0)
             continue;
 
-        obj = pddlTypeObjGet(type_obj, param->type, &obj_size);
+        obj = pddlTypesObjsByType(types, param->type, &obj_size);
         if (obj_size == 0){
             bval = q->cls.type == PDDL_COND_FORALL;
             pddlCondDel(&top->cls);
@@ -1239,33 +1236,33 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
 
 static pddl_cond_t *instantiateForall(pddl_cond_t *c, void *data)
 {
-    const pddl_type_obj_t *type_obj = data;
+    const pddl_types_t *types = data;
     pddl_cond_quant_t *forall;
 
     if (c->type != PDDL_COND_FORALL)
         return c;
 
     forall = OBJ(c, quant);
-    return instantiateQuant(forall, type_obj);
+    return instantiateQuant(forall, types);
 }
 
 static pddl_cond_t *instantiateExist(pddl_cond_t *c, void *data)
 {
-    const pddl_type_obj_t *type_obj = data;
+    const pddl_types_t *types = data;
     pddl_cond_quant_t *q;
 
     if (c->type != PDDL_COND_EXIST)
         return c;
 
     q = OBJ(c, quant);
-    return instantiateQuant(q, type_obj);
+    return instantiateQuant(q, types);
 }
 
 static pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
-                                             const pddl_type_obj_t *type_obj)
+                                             const pddl_types_t *types)
 {
-    cond = condRebuild(cond, instantiateForall, (void *)type_obj);
-    return condRebuild(cond, instantiateExist, (void *)type_obj);
+    cond = condRebuild(cond, instantiateForall, (void *)types);
+    return condRebuild(cond, instantiateExist, (void *)types);
 }
 
 
@@ -1506,10 +1503,10 @@ static pddl_cond_t *moveDisjunctionsUp(pddl_cond_t *c, void *data)
 }
 
 pddl_cond_t *pddlCondSimplify(pddl_cond_t *cond,
-                              const pddl_type_obj_t *type_obj)
+                              const pddl_types_t *types)
 {
     pddl_cond_t *c;
-    c = pddlCondInstantiateQuant(cond, type_obj);
+    c = pddlCondInstantiateQuant(cond, types);
     c = condRebuild(c, removeBool, NULL);
     c = condRebuild(c, flatten, NULL);
     c = condRebuild(c, moveDisjunctionsUp, NULL);

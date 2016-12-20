@@ -176,6 +176,8 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp)
 
 int pddlObjsParse(pddl_t *pddl)
 {
+    int i;
+
     bzero(&pddl->obj, sizeof(pddl->obj));
     pddl->obj.htable = borHTableNew(objHash, objEq, NULL);
 
@@ -189,6 +191,10 @@ int pddlObjsParse(pddl_t *pddl)
         if (parsePrivate(pddl, pddl->problem_lisp) != 0)
             return -1;
     }
+
+    for (i = 0; i < pddl->obj.size; ++i)
+        pddlTypesAddObj(&pddl->type, i, pddl->obj.obj[i].type);
+
     return 0;
 }
 
@@ -271,90 +277,5 @@ void pddlObjsPrint(const pddl_objs_t *objs, FILE *fout)
                 objs->obj[i].name, objs->obj[i].type,
                 objs->obj[i].is_constant, objs->obj[i].is_private,
                 objs->obj[i].owner, objs->obj[i].is_agent);
-    }
-}
-
-
-
-static void typeObjMapRec(int *m, int type_id,
-                          const pddl_types_t *types,
-                          const pddl_objs_t *objs)
-{
-    int i;
-
-    for (i = 0; i < objs->size; ++i){
-        if (objs->obj[i].type == type_id)
-            m[i] = 1;
-    }
-
-    for (i = 0; i < types->size; ++i){
-        if (types->type[i].parent == type_id)
-            typeObjMapRec(m, i, types, objs);
-    }
-}
-
-static void typeObjMap(pddl_type_obj_t *to, int type,
-                       const pddl_types_t *types,
-                       const pddl_objs_t *objs)
-{
-    int i, ins, *m;
-
-    m = to->map[type] = BOR_CALLOC_ARR(int, objs->size);
-    typeObjMapRec(m, type, types, objs);
-
-    for (ins = 0, i = 0; i < objs->size; ++i){
-        if (m[i])
-            m[ins++] = i;
-    }
-    to->map_size[type] = ins;
-    if (ins != objs->size)
-        to->map[type] = BOR_REALLOC_ARR(to->map[type], int, ins);
-}
-
-int pddlTypeObjInit(pddl_type_obj_t *to,
-                    const pddl_types_t *types,
-                    const pddl_objs_t *objs)
-{
-    int i;
-
-    to->size = types->size;
-    to->map = BOR_CALLOC_ARR(int *, types->size);
-    to->map_size = BOR_CALLOC_ARR(int, types->size);
-    for (i = 0; i < to->size; ++i)
-        typeObjMap(to, i, types, objs);
-    return 0;
-}
-
-void pddlTypeObjFree(pddl_type_obj_t *to)
-{
-    int i;
-
-    for (i = 0; i < to->size; ++i){
-        if (to->map[i] != NULL)
-            BOR_FREE(to->map[i]);
-    }
-    if (to->map_size != NULL)
-        BOR_FREE(to->map_size);
-    if (to->map != NULL)
-        BOR_FREE(to->map);
-}
-
-const int *pddlTypeObjGet(const pddl_type_obj_t *to, int type_id, int *size)
-{
-    if (size != NULL)
-        *size = to->map_size[type_id];
-    return to->map[type_id];
-}
-
-void pddlTypeObjPrint(const pddl_type_obj_t *to, FILE *fout)
-{
-    int i, j;
-
-    fprintf(fout, "Type-Obj:\n");
-    for (i = 0; i < to->size; ++i){
-        fprintf(fout, "    [%d]:", i);
-        for (j = 0; j < to->map_size[i]; ++j)
-            fprintf(fout, " %d", to->map[i][j]);
-        fprintf(fout, "\n");
     }
 }

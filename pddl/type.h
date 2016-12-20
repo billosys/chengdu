@@ -34,9 +34,18 @@ struct pddl_type {
 };
 typedef struct pddl_type pddl_type_t;
 
+struct pddl_objs_by_type {
+    int *obj;
+    int size;
+    int alloc;
+};
+typedef struct pddl_objs_by_type pddl_objs_by_type_t;
+
 struct pddl_types {
     pddl_type_t *type;
     int size;
+
+    pddl_objs_by_type_t *obj_by_type;
 };
 typedef struct pddl_types pddl_types_t;
 
@@ -59,6 +68,16 @@ int pddlTypesGet(const pddl_types_t *t, const char *name);
  * Prints list of types to the specified output.
  */
 void pddlTypesPrint(const pddl_types_t *t, FILE *fout);
+
+/**
+ * Record the given object as being of the given type.
+ */
+void pddlTypesAddObj(pddl_types_t *ts, int obj_id, int type_id);
+
+/**
+ * Returns list of object IDs of the specified type.
+ */
+const int *pddlTypesObjsByType(const pddl_types_t *ts, int type_id, int *size);
 
 #ifdef __cplusplus
 } /* extern "C" */

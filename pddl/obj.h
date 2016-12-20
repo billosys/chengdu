@@ -74,37 +74,6 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name);
  */
 void pddlObjsPrint(const pddl_objs_t *objs, FILE *fout);
 
-
-/**
- * Mapping between type and objects.
- * TODO: Move to pddl_type_t
- */
-struct pddl_type_obj {
-    int **map;
-    int *map_size;
-    int size;
-};
-typedef struct pddl_type_obj pddl_type_obj_t;
-
-/**
- * Initializes mapping between types and objects.
- */
-int pddlTypeObjInit(pddl_type_obj_t *to,
-                    const pddl_types_t *types,
-                    const pddl_objs_t *objs);
-
-/**
- * Frees allocated resources
- */
-void pddlTypeObjFree(pddl_type_obj_t *to);
-
-/**
- * Returns list of object IDs of a given type.
- */
-const int *pddlTypeObjGet(const pddl_type_obj_t *to, int type_id, int *size);
-
-void pddlTypeObjPrint(const pddl_type_obj_t *to, FILE *fout);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

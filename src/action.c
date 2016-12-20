@@ -61,8 +61,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
                 return -1;
 
         }else if (root->child[i].kw == PDDL_KW_PRE){
-            a->pre = pddlCondParse(n, &pddl->type, &pddl->obj,
-                                   &pddl->type_obj, &pddl->pred,
+            a->pre = pddlCondParse(n, &pddl->type, &pddl->obj, &pddl->pred,
                                    &pddl->func, &a->param, a->name);
             if (a->pre == NULL)
                 return -1;
@@ -71,8 +70,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
             pddlCondSetPredRead(a->pre, &pddl->pred);
 
         }else if (root->child[i].kw == PDDL_KW_EFF){
-            a->eff = pddlCondParse(n, &pddl->type, &pddl->obj,
-                                   &pddl->type_obj, &pddl->pred,
+            a->eff = pddlCondParse(n, &pddl->type, &pddl->obj, &pddl->pred,
                                    &pddl->func, &a->param, a->name);
             if (a->eff == NULL)
                 return -1;
@@ -136,10 +134,10 @@ void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src)
         dst->eff = pddlCondClone(src->eff);
 }
 
-void pddlActionSimplify(pddl_action_t *a, const pddl_type_obj_t *to)
+void pddlActionSimplify(pddl_action_t *a, const pddl_types_t *t)
 {
-    a->pre = pddlCondSimplify(a->pre, to);
-    a->eff = pddlCondSimplify(a->eff, to);
+    a->pre = pddlCondSimplify(a->pre, t);
+    a->eff = pddlCondSimplify(a->eff, t);
 }
 
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
@@ -172,12 +170,12 @@ void pddlActionsFree(pddl_actions_t *actions)
         BOR_FREE(actions->action);
 }
 
-void pddlActionsSimplify(pddl_actions_t *a, const pddl_type_obj_t *to)
+void pddlActionsSimplify(pddl_actions_t *a, const pddl_types_t *t)
 {
     int i;
 
     for (i = 0; i < a->size; ++i)
-        pddlActionSimplify(a->action + i, to);
+        pddlActionSimplify(a->action + i, t);
 }
 
 static void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as)
@@ -242,11 +240,11 @@ void pddlActionAssertPreConjuction(pddl_action_t *a)
 }
 #endif
 
-void pddlActionsSimplifyAndSplit(pddl_actions_t *a, const pddl_type_obj_t *to)
+void pddlActionsSimplifyAndSplit(pddl_actions_t *a, const pddl_types_t *t)
 {
     int i, size;
 
-    pddlActionsSimplify(a, to);
+    pddlActionsSimplify(a, t);
 
     size = a->size;
     for (i = 0; i < size; ++i)

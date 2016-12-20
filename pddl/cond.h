@@ -155,7 +155,6 @@ int pddlCondTraverse(pddl_cond_t *c,
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
                            const pddl_types_t *types,
                            const pddl_objs_t *objs,
-                           const pddl_type_obj_t *type_obj,
                            const pddl_preds_t *preds,
                            const pddl_preds_t *funcs,
                            const pddl_params_t *params,
@@ -192,7 +191,7 @@ void pddlCondSetPredWrite(const pddl_cond_t *cond, pddl_preds_t *preds);
  * DNF so that the actions can be split.
  */
 pddl_cond_t *pddlCondSimplify(pddl_cond_t *cond,
-                              const pddl_type_obj_t *type_obj);
+                              const pddl_types_t *types);
 
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,

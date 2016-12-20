@@ -122,7 +122,6 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
             || pddlRequireParse(pddl) != 0
             || pddlTypesParse(pddl) != 0
             || pddlObjsParse(pddl) != 0
-            || pddlTypeObjInit(&pddl->type_obj, &pddl->type, &pddl->obj) != 0
             || pddlPredsParse(pddl) != 0
             || pddlFuncsParse(pddl) != 0
             || pddlFactsParseInit(problem_lisp, &pddl->pred,
@@ -151,7 +150,6 @@ void pddlDel(pddl_t *pddl)
         pddlLispDel(pddl->problem_lisp);
     pddlTypesFree(&pddl->type);
     pddlObjsFree(&pddl->obj);
-    pddlTypeObjFree(&pddl->type_obj);
     pddlPredsFree(&pddl->pred);
     pddlPredsFree(&pddl->func);
     pddlFactsFree(&pddl->init_fact);
@@ -170,7 +168,6 @@ void pddlDump(const pddl_t *pddl, FILE *fout)
     fprintf(fout, "Require: %x\n", pddl->require);
     pddlTypesPrint(&pddl->type, fout);
     pddlObjsPrint(&pddl->obj, fout);
-    pddlTypeObjPrint(&pddl->type_obj, fout);
     pddlPredsPrint(&pddl->pred, "Predicate", fout);
     pddlPredsPrint(&pddl->func, "Function", fout);
     pddlActionsPrint(&pddl->action, &pddl->obj, &pddl->pred,

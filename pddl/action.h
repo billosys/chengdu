@@ -68,7 +68,7 @@ void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src);
 /**
  * Simplify .pre and .eff (see pddlCondSimplify()).
  */
-void pddlActionSimplify(pddl_action_t *a, const pddl_type_obj_t *to);
+void pddlActionSimplify(pddl_action_t *a, const pddl_types_t *t);
 
 /**
  * Parses actions from domain PDDL.
@@ -88,12 +88,12 @@ pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
 /**
  * Call pddlActionSimplify() on each action.
  */
-void pddlActionsSimplify(pddl_actions_t *a, const pddl_type_obj_t *to);
+void pddlActionsSimplify(pddl_actions_t *a, const pddl_types_t *t);
 
 /**
  * Simplify all actions and split them by disjunctions in .pre.
  */
-void pddlActionsSimplifyAndSplit(pddl_actions_t *a, const pddl_type_obj_t *to);
+void pddlActionsSimplifyAndSplit(pddl_actions_t *a, const pddl_types_t *t);
 
 void pddlActionsPrint(const pddl_actions_t *actions,
                       const pddl_objs_t *objs,

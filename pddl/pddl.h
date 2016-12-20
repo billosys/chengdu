@@ -44,7 +44,6 @@ struct pddl {
     unsigned require;
     pddl_types_t type;
     pddl_objs_t obj;
-    pddl_type_obj_t type_obj;
     pddl_preds_t pred;
     pddl_preds_t func;
     pddl_facts_t init_fact;

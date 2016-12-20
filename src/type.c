@@ -99,23 +99,69 @@ int pddlTypesParse(pddl_t *pddl)
         return -1;
     }
 
+    if (pddl->type.size > 0)
+        pddl->type.obj_by_type = BOR_CALLOC_ARR(pddl_objs_by_type_t, pddl->type.size);
+
     // TODO: Check circular dependency on types
     return 0;
 }
 
 void pddlTypesFree(pddl_types_t *types)
 {
+    int i;
+
     if (types->type != NULL)
         BOR_FREE(types->type);
+
+    if (types->obj_by_type != NULL){
+        for (i = 0; i < types->size; ++i){
+            if (types->obj_by_type[i].obj != NULL)
+                BOR_FREE(types->obj_by_type[i].obj);
+        }
+        BOR_FREE(types->obj_by_type);
+    }
 }
 
 void pddlTypesPrint(const pddl_types_t *t, FILE *fout)
 {
-    int i;
+    int i, j;
 
     fprintf(fout, "Type[%d]:\n", t->size);
     for (i = 0; i < t->size; ++i){
         fprintf(fout, "    [%d]: %s, parent: %d\n", i,
                 t->type[i].name, t->type[i].parent);
     }
+
+    fprintf(fout, "Obj-by-Type:\n");
+    for (i = 0; i < t->size; ++i){
+        fprintf(fout, "    [%d]:", i);
+        for (j = 0; j < t->obj_by_type[i].size; ++j)
+            fprintf(fout, " %d", t->obj_by_type[i].obj[j]);
+        fprintf(fout, "\n");
+    }
+}
+
+void pddlTypesAddObj(pddl_types_t *ts, int obj_id, int type_id)
+{
+    pddl_objs_by_type_t *obj;
+
+    obj = ts->obj_by_type + type_id;
+    if (obj->size >= obj->alloc){
+        if (obj->alloc == 0)
+            obj->alloc = 2;
+        obj->alloc *= 2;
+        obj->obj = BOR_REALLOC_ARR(obj->obj, int, obj->alloc);
+    }
+
+    obj->obj[obj->size++] = obj_id;
+
+    if (ts->type[type_id].parent != -1)
+        pddlTypesAddObj(ts, obj_id, ts->type[type_id].parent);
+}
+
+const int *pddlTypesObjsByType(const pddl_types_t *ts, int type_id, int *size)
+{
+    if (size != NULL)
+        *size = ts->obj_by_type[type_id].size;
+    return ts->obj_by_type[type_id].obj;
 }
