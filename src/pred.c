@@ -18,6 +18,7 @@
  */
 
 #include <boruvka/alloc.h>
+#include "pddl/pddl.h"
 #include "pddl/pred.h"
 #include "err.h"
 
@@ -71,11 +72,11 @@ static int checkDuplicate(const pddl_preds_t *ps, const char *name)
     return 0;
 }
 
-static int parsePredicate(const pddl_types_t *types,
-                          const pddl_lisp_node_t *n,
-                          const char *owner_var,
-                          const char *errname,
-                          pddl_preds_t *ps)
+static int parsePred(const pddl_t *pddl,
+                     const pddl_lisp_node_t *n,
+                     const char *owner_var,
+                     const char *errname,
+                     pddl_preds_t *ps)
 {
     pddl_pred_t *p;
     set_t set;
@@ -92,7 +93,7 @@ static int parsePredicate(const pddl_types_t *types,
 
     p = pddlPredsAdd(ps);
     set.pred = p;
-    set.types = types;
+    set.types = &pddl->type;
     set.owner_var = owner_var;
     if (pddlLispParseTypedList(n, 1, n->child_size, setCB, &set) != 0){
         pddlPredsRemoveLast(ps);
@@ -103,15 +104,14 @@ static int parsePredicate(const pddl_types_t *types,
     return 0;
 }
 
-static int parsePrivatePredicates(const pddl_types_t *types,
-                                  const pddl_lisp_node_t *n,
-                                  pddl_preds_t *ps,
-                                  unsigned require)
+static int parsePrivatePreds(const pddl_t *pddl,
+                             const pddl_lisp_node_t *n,
+                             pddl_preds_t *ps)
 {
     const char *owner_var;
     int factor, i, from;
 
-    factor = (require & PDDL_REQUIRE_FACTORED_PRIVACY);
+    factor = (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
 
     if (factor){
         if (n->child_size < 2
@@ -143,9 +143,10 @@ static int parsePrivatePredicates(const pddl_types_t *types,
     }
 
     for (i = from; i < n->child_size; ++i){
-        if (parsePredicate(types, n->child + i, owner_var,
-                           "private predicate", ps) != 0)
+        if (parsePred(pddl, n->child + i, owner_var,
+                      "private predicate", ps) != 0){
             return -1;
+        }
 
         ps->pred[ps->size - 1].is_private = 1;
     }
@@ -164,25 +165,22 @@ static void addEqPredicate(pddl_preds_t *ps)
     ps->eq_pred = ps->size - 1;
 }
 
-int pddlPredsParse(const pddl_lisp_t *domain,
-                   unsigned require,
-                   const pddl_types_t *types,
-                   pddl_preds_t *ps)
+int pddlPredsParse(pddl_t *pddl)
 {
     const pddl_lisp_node_t *n;
     int i, to, private;
 
-    n = pddlLispFindNode(&domain->root, PDDL_KW_PREDICATES);
+    n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_PREDICATES);
     if (n == NULL)
         return 0;
 
-    ps->eq_pred = -1;
-    if (require & PDDL_REQUIRE_EQUALITY)
-        addEqPredicate(ps);
+    pddl->pred.eq_pred = -1;
+    if (pddl->require & PDDL_REQUIRE_EQUALITY)
+        addEqPredicate(&pddl->pred);
 
     // Determine if we can expect :private definitions
-    private = (require & PDDL_REQUIRE_UNFACTORED_PRIVACY)
-                || (require & PDDL_REQUIRE_FACTORED_PRIVACY);
+    private = (pddl->require & PDDL_REQUIRE_UNFACTORED_PRIVACY)
+                || (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
 
     if (private){
         // Find out first :private definition
@@ -197,14 +195,14 @@ int pddlPredsParse(const pddl_lisp_t *domain,
 
     // Parse non :private predicates
     for (i = 1; i < to; ++i){
-        if (parsePredicate(types, n->child + i, NULL, "predicate", ps) != 0)
+        if (parsePred(pddl, n->child + i, NULL, "predicate", &pddl->pred) != 0)
             return -1;
     }
 
     if (private){
         // Parse :private predicates
         for (i = to; i < n->child_size; ++i){
-            if (parsePrivatePredicates(types, n->child + i, ps, require) != 0)
+            if (parsePrivatePreds(pddl, n->child + i, &pddl->pred) != 0)
                 return -1;
         }
     }
@@ -212,19 +210,17 @@ int pddlPredsParse(const pddl_lisp_t *domain,
     return 0;
 }
 
-int pddlFunctionsParse(const pddl_lisp_t *domain,
-                       const pddl_types_t *types,
-                       pddl_preds_t *ps)
+int pddlFuncsParse(pddl_t *pddl)
 {
     const pddl_lisp_node_t *n;
     int i;
 
-    n = pddlLispFindNode(&domain->root, PDDL_KW_FUNCTIONS);
+    n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_FUNCTIONS);
     if (n == NULL)
         return 0;
 
     for (i = 1; i < n->child_size; ++i){
-        if (parsePredicate(types, n->child + i, NULL, "function", ps) != 0)
+        if (parsePred(pddl, n->child + i, NULL, "function", &pddl->func) != 0)
             return -1;
 
         if (i + 2 < n->child_size

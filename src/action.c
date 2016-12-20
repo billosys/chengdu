@@ -19,6 +19,7 @@
 
 #include <boruvka/alloc.h>
 #include "pddl/config.h"
+#include "pddl/pddl.h"
 #include "pddl/action.h"
 #include "err.h"
 
@@ -26,14 +27,7 @@
 #define PDDL_ACTIONS_ALLOC_INIT 4
 
 
-static int parseAction(const pddl_types_t *types,
-                       const pddl_objs_t *objs,
-                       const pddl_type_obj_t *type_obj,
-                       pddl_preds_t *predicates,
-                       const pddl_preds_t *functions,
-                       unsigned require,
-                       const pddl_lisp_node_t *root,
-                       pddl_actions_t *actions)
+static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
 {
     const pddl_lisp_node_t *n;
     pddl_action_t *a;
@@ -46,43 +40,45 @@ static int parseAction(const pddl_types_t *types,
         return -1;
     }
 
-    a = pddlActionsAdd(actions);
+    a = pddlActionsAdd(&pddl->action);
     a->name = root->child[1].value;
     for (i = 2; i < root->child_size; i += 2){
         n = root->child + i + 1;
         if (root->child[i].kw == PDDL_KW_AGENT){
-            if (!(require & PDDL_REQUIRE_MULTI_AGENT)){
+            if (!(pddl->require & PDDL_REQUIRE_MULTI_AGENT)){
                 ERRN2(root->child + i, ":agent is allowed only with"
                                        " :multi-agent requirement.");
                 return -1;
             }
 
-            ret = pddlParamsParseAgent(&a->param, root, i, types);
+            ret = pddlParamsParseAgent(&a->param, root, i, &pddl->type);
             if (ret < 0)
                 return -1;
             i = ret - 2;
 
         }else if (root->child[i].kw == PDDL_KW_PARAMETERS){
-            if (pddlParamsParse(&a->param, n, types) != 0)
+            if (pddlParamsParse(&a->param, n, &pddl->type) != 0)
                 return -1;
 
         }else if (root->child[i].kw == PDDL_KW_PRE){
-            a->pre = pddlCondParse(n, types, objs, type_obj, predicates,
-                                   functions, &a->param, a->name);
+            a->pre = pddlCondParse(n, &pddl->type, &pddl->obj,
+                                   &pddl->type_obj, &pddl->pred,
+                                   &pddl->func, &a->param, a->name);
             if (a->pre == NULL)
                 return -1;
-            if (pddlCondCheckPre(a->pre, require, 1) != 0)
+            if (pddlCondCheckPre(a->pre, pddl->require, 1) != 0)
                 return -1;
-            pddlCondSetPredRead(a->pre, predicates);
+            pddlCondSetPredRead(a->pre, &pddl->pred);
 
         }else if (root->child[i].kw == PDDL_KW_EFF){
-            a->eff = pddlCondParse(n, types, objs, type_obj, predicates,
-                                   functions, &a->param, a->name);
+            a->eff = pddlCondParse(n, &pddl->type, &pddl->obj,
+                                   &pddl->type_obj, &pddl->pred,
+                                   &pddl->func, &a->param, a->name);
             if (a->eff == NULL)
                 return -1;
-            if (pddlCondCheckEff(a->eff, require, 1) != 0)
+            if (pddlCondCheckEff(a->eff, pddl->require, 1) != 0)
                 return -1;
-            pddlCondSetPredWrite(a->eff, predicates);
+            pddlCondSetPredWrite(a->eff, &pddl->pred);
 
         }else{
             ERRN(root->child + i, "Invalid definition of action `%s'."
@@ -98,26 +94,17 @@ static int parseAction(const pddl_types_t *types,
     return 0;
 }
 
-int pddlActionsParse(const pddl_lisp_t *domain,
-                     const pddl_types_t *types,
-                     const pddl_objs_t *objs,
-                     const pddl_type_obj_t *type_obj,
-                     pddl_preds_t *predicates,
-                     const pddl_preds_t *functions,
-                     unsigned require,
-                     pddl_actions_t *actions)
+int pddlActionsParse(pddl_t *pddl)
 {
-    const pddl_lisp_node_t *root = &domain->root;
+    const pddl_lisp_node_t *root = &pddl->domain_lisp->root;
     const pddl_lisp_node_t *n;
     int i;
 
     for (i = 0; i < root->child_size; ++i){
         n = root->child + i;
         if (pddlLispNodeHeadKw(n) == PDDL_KW_ACTION){
-            if (parseAction(types, objs, type_obj, predicates,
-                            functions, require, n, actions) != 0){
+            if (parseAction(pddl, n) != 0)
                 return -1;
-            }
         }
     }
     return 0;

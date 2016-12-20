@@ -26,6 +26,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl;
+
 /**
  * Requirements
  */
@@ -54,7 +56,7 @@ extern "C" {
 /**
  * Parses :requirements from domain pddl.
  */
-int pddlRequireParse(const pddl_lisp_t *domain, unsigned *req, unsigned flags);
+int pddlRequireParse(struct pddl *pddl);
 
 #ifdef __cplusplus
 } /* extern "C" */

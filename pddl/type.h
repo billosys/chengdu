@@ -26,6 +26,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl;
+
 struct pddl_type {
     const char *name; /*!< Name of the type */
     int parent;       /*!< ID of the parent type */
@@ -41,7 +43,7 @@ typedef struct pddl_types pddl_types_t;
 /**
  * Parses :types into type array.
  */
-int pddlTypesParse(const pddl_lisp_t *domain, pddl_types_t *types);
+int pddlTypesParse(struct pddl *pddl);
 
 /**
  * Frees allocated resources.

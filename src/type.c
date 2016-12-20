@@ -18,6 +18,7 @@
  */
 
 #include <boruvka/alloc.h>
+#include "pddl/pddl.h"
 #include "pddl/type.h"
 #include "err.h"
 
@@ -79,21 +80,21 @@ static int setCB(const pddl_lisp_node_t *root,
     return 0;
 }
 
-int pddlTypesParse(const pddl_lisp_t *domain, pddl_types_t *types)
+int pddlTypesParse(pddl_t *pddl)
 {
     const pddl_lisp_node_t *n;
 
     // Create a default "object" type
-    types->size = 1;
-    types->type = BOR_ALLOC(pddl_type_t);
-    types->type[0].name = object_name;
-    types->type[0].parent = -1;
+    pddl->type.size = 1;
+    pddl->type.type = BOR_ALLOC(pddl_type_t);
+    pddl->type.type[0].name = object_name;
+    pddl->type.type[0].parent = -1;
 
-    n = pddlLispFindNode(&domain->root, PDDL_KW_TYPES);
+    n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_TYPES);
     if (n == NULL)
         return 0;
 
-    if (pddlLispParseTypedList(n, 1, n->child_size, setCB, types) != 0){
+    if (pddlLispParseTypedList(n, 1, n->child_size, setCB, &pddl->type) != 0){
         ERRN2(n, "Invalid definition of :types");
         return -1;
     }

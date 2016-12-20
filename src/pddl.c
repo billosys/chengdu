@@ -106,6 +106,7 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
 
     pddl = BOR_ALLOC(pddl_t);
     bzero(pddl, sizeof(*pddl));
+    pddl->flags = flags;
     pddl->domain_lisp = domain_lisp;
     pddl->problem_lisp = problem_lisp;
     pddl->domain_name = parseDomainName(&domain_lisp->root);
@@ -118,24 +119,18 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
 
 
     if (checkDomainName(pddl) != 0
-            || pddlRequireParse(domain_lisp, &pddl->require, flags) != 0
-            || pddlTypesParse(domain_lisp, &pddl->type) != 0
-            || pddlObjsParse(domain_lisp, problem_lisp,
-                                 &pddl->type, pddl->require, &pddl->obj) != 0
+            || pddlRequireParse(pddl) != 0
+            || pddlTypesParse(pddl) != 0
+            || pddlObjsParse(pddl) != 0
             || pddlTypeObjInit(&pddl->type_obj, &pddl->type, &pddl->obj) != 0
-            || pddlPredsParse(domain_lisp, pddl->require,
-                                       &pddl->type, &pddl->predicate) != 0
-            || pddlFunctionsParse(domain_lisp, &pddl->type,
-                                      &pddl->function) != 0
-            || pddlFactsParseInit(problem_lisp, &pddl->predicate,
-                                      &pddl->function, &pddl->obj,
+            || pddlPredsParse(pddl) != 0
+            || pddlFuncsParse(pddl) != 0
+            || pddlFactsParseInit(problem_lisp, &pddl->pred,
+                                      &pddl->func, &pddl->obj,
                                       &pddl->init_fact, &pddl->init_func) != 0
-            || pddlFactsParseGoal(problem_lisp, &pddl->predicate,
+            || pddlFactsParseGoal(problem_lisp, &pddl->pred,
                                       &pddl->obj, &pddl->goal) != 0
-            || pddlActionsParse(domain_lisp, &pddl->type, &pddl->obj,
-                                    &pddl->type_obj, &pddl->predicate,
-                                    &pddl->function, pddl->require,
-                                    &pddl->action) != 0
+            || pddlActionsParse(pddl) != 0
             || parseMetric(pddl, &problem_lisp->root) != 0){
         goto pddl_fail;
     }
@@ -157,8 +152,8 @@ void pddlDel(pddl_t *pddl)
     pddlTypesFree(&pddl->type);
     pddlObjsFree(&pddl->obj);
     pddlTypeObjFree(&pddl->type_obj);
-    pddlPredsFree(&pddl->predicate);
-    pddlPredsFree(&pddl->function);
+    pddlPredsFree(&pddl->pred);
+    pddlPredsFree(&pddl->func);
     pddlFactsFree(&pddl->init_fact);
     pddlFactsFree(&pddl->init_func);
     pddlFactsFree(&pddl->goal);
@@ -176,13 +171,13 @@ void pddlDump(const pddl_t *pddl, FILE *fout)
     pddlTypesPrint(&pddl->type, fout);
     pddlObjsPrint(&pddl->obj, fout);
     pddlTypeObjPrint(&pddl->type_obj, fout);
-    pddlPredsPrint(&pddl->predicate, "Predicate", fout);
-    pddlPredsPrint(&pddl->function, "Function", fout);
-    pddlActionsPrint(&pddl->action, &pddl->obj, &pddl->predicate,
-                         &pddl->function, fout);
+    pddlPredsPrint(&pddl->pred, "Predicate", fout);
+    pddlPredsPrint(&pddl->func, "Function", fout);
+    pddlActionsPrint(&pddl->action, &pddl->obj, &pddl->pred,
+                         &pddl->func, fout);
 
-    pddlFactsPrintGoal(&pddl->predicate, &pddl->obj, &pddl->goal, fout);
-    pddlFactsPrintInit(&pddl->predicate, &pddl->obj, &pddl->init_fact, fout);
-    pddlFactsPrintInitFunc(&pddl->function, &pddl->obj, &pddl->init_func, fout);
+    pddlFactsPrintGoal(&pddl->pred, &pddl->obj, &pddl->goal, fout);
+    pddlFactsPrintInit(&pddl->pred, &pddl->obj, &pddl->init_fact, fout);
+    pddlFactsPrintInitFunc(&pddl->func, &pddl->obj, &pddl->init_func, fout);
     fprintf(fout, "Metric: %d\n", pddl->metric);
 }

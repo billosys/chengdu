@@ -19,6 +19,7 @@
 
 #include <boruvka/alloc.h>
 #include <boruvka/hfunc.h>
+#include "pddl/pddl.h"
 #include "pddl/obj.h"
 #include "pddl/require.h"
 #include "err.h"
@@ -89,9 +90,7 @@ static int setCB(const pddl_lisp_node_t *root,
     return 0;
 }
 
-static int parse(const pddl_lisp_t *lisp, int kw, int is_const,
-                 const pddl_types_t *types,
-                 pddl_objs_t *objs)
+static int parse(pddl_t *pddl, const pddl_lisp_t *lisp, int kw, int is_const)
 {
     const pddl_lisp_node_t *n;
     int to;
@@ -111,8 +110,8 @@ static int parse(const pddl_lisp_t *lisp, int kw, int is_const,
             break;
     }
 
-    set.objs = objs;
-    set.types = types;
+    set.objs = &pddl->obj;
+    set.types = &pddl->type;
     set.is_const = is_const;
     if (pddlLispParseTypedList(n, 1, to, setCB, &set) != 0){
         if (is_const){
@@ -126,16 +125,13 @@ static int parse(const pddl_lisp_t *lisp, int kw, int is_const,
     return 0;
 }
 
-static int parsePrivate(const pddl_lisp_t *lisp,
-                        const pddl_types_t *types,
-                        pddl_objs_t *objs,
-                        unsigned require)
+static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp)
 {
     const pddl_lisp_node_t *n, *p;
     int i, factor, pi, owner, parse_from;
     set_t set;
 
-    factor = (require & PDDL_REQUIRE_FACTORED_PRIVACY);
+    factor = (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
     parse_from = 2;
     if (factor)
         parse_from = 1;
@@ -144,15 +140,15 @@ static int parsePrivate(const pddl_lisp_t *lisp,
     if (n == NULL)
         return 0;
 
-    set.objs = objs;
-    set.types = types;
+    set.objs = &pddl->obj;
+    set.types = &pddl->type;
     set.is_const = 0;
     for (i = 1; i < n->child_size; ++i){
         p = n->child + i;
         if (p->child_size == 0 || p->child[0].kw != PDDL_KW_PRIVATE)
             continue;
 
-        pi = objs->size;
+        pi = pddl->obj.size;
         if (pddlLispParseTypedList(p, parse_from, p->child_size, setCB, &set) != 0){
             ERRN2(n->child + i, "Invalid definition of :private :objects.");
             return -1;
@@ -160,41 +156,37 @@ static int parsePrivate(const pddl_lisp_t *lisp,
 
         owner = -1;
         if (!factor){
-            owner = pddlObjsGet(objs, p->child[1].value);
+            owner = pddlObjsGet(&pddl->obj, p->child[1].value);
             if (owner < 0){
                 ERRN(n->child + i, "Invalid definition of private objects."
                                    " Unkown owner `%s'.\n", p->child[1].value);
                 return -1;
             }
-            objs->obj[owner].is_agent = 1;
+            pddl->obj.obj[owner].is_agent = 1;
         }
 
-        for (; pi < objs->size; ++pi){
-            objs->obj[pi].is_private = 1;
-            objs->obj[pi].owner = owner;
+        for (; pi < pddl->obj.size; ++pi){
+            pddl->obj.obj[pi].is_private = 1;
+            pddl->obj.obj[pi].owner = owner;
         }
     }
 
     return 0;
 }
 
-int pddlObjsParse(const pddl_lisp_t *domain,
-                  const pddl_lisp_t *problem,
-                  const pddl_types_t *types,
-                  unsigned require,
-                  pddl_objs_t *objs)
+int pddlObjsParse(pddl_t *pddl)
 {
-    bzero(objs, sizeof(*objs));
-    objs->htable = borHTableNew(objHash, objEq, NULL);
+    bzero(&pddl->obj, sizeof(pddl->obj));
+    pddl->obj.htable = borHTableNew(objHash, objEq, NULL);
 
-    if (parse(domain, PDDL_KW_CONSTANTS, 1, types, objs) != 0
-            || parse(problem, PDDL_KW_OBJECTS, 0, types, objs) != 0)
+    if (parse(pddl, pddl->domain_lisp, PDDL_KW_CONSTANTS, 1) != 0
+            || parse(pddl, pddl->problem_lisp, PDDL_KW_OBJECTS, 0) != 0)
         return -1;
 
-    if (((require & PDDL_REQUIRE_MULTI_AGENT)
-                && (require & PDDL_REQUIRE_UNFACTORED_PRIVACY))
-            || (require & PDDL_REQUIRE_FACTORED_PRIVACY)){
-        if (parsePrivate(problem, types, objs, require) != 0)
+    if (((pddl->require & PDDL_REQUIRE_MULTI_AGENT)
+                && (pddl->require & PDDL_REQUIRE_UNFACTORED_PRIVACY))
+            || (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY)){
+        if (parsePrivate(pddl, pddl->problem_lisp) != 0)
             return -1;
     }
     return 0;

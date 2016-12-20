@@ -83,20 +83,20 @@ static unsigned requireMask(int kw)
     return 0u;
 }
 
-int pddlRequireParse(const pddl_lisp_t *domain, unsigned *req, unsigned flags)
+int pddlRequireParse(pddl_t *pddl)
 {
     const pddl_lisp_node_t *req_node, *n;
     unsigned m;
     int i;
 
-    *req = 0u;
-    if (flags & PDDL_FORCE_ADL)
-        *req = PDDL_REQUIRE_ADL;
+    pddl->require = 0u;
+    if (pddl->flags & PDDL_FORCE_ADL)
+        pddl->require = PDDL_REQUIRE_ADL;
 
-    req_node = pddlLispFindNode(&domain->root, PDDL_KW_REQUIREMENTS);
+    req_node = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_REQUIREMENTS);
     // No :requirements implies :strips
     if (req_node == NULL){
-        *req = PDDL_REQUIRE_STRIPS;
+        pddl->require |= PDDL_REQUIRE_STRIPS;
         return 0;
     }
 
@@ -112,7 +112,7 @@ int pddlRequireParse(const pddl_lisp_t *domain, unsigned *req, unsigned flags)
             return -1;
         }
 
-        *req |= m;
+        pddl->require |= m;
     }
 
     return 0;

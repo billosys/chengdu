@@ -27,6 +27,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl;
+
 struct pddl_obj {
     const char *name; /*!< Name of the object */
     int type;         /*!< Type of the object */
@@ -50,11 +52,7 @@ typedef struct pddl_objs pddl_objs_t;
 /**
  * Parse :constants and :objects from domain and problem PDDLs.
  */
-int pddlObjsParse(const pddl_lisp_t *domain,
-                  const pddl_lisp_t *problem,
-                  const pddl_types_t *types,
-                  unsigned require,
-                  pddl_objs_t *objs);
+int pddlObjsParse(struct pddl *pddl);
 
 /**
  * Frees allocated resources.
@@ -79,6 +77,7 @@ void pddlObjsPrint(const pddl_objs_t *objs, FILE *fout);
 
 /**
  * Mapping between type and objects.
+ * TODO: Move to pddl_type_t
  */
 struct pddl_type_obj {
     int **map;

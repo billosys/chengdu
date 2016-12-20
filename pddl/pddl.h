@@ -36,6 +36,7 @@ extern "C" {
 #define PDDL_FORCE_ADL 0x1u /*!< Force ADL to requirements */
 
 struct pddl {
+    unsigned flags;
     pddl_lisp_t *domain_lisp;
     pddl_lisp_t *problem_lisp;
     const char *domain_name;
@@ -44,8 +45,8 @@ struct pddl {
     pddl_types_t type;
     pddl_objs_t obj;
     pddl_type_obj_t type_obj;
-    pddl_preds_t predicate;
-    pddl_preds_t function;
+    pddl_preds_t pred;
+    pddl_preds_t func;
     pddl_facts_t init_fact;
     pddl_facts_t init_func;
     pddl_facts_t goal;

@@ -29,6 +29,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl;
+
 
 /**
  * Lifted action
@@ -71,14 +73,7 @@ void pddlActionSimplify(pddl_action_t *a, const pddl_type_obj_t *to);
 /**
  * Parses actions from domain PDDL.
  */
-int pddlActionsParse(const pddl_lisp_t *domain,
-                     const pddl_types_t *types,
-                     const pddl_objs_t *objs,
-                     const pddl_type_obj_t *type_obj,
-                     pddl_preds_t *predicates,
-                     const pddl_preds_t *functions,
-                     unsigned require,
-                     pddl_actions_t *actions);
+int pddlActionsParse(struct pddl *pddl);
 
 /**
  * Free allocated memory.

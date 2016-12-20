@@ -27,6 +27,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl;
+
 // TODO: Support for (:either ...) as a type of parameter
 struct pddl_pred {
     const char *name; /*!< Name of the predicate */
@@ -52,17 +54,12 @@ typedef struct pddl_preds pddl_preds_t;
 /**
  * Parse :predicates from domain PDDL.
  */
-int pddlPredsParse(const pddl_lisp_t *domain,
-                   unsigned require,
-                   const pddl_types_t *types,
-                   pddl_preds_t *ps);
+int pddlPredsParse(struct pddl *pddl);
 
 /**
  * Parse :functions from domain PDDL.
  */
-int pddlFunctionsParse(const pddl_lisp_t *domain,
-                       const pddl_types_t *types,
-                       pddl_preds_t *ps);
+int pddlFuncsParse(struct pddl *pddl);
 
 /**
  * Frees allocated resources.
