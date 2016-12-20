@@ -20,6 +20,7 @@
 #ifndef __PDDL_H__
 #define __PDDL_H__
 
+#include <pddl/config.h>
 #include <pddl/lisp.h>
 #include <pddl/require.h>
 #include <pddl/type.h>
@@ -57,6 +58,9 @@ typedef struct pddl pddl_t;
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
                 unsigned flags);
 void pddlDel(pddl_t *pddl);
+
+void pddlNormalize(pddl_t *pddl);
+
 void pddlDump(const pddl_t *pddl, FILE *fout);
 
 #ifdef __cplusplus

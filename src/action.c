@@ -132,10 +132,10 @@ void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src)
         dst->eff = pddlCondClone(src->eff);
 }
 
-void pddlActionSimplify(pddl_action_t *a, const pddl_types_t *t)
+void pddlActionNormalize(pddl_action_t *a, const pddl_types_t *t)
 {
-    a->pre = pddlCondSimplify(a->pre, t);
-    a->eff = pddlCondSimplify(a->eff, t);
+    a->pre = pddlCondNormalize(a->pre, t);
+    a->eff = pddlCondNormalize(a->eff, t);
 }
 
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
@@ -168,15 +168,7 @@ void pddlActionsFree(pddl_actions_t *actions)
         BOR_FREE(actions->action);
 }
 
-void pddlActionsSimplify(pddl_actions_t *a, const pddl_types_t *t)
-{
-    int i;
-
-    for (i = 0; i < a->size; ++i)
-        pddlActionSimplify(a->action + i, t);
-}
-
-static void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as)
+void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as)
 {
     pddl_action_t *newa;
     pddl_cond_part_t *pre;
@@ -209,7 +201,6 @@ static void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as)
     pddlCondDel(&pre->cls);
 }
 
-#ifdef PDDL_DEBUG
 void pddlActionAssertPreConjuction(pddl_action_t *a)
 {
     bor_list_t *item;
@@ -235,25 +226,6 @@ void pddlActionAssertPreConjuction(pddl_action_t *a)
             exit(-1);
         }
     }
-}
-#endif
-
-void pddlActionsSimplifyAndSplit(pddl_actions_t *a, const pddl_types_t *t)
-{
-    int i, size;
-
-    pddlActionsSimplify(a, t);
-
-    size = a->size;
-    for (i = 0; i < size; ++i)
-        pddlActionSplit(a->action + i, a);
-
-#ifdef PDDL_DEBUG
-    // Check that all actions has only a flat conjuction as its
-    // precondition
-    for (i = 0; i < a->size; ++i)
-        pddlActionAssertPreConjuction(a->action + i);
-#endif
 }
 
 static void pddlActionPrint(const pddl_action_t *a,

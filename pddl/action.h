@@ -66,9 +66,9 @@ void pddlActionFree(pddl_action_t *a);
 void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src);
 
 /**
- * Simplify .pre and .eff (see pddlCondSimplify()).
+ * Normalize .pre and .eff (see pddlCondNormalize()).
  */
-void pddlActionSimplify(pddl_action_t *a, const pddl_types_t *t);
+void pddlActionNormalize(pddl_action_t *a, const pddl_types_t *t);
 
 /**
  * Parses actions from domain PDDL.
@@ -86,14 +86,14 @@ void pddlActionsFree(pddl_actions_t *actions);
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
 
 /**
- * Call pddlActionSimplify() on each action.
+ * Split all actions by disjunctions in .pre assuming all .pre are in DNF.
  */
-void pddlActionsSimplify(pddl_actions_t *a, const pddl_types_t *t);
+void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as);
 
 /**
- * Simplify all actions and split them by disjunctions in .pre.
+ * Check that all actions has only a flat conjuction as its precondition.
  */
-void pddlActionsSimplifyAndSplit(pddl_actions_t *a, const pddl_types_t *t);
+void pddlActionAssertPreConjuction(pddl_action_t *a);
 
 void pddlActionsPrint(const pddl_actions_t *actions,
                       const pddl_objs_t *objs,

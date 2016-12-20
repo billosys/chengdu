@@ -19,7 +19,7 @@
 
 
 #include <boruvka/alloc.h>
-#include <pddl/pddl.h>
+#include "pddl/pddl.h"
 #include "err.h"
 
 static const char *parseName(pddl_lisp_node_t *root, int kw,
@@ -160,6 +160,22 @@ void pddlDel(pddl_t *pddl)
     BOR_FREE(pddl);
 }
 
+
+void pddlNormalize(pddl_t *pddl)
+{
+    int i;
+
+    for (i = 0; i < pddl->action.size; ++i)
+        pddlActionNormalize(pddl->action.action + i, &pddl->type);
+
+    for (i = 0; i < pddl->action.size; ++i)
+        pddlActionSplit(pddl->action.action + i, &pddl->action);
+
+#ifdef PDDL_DEBUG
+    for (i = 0; i < pddl->action.size; ++i)
+        pddlActionAssertPreConjuction(pddl->action.action + i);
+#endif
+}
 
 void pddlDump(const pddl_t *pddl, FILE *fout)
 {

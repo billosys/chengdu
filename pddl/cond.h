@@ -185,11 +185,10 @@ void pddlCondSetPredRead(const pddl_cond_t *cond, pddl_preds_t *preds);
 void pddlCondSetPredWrite(const pddl_cond_t *cond, pddl_preds_t *preds);
 
 /**
- * Simplify conditionals by instantiation qunatifiers and transformation to
+ * Normalize conditionals by instantiation qunatifiers and transformation to
  * DNF so that the actions can be split.
  */
-pddl_cond_t *pddlCondSimplify(pddl_cond_t *cond,
-                              const pddl_types_t *types);
+pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types);
 
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,

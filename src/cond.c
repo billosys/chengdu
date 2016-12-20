@@ -1500,8 +1500,7 @@ static pddl_cond_t *moveDisjunctionsUp(pddl_cond_t *c, void *data)
     return c;
 }
 
-pddl_cond_t *pddlCondSimplify(pddl_cond_t *cond,
-                              const pddl_types_t *types)
+pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types)
 {
     pddl_cond_t *c;
     c = pddlCondInstantiateQuant(cond, types);
