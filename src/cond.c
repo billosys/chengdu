@@ -511,6 +511,12 @@ static int parseAtomArg(pddl_cond_atom_arg_t *arg,
     int v;
 
     if (root->value[0] == '?'){
+        if (ctx->params == NULL){
+            ERRN(root, "Unexpected parameter `%s' :: %s", root->value,
+                 ctx->err);
+            return -1;
+        }
+
         v = pddlParamsGetId(ctx->params, root->value);
         if (v < 0){
             ERRN(root, "Invalid paramenter `%s' :: %s", root->value, ctx->err);
@@ -688,7 +694,7 @@ static int parseQuantParams(pddl_params_t *params,
     }
 
     // And also add all global parameters that are not shadowed
-    for (i = 0; i < ctx->params->size; ++i){
+    for (i = 0; ctx->params != NULL && i < ctx->params->size; ++i){
         use = 1;
         for (j = 0; j < params->size; ++j){
             if (strcmp(params->param[j].name, ctx->params->param[i].name) == 0){
@@ -880,6 +886,20 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
     ctx.err = err;
 
     return parse(root, &ctx, 0);
+}
+
+pddl_cond_t *pddlCondEmptyPre(void)
+{
+    return &condPartNew(PDDL_COND_AND)->cls;
+}
+
+pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom)
+{
+    pddl_cond_part_t *and;
+
+    and = condPartNew(PDDL_COND_AND);
+    condPartAdd(and, atom);
+    return &and->cls;
 }
 
 

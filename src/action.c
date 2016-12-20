@@ -84,6 +84,11 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
         }
     }
 
+    // Empty precondition is allowed meaning the action can be applied in
+    // any state
+    if (a->pre == NULL)
+        a->pre = pddlCondEmptyPre();
+
     // TODO: Check compatibility of types of parameters and types of
     //       arguments of all predicates.
 
@@ -136,6 +141,11 @@ void pddlActionNormalize(pddl_action_t *a, const pddl_types_t *t)
 {
     a->pre = pddlCondNormalize(a->pre, t);
     a->eff = pddlCondNormalize(a->eff, t);
+
+    if (a->pre->type == PDDL_COND_ATOM)
+        a->pre = pddlCondAtomToAnd(a->pre);
+    if (a->eff->type == PDDL_COND_ATOM)
+        a->eff = pddlCondAtomToAnd(a->eff);
 }
 
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
@@ -206,9 +216,6 @@ void pddlActionAssertPreConjuction(pddl_action_t *a)
     bor_list_t *item;
     pddl_cond_part_t *pre;
     pddl_cond_t *c;
-
-    if (a->pre->type == PDDL_COND_ATOM)
-        return;
 
     if (a->pre->type != PDDL_COND_AND){
         fprintf(stderr, "Fatal Error: Precondition of the action `%s' is"

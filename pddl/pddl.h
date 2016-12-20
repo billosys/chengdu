@@ -49,7 +49,7 @@ struct pddl {
     pddl_preds_t func;
     pddl_facts_t init_fact;
     pddl_facts_t init_func;
-    pddl_facts_t goal;
+    pddl_cond_t *goal;
     pddl_actions_t action;
     int metric;
 };

@@ -159,6 +159,16 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
                            const char *errname);
 
 /**
+ * Creates a placeholder for an empty precondition.
+ */
+pddl_cond_t *pddlCondEmptyPre(void);
+
+/**
+ * Transforms atom into (and atom).
+ */
+pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom);
+
+/**
  * Returns 0 if cond is a correct precondition, -1 otherwise.
  * If verbose is set, error messages are print to stderr.
  */

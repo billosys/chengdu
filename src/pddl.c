@@ -88,6 +88,28 @@ static int parseMetric(pddl_t *pddl, const pddl_lisp_node_t *root)
     return 0;
 }
 
+static int parseGoal(pddl_t *pddl)
+{
+    const pddl_lisp_node_t *ngoal;
+
+    ngoal = pddlLispFindNode(&pddl->problem_lisp->root, PDDL_KW_GOAL);
+    if (ngoal == NULL){
+        ERR2("Missing :goal.");
+        return -1;
+    }
+
+    if (ngoal->child_size != 2
+            || ngoal->child[1].value != NULL){
+        ERRN2(ngoal, "Invalid definition of :goal.");
+        return -1;
+    }
+
+    pddl->goal = pddlCondParse(ngoal->child + 1, pddl, NULL, ":goal");
+    if (pddl->goal == NULL)
+        return -1;
+    return 0;
+}
+
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
                 unsigned flags)
 {
@@ -125,8 +147,7 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
             || pddlPredsParse(pddl) != 0
             || pddlFuncsParse(pddl) != 0
             || pddlFactsParseInit(pddl) != 0
-            || pddlFactsParseGoal(problem_lisp, &pddl->pred,
-                                      &pddl->obj, &pddl->goal) != 0
+            || parseGoal(pddl) != 0
             || pddlActionsParse(pddl) != 0
             || parseMetric(pddl, &problem_lisp->root) != 0){
         goto pddl_fail;
@@ -152,7 +173,8 @@ void pddlDel(pddl_t *pddl)
     pddlPredsFree(&pddl->func);
     pddlFactsFree(&pddl->init_fact);
     pddlFactsFree(&pddl->init_func);
-    pddlFactsFree(&pddl->goal);
+    if (pddl->goal)
+        pddlCondDel(pddl->goal);
     pddlActionsFree(&pddl->action);
 
     BOR_FREE(pddl);
@@ -173,6 +195,9 @@ void pddlNormalize(pddl_t *pddl)
     for (i = 0; i < pddl->action.size; ++i)
         pddlActionAssertPreConjuction(pddl->action.action + i);
 #endif
+
+    if (pddl->goal)
+        pddl->goal = pddlCondNormalize(pddl->goal, &pddl->type);
 }
 
 void pddlDump(const pddl_t *pddl, FILE *fout)
@@ -187,8 +212,12 @@ void pddlDump(const pddl_t *pddl, FILE *fout)
     pddlActionsPrint(&pddl->action, &pddl->obj, &pddl->pred,
                          &pddl->func, fout);
 
-    pddlFactsPrintGoal(&pddl->pred, &pddl->obj, &pddl->goal, fout);
     pddlFactsPrintInit(&pddl->pred, &pddl->obj, &pddl->init_fact, fout);
     pddlFactsPrintInitFunc(&pddl->func, &pddl->obj, &pddl->init_func, fout);
+
+    fprintf(fout, "Goal: ");
+    pddlCondPrint(pddl->goal, &pddl->obj, &pddl->pred, &pddl->func, NULL, fout);
+    fprintf(fout, "\n");
+
     fprintf(fout, "Metric: %d\n", pddl->metric);
 }
