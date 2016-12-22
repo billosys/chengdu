@@ -31,6 +31,10 @@ struct pddl;
 struct pddl_type {
     const char *name; /*!< Name of the type */
     int parent;       /*!< ID of the parent type */
+
+    int *either;      /*!< NULL for normal type, a list type IDs for
+                           special (either ...) type */
+    int either_size;
 };
 typedef struct pddl_type pddl_type_t;
 
@@ -78,6 +82,12 @@ void pddlTypesAddObj(pddl_types_t *ts, int obj_id, int type_id);
  * Returns list of object IDs of the specified type.
  */
 const int *pddlTypesObjsByType(const pddl_types_t *ts, int type_id, int *size);
+
+/**
+ * Returns type ID from the lisp node or -1 if error occured.
+ * (either ...) types are created if necessary.
+ */
+int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node);
 
 #ifdef __cplusplus
 } /* extern "C" */

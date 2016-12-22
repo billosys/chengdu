@@ -48,6 +48,8 @@ static int add(pddl_types_t *t, const char *name)
     t->type = BOR_REALLOC_ARR(t->type, pddl_type_t, t->size);
     t->type[t->size - 1].name = name;
     t->type[t->size - 1].parent = 0;
+    t->type[t->size - 1].either = NULL;
+    t->type[t->size - 1].either_size = 0;
     return t->size - 1;
 }
 
@@ -89,6 +91,8 @@ int pddlTypesParse(pddl_t *pddl)
     pddl->type.type = BOR_ALLOC(pddl_type_t);
     pddl->type.type[0].name = object_name;
     pddl->type.type[0].parent = -1;
+    pddl->type.type[0].either = NULL;
+    pddl->type.type[0].either_size = 0;
 
     n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_TYPES);
     if (n == NULL)
@@ -109,6 +113,13 @@ int pddlTypesParse(pddl_t *pddl)
 void pddlTypesFree(pddl_types_t *types)
 {
     int i;
+
+    for (i = 0; i < types->size; ++i){
+        if (types->type[i].either != NULL){
+            BOR_FREE((char *)types->type[i].name);
+            BOR_FREE(types->type[i].either);
+        }
+    }
 
     if (types->type != NULL)
         BOR_FREE(types->type);
@@ -144,8 +155,14 @@ void pddlTypesPrint(const pddl_types_t *t, FILE *fout)
 void pddlTypesAddObj(pddl_types_t *ts, int obj_id, int type_id)
 {
     pddl_objs_by_type_t *obj;
+    int i;
 
     obj = ts->obj_by_type + type_id;
+    for (i = 0; i < obj->size; ++i){
+        if (obj->obj[i] == obj_id)
+            return;
+    }
+
     if (obj->size >= obj->alloc){
         if (obj->alloc == 0)
             obj->alloc = 2;
@@ -164,4 +181,114 @@ const int *pddlTypesObjsByType(const pddl_types_t *ts, int type_id, int *size)
     if (size != NULL)
         *size = ts->obj_by_type[type_id].size;
     return ts->obj_by_type[type_id].obj;
+}
+
+
+static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
+{
+    pddl_type_t *type;
+    pddl_objs_by_type_t *obj;
+    char *cur;
+    int i, j, slen;
+    int tid;
+
+    // Try to find already created (either ...) type
+    for (i = 0; i < ts->size; ++i){
+        if (ts->type[i].either == NULL)
+            continue;
+        if (ts->type[i].either_size == either_size
+                && memcmp(ts->type[i].either, either,
+                          sizeof(int) * either_size) == 0){
+            return i;
+        }
+    }
+
+    // Create a new type
+    ++ts->size;
+    ts->type = BOR_REALLOC_ARR(ts->type, pddl_type_t, ts->size);
+    ts->obj_by_type = BOR_REALLOC_ARR(ts->obj_by_type, pddl_objs_by_type_t,
+                                      ts->size);
+
+    type = ts->type + ts->size - 1;
+    type->parent = -1;
+    type->either = BOR_ALLOC_ARR(int, either_size);
+    memcpy(type->either, either, sizeof(int) * either_size);
+    type->either_size = either_size;
+
+    // Construct a name of the (either ...) type
+    for (i = 0, slen = 0; i < either_size; ++i)
+        slen += 1 + strlen(ts->type[either[i]].name);
+    slen += 2 + 6 + 1;
+    type->name = cur = BOR_ALLOC_ARR(char, slen);
+    cur += sprintf(cur, "(either");
+    for (i = 0; i < either_size; ++i)
+        cur += sprintf(cur, " %s", ts->type[either[i]].name);
+    sprintf(cur, ")");
+    tid = ts->size - 1;
+
+    // Merge obj IDs from all simple types from which this (either ...)
+    // type consists of.
+    obj = ts->obj_by_type + ts->size - 1;
+    bzero(obj, sizeof(*obj));
+    for (i = 0; i < either_size; ++i){
+        for (j = 0; j < ts->obj_by_type[either[i]].size; ++j){
+            pddlTypesAddObj(ts, ts->obj_by_type[either[i]].obj[j], tid);
+        }
+    }
+
+    return tid;
+}
+
+
+static int cmpInt(const void *a, const void *b)
+{
+    int ia = *(int *)a;
+    int ib = *(int *)b;
+    return ia - ib;
+}
+
+int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node)
+{
+    int *either;
+    int either_size;
+    int i, tid;
+
+    if (node->value != NULL){
+        tid = pddlTypesGet(ts, node->value);
+        if (tid < 0){
+            ERRN(node, "Unkown type `%s'", node->value);
+            return -1;
+        }
+
+        return tid;
+    }
+
+    if (node->child_size < 2
+            || node->child[0].kw != PDDL_KW_EITHER){
+        ERRN2(node, "Invalid type definition");
+        return -1;
+    }
+
+    if (node->child_size == 2 && node->child[1].value != NULL)
+        return pddlTypeFromLispNode(ts, node->child + 1);
+
+    either_size = node->child_size - 1;
+    either = alloca(sizeof(int) * either_size);
+    for (i = 1; i < node->child_size; ++i){
+        if (node->child[i].value == NULL){
+            ERRN2(node->child + i, "Invalid (either ...) expression");
+            return -1;
+        }
+        tid = pddlTypesGet(ts, node->child[i].value);
+        if (tid < 0){
+            ERRN(node, "Unkown type `%s'", node->child[i].value);
+            return -1;
+        }
+
+        either[i - 1] = tid;
+    }
+
+    qsort(either, either_size, sizeof(int), cmpInt);
+
+    return pddlTypesEither(ts, either, either_size);
 }

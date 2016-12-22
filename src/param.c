@@ -85,7 +85,7 @@ int pddlParamsGetId(const pddl_params_t *param, const char *name)
 
 struct _set_param_t {
     pddl_params_t *param;
-    const pddl_types_t *types;
+    pddl_types_t *types;
 };
 typedef struct _set_param_t set_param_t;
 
@@ -93,18 +93,14 @@ static int setParams(const pddl_lisp_node_t *root,
                      int child_from, int child_to, int child_type, void *ud)
 {
     pddl_params_t *params = ((set_param_t *)ud)->param;
-    const pddl_types_t *types = ((set_param_t *)ud)->types;
+    pddl_types_t *types = ((set_param_t *)ud)->types;
     pddl_param_t *param;
     int i, tid;
 
     tid = 0;
     if (child_type >= 0){
-        tid = pddlTypesGet(types, root->child[child_type].value);
-        if (tid < 0){
-            ERRN(root->child + child_type, "Unkown type `%s'",
-                 root->child[child_type].value);
+        if ((tid = pddlTypeFromLispNode(types, root->child + child_type)) < 0)
             return -1;
-        }
     }
 
     for (i = child_from; i < child_to; ++i){
@@ -132,7 +128,7 @@ static int setParams(const pddl_lisp_node_t *root,
 
 int pddlParamsParse(pddl_params_t *params,
                     const pddl_lisp_node_t *root,
-                    const pddl_types_t *types)
+                    pddl_types_t *types)
 {
     set_param_t set_param;
     set_param.param = params;
@@ -146,7 +142,7 @@ int pddlParamsParse(pddl_params_t *params,
 int pddlParamsParseAgent(pddl_params_t *params,
                          const pddl_lisp_node_t *n,
                          int nid,
-                         const pddl_types_t *types)
+                         pddl_types_t *types)
 {
     set_param_t set_param;
     int to;

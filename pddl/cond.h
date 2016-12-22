@@ -154,7 +154,7 @@ int pddlCondTraverse(pddl_cond_t *c,
  * Parse condition from PDDL lisp.
  */
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
-                           const struct pddl *pddl,
+                           struct pddl *pddl,
                            const pddl_params_t *params,
                            const char *errname);
 

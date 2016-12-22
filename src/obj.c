@@ -63,6 +63,11 @@ static int setCB(const pddl_lisp_node_t *root,
 
     tid = 0;
     if (child_type >= 0){
+        if (root->child[child_type].value == NULL){
+            ERRN2(root->child + child_type, "Expecting type name");
+            return -1;
+        }
+
         tid = pddlTypesGet(types, root->child[child_type].value);
         if (tid < 0){
             ERRN(root->child + child_type, "Invalid type `%s'",

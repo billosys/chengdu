@@ -88,7 +88,7 @@ int pddlParamsGetId(const pddl_params_t *param, const char *name);
  */
 int pddlParamsParse(pddl_params_t *params,
                     const pddl_lisp_node_t *root,
-                    const pddl_types_t *types);
+                    pddl_types_t *types);
 
 /**
  * Parse :agent var - type parameters
@@ -96,7 +96,7 @@ int pddlParamsParse(pddl_params_t *params,
 int pddlParamsParseAgent(pddl_params_t *params,
                          const pddl_lisp_node_t *root,
                          int agent_node_index,
-                         const pddl_types_t *types);
+                         pddl_types_t *types);
 
 void pddlParamsPrint(const pddl_params_t *params, FILE *fout);
 

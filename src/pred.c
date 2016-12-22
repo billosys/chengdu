@@ -24,7 +24,7 @@
 
 struct _set_t {
     pddl_pred_t *pred;
-    const pddl_types_t *types;
+    pddl_types_t *types;
     const char *owner_var;
 };
 typedef struct _set_t set_t;
@@ -35,18 +35,14 @@ static int setCB(const pddl_lisp_node_t *root,
                  int child_from, int child_to, int child_type, void *ud)
 {
     pddl_pred_t *pred = ((set_t *)ud)->pred;
-    const pddl_types_t *types = ((set_t *)ud)->types;
+    pddl_types_t *types = ((set_t *)ud)->types;
     const char *owner_var = ((set_t *)ud)->owner_var;
     int i, j, tid;
 
     tid = 0;
     if (child_type >= 0){
-        tid = pddlTypesGet(types, root->child[child_type].value);
-        if (tid < 0){
-            ERRN(root->child + child_type, "Invalid type `%s'",
-                 root->child[child_type].value);
+        if ((tid = pddlTypeFromLispNode(types, root->child + child_type)) < 0)
             return -1;
-        }
     }
 
     j = pred->param_size;
@@ -72,7 +68,7 @@ static int checkDuplicate(const pddl_preds_t *ps, const char *name)
     return 0;
 }
 
-static int parsePred(const pddl_t *pddl,
+static int parsePred(pddl_t *pddl,
                      const pddl_lisp_node_t *n,
                      const char *owner_var,
                      const char *errname,
@@ -104,7 +100,7 @@ static int parsePred(const pddl_t *pddl,
     return 0;
 }
 
-static int parsePrivatePreds(const pddl_t *pddl,
+static int parsePrivatePreds(pddl_t *pddl,
                              const pddl_lisp_node_t *n,
                              pddl_preds_t *ps)
 {

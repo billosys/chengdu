@@ -98,6 +98,7 @@ static kw_t kw[] = {
     { "exists", PDDL_KW_EXISTS },
     { "forall", PDDL_KW_FORALL },
     { "when", PDDL_KW_WHEN },
+    { "either", PDDL_KW_EITHER },
 
     { ":private", PDDL_KW_PRIVATE },
     { ":agent", PDDL_KW_AGENT },
@@ -346,10 +347,8 @@ const pddl_lisp_node_t *pddlLispFindNode(
     return NULL;
 }
 
-int pddlLispParseTypedList(const pddl_lisp_node_t *root,
-                               int from, int to,
-                               pddl_lisp_parse_typed_list_fn cb,
-                               void *ud)
+int pddlLispParseTypedList(const pddl_lisp_node_t *root, int from, int to,
+                           pddl_lisp_parse_typed_list_fn cb, void *ud)
 {
     pddl_lisp_node_t *n;
     int i, itfrom, itto, ittype;

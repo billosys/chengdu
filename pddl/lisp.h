@@ -82,6 +82,7 @@ typedef enum {
     PDDL_KW_EXISTS,
     PDDL_KW_FORALL,
     PDDL_KW_WHEN,
+    PDDL_KW_EITHER,
 
     PDDL_KW_PRIVATE,
     PDDL_KW_AGENT,
@@ -136,10 +137,8 @@ typedef int (*pddl_lisp_parse_typed_list_fn)(
 /**
  * Parse typed list.
  */
-int pddlLispParseTypedList(const pddl_lisp_node_t *root,
-                               int from, int to,
-                               pddl_lisp_parse_typed_list_fn cb,
-                               void *ud);
+int pddlLispParseTypedList(const pddl_lisp_node_t *root, int from, int to,
+                           pddl_lisp_parse_typed_list_fn cb, void *ud);
 
 /**
  * Copy pddl-lisp-node from src to dst.

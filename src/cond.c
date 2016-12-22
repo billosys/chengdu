@@ -52,7 +52,7 @@ typedef struct pddl_cond_cls pddl_cond_cls_t;
 
 
 struct parse_ctx {
-    const pddl_types_t *types;
+    pddl_types_t *types;
     const pddl_objs_t *objs;
     const pddl_preds_t *preds;
     const pddl_preds_t *funcs;
@@ -872,7 +872,7 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
 }
 
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
-                           const pddl_t *pddl,
+                           pddl_t *pddl,
                            const pddl_params_t *params,
                            const char *err)
 {
