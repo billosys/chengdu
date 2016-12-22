@@ -84,27 +84,28 @@ static int setCB(const pddl_lisp_node_t *root,
 
 int pddlTypesParse(pddl_t *pddl)
 {
+    pddl_types_t *types;
     const pddl_lisp_node_t *n;
 
     // Create a default "object" type
-    pddl->type.size = 1;
-    pddl->type.type = BOR_ALLOC(pddl_type_t);
-    pddl->type.type[0].name = object_name;
-    pddl->type.type[0].parent = -1;
-    pddl->type.type[0].either = NULL;
-    pddl->type.type[0].either_size = 0;
+    types = &pddl->type;
+    types->size = 1;
+    types->type = BOR_ALLOC(pddl_type_t);
+    types->type[0].name = object_name;
+    types->type[0].parent = -1;
+    types->type[0].either = NULL;
+    types->type[0].either_size = 0;
 
     n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_TYPES);
-    if (n == NULL)
-        return 0;
-
-    if (pddlLispParseTypedList(n, 1, n->child_size, setCB, &pddl->type) != 0){
-        ERRN2(n, "Invalid definition of :types");
-        return -1;
+    if (n != NULL){
+        if (pddlLispParseTypedList(n, 1, n->child_size, setCB, types) != 0){
+            ERRN2(n, "Invalid definition of :types");
+            return -1;
+        }
     }
 
-    if (pddl->type.size > 0)
-        pddl->type.obj_by_type = BOR_CALLOC_ARR(pddl_objs_by_type_t, pddl->type.size);
+    if (types->size > 0)
+        types->obj_by_type = BOR_CALLOC_ARR(pddl_objs_by_type_t, types->size);
 
     // TODO: Check circular dependency on types
     return 0;
