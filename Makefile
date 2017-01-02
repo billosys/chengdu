@@ -17,6 +17,7 @@ OBJS += fact
 OBJS += action
 OBJS += pddl
 OBJS += cond
+OBJS += strips
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
