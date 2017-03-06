@@ -32,9 +32,9 @@ extern "C" {
 struct pddl;
 
 struct pddl_fact {
-    int pred;       /*!< Predicate ID */
     int *arg;       /*!< Object IDs are arguments */
     int arg_size;   /*!< Number of arguments */
+    int pred;       /*!< Predicate ID */
     int neg;        /*!< True if it is negated form */
     int func_val;   /*!< Assigned value in case of function */
     int stat;       /*!< True if the fact is static */
@@ -43,12 +43,57 @@ struct pddl_fact {
 };
 typedef struct pddl_fact pddl_fact_t;
 
+/**
+ * Initializes empty fact.
+ */
+void pddlFactInit(pddl_fact_t *f);
+
+/**
+ * Initializes fact from the predicate.
+ */
+void pddlFactFromPred(pddl_fact_t *f, int pred_id, const pddl_pred_t *pred);
+
+/**
+ * Frees allocated memory
+ */
+void pddlFactFree(pddl_fact_t *f);
+
+/**
+ * Deep copy of the fact.
+ */
+void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src);
+
+/**
+ * Comparison function for facts.
+ */
+int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2);
+
+/**
+ * Determines whether the fact should be private and which object should be
+ * owner.
+ * Returns 0 if fact remained non-private, 1 if privateness was set and -1
+ * if there is conflict in owners of the fact (thus this is invalid fact).
+ */
+int pddlFactSetPrivate(pddl_fact_t *fact,
+                       const pddl_preds_t *pred,
+                       const pddl_objs_t *objs);
+
+void pddlFactPrint(const pddl_preds_t *predicates,
+                   const pddl_objs_t *objs,
+                   const pddl_fact_t *f,
+                   FILE *fout);
+
+
+
 struct pddl_facts {
     pddl_fact_t *fact;
     int size;
     int alloc;
 };
 typedef struct pddl_facts pddl_facts_t;
+
+void pddlFactsInit(pddl_facts_t *fs);
+void pddlFactsFree(pddl_facts_t *fs);
 
 struct pddl_fact_id_arr {
     int *fact;
@@ -75,7 +120,6 @@ int pddlFactsParseGoal(const pddl_lisp_t *problem,
  * Free allocated resources.
  */
 void pddlFactsFree(pddl_facts_t *fs);
-void pddlFactFree(pddl_fact_t *f);
 
 /**
  * Adds another fact to array.
@@ -95,23 +139,8 @@ void pddlFactsReserve(pddl_facts_t *fs, int alloc);
 /**
  * Copies fact from src to dst.
  */
-void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src);
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
 
-/**
- * Determines whether the fact should be private and which object should be
- * owner.
- * Returns 0 if fact remained non-private, 1 if privateness was set and -1
- * if there is conflict in owners of the fact (thus this is invalid fact).
- */
-int pddlFactSetPrivate(pddl_fact_t *fact,
-                       const pddl_preds_t *pred,
-                       const pddl_objs_t *objs);
-
-void pddlFactPrint(const pddl_preds_t *predicates,
-                   const pddl_objs_t *objs,
-                   const pddl_fact_t *f,
-                   FILE *fout);
 void pddlFactsPrintInit(const pddl_preds_t *predicates,
                         const pddl_objs_t *objs,
                         const pddl_facts_t *in,

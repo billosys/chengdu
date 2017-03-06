@@ -32,9 +32,9 @@ extern "C" {
 
 struct pddl_strips_op {
     char *name;
-    pddl_facts_t pre;
-    pddl_facts_t del_eff;
-    pddl_facts_t add_eff;
+    pddl_fact_id_arr_t pre;
+    pddl_fact_id_arr_t del_eff;
+    pddl_fact_id_arr_t add_eff;
     int cost;
     // TODO: Conditional effects
 };
@@ -51,8 +51,8 @@ typedef struct pddl_strips_ops pddl_strips_ops_t;
 struct pddl_strips {
     pddl_facts_t fact;
     pddl_strips_ops_t op;
-    pddl_facts_t init;
-    pddl_facts_t goal;
+    pddl_fact_id_arr_t init;
+    pddl_fact_id_arr_t goal;
 };
 typedef struct pddl_strips pddl_strips_t;
 

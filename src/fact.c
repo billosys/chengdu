@@ -17,10 +17,109 @@
  * See the License for more information.
  */
 
+#include <boruvka/compiler.h>
 #include <boruvka/alloc.h>
 #include "pddl/pddl.h"
 #include "pddl/fact.h"
 #include "err.h"
+
+void pddlFactInit(pddl_fact_t *f)
+{
+    bzero(f, sizeof(*f));
+}
+
+void pddlFactFromPred(pddl_fact_t *f, int pred_id, const pddl_pred_t *pred)
+{
+    pddlFactInit(f);
+    f->pred = pred_id;
+    f->arg_size = pred->param_size;
+    f->arg = BOR_CALLOC_ARR(int, f->arg_size);
+    f->stat = !pred->write;
+}
+
+void pddlFactFree(pddl_fact_t *f)
+{
+    if (f->arg != NULL)
+        BOR_FREE(f->arg);
+}
+
+void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)
+{
+    *dst = *src;
+    if (src->arg != NULL){
+        dst->arg = BOR_ALLOC_ARR(int, src->arg_size);
+        memcpy(dst->arg, src->arg, sizeof(int) * src->arg_size);
+    }
+}
+
+int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
+{
+    int cmp;
+
+    cmp = memcmp((void *)&f1->arg_size, (void *)&f2->arg_size,
+                 sizeof(*f1) - bor_offsetof(pddl_fact_t, arg_size));
+    if (cmp == 0)
+        cmp = memcmp(f1->arg, f2->arg, sizeof(int) * f1->arg_size);
+    return cmp;
+}
+
+int pddlFactSetPrivate(pddl_fact_t *fact,
+                       const pddl_preds_t *pred,
+                       const pddl_objs_t *objs)
+{
+    const pddl_pred_t *pr;
+    const pddl_obj_t *obj;
+    int i;
+
+    pr = pred->pred + fact->pred;
+    if (pr->is_private){
+        fact->is_private = 1;
+        if (pr->owner_param >= 0)
+            fact->owner = fact->arg[pr->owner_param];
+    }
+
+    for (i = 0; i < fact->arg_size; ++i){
+        obj = objs->obj + fact->arg[i];
+        if (obj->is_private){
+            if (fact->is_private){
+                if (obj->owner >= 0 && fact->owner != obj->owner){
+                    return -1;
+                }
+            }else{
+                fact->is_private = 1;
+                if (obj->owner >= 0)
+                    fact->owner = obj->owner;
+            }
+        }
+    }
+
+    return fact->is_private;
+}
+
+void pddlFactPrint(const pddl_preds_t *predicates,
+                   const pddl_objs_t *objs,
+                   const pddl_fact_t *f,
+                   FILE *fout)
+{
+    int i;
+
+    if (f->neg)
+        fprintf(fout, "N:");
+    if (f->stat)
+        fprintf(fout, "S:");
+    if (f->is_private){
+        fprintf(fout, "P");
+        if (f->owner >= 0)
+            fprintf(fout, "[%d]", f->owner);
+        fprintf(fout, ":");
+    }
+    fprintf(fout, "%s:", predicates->pred[f->pred].name);
+    for (i = 0; i < f->arg_size; ++i){
+        fprintf(fout, " %s", objs->obj[f->arg[i]].name);
+    }
+}
+
+
 
 static int factSetPrivate(pddl_fact_t *fact,
                           const pddl_preds_t *pred,
@@ -262,12 +361,6 @@ int pddlFactsParseGoal(const pddl_lisp_t *problem,
     return parseGoal(ngoal->child + 1, predicates, objs, goal);
 }
 
-void pddlFactFree(pddl_fact_t *f)
-{
-    if (f->arg != NULL)
-        BOR_FREE(f->arg);
-}
-
 void pddlFactsFree(pddl_facts_t *fs)
 {
     int i;
@@ -311,13 +404,6 @@ void pddlFactsReserve(pddl_facts_t *fs, int alloc)
     fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc);
 }
 
-void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)
-{
-    *dst = *src;
-    dst->arg = BOR_ALLOC_ARR(int, dst->arg_size);
-    memcpy(dst->arg, src->arg, sizeof(int) * dst->arg_size);
-}
-
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)
 {
     int i;
@@ -327,62 +413,6 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)
         dst->fact = BOR_ALLOC_ARR(pddl_fact_t, src->size);
     for (i = 0; i < dst->size; ++i)
         pddlFactCopy(dst->fact + i, src->fact + i);
-}
-
-int pddlFactSetPrivate(pddl_fact_t *fact,
-                       const pddl_preds_t *pred,
-                       const pddl_objs_t *objs)
-{
-    const pddl_pred_t *pr;
-    const pddl_obj_t *obj;
-    int i;
-
-    pr = pred->pred + fact->pred;
-    if (pr->is_private){
-        fact->is_private = 1;
-        if (pr->owner_param >= 0)
-            fact->owner = fact->arg[pr->owner_param];
-    }
-
-    for (i = 0; i < fact->arg_size; ++i){
-        obj = objs->obj + fact->arg[i];
-        if (obj->is_private){
-            if (fact->is_private){
-                if (obj->owner >= 0 && fact->owner != obj->owner){
-                    return -1;
-                }
-            }else{
-                fact->is_private = 1;
-                if (obj->owner >= 0)
-                    fact->owner = obj->owner;
-            }
-        }
-    }
-
-    return fact->is_private;
-}
-
-void pddlFactPrint(const pddl_preds_t *predicates,
-                   const pddl_objs_t *objs,
-                   const pddl_fact_t *f,
-                   FILE *fout)
-{
-    int i;
-
-    if (f->neg)
-        fprintf(fout, "N:");
-    if (f->stat)
-        fprintf(fout, "S:");
-    if (f->is_private){
-        fprintf(fout, "P");
-        if (f->owner >= 0)
-            fprintf(fout, "[%d]", f->owner);
-        fprintf(fout, ":");
-    }
-    fprintf(fout, "%s:", predicates->pred[f->pred].name);
-    for (i = 0; i < f->arg_size; ++i){
-        fprintf(fout, " %s", objs->obj[f->arg[i]].name);
-    }
 }
 
 static void printFact(const pddl_preds_t *predicates,
