@@ -108,14 +108,6 @@ typedef struct pddl_facts pddl_facts_t;
 int pddlFactsParseInit(struct pddl *pddl);
 
 /**
- * Parses :goal into list of facts.
- */
-int pddlFactsParseGoal(const pddl_lisp_t *problem,
-                       const pddl_preds_t *predicates,
-                       const pddl_objs_t *objs,
-                       pddl_facts_t *goal);
-
-/**
  * Initialize set of facts.
  */
 void pddlFactsInit(pddl_facts_t *fs);
