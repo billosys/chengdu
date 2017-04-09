@@ -78,6 +78,12 @@ int pddlFactSetPrivate(pddl_fact_t *fact,
                        const pddl_preds_t *pred,
                        const pddl_objs_t *objs);
 
+int pddlFactFormat(const pddl_preds_t *predicates,
+                   const pddl_objs_t *objs,
+                   const pddl_fact_t *f,
+                   char *str,
+                   int strsize);
+
 void pddlFactPrint(const pddl_preds_t *predicates,
                    const pddl_objs_t *objs,
                    const pddl_fact_t *f,

@@ -96,27 +96,63 @@ int pddlFactSetPrivate(pddl_fact_t *fact,
     return fact->is_private;
 }
 
+#define STRNFMTCPY(str, size, fmt) \
+    do { \
+        int __w = snprintf((str), (size), (fmt)); \
+        if ((size) - __w <= 0) \
+            return -1; \
+        (str) += __w; \
+        (size) -= __w; \
+    } while (0)
+
+#define STRNFMT(str, size, fmt, ...) \
+    do { \
+        int __w = snprintf((str), (size), (fmt), __VA_ARGS__); \
+        if ((size) - __w <= 0) \
+            return -1; \
+        (str) += __w; \
+        (size) -= __w; \
+    } while (0)
+
+int pddlFactFormat(const pddl_preds_t *predicates,
+                   const pddl_objs_t *objs,
+                   const pddl_fact_t *f,
+                   char *str,
+                   int strsize)
+{
+    int size = strsize, i;
+
+    if (f->neg)
+        STRNFMTCPY(str, size, "N:");
+    if (f->stat)
+        STRNFMTCPY(str, size, "S:");
+    if (f->is_private){
+        STRNFMTCPY(str, size, "P");
+        if (f->owner >= 0)
+            STRNFMT(str, size, "[%d]", f->owner);
+        STRNFMTCPY(str, size, ":");
+    }
+    STRNFMT(str, size, "%s:", predicates->pred[f->pred].name);
+    for (i = 0; i < f->arg_size; ++i){
+        STRNFMT(str, size, " %s", objs->obj[f->arg[i]].name);
+    }
+    return 0;
+}
+
 void pddlFactPrint(const pddl_preds_t *predicates,
                    const pddl_objs_t *objs,
                    const pddl_fact_t *f,
                    FILE *fout)
 {
-    int i;
+    char name[128];
 
-    if (f->neg)
-        fprintf(fout, "N:");
-    if (f->stat)
-        fprintf(fout, "S:");
-    if (f->is_private){
-        fprintf(fout, "P");
-        if (f->owner >= 0)
-            fprintf(fout, "[%d]", f->owner);
-        fprintf(fout, ":");
+    if (pddlFactFormat(predicates, objs, f, name, 128) != 0){
+        fprintf(stderr, "Fatal Error:"
+                        " Could not fit name of the fact into 128"
+                        " characters.\n");
+        exit(-1);
     }
-    fprintf(fout, "%s:", predicates->pred[f->pred].name);
-    for (i = 0; i < f->arg_size; ++i){
-        fprintf(fout, " %s", objs->obj[f->arg[i]].name);
-    }
+    fprintf(fout, "%s", name);
 }
 
 

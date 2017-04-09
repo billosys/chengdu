@@ -20,20 +20,28 @@
 #include <boruvka/hfunc.h>
 #include "pddl/strips_fact.h"
 
-static bor_htable_key_t htableKey(const bor_list_t *key, void *_)
+struct htable_fact {
+    int id;
+    const char *name;
+    uint64_t hash;
+    bor_list_t htable;
+};
+typedef struct htable_fact htable_fact_t;
+
+static bor_htable_key_t htableKey(const bor_list_t *key, void *_fs)
 {
-    pddl_strips_fact_t *f;
-    f = BOR_LIST_ENTRY(key, pddl_strips_fact_t, htable);
-    return f->name_hash;
+    htable_fact_t *hf;
+    hf = BOR_LIST_ENTRY(key, htable_fact_t, htable);
+    return hf->hash;
 }
 
 static int htableEq(const bor_list_t *k1,
-                    const bor_list_t *k2, void *_)
+                    const bor_list_t *k2, void *_fs)
 {
-    pddl_strips_fact_t *f1 = BOR_LIST_ENTRY(k1, pddl_strips_fact_t, htable);
-    pddl_strips_fact_t *f2 = BOR_LIST_ENTRY(k2, pddl_strips_fact_t, htable);
-    if (f1->name_hash != f2->name_hash)
-        return strcmp(f1->name, f2->name) == 0;
+    htable_fact_t *hf1 = BOR_LIST_ENTRY(k1, htable_fact_t, htable);
+    htable_fact_t *hf2 = BOR_LIST_ENTRY(k2, htable_fact_t, htable);
+    if (hf1->hash != hf2->hash)
+        return strcmp(hf1->name, hf2->name) == 0;
     return 0;
 }
 
@@ -58,20 +66,28 @@ void pddlStripsFactsInit(pddl_strips_facts_t *fs)
 
 void pddlStripsFactsFree(pddl_strips_facts_t *fs)
 {
+    bor_list_t hfs, *h, *tmp;
     int i;
 
+    borListInit(&hfs);
+    borHTableGather(fs->htable, &hfs);
+    BOR_LIST_FOR_EACH_SAFE(&hfs, h, tmp)
+        BOR_FREE(BOR_LIST_ENTRY(h, htable_fact_t, htable));
     borHTableDel(fs->htable);
+
     for (i = 0; i < fs->fact_size; ++i){
         pddlStripsFactFree(fs->fact + i);
     }
     BOR_FREE(fs->fact);
 }
 
-void pddlStripsFactsAddFromPDDLFact(pddl_strips_facts_t *fs,
-                                    const pddl_t *pddl,
-                                    const pddl_fact_t *fact)
+int pddlStripsFactsAddFromPDDLFact(pddl_strips_facts_t *fs,
+                                   const pddl_t *pddl,
+                                   const pddl_fact_t *fact)
 {
     pddl_strips_fact_t *f;
+    htable_fact_t *hf;
+    int fid;
     char name[256];
 
     if (pddlFactFormat(&pddl->pred, &pddl->obj, fact, name, 256) != 0){
@@ -81,8 +97,8 @@ void pddlStripsFactsAddFromPDDLFact(pddl_strips_facts_t *fs,
         exit(-1);
     }
 
-    if (pddlStripsFactsFind(fs, name) != NULL)
-        return;
+    if ((fid = pddlStripsFactsFind(fs, name)) != -1)
+        return fid;
 
     if (fs->fact_size >= fs->fact_alloc){
         fs->fact_alloc *= 2;
@@ -97,21 +113,27 @@ void pddlStripsFactsAddFromPDDLFact(pddl_strips_facts_t *fs,
     f->is_private = fact->is_private;
     f->owner = fact->owner;
 
-    f->name_hash = nameHash(name);
-    borListInit(&f->htable);
-    borHTableInsert(fs->htable, &f->htable);
+    hf = BOR_ALLOC(htable_fact_t);
+    hf->id = fs->fact_size - 1;
+    hf->name = f->name;
+    hf->hash = nameHash(name);
+    borListInit(&hf->htable);
+    borHTableInsert(fs->htable, &hf->htable);
+
+    return fs->fact_size - 1;
 }
 
-pddl_strips_fact_t *pddlStripsFactsFind(pddl_strips_facts_t *fs,
-                                        const char *name)
+int pddlStripsFactsFind(pddl_strips_facts_t *fs, const char *name)
 {
-    pddl_strips_fact_t f;
+    htable_fact_t hf, *h;
     bor_list_t *k;
 
-    f.name = name;
-    f.name_hash = nameHash(name);
+    hf.name = name;
+    hf.hash = nameHash(name);
 
-    if ((k = borHTableFind(fs->htable, &f.htable)) != NULL)
-        return BOR_LIST_ENTRY(k, pddl_strips_fact_t, htable);
-    return NULL;
+    if ((k = borHTableFind(fs->htable, &hf.htable)) != NULL){
+        h = BOR_LIST_ENTRY(k, htable_fact_t, htable);
+        return h->id;
+    }
+    return -1;
 }

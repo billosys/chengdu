@@ -20,78 +20,33 @@
 #include <boruvka/alloc.h>
 #include "pddl/strips.h"
 
-static char *groundOpName(const pddl_t *pddl,
-                          const pddl_action_t *action,
-                          const int *args)
-{
-    int i, slen;
-    char *name, *cur;
-
-    slen = strlen(action->name) + 2 + 1;
-    for (i = 0; i < action->param.size; ++i)
-        slen += 1 + strlen(pddl->obj.obj[args[i]].name);
-
-    cur = name = BOR_ALLOC_ARR(char, slen);
-    cur += sprintf(cur, "(%s", action->name);
-    for (i = 0; i < action->param.size; ++i)
-        cur += sprintf(cur, " %s", pddl->obj.obj[args[i]].name);
-    cur += sprintf(cur, ")");
-
-    return name;
-}
-
-
-static void naiveGroundOpRec(pddl_strips_t *strips,
-                             const pddl_t *pddl,
-                             const pddl_action_t *action,
-                             int *args, int argi)
-{
-    const int *objs;
-    int size, i;
-
-    if (action->param.size == argi){
-        char *name = groundOpName(pddl, action, args);
-        fprintf(stdout, "op: %s\n", name);
-        BOR_FREE(name);
-
-    }else{
-        objs = pddlTypesObjsByType(&pddl->type, action->param.param[argi].type,
-                                   &size);
-        for (i = 0; i < size; ++i){
-            args[argi] = objs[i];
-            naiveGroundOpRec(strips, pddl, action, args, argi + 1);
-        }
-    }
-}
-
-static void naiveGroundOp(pddl_strips_t *strips,
-                          const pddl_t *pddl,
-                          const pddl_action_t *action,
-                          unsigned flags)
-{
-    int args[action->param.size];
-    naiveGroundOpRec(strips, pddl, action, args, 0);
-}
-
-static int naive(pddl_strips_t *strips, const pddl_t *pddl, unsigned flags)
-{
-    int i;
-
-    for (i = 0; i < pddl->action.size; ++i){
-        naiveGroundOp(strips, pddl, pddl->action.action + i, flags);
-    }
-
-    return 0;
-}
+int pddlStripsFromPDDLFull(pddl_strips_t *strips,
+                           const pddl_t *pddl,
+                           unsigned flags);
 
 int pddlStripsFromPDDL(pddl_strips_t *strips, const pddl_t *pddl,
                        unsigned flags)
 {
-    if (flags & PDDL_STRIPS_GROUND_NAIVE)
-        return naive(strips, pddl, flags);
+    if (flags & PDDL_STRIPS_GROUND_FULL)
+        return pddlStripsFromPDDLFull(strips, pddl, flags);
     return -1;
 }
 
 void pddlStripsFree(pddl_strips_t *strips)
 {
+}
+
+void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
+{
+    int i;
+
+    fprintf(fout, "Op[%d]:\n", strips->op.size);
+    for (i = 0; i < strips->op.size; ++i){
+        fprintf(fout, "  %s, cost: %d\n",
+                strips->op.op[i].name,
+                strips->op.op[i].cost);
+        fprintf(fout, "    pre:");
+        // TODO: pre, eff, cond_eff
+    }
+    // TODO: facts, init, goal
 }

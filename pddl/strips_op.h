@@ -17,8 +17,8 @@
  * See the License for more information.
  */
 
-#ifndef __PDDL_STRIPS_H__
-#define __PDDL_STRIPS_H__
+#ifndef __PDDL_STRIPS_OP_H__
+#define __PDDL_STRIPS_OP_H__
 
 #include <boruvka/htable.h>
 #include <pddl/pddl.h>
@@ -28,12 +28,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
-/** Flags: **/
-#define PDDL_STRIPS_GROUND_FULL 0x1u
-#define PDDL_STRIPS_GROUND_NAIVE 0x2u
-
 struct pddl_strips_op {
-    char *name;
+    const char *name;
     pddl_fact_id_arr_t pre;
     pddl_fact_id_arr_t del_eff;
     pddl_fact_id_arr_t add_eff;
@@ -45,33 +41,21 @@ typedef struct pddl_strips_op pddl_strips_op_t;
 
 struct pddl_strips_ops {
     pddl_strips_op_t *op;
-    int size;
-    int alloc;
+    int op_size;
+    int op_alloc;
+    bor_htable_t *htable;
 };
 typedef struct pddl_strips_ops pddl_strips_ops_t;
 
-
-struct pddl_strips {
-    pddl_strips_fact_t fact;
-    pddl_strips_ops_t op;
-    pddl_fact_id_arr_t init;
-    pddl_fact_id_arr_t goal;
-};
-typedef struct pddl_strips pddl_strips_t;
-
-int pddlStripsFromPDDL(pddl_strips_t *strips, const pddl_t *pddl,
-                       unsigned flags);
-void pddlStripsFree(pddl_strips_t *strips);
-
-void pddlStripsAddOpFromPDDL(pddl_strips_t *strips,
-                             const pddl_t *pddl,
-                             const pddl_action_t *action,
-                             const int *args);
-
-void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
+void pddlStripsOpsInit(pddl_strips_ops_t *ops);
+void pddlStripsOpsFree(pddl_strips_ops_t *ops);
+void pddlStripsAddFromPDDL(pddl_strips_ops_t *ops,
+                           const pddl_t *pddl,
+                           const pddl_action_t *action,
+                           const int *args);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* __PDDL_STRIPS_H__ */
+#endif /* __PDDL_STRIPS_OP_H__ */

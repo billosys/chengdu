@@ -38,9 +38,6 @@ struct pddl_strips_fact {
     int stat;       /*!< True if the fact is static */
     int is_private; /*!< True if the fact is private */
     int owner;      /*!< Owner ID in case the fact is private */
-
-    uint64_t name_hash; /*!< Hash of the name of the fact */
-    bor_list_t htable;  /*!< Connection to hash table */
 };
 typedef struct pddl_strips_fact pddl_strips_fact_t;
 
@@ -55,11 +52,10 @@ typedef struct pddl_strips_facts pddl_strips_facts_t;
 
 void pddlStripsFactsInit(pddl_strips_facts_t *fs);
 void pddlStripsFactsFree(pddl_strips_facts_t *fs);
-void pddlStripsFactsAddFromPDDLFact(pddl_strips_facts_t *fs,
-                                    const pddl_t *pddl,
-                                    const pddl_fact_t *fact);
-pddl_strips_fact_t *pddlStripsFactsFind(pddl_strips_facts_t *fs,
-                                        const char *name);
+int pddlStripsFactsAddFromPDDLFact(pddl_strips_facts_t *fs,
+                                   const pddl_t *pddl,
+                                   const pddl_fact_t *fact);
+int pddlStripsFactsFind(pddl_strips_facts_t *fs, const char *name);
 
 #ifdef __cplusplus
 } /* extern "C" */
