@@ -128,6 +128,8 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
 
     pddl = BOR_ALLOC(pddl_t);
     bzero(pddl, sizeof(*pddl));
+    pddlFactsInit(&pddl->init_fact);
+    pddlFactsInit(&pddl->init_func);
     pddl->flags = flags;
     pddl->domain_lisp = domain_lisp;
     pddl->problem_lisp = problem_lisp;

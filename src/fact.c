@@ -19,13 +19,56 @@
 
 #include <boruvka/compiler.h>
 #include <boruvka/alloc.h>
+#include <boruvka/hfunc.h>
 #include "pddl/pddl.h"
 #include "pddl/fact.h"
 #include "err.h"
 
+struct htable_fact {
+    int id;
+    uint64_t hash;
+    bor_list_t htable;
+};
+typedef struct htable_fact htable_fact_t;
+
+static bor_htable_key_t htableKey(const bor_list_t *key, void *_fs)
+{
+    htable_fact_t *hf;
+    hf = BOR_LIST_ENTRY(key, htable_fact_t, htable);
+    return hf->hash;
+}
+
+static int htableEq(const bor_list_t *k1,
+                    const bor_list_t *k2, void *_fs)
+{
+    pddl_facts_t *fs = _fs;
+    htable_fact_t *hf1 = BOR_LIST_ENTRY(k1, htable_fact_t, htable);
+    htable_fact_t *hf2 = BOR_LIST_ENTRY(k2, htable_fact_t, htable);
+    pddl_fact_t *f1 = fs->fact + hf1->id;
+    pddl_fact_t *f2 = fs->fact + hf2->id;
+    return pddlFactCmp(f1, f2) == 0;
+}
+
+static uint64_t pddlFactHash(const pddl_fact_t *f)
+{
+    char *data;
+    uint64_t hash;
+    size_t size, offset;
+
+    offset = bor_offsetof(pddl_fact_t, arg_size);
+    size = sizeof(*f) + sizeof(int) * f->arg_size;
+    data = BOR_ALLOC_ARR(char, size);
+    memcpy(data, f, sizeof(*f));
+    memcpy(data + sizeof(*f), f->arg, sizeof(int) * f->arg_size);
+    hash = borCityHash_64(data + offset, size - offset);
+    BOR_FREE(data);
+    return hash;
+}
+
 void pddlFactInit(pddl_fact_t *f)
 {
     bzero(f, sizeof(*f));
+    f->owner = -1;
 }
 
 void pddlFactFromPred(pddl_fact_t *f, int pred_id, const pddl_pred_t *pred)
@@ -208,7 +251,7 @@ static int parseFunc(const pddl_lisp_node_t *n,
                      pddl_facts_t *fs)
 {
     const pddl_lisp_node_t *nfunc, *nval;
-    pddl_fact_t *func;
+    pddl_fact_t func;
 
     nfunc = n->child + 1;
     nval = n->child + 2;
@@ -220,21 +263,28 @@ static int parseFunc(const pddl_lisp_node_t *n,
         return -1;
     }
 
-    func = pddlFactsAdd(fs);
-    func->func_val = atoi(nval->value);
-    func->pred = pddlPredsGet(functions, nfunc->child[0].value);
-    if (func->pred < 0){
+    pddlFactInit(&func);
+    func.func_val = atoi(nval->value);
+    func.pred = pddlPredsGet(functions, nfunc->child[0].value);
+    if (func.pred < 0){
         ERRN(nfunc, "Unknown function `%s'", nfunc->child[0].value);
+        pddlFactFree(&func);
         return -1;
     }
 
     if (parseObjsIntoArr(nfunc, objs, 1, nfunc->child_size,
-                         &func->arg, &func->arg_size) != 0)
+                         &func.arg, &func.arg_size) != 0){
+        pddlFactFree(&func);
         return -1;
+    }
 
-    if (factSetPrivate(func, functions, objs) != 0)
+    if (factSetPrivate(&func, functions, objs) != 0){
+        pddlFactFree(&func);
         return -1;
+    }
 
+    pddlFactsAdd(fs, &func);
+    pddlFactFree(&func);
     return 0;
 }
 
@@ -243,22 +293,29 @@ static int parseFact(const pddl_lisp_node_t *n,
                      const pddl_objs_t *objs,
                      const char *head, pddl_facts_t *fs)
 {
-    pddl_fact_t *fact;
+    pddl_fact_t fact;
 
-    fact = pddlFactsAdd(fs);
-    fact->pred = pddlPredsGet(predicates, head);
-    if (fact->pred < 0){
+    pddlFactInit(&fact);
+    fact.pred = pddlPredsGet(predicates, head);
+    if (fact.pred < 0){
         ERRN(n, "Unkwnown predicate `%s'.", head);
+        pddlFactFree(&fact);
         return -1;
     }
 
     if (parseObjsIntoArr(n, objs, 1, n->child_size,
-                         &fact->arg, &fact->arg_size) != 0)
+                         &fact.arg, &fact.arg_size) != 0){
+        pddlFactFree(&fact);
         return -1;
+    }
 
-    if (factSetPrivate(fact, predicates, objs) != 0)
+    if (factSetPrivate(&fact, predicates, objs) != 0){
+        pddlFactFree(&fact);
         return -1;
+    }
 
+    pddlFactsAdd(fs, &fact);
+    pddlFactFree(&fact);
     return 0;
 }
 
@@ -317,7 +374,7 @@ static pddl_fact_t *parseGoalFact(const pddl_lisp_node_t *root,
 
     if (parseFact(root, predicates, objs, name, goal) != 0)
         return NULL;
-    return goal->fact + goal->size - 1;
+    return goal->fact + goal->fact_size - 1;
 }
 
 int parseGoal(const pddl_lisp_node_t *root,
@@ -397,58 +454,104 @@ int pddlFactsParseGoal(const pddl_lisp_t *problem,
     return parseGoal(ngoal->child + 1, predicates, objs, goal);
 }
 
+static void pddlFactsReserve1(pddl_facts_t *fs)
+{
+    if (fs->fact_size >= fs->fact_alloc){
+        if (fs->fact_alloc == 0){
+            fs->fact_alloc = 2;
+        }else{
+            fs->fact_alloc *= 2;
+        }
+        fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->fact_alloc);
+    }
+}
+
+void pddlFactsInit(pddl_facts_t *fs)
+{
+    bzero(fs, sizeof(*fs));
+    fs->htable = borHTableNew(htableKey, htableEq, fs);
+}
+
 void pddlFactsFree(pddl_facts_t *fs)
 {
+    bor_list_t flist, *h, *tmp;
     int i;
 
-    for (i = 0; i < fs->size; ++i)
+    borListInit(&flist);
+    borHTableGather(fs->htable, &flist);
+    BOR_LIST_FOR_EACH_SAFE(&flist, h, tmp){
+        BOR_FREE(BOR_LIST_ENTRY(h, htable_fact_t, htable));
+    }
+    borHTableDel(fs->htable);
+
+    for (i = 0; i < fs->fact_size; ++i)
         pddlFactFree(fs->fact + i);
     if (fs->fact != NULL)
         BOR_FREE(fs->fact);
 }
 
-pddl_fact_t *pddlFactsAdd(pddl_facts_t *fs)
+int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *sf)
 {
     pddl_fact_t *f;
+    htable_fact_t *hf;
+    int id;
 
-    if (fs->size >= fs->alloc){
-        if (fs->alloc == 0){
-            fs->alloc = 2;
-        }else{
-            fs->alloc *= 2;
-        }
-        fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc);
-    }
+    if ((id = pddlFactsFind(fs, sf)) >= 0)
+        return id;
 
-    f = fs->fact + fs->size++;
-    bzero(f, sizeof(*f));
-    f->owner = -1;
-    return f;
+    pddlFactsReserve1(fs);
+    f = fs->fact + fs->fact_size++;
+    pddlFactCopy(f, sf);
+
+    hf = BOR_ALLOC(htable_fact_t);
+    hf->id = fs->fact_size - 1;
+    hf->hash = pddlFactHash(f);
+    borListInit(&hf->htable);
+    borHTableInsert(fs->htable, &hf->htable);
+
+    return fs->fact_size - 1;
 }
 
 void pddlFactsSqueeze(pddl_facts_t *fs)
 {
-    fs->alloc = fs->size;
-    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc);
+    fs->fact_alloc = fs->fact_size;
+    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->fact_alloc);
 }
 
 void pddlFactsReserve(pddl_facts_t *fs, int alloc)
 {
-    if (fs->alloc >= alloc)
+    if (fs->fact_alloc >= alloc)
         return;
-    fs->alloc = alloc;
-    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->alloc);
+    fs->fact_alloc = alloc;
+    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t, fs->fact_alloc);
 }
 
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)
 {
     int i;
 
-    *dst = *src;
-    if (src->fact != NULL)
-        dst->fact = BOR_ALLOC_ARR(pddl_fact_t, src->size);
-    for (i = 0; i < dst->size; ++i)
-        pddlFactCopy(dst->fact + i, src->fact + i);
+    pddlFactsInit(dst);
+    for (i = 0; i < src->fact_size; ++i)
+        pddlFactsAdd(dst, src->fact + i);
+}
+
+int pddlFactsFind(pddl_facts_t *fs, const pddl_fact_t *f)
+{
+    htable_fact_t hf, *h;
+    bor_list_t *k;
+
+    if (fs->fact_size == 0)
+        return -1;
+
+    pddlFactsReserve1(fs);
+    fs->fact[fs->fact_size] = *f;
+
+    hf.id = fs->fact_size;
+    hf.hash = pddlFactHash(f);
+    if ((k = borHTableFind(fs->htable, &hf.htable)) == NULL)
+        return -1;
+    h = BOR_LIST_ENTRY(k, htable_fact_t, htable);
+    return h->id;
 }
 
 static void printFact(const pddl_preds_t *predicates,
@@ -472,8 +575,8 @@ static void pddlFactsPrint(const pddl_preds_t *predicates,
 {
     int i;
 
-    fprintf(fout, "%s[%d]:\n", header, in->size);
-    for (i = 0; i < in->size; ++i)
+    fprintf(fout, "%s[%d]:\n", header, in->fact_size);
+    for (i = 0; i < in->fact_size; ++i)
         printFact(predicates, objs, in->fact + i, func_val, fout);
 }
 

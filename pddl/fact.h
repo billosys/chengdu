@@ -21,6 +21,7 @@
 #define __PDDL_FACT_H__
 
 #include <boruvka/alloc.h>
+#include <boruvka/htable.h>
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
@@ -93,19 +94,11 @@ void pddlFactPrint(const pddl_preds_t *predicates,
 
 struct pddl_facts {
     pddl_fact_t *fact;
-    int size;
-    int alloc;
+    int fact_size;
+    int fact_alloc;
+    bor_htable_t *htable;
 };
 typedef struct pddl_facts pddl_facts_t;
-
-void pddlFactsInit(pddl_facts_t *fs);
-void pddlFactsFree(pddl_facts_t *fs);
-
-struct pddl_fact_id_arr {
-    int *fact;
-    int size;
-};
-typedef struct pddl_fact_id_arr pddl_fact_id_arr_t;
 
 
 /**
@@ -123,6 +116,11 @@ int pddlFactsParseGoal(const pddl_lisp_t *problem,
                        pddl_facts_t *goal);
 
 /**
+ * Initialize set of facts.
+ */
+void pddlFactsInit(pddl_facts_t *fs);
+
+/**
  * Free allocated resources.
  */
 void pddlFactsFree(pddl_facts_t *fs);
@@ -130,7 +128,7 @@ void pddlFactsFree(pddl_facts_t *fs);
 /**
  * Adds another fact to array.
  */
-pddl_fact_t *pddlFactsAdd(pddl_facts_t *fs);
+int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *f);
 
 /**
  * Reallocate array so that .alloc == .size.
@@ -147,6 +145,11 @@ void pddlFactsReserve(pddl_facts_t *fs, int alloc);
  */
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
 
+/**
+ * Returns ID of the fact.
+ */
+int pddlFactsFind(pddl_facts_t *fs, const pddl_fact_t *f);
+
 void pddlFactsPrintInit(const pddl_preds_t *predicates,
                         const pddl_objs_t *objs,
                         const pddl_facts_t *in,
@@ -159,6 +162,12 @@ void pddlFactsPrintGoal(const pddl_preds_t *predicates,
                         const pddl_objs_t *objs,
                         const pddl_facts_t *in,
                         FILE *fout);
+
+struct pddl_fact_id_arr {
+    int *fact;
+    int size;
+};
+typedef struct pddl_fact_id_arr pddl_fact_id_arr_t;
 
 _bor_inline void pddlFactIdArrInit(pddl_fact_id_arr_t *arr);
 _bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr);
