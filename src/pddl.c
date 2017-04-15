@@ -214,8 +214,8 @@ void pddlDump(const pddl_t *pddl, FILE *fout)
     pddlActionsPrint(&pddl->action, &pddl->obj, &pddl->pred,
                          &pddl->func, fout);
 
-    pddlFactsPrintInit(&pddl->pred, &pddl->obj, &pddl->init_fact, fout);
-    pddlFactsPrintInitFunc(&pddl->func, &pddl->obj, &pddl->init_func, fout);
+    pddlFactsPrintInit(pddl, &pddl->init_fact, fout);
+    pddlFactsPrintInitFunc(pddl, &pddl->init_func, fout);
 
     fprintf(fout, "Goal: ");
     pddlCondPrint(pddl->goal, &pddl->obj, &pddl->pred, &pddl->func, NULL, fout);

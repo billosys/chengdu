@@ -71,15 +71,6 @@ void pddlFactInit(pddl_fact_t *f)
     f->owner = -1;
 }
 
-void pddlFactFromPred(pddl_fact_t *f, int pred_id, const pddl_pred_t *pred)
-{
-    pddlFactInit(f);
-    f->pred = pred_id;
-    f->arg_size = pred->param_size;
-    f->arg = BOR_CALLOC_ARR(int, f->arg_size);
-    f->stat = !pred->write;
-}
-
 void pddlFactFree(pddl_fact_t *f)
 {
     if (f->arg != NULL)
@@ -106,15 +97,13 @@ int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
     return cmp;
 }
 
-int pddlFactSetPrivate(pddl_fact_t *fact,
-                       const pddl_preds_t *pred,
-                       const pddl_objs_t *objs)
+int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
 {
     const pddl_pred_t *pr;
     const pddl_obj_t *obj;
     int i;
 
-    pr = pred->pred + fact->pred;
+    pr = pddl->pred.pred + fact->pred;
     if (pr->is_private){
         fact->is_private = 1;
         if (pr->owner_param >= 0)
@@ -122,7 +111,7 @@ int pddlFactSetPrivate(pddl_fact_t *fact,
     }
 
     for (i = 0; i < fact->arg_size; ++i){
-        obj = objs->obj + fact->arg[i];
+        obj = pddl->obj.obj + fact->arg[i];
         if (obj->is_private){
             if (fact->is_private){
                 if (obj->owner >= 0 && fact->owner != obj->owner){
@@ -157,8 +146,7 @@ int pddlFactSetPrivate(pddl_fact_t *fact,
         (size) -= __w; \
     } while (0)
 
-int pddlFactFormat(const pddl_preds_t *predicates,
-                   const pddl_objs_t *objs,
+int pddlFactFormat(const pddl_t *pddl,
                    const pddl_fact_t *f,
                    char *str,
                    int strsize)
@@ -167,7 +155,7 @@ int pddlFactFormat(const pddl_preds_t *predicates,
 
     if (f->neg)
         STRNFMTCPY(str, size, "N:");
-    if (f->stat)
+    if (pddlFactIsStatic(pddl, f))
         STRNFMTCPY(str, size, "S:");
     if (f->is_private){
         STRNFMTCPY(str, size, "P");
@@ -175,21 +163,41 @@ int pddlFactFormat(const pddl_preds_t *predicates,
             STRNFMT(str, size, "[%d]", f->owner);
         STRNFMTCPY(str, size, ":");
     }
-    STRNFMT(str, size, "%s:", predicates->pred[f->pred].name);
+    STRNFMT(str, size, "%s:", pddl->pred.pred[f->pred].name);
     for (i = 0; i < f->arg_size; ++i){
-        STRNFMT(str, size, " %s", objs->obj[f->arg[i]].name);
+        STRNFMT(str, size, " %s", pddl->obj.obj[f->arg[i]].name);
     }
     return 0;
 }
 
-void pddlFactPrint(const pddl_preds_t *predicates,
-                   const pddl_objs_t *objs,
+int pddlFuncFormat(const pddl_t *pddl,
                    const pddl_fact_t *f,
-                   FILE *fout)
+                   char *str,
+                   int strsize)
+{
+    int size = strsize, i;
+
+    if (f->neg)
+        STRNFMTCPY(str, size, "N:");
+    if (f->is_private){
+        STRNFMTCPY(str, size, "P");
+        if (f->owner >= 0)
+            STRNFMT(str, size, "[%d]", f->owner);
+        STRNFMTCPY(str, size, ":");
+    }
+    STRNFMT(str, size, "%s:", pddl->func.pred[f->pred].name);
+    for (i = 0; i < f->arg_size; ++i){
+        STRNFMT(str, size, " %s", pddl->obj.obj[f->arg[i]].name);
+    }
+    STRNFMT(str, size, " --> %d", f->func_val);
+    return 0;
+}
+
+void pddlFactPrint(const pddl_t *pddl, const pddl_fact_t *f, FILE *fout)
 {
     char name[128];
 
-    if (pddlFactFormat(predicates, objs, f, name, 128) != 0){
+    if (pddlFactFormat(pddl, f, name, 128) != 0){
         fprintf(stderr, "Fatal Error:"
                         " Could not fit name of the fact into 128"
                         " characters.\n");
@@ -198,18 +206,37 @@ void pddlFactPrint(const pddl_preds_t *predicates,
     fprintf(fout, "%s", name);
 }
 
+void pddlFuncPrint(const pddl_t *pddl, const pddl_fact_t *f, FILE *fout)
+{
+    char name[128];
+
+    if (pddlFuncFormat(pddl, f, name, 128) != 0){
+        fprintf(stderr, "Fatal Error:"
+                        " Could not fit name of the fact into 128"
+                        " characters.\n");
+        exit(-1);
+    }
+    fprintf(fout, "%s", name);
+}
+
+int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f)
+{
+    const pddl_pred_t *pred = pddl->pred.pred + f->pred;
+    if (pred->read && !pred->write)
+        return 1;
+    // TODO
+    return 0;
+}
 
 
-static int factSetPrivate(pddl_fact_t *fact,
-                          const pddl_preds_t *pred,
-                          const pddl_objs_t *objs)
+static int factSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
 {
     int ret;
 
-    ret = pddlFactSetPrivate(fact, pred, objs);
+    ret = pddlFactSetPrivate(pddl, fact);
     if (ret < 0){
         fprintf(stderr, "Error PDDL: Invalid definition of fact ");
-        pddlFactPrint(pred, objs, fact, stderr);
+        pddlFactPrint(pddl, fact, stderr);
         fprintf(stderr, ".\n");
         ERR2("The fact is defined so it should be private for two"
              " different agents.");
@@ -246,8 +273,7 @@ static int parseObjsIntoArr(const pddl_lisp_node_t *n,
 }
 
 static int parseFunc(const pddl_lisp_node_t *n,
-                     const pddl_preds_t *functions,
-                     const pddl_objs_t *objs,
+                     const pddl_t *pddl,
                      pddl_facts_t *fs)
 {
     const pddl_lisp_node_t *nfunc, *nval;
@@ -265,20 +291,20 @@ static int parseFunc(const pddl_lisp_node_t *n,
 
     pddlFactInit(&func);
     func.func_val = atoi(nval->value);
-    func.pred = pddlPredsGet(functions, nfunc->child[0].value);
+    func.pred = pddlPredsGet(&pddl->func, nfunc->child[0].value);
     if (func.pred < 0){
         ERRN(nfunc, "Unknown function `%s'", nfunc->child[0].value);
         pddlFactFree(&func);
         return -1;
     }
 
-    if (parseObjsIntoArr(nfunc, objs, 1, nfunc->child_size,
+    if (parseObjsIntoArr(nfunc, &pddl->obj, 1, nfunc->child_size,
                          &func.arg, &func.arg_size) != 0){
         pddlFactFree(&func);
         return -1;
     }
 
-    if (factSetPrivate(&func, functions, objs) != 0){
+    if (factSetPrivate(pddl, &func) != 0){
         pddlFactFree(&func);
         return -1;
     }
@@ -289,27 +315,27 @@ static int parseFunc(const pddl_lisp_node_t *n,
 }
 
 static int parseFact(const pddl_lisp_node_t *n,
-                     const pddl_preds_t *predicates,
-                     const pddl_objs_t *objs,
-                     const char *head, pddl_facts_t *fs)
+                     const pddl_t *pddl,
+                     const char *head,
+                     pddl_facts_t *fs)
 {
     pddl_fact_t fact;
 
     pddlFactInit(&fact);
-    fact.pred = pddlPredsGet(predicates, head);
+    fact.pred = pddlPredsGet(&pddl->pred, head);
     if (fact.pred < 0){
         ERRN(n, "Unkwnown predicate `%s'.", head);
         pddlFactFree(&fact);
         return -1;
     }
 
-    if (parseObjsIntoArr(n, objs, 1, n->child_size,
+    if (parseObjsIntoArr(n, &pddl->obj, 1, n->child_size,
                          &fact.arg, &fact.arg_size) != 0){
         pddlFactFree(&fact);
         return -1;
     }
 
-    if (factSetPrivate(&fact, predicates, objs) != 0){
+    if (factSetPrivate(pddl, &fact) != 0){
         pddlFactFree(&fact);
         return -1;
     }
@@ -332,9 +358,9 @@ static int parseFactFunc(pddl_t *pddl, const pddl_lisp_node_t *n)
     if (strcmp(head, "=") == 0
             && n->child_size == 3
             && n->child[1].value == NULL){
-        return parseFunc(n, &pddl->func, &pddl->obj, &pddl->init_func);
+        return parseFunc(n, pddl, &pddl->init_func);
     }else{
-        return parseFact(n, &pddl->pred, &pddl->obj, head, &pddl->init_fact);
+        return parseFact(n, pddl, head, &pddl->init_fact);
     }
 }
 
@@ -458,20 +484,20 @@ int pddlFactsFind(pddl_facts_t *fs, const pddl_fact_t *f)
     return h->id;
 }
 
-static void printFact(const pddl_preds_t *predicates,
-                      const pddl_objs_t *objs,
+static void printFact(const pddl_t *pddl,
                       const pddl_fact_t *f,
                       int func_val, FILE *fout)
 {
     fprintf(fout, "    ");
-    pddlFactPrint(predicates, objs, f, fout);
-    if (func_val != 0)
-        fprintf(fout, " --> %d", f->func_val);
+    if (func_val != 0){
+        pddlFuncPrint(pddl, f, fout);
+    }else{
+        pddlFactPrint(pddl, f, fout);
+    }
     fprintf(fout, "\n");
 }
 
-static void pddlFactsPrint(const pddl_preds_t *predicates,
-                           const pddl_objs_t *objs,
+static void pddlFactsPrint(const pddl_t *pddl,
                            const pddl_facts_t *in,
                            const char *header,
                            int func_val,
@@ -481,29 +507,24 @@ static void pddlFactsPrint(const pddl_preds_t *predicates,
 
     fprintf(fout, "%s[%d]:\n", header, in->fact_size);
     for (i = 0; i < in->fact_size; ++i)
-        printFact(predicates, objs, in->fact + i, func_val, fout);
+        printFact(pddl, in->fact + i, func_val, fout);
 }
 
-void pddlFactsPrintInit(const pddl_preds_t *predicates,
-                        const pddl_objs_t *objs,
-                        const pddl_facts_t *in,
-                        FILE *fout)
+void pddlFactsPrintInit(const pddl_t *pddl, const pddl_facts_t *in, FILE *fout)
 {
-    pddlFactsPrint(predicates, objs, in, "Init", 0, fout);
+    pddlFactsPrint(pddl, in, "Init", 0, fout);
 }
 
-void pddlFactsPrintInitFunc(const pddl_preds_t *predicates,
-                            const pddl_objs_t *objs,
+void pddlFactsPrintInitFunc(const pddl_t *pddl,
                             const pddl_facts_t *in,
                             FILE *fout)
 {
-    pddlFactsPrint(predicates, objs, in, "Init Func", 1, fout);
+    pddlFactsPrint(pddl, in, "Init Func", 1, fout);
 }
 
-void pddlFactsPrintGoal(const pddl_preds_t *predicates,
-                        const pddl_objs_t *objs,
+void pddlFactsPrintGoal(const pddl_t *pddl,
                         const pddl_facts_t *in,
                         FILE *fout)
 {
-    pddlFactsPrint(predicates, objs, in, "Goal", 0, fout);
+    pddlFactsPrint(pddl, in, "Goal", 0, fout);
 }

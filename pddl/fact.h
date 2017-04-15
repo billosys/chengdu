@@ -38,7 +38,6 @@ struct pddl_fact {
     int pred;       /*!< Predicate ID */
     int neg;        /*!< True if it is negated form */
     int func_val;   /*!< Assigned value in case of function */
-    int stat;       /*!< True if the fact is static */
     int is_private; /*!< True if the fact is private */
     int owner;      /*!< Owner object ID in case the fact is private */
 };
@@ -48,11 +47,6 @@ typedef struct pddl_fact pddl_fact_t;
  * Initializes empty fact.
  */
 void pddlFactInit(pddl_fact_t *f);
-
-/**
- * Initializes fact from the predicate.
- */
-void pddlFactFromPred(pddl_fact_t *f, int pred_id, const pddl_pred_t *pred);
 
 /**
  * Frees allocated memory
@@ -75,20 +69,24 @@ int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2);
  * Returns 0 if fact remained non-private, 1 if privateness was set and -1
  * if there is conflict in owners of the fact (thus this is invalid fact).
  */
-int pddlFactSetPrivate(pddl_fact_t *fact,
-                       const pddl_preds_t *pred,
-                       const pddl_objs_t *objs);
+int pddlFactSetPrivate(const struct pddl *pddl, pddl_fact_t *fact);
 
-int pddlFactFormat(const pddl_preds_t *predicates,
-                   const pddl_objs_t *objs,
+int pddlFactFormat(const struct pddl *pddl,
+                   const pddl_fact_t *f,
+                   char *str,
+                   int strsize);
+int pddlFuncFormat(const struct pddl *pddl,
                    const pddl_fact_t *f,
                    char *str,
                    int strsize);
 
-void pddlFactPrint(const pddl_preds_t *predicates,
-                   const pddl_objs_t *objs,
-                   const pddl_fact_t *f,
-                   FILE *fout);
+void pddlFactPrint(const struct pddl *p, const pddl_fact_t *f, FILE *fout);
+void pddlFuncPrint(const struct pddl *p, const pddl_fact_t *f, FILE *fout);
+
+/**
+ * Returns true if the fact is static.
+ */
+int pddlFactIsStatic(const struct pddl *pddl, const pddl_fact_t *f);
 
 
 
@@ -142,16 +140,13 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
  */
 int pddlFactsFind(pddl_facts_t *fs, const pddl_fact_t *f);
 
-void pddlFactsPrintInit(const pddl_preds_t *predicates,
-                        const pddl_objs_t *objs,
+void pddlFactsPrintInit(const struct pddl *pddl,
                         const pddl_facts_t *in,
                         FILE *fout);
-void pddlFactsPrintInitFunc(const pddl_preds_t *predicates,
-                            const pddl_objs_t *objs,
+void pddlFactsPrintInitFunc(const struct pddl *pddl,
                             const pddl_facts_t *in,
                             FILE *fout);
-void pddlFactsPrintGoal(const pddl_preds_t *predicates,
-                        const pddl_objs_t *objs,
+void pddlFactsPrintGoal(const struct pddl *pddl,
                         const pddl_facts_t *in,
                         FILE *fout);
 
