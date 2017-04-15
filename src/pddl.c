@@ -182,6 +182,215 @@ void pddlDel(pddl_t *pddl)
     BOR_FREE(pddl);
 }
 
+static int markNegPre(pddl_cond_t *c, void *_m)
+{
+    pddl_cond_atom_t *atom;
+    int *m = _m;
+
+    if (c->type == PDDL_COND_ATOM){
+        atom = PDDL_COND_CAST(c, atom);
+        if (atom->neg)
+            m[atom->pred] = 1;
+    }
+
+    return 0;
+}
+
+static int markNegPreWhen(pddl_cond_t *c, void *_m)
+{
+    pddl_cond_when_t *when;
+
+    if (c->type == PDDL_COND_WHEN){
+        when = PDDL_COND_CAST(c, when);
+        pddlCondTraverse(when->pre, markNegPre, NULL, _m);
+    }
+
+    return 0;
+}
+
+/** Sets to 1 indexes in {np} of those predicates that are not static and
+ *  appear as negative preconditions */
+static void findNonStaticPredInNegPre(pddl_t *pddl, int *np)
+{
+    int i;
+
+    bzero(np, sizeof(int) * pddl->pred.size);
+    for (i = 0; i < pddl->action.size; ++i){
+        pddlCondTraverse(pddl->action.action[i].pre, markNegPre, NULL, np);
+        pddlCondTraverse(pddl->action.action[i].eff, markNegPreWhen, NULL, np);
+    }
+    for (i = 0; i < pddl->pred.size; ++i){
+        if (pddlPredIsStatic(pddl->pred.pred + i))
+            np[i] = 0;
+    }
+}
+
+/** Create a new NOT-... predicate and returns its ID */
+static int createNewNotPred(pddl_t *pddl, int pred_id)
+{
+    const pddl_pred_t *pos = pddl->pred.pred + pred_id;
+    pddl_pred_t *neg;
+    int name_size;
+    char *name;
+
+    name_size = strlen(pos->name) + 4;
+    name = BOR_ALLOC_ARR(char, name_size + 1);
+    strcpy(name, "NOT-");
+    strcpy(name + 4, pos->name);
+
+    neg = pddlPredsAdd(&pddl->pred);
+    // pddlPredsAdd() can reallocate, so we need to probe positive
+    // predicate again
+    pos = pddl->pred.pred + pred_id;
+    pddlPredCopy(neg, pos);
+    if (neg->free_name)
+        BOR_FREE((char *)neg->name);
+    neg->name = name;
+    neg->free_name = 1;
+
+    return pddl->pred.size - 1;
+}
+
+static int replaceNegPre(pddl_cond_t **c, void *_ids)
+{
+    int *ids = _ids;
+    int pos = ids[0];
+    int neg = ids[1];
+    pddl_cond_atom_t *atom;
+
+    if ((*c)->type == PDDL_COND_ATOM){
+        atom = PDDL_COND_CAST(*c, atom);
+        if (atom->pred == pos && atom->neg){
+            atom->pred = neg;
+            atom->neg = 0;
+        }
+    }
+
+    return 0;
+}
+
+static int replaceNegEff(pddl_cond_t **c, void *_ids)
+{
+    int *ids = _ids;
+    int pos = ids[0];
+    int neg = ids[1];
+    pddl_cond_t *c2;
+    pddl_cond_atom_t *atom, *not_atom;
+    pddl_cond_when_t *when;
+    pddl_cond_part_t *and;
+
+    if ((*c)->type == PDDL_COND_WHEN){
+        when = PDDL_COND_CAST(*c, when);
+        pddlCondRebuild(&when->pre, NULL, replaceNegPre, _ids);
+        pddlCondRebuild(&when->eff, replaceNegEff, NULL, _ids);
+        return -1;
+
+    }else if ((*c)->type == PDDL_COND_ATOM){
+        atom = PDDL_COND_CAST(*c, atom);
+        if (atom->pred == pos){
+            // Create new NOT atom and flip negation
+            c2 = pddlCondClone(*c);
+            not_atom = PDDL_COND_CAST(c2, atom);
+            not_atom->pred = neg;
+            not_atom->neg = !atom->neg;
+
+            // Transorm atom to (and atom)
+            *c = pddlCondAtomToAnd(*c);
+            and = PDDL_COND_CAST(*c, part);
+            pddlCondPartAdd(and, c2);
+
+            // Prevent recursion
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+static void compileOutNegPreInAction(pddl_t *pddl, int pos, int neg,
+                                     pddl_action_t *a)
+{
+    int ids[2] = { pos, neg };
+    pddlCondRebuild(&a->pre, NULL, replaceNegPre, ids);
+    pddlCondRebuild(&a->eff, replaceNegEff, NULL, ids);
+    pddlActionNormalize(a, &pddl->type);
+}
+
+static void compileOutNegPre(pddl_t *pddl, int pos, int neg)
+{
+    int i;
+
+    for (i = 0; i < pddl->action.size; ++i)
+        compileOutNegPreInAction(pddl, pos, neg, pddl->action.action + i);
+}
+
+static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
+                                 pddl_fact_t *fact,
+                                 const pddl_pred_t *pred, int argi)
+{
+    const int *obj;
+    int i, obj_size;
+
+    if (argi == fact->arg_size){
+        if (pddlFactSetPrivate(pddl, fact) != 0){
+            fprintf(stderr, "Error PDDL: Could not determine privateness of ");
+            pddlFactPrint(pddl, fact, stderr);
+            fprintf(stderr, ".\n");
+            ERR2("The fact is defined so it should be private for two"
+                 " different agents.");
+        }
+
+        fact->pred = pos;
+        if (pddlFactsFind(&pddl->init_fact, fact) < 0){
+            fact->pred = neg;
+            pddlFactsAdd(&pddl->init_fact, fact);
+        }
+
+        return;
+    }
+
+    obj = pddlTypesObjsByType(&pddl->type, pred->param[argi], &obj_size);
+    for (i = 0; i < obj_size; ++i){
+        fact->arg[argi] = obj[i];
+        addNotPredsToInitRec(pddl, pos, neg, fact, pred, argi + 1);
+    }
+}
+
+static void addNotPredsToInit(pddl_t *pddl, int pos, int neg)
+{
+    const pddl_pred_t *pos_pred = pddl->pred.pred + pos;
+    pddl_fact_t fact;
+    int arg[pos_pred->param_size];
+
+    // Prepare fact object
+    pddlFactInit(&fact);
+    fact.arg = arg;
+    fact.arg_size = pos_pred->param_size;
+
+    // Recursivelly try all possible objects for each argument
+    addNotPredsToInitRec(pddl, pos, neg, &fact, pos_pred, 0);
+}
+
+/** Compile out negative preconditions if they are not static */
+static void compileOutNonStaticNegPre(pddl_t *pddl)
+{
+    int i, size, *negpred;
+    int not;
+
+    size = pddl->pred.size;
+    negpred = BOR_ALLOC_ARR(int, size);
+    findNonStaticPredInNegPre(pddl, negpred);
+
+    for (i = 0; i < size; ++i){
+        if (negpred[i]){
+            not = createNewNotPred(pddl, i);
+            compileOutNegPre(pddl, i, not);
+            addNotPredsToInit(pddl, i, not);
+        }
+    }
+    BOR_FREE(negpred);
+}
+
 
 void pddlNormalize(pddl_t *pddl)
 {
@@ -200,6 +409,8 @@ void pddlNormalize(pddl_t *pddl)
 
     if (pddl->goal)
         pddl->goal = pddlCondNormalize(pddl->goal, &pddl->type);
+
+    compileOutNonStaticNegPre(pddl);
 }
 
 void pddlDump(const pddl_t *pddl, FILE *fout)

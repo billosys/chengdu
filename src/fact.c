@@ -222,7 +222,7 @@ void pddlFuncPrint(const pddl_t *pddl, const pddl_fact_t *f, FILE *fout)
 int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f)
 {
     const pddl_pred_t *pred = pddl->pred.pred + f->pred;
-    if (pred->read && !pred->write)
+    if (pddlPredIsStatic(pred))
         return 1;
     // TODO
     return 0;

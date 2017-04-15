@@ -39,8 +39,14 @@ struct pddl_pred {
                            owner object */
     int read;         /*!< True if the predicate appears in some precondition */
     int write;        /*!< True if the predicate appreas in some effect */
+    int free_name;    /*!< True if .name should be freed */
 };
 typedef struct pddl_pred pddl_pred_t;
+
+void pddlPredCopy(pddl_pred_t *dst, const pddl_pred_t *src);
+
+_bor_inline int pddlPredIsStatic(const pddl_pred_t *pred);
+
 
 struct pddl_preds {
     pddl_pred_t *pred;
@@ -83,6 +89,13 @@ void pddlPredsRemoveLast(pddl_preds_t *ps);
 
 void pddlPredsPrint(const pddl_preds_t *ps,
                     const char *title, FILE *fout);
+
+
+/**** INLINES: ****/
+_bor_inline int pddlPredIsStatic(const pddl_pred_t *pred)
+{
+    return pred->read && !pred->write;
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

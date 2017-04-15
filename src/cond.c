@@ -29,9 +29,10 @@ typedef int (*pddl_cond_method_traverse_fn)(pddl_cond_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
                             void *userdata);
-typedef pddl_cond_t *(*pddl_cond_method_rebuild_fn)(
-                            pddl_cond_t *c,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+typedef int (*pddl_cond_method_rebuild_fn)(
+                            pddl_cond_t **c,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
                             void *userdata);
 
 struct pddl_cond_cls {
@@ -61,9 +62,7 @@ struct parse_ctx {
 };
 typedef struct parse_ctx parse_ctx_t;
 
-#define OBJ(C, T) \
-    (bor_container_of((C), pddl_cond_##T##_t, cls))
-
+#define OBJ(C, T) PDDL_COND_CAST(C, T)
 
 static void condPartDel(pddl_cond_part_t *);
 static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p);
@@ -72,9 +71,10 @@ static int condPartTraverse(pddl_cond_part_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
                             void *userdata);
-static pddl_cond_t *condPartRebuild(pddl_cond_part_t *p,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
-                            void *userdata);
+static int condPartRebuild(pddl_cond_part_t **p,
+                           int (*pre)(pddl_cond_t **, void *),
+                           int (*post)(pddl_cond_t **, void *),
+                           void *userdata);
 
 static void condQuantDel(pddl_cond_quant_t *);
 static pddl_cond_quant_t *condQuantClone(const pddl_cond_quant_t *q);
@@ -82,8 +82,9 @@ static int condQuantTraverse(pddl_cond_quant_t *,
                              int (*pre)(pddl_cond_t *, void *),
                              int (*post)(pddl_cond_t *, void *),
                              void *userdata);
-static pddl_cond_t *condQuantRebuild(pddl_cond_quant_t *q,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+static int condQuantRebuild(pddl_cond_quant_t **q,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
                             void *userdata);
 
 static void condWhenDel(pddl_cond_when_t *);
@@ -92,8 +93,9 @@ static int condWhenTraverse(pddl_cond_when_t *w,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
                             void *userdata);
-static pddl_cond_t *condWhenRebuild(pddl_cond_when_t *w,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+static int condWhenRebuild(pddl_cond_when_t **w,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
                             void *userdata);
 
 static void condAtomDel(pddl_cond_atom_t *);
@@ -102,8 +104,9 @@ static int condAtomTraverse(pddl_cond_atom_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
                             void *userdata);
-static pddl_cond_t *condAtomRebuild(pddl_cond_atom_t *a,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+static int condAtomRebuild(pddl_cond_atom_t **a,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
                             void *userdata);
 
 static void condAssignDel(pddl_cond_assign_t *);
@@ -112,8 +115,9 @@ static int condAssignTraverse(pddl_cond_assign_t *,
                               int (*pre)(pddl_cond_t *, void *),
                               int (*post)(pddl_cond_t *, void *),
                               void *userdata);
-static pddl_cond_t *condAssignRebuild(pddl_cond_assign_t *a,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+static int condAssignRebuild(pddl_cond_assign_t **a,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
                             void *userdata);
 
 static void condBoolDel(pddl_cond_bool_t *);
@@ -122,13 +126,11 @@ static int condBoolTraverse(pddl_cond_bool_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
                             void *userdata);
-static pddl_cond_t *condBoolRebuild(pddl_cond_bool_t *a,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+static int condBoolRebuild(pddl_cond_bool_t **a,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
                             void *userdata);
 
-
-#define condRebuild(C, CB, UD) \
-    cond_cls[(C)->type].rebuild((C), (CB), (UD))
 
 static pddl_cond_cls_t cond_cls[8] = {
     MCLS(Part),   // PDDL_COND_AND
@@ -220,26 +222,28 @@ static int condPartTraverse(pddl_cond_part_t *p,
     return ret;
 }
 
-static pddl_cond_t *condPartRebuild(pddl_cond_part_t *p,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
-                            void *userdata)
+static int condPartRebuild(pddl_cond_part_t **p,
+                           int (*pre)(pddl_cond_t **, void *),
+                           int (*post)(pddl_cond_t **, void *),
+                           void *u)
 {
     pddl_cond_t *c;
     bor_list_t *item, *last;
+    int ret = 0;
 
-    if (borListEmpty(&p->part))
-        return cb(&p->cls, userdata);
+    if (borListEmpty(&(*p)->part))
+        return 0;
 
-    last = borListPrev(&p->part);
+    last = borListPrev(&(*p)->part);
     do {
-        item = borListNext(&p->part);
+        item = borListNext(&(*p)->part);
         borListDel(item);
         c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-        c = condRebuild(c, cb, userdata);
-        borListAppend(&p->part, &c->conn);
+        ret |= pddlCondRebuild(&c, pre, post, u);
+        borListAppend(&(*p)->part, &c->conn);
     } while (item != last);
 
-    return cb(&p->cls, userdata);
+    return ret;
 }
 
 /** Moves all parts of src to dst */
@@ -285,16 +289,19 @@ static int condQuantTraverse(pddl_cond_quant_t *q,
                              int (*post)(pddl_cond_t *, void *),
                              void *u)
 {
-    return pddlCondTraverse(q->cond, pre, post, u);
+    if (q->cond)
+        return pddlCondTraverse(q->cond, pre, post, u);
+    return 0;
 }
 
-static pddl_cond_t *condQuantRebuild(pddl_cond_quant_t *q,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
+static int condQuantRebuild(pddl_cond_quant_t **q,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
                             void *userdata)
 {
-    if (q->cond)
-        q->cond = condRebuild(q->cond, cb, userdata);
-    return cb(&q->cls, userdata);
+    if ((*q)->cond)
+        return pddlCondRebuild(&(*q)->cond, pre, post, userdata);
+    return 0;
 }
 
 
@@ -339,15 +346,18 @@ static int condWhenTraverse(pddl_cond_when_t *w,
     return ret;
 }
 
-static pddl_cond_t *condWhenRebuild(pddl_cond_when_t *w,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
-                            void *userdata)
+static int condWhenRebuild(pddl_cond_when_t **w,
+                           int (*pre)(pddl_cond_t **, void *),
+                           int (*post)(pddl_cond_t **, void *),
+                           void *u)
 {
-    if (w->pre)
-        w->pre = condRebuild(w->pre, cb, userdata);
-    if (w->eff)
-        w->eff = condRebuild(w->eff, cb, userdata);
-    return cb(&w->cls, userdata);
+    int ret = 0;
+
+    if ((*w)->pre)
+        ret |= pddlCondRebuild(&(*w)->pre, pre, post, u);
+    if ((*w)->eff)
+        ret |= pddlCondRebuild(&(*w)->eff, pre, post, u);
+    return ret;
 }
 
 
@@ -387,11 +397,12 @@ static int condAtomTraverse(pddl_cond_atom_t *a,
     return 0;
 }
 
-static pddl_cond_t *condAtomRebuild(pddl_cond_atom_t *a,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
-                            void *userdata)
+static int condAtomRebuild(pddl_cond_atom_t **a,
+                           int (*pre)(pddl_cond_t **, void *),
+                           int (*post)(pddl_cond_t **, void *),
+                           void *u)
 {
-    return cb(&a->cls, userdata);
+    return 0;
 }
 
 
@@ -427,11 +438,12 @@ static int condAssignTraverse(pddl_cond_assign_t *a,
     return 0;
 }
 
-static pddl_cond_t *condAssignRebuild(pddl_cond_assign_t *a,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
-                            void *userdata)
+static int condAssignRebuild(pddl_cond_assign_t **a,
+                             int (*pre)(pddl_cond_t **, void *),
+                             int (*post)(pddl_cond_t **, void *),
+                             void *userdata)
 {
-    return cb(&a->cls, userdata);
+    return 0;
 }
 
 
@@ -462,11 +474,12 @@ static int condBoolTraverse(pddl_cond_bool_t *a,
     return 0;
 }
 
-static pddl_cond_t *condBoolRebuild(pddl_cond_bool_t *a,
-                            pddl_cond_t *(*cb)(pddl_cond_t *, void *),
-                            void *userdata)
+static int condBoolRebuild(pddl_cond_bool_t **a,
+                           int (*pre)(pddl_cond_t **, void *),
+                           int (*post)(pddl_cond_t **, void *),
+                           void *userdata)
 {
-    return cb(&a->cls, userdata);
+    return 0;
 }
 
 
@@ -497,6 +510,25 @@ int pddlCondTraverse(pddl_cond_t *c,
     }
 
     ret |= cond_cls[c->type].traverse(c, pre, post, u);
+
+    if (post != NULL)
+        ret |= post(c, u);
+    return ret;
+}
+
+int pddlCondRebuild(pddl_cond_t **c,
+                    int (*pre)(pddl_cond_t **, void *),
+                    int (*post)(pddl_cond_t **, void *),
+                    void *u)
+{
+    int ret = 0;
+
+    if (pre != NULL){
+        if (pre(c, u) != 0)
+            return 0;
+    }
+
+    ret |= cond_cls[(*c)->type].rebuild(c, pre, post, u);
 
     if (post != NULL)
         ret |= post(c, u);
@@ -902,6 +934,11 @@ pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom)
     return &and->cls;
 }
 
+void pddlCondPartAdd(pddl_cond_part_t *part, pddl_cond_t *c)
+{
+    condPartAdd(part, c);
+}
+
 
 /*** CHECK ***/
 int pddlCondCheckPre(const pddl_cond_t *cond,
@@ -1260,35 +1297,37 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
     return &top->cls;
 }
 
-static pddl_cond_t *instantiateForall(pddl_cond_t *c, void *data)
+static int instantiateForall(pddl_cond_t **c, void *data)
 {
     const pddl_types_t *types = data;
-    pddl_cond_quant_t *forall;
 
-    if (c->type != PDDL_COND_FORALL)
-        return c;
+    if ((*c)->type != PDDL_COND_FORALL)
+        return 0;
 
-    forall = OBJ(c, quant);
-    return instantiateQuant(forall, types);
+    *c = instantiateQuant(OBJ(*c, quant), types);
+    return 0;
 }
 
-static pddl_cond_t *instantiateExist(pddl_cond_t *c, void *data)
+static int instantiateExist(pddl_cond_t **c, void *data)
 {
     const pddl_types_t *types = data;
-    pddl_cond_quant_t *q;
 
-    if (c->type != PDDL_COND_EXIST)
-        return c;
+    if ((*c)->type != PDDL_COND_EXIST)
+        return 0;
 
-    q = OBJ(c, quant);
-    return instantiateQuant(q, types);
+    *c = instantiateQuant(OBJ(*c, quant), types);
+    return 0;
 }
 
-static pddl_cond_t *pddlCondInstantiateQuant(pddl_cond_t *cond,
-                                             const pddl_types_t *types)
+static int pddlCondInstantiateQuant(pddl_cond_t **cond,
+                                    const pddl_types_t *types)
 {
-    cond = condRebuild(cond, instantiateForall, (void *)types);
-    return condRebuild(cond, instantiateExist, (void *)types);
+    int ret;
+
+    ret = pddlCondRebuild(cond, NULL, instantiateForall, (void *)types);
+    if (ret == 0)
+        return pddlCondRebuild(cond, NULL, instantiateExist, (void *)types);
+    return -1;
 }
 
 
@@ -1350,19 +1389,18 @@ static pddl_cond_t *removeBoolWhen(pddl_cond_when_t *when)
     }
 }
 
-static pddl_cond_t *removeBool(pddl_cond_t *c, void *data)
+static int removeBool(pddl_cond_t **c, void *data)
 {
 
-    if (c->type == PDDL_COND_AND
-            || c->type == PDDL_COND_OR){
-        return removeBoolPart(OBJ(c, part));
+    if ((*c)->type == PDDL_COND_AND
+            || (*c)->type == PDDL_COND_OR){
+        *c = removeBoolPart(OBJ(*c, part));
 
-    }else if (c->type == PDDL_COND_WHEN){
-        return removeBoolWhen(OBJ(c, when));
-
-    }else{
-        return c;
+    }else if ((*c)->type == PDDL_COND_WHEN){
+        *c = removeBoolWhen(OBJ(*c, when));
     }
+
+    return 0;
 }
 
 static pddl_cond_t *flattenPart(pddl_cond_part_t *part)
@@ -1437,18 +1475,17 @@ static pddl_cond_t *flattenWhen(pddl_cond_when_t *when)
     return &and->cls;
 }
 
-static pddl_cond_t *flatten(pddl_cond_t *c, void *data)
+static int flatten(pddl_cond_t **c, void *data)
 {
-    if (c->type == PDDL_COND_AND
-            || c->type == PDDL_COND_OR){
-        return flattenPart(OBJ(c, part));
+    if ((*c)->type == PDDL_COND_AND
+            || (*c)->type == PDDL_COND_OR){
+        *c = flattenPart(OBJ(*c, part));
 
-    }else if (c->type == PDDL_COND_WHEN){
-        return flattenWhen(OBJ(c, when));
-
-    }else{
-        return c;
+    }else if ((*c)->type == PDDL_COND_WHEN){
+        *c = flattenWhen(OBJ(*c, when));
     }
+
+    return 0;
 }
 
 static pddl_cond_part_t *moveDisjunctionsCreate1(pddl_cond_part_t *top,
@@ -1518,24 +1555,26 @@ static pddl_cond_t *moveDisjunctionsUpAnd(pddl_cond_part_t *and)
     return moveDisjunctionsCreate(and, &or_list);
 }
 
-static pddl_cond_t *moveDisjunctionsUp(pddl_cond_t *c, void *data)
+static int moveDisjunctionsUp(pddl_cond_t **c, void *data)
 {
-    if (c->type == PDDL_COND_AND)
-        c = moveDisjunctionsUpAnd(OBJ(c, part));
+    if ((*c)->type == PDDL_COND_AND)
+        *c = moveDisjunctionsUpAnd(OBJ(*c, part));
 
-    if (c->type == PDDL_COND_OR)
-        c = flattenPart(OBJ(c, part));
-    return c;
+    if ((*c)->type == PDDL_COND_OR)
+        *c = flattenPart(OBJ(*c, part));
+    return 0;
 }
 
 pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types)
 {
-    pddl_cond_t *c;
-    c = pddlCondInstantiateQuant(cond, types);
-    c = condRebuild(c, removeBool, NULL);
-    c = condRebuild(c, flatten, NULL);
-    c = condRebuild(c, moveDisjunctionsUp, NULL);
-    c = condRebuild(c, flatten, NULL);
+    pddl_cond_t *c = cond;
+
+    // TODO: Check return values
+    pddlCondInstantiateQuant(&c, types);
+    pddlCondRebuild(&c, NULL, removeBool, NULL);
+    pddlCondRebuild(&c, NULL, flatten, NULL);
+    pddlCondRebuild(&c, NULL, moveDisjunctionsUp, NULL);
+    pddlCondRebuild(&c, NULL, flatten, NULL);
     // TODO: Remove identical atoms
     return c;
 }

@@ -22,6 +22,19 @@
 #include "pddl/pred.h"
 #include "err.h"
 
+void pddlPredCopy(pddl_pred_t *dst, const pddl_pred_t *src)
+{
+    memcpy(dst, src, sizeof(*src));
+    if (src->param != NULL){
+        dst->param = BOR_ALLOC_ARR(int, src->param_size);
+        memcpy(dst->param, src->param, sizeof(int) * src->param_size);
+    }
+
+    if (src->free_name){
+        dst->name = BOR_STRDUP(src->name);
+    }
+}
+
 struct _set_t {
     pddl_pred_t *pred;
     pddl_types_t *types;
@@ -241,6 +254,8 @@ void pddlPredsFree(pddl_preds_t *ps)
     for (i = 0; i < ps->size; ++i){
         if (ps->pred[i].param != NULL)
             BOR_FREE(ps->pred[i].param);
+        if (ps->pred[i].free_name)
+            BOR_FREE((char *)ps->pred[i].name);
     }
     if (ps->pred != NULL)
         BOR_FREE(ps->pred);

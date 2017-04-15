@@ -47,6 +47,9 @@ struct pddl;
 #define PDDL_COND_ASSIGN 6u
 #define PDDL_COND_BOOL   7u
 
+#define PDDL_COND_CAST(C, T) \
+    (bor_container_of((C), pddl_cond_##T##_t, cls))
+
 /**
  * General condition
  */
@@ -151,6 +154,17 @@ int pddlCondTraverse(pddl_cond_t *c,
                      void *u);
 
 /**
+ * Recursivelly rebuilds conditional from bottom up.
+ * First for every part of {c} pddlCondRebuild is called and the returned
+ * value is used as a replacement for that part.
+ * Then {cb} is called for {c}.
+ */
+int pddlCondRebuild(pddl_cond_t **c,
+                    int (*pre)(pddl_cond_t **, void *),
+                    int (*post)(pddl_cond_t **, void *),
+                    void *userdata);
+
+/**
  * Parse condition from PDDL lisp.
  */
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
@@ -167,6 +181,11 @@ pddl_cond_t *pddlCondEmptyPre(void);
  * Transforms atom into (and atom).
  */
 pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom);
+
+/**
+ * Adds {c} to and/or condition.
+ */
+void pddlCondPartAdd(pddl_cond_part_t *part, pddl_cond_t *c);
 
 /**
  * Returns 0 if cond is a correct precondition, -1 otherwise.
