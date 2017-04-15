@@ -1108,21 +1108,29 @@ void pddlCondSetPredRead(const pddl_cond_t *cond, pddl_preds_t *preds)
 }
 
 
-static int setPredWrite(pddl_cond_t *cond, void *data)
+static int setPredReadWrite(pddl_cond_t *cond, void *data)
 {
     pddl_cond_atom_t *atom;
+    pddl_cond_when_t *when;
     pddl_preds_t *preds = data;
 
-    if (cond->type == PDDL_COND_ATOM){
+    if (cond->type == PDDL_COND_WHEN){
+        when = OBJ(cond, when);
+        pddlCondTraverse((pddl_cond_t *)when->pre, setPredRead, NULL, data);
+        pddlCondTraverse((pddl_cond_t *)when->eff,
+                         setPredReadWrite, NULL, data);
+        return -1;
+
+    }else if (cond->type == PDDL_COND_ATOM){
         atom = OBJ(cond, atom);
         preds->pred[atom->pred].write = 1;
     }
     return 0;
 }
 
-void pddlCondSetPredWrite(const pddl_cond_t *cond, pddl_preds_t *preds)
+void pddlCondSetPredReadWriteEff(const pddl_cond_t *cond, pddl_preds_t *preds)
 {
-    pddlCondTraverse((pddl_cond_t *)cond, setPredWrite, NULL, preds);
+    pddlCondTraverse((pddl_cond_t *)cond, setPredReadWrite, NULL, preds);
 }
 
 /*** INSTANTIATE QUANTIFIERS ***/

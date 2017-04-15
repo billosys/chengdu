@@ -185,14 +185,15 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
 
 
 /**
- * Set .read to true for all preconditions found as atoms.
+ * Set .read to true for all found atoms.
  */
 void pddlCondSetPredRead(const pddl_cond_t *cond, pddl_preds_t *preds);
 
 /**
- * Set .write to true for all preconditions found as atoms.
+ * Set .write to true for all found atoms, and set .read to true for all
+ * atoms found as precondtions in (when ) statement.
  */
-void pddlCondSetPredWrite(const pddl_cond_t *cond, pddl_preds_t *preds);
+void pddlCondSetPredReadWriteEff(const pddl_cond_t *cond, pddl_preds_t *preds);
 
 /**
  * Normalize conditionals by instantiation qunatifiers and transformation to

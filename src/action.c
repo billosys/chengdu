@@ -74,7 +74,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
                 return -1;
             if (pddlCondCheckEff(a->eff, pddl->require, 1) != 0)
                 return -1;
-            pddlCondSetPredWrite(a->eff, &pddl->pred);
+            pddlCondSetPredReadWriteEff(a->eff, &pddl->pred);
 
         }else{
             ERRN(root->child + i, "Invalid definition of action `%s'."
