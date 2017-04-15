@@ -1607,7 +1607,11 @@ static void condAtomPrint(const pddl_cond_atom_t *atom,
     fprintf(fout, "(");
     if (atom->neg)
         fprintf(fout, "N:");
-    fprintf(fout, "%s", preds->pred[atom->pred].name);
+    if (preds->pred[atom->pred].read)
+        fprintf(fout, "R");
+    if (preds->pred[atom->pred].write)
+        fprintf(fout, "W");
+    fprintf(fout, ":%s", preds->pred[atom->pred].name);
 
     for (i = 0; i < atom->arg_size; ++i){
         fprintf(fout, " ");
