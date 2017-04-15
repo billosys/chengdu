@@ -1,7 +1,7 @@
 /***
  * cpddl
  * -------
- * Copyright (c)2016 Daniel Fiser <danfis@danfis.cz>,
+ * Copyright (c)2017 Daniel Fiser <danfis@danfis.cz>,
  * AI Center, Department of Computer Science,
  * Faculty of Electrical Engineering, Czech Technical University in Prague.
  * All rights reserved.
@@ -22,6 +22,7 @@
 
 #include <boruvka/htable.h>
 #include <pddl/pddl.h>
+#include <pddl/strips_op.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,26 +32,8 @@ extern "C" {
 #define PDDL_STRIPS_GROUND_FULL 0x1u
 #define PDDL_STRIPS_GROUND_NAIVE 0x2u
 
-struct pddl_strips_op {
-    char *name;
-    pddl_fact_id_arr_t pre;
-    pddl_fact_id_arr_t del_eff;
-    pddl_fact_id_arr_t add_eff;
-    int cost;
-    // TODO: Conditional effects
-    // TODO: Negative preconditions
-};
-typedef struct pddl_strips_op pddl_strips_op_t;
-
-struct pddl_strips_ops {
-    pddl_strips_op_t *op;
-    int size;
-    int alloc;
-};
-typedef struct pddl_strips_ops pddl_strips_ops_t;
-
-
 struct pddl_strips {
+    const pddl_t *pddl;
     pddl_facts_t fact;
     pddl_strips_ops_t op;
     pddl_fact_id_arr_t init;
@@ -58,15 +41,8 @@ struct pddl_strips {
 };
 typedef struct pddl_strips pddl_strips_t;
 
-int pddlStripsFromPDDL(pddl_strips_t *strips, const pddl_t *pddl,
-                       unsigned flags);
-void pddlStripsFree(pddl_strips_t *strips);
-
-void pddlStripsAddOpFromPDDL(pddl_strips_t *strips,
-                             const pddl_t *pddl,
-                             const pddl_action_t *action,
-                             const int *args);
-
+pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags);
+void pddlStripsDel(pddl_strips_t *strips);
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
 
 #ifdef __cplusplus

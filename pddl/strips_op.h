@@ -1,7 +1,7 @@
 /***
  * cpddl
  * -------
- * Copyright (c)2016 Daniel Fiser <danfis@danfis.cz>,
+ * Copyright (c)2017 Daniel Fiser <danfis@danfis.cz>,
  * AI Center, Department of Computer Science,
  * Faculty of Electrical Engineering, Czech Technical University in Prague.
  * All rights reserved.
@@ -21,8 +21,7 @@
 #define __PDDL_STRIPS_OP_H__
 
 #include <boruvka/htable.h>
-#include <pddl/pddl.h>
-#include <pddl/strips_fact.h>
+#include <pddl/fact.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,9 +34,11 @@ struct pddl_strips_op {
     pddl_fact_id_arr_t add_eff;
     int cost;
     // TODO: Conditional effects
-    // TODO: Negative preconditions
 };
 typedef struct pddl_strips_op pddl_strips_op_t;
+
+void pddlStripsOpInit(pddl_strips_op_t *op);
+void pddlStripsOpFree(pddl_strips_op_t *op);
 
 struct pddl_strips_ops {
     pddl_strips_op_t *op;
@@ -49,10 +50,7 @@ typedef struct pddl_strips_ops pddl_strips_ops_t;
 
 void pddlStripsOpsInit(pddl_strips_ops_t *ops);
 void pddlStripsOpsFree(pddl_strips_ops_t *ops);
-void pddlStripsAddFromPDDL(pddl_strips_ops_t *ops,
-                           const pddl_t *pddl,
-                           const pddl_action_t *action,
-                           const int *args);
+int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add);
 
 #ifdef __cplusplus
 } /* extern "C" */

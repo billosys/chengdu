@@ -1579,6 +1579,178 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types)
     return c;
 }
 
+#define FACT_FROM_ATOM(F, A, ARG) \
+    pddl_fact_t F; \
+    int F ## __farg[(A)->arg_size]; \
+    pddlFactInit(&F); \
+    F.pred = (A)->pred; \
+    F.arg = F ## __farg; \
+    F.arg_size = (A)->arg_size; \
+    for (int i = 0; i < (A)->arg_size; ++i){ \
+        if ((A)->arg[i].obj >= 0){ \
+            F.arg[i] = (A)->arg[i].obj; \
+        }else{ \
+            F.arg[i] = ARG[(A)->arg[i].param]; \
+        } \
+    }
+
+/** Ground atom to a fact */
+static int pddlCondAtomGround(const pddl_cond_t *c,
+                              const int *arg,
+                              pddl_facts_t *facts,
+                              pddl_fact_id_arr_t *out,
+                              int add_fact)
+{
+    const pddl_cond_atom_t *a = OBJ(c, atom);
+    int fact_id;
+    FACT_FROM_ATOM(fact, a, arg)
+
+    if (add_fact){
+        fact_id = pddlFactsAdd(facts, &fact);
+    }else{
+        fact_id = pddlFactsFind(facts, &fact);
+        if (fact_id < 0)
+            return -1;
+    }
+
+    pddlFactIdArrAdd(out, fact_id);
+    return 0;
+}
+
+static int pddlCondAssignGround(const pddl_cond_t *c,
+                                const int *arg,
+                                pddl_facts_t *funcs,
+                                int *cost)
+{
+    const pddl_cond_assign_t *ass = OBJ(c, assign);
+    if (ass->fvalue == NULL){
+        *cost += ass->value;
+        return 0;
+    }
+
+    const pddl_cond_atom_t *fval = ass->fvalue;
+    int func_id;
+    FACT_FROM_ATOM(func, fval, arg)
+
+    func_id = pddlFactsFind(funcs, &func);
+    if (func_id < 0){
+        ERR2("Function not found!\n");
+        return -1;
+    }
+
+    *cost += funcs->fact[func_id].func_val;
+    return 0;
+}
+
+int pddlCondGroundPre(const pddl_cond_t *c,
+                      const int *arg,
+                      pddl_facts_t *facts,
+                      pddl_fact_id_arr_t *out,
+                      int add_fact)
+{
+    const pddl_cond_part_t *and;
+    const pddl_cond_t *atom;
+    bor_list_t *item;
+
+    if (c->type == PDDL_COND_ATOM){
+        return pddlCondAtomGround(c, arg, facts, out, add_fact);
+
+    }else if (c->type == PDDL_COND_AND){
+        and = OBJ(c, part);
+        BOR_LIST_FOR_EACH(&and->part, item){
+            atom = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+            if (atom->type != PDDL_COND_ATOM){
+                ERR2("Precondition is not a flattened conjuction!");
+                return -1;
+            }
+            if (pddlCondAtomGround(atom, arg, facts, out, add_fact) != 0){
+                ERR2("Fact not found -- this should not happen, exiting...");
+                exit(-1);
+            }
+        }
+
+        pddlFactIdArrResize(out, out->size);
+        pddlFactIdArrSort(out);
+        return 0;
+    }
+
+    ERR2("Precondition is not a flattened conjuction!");
+    return -1;
+}
+
+int pddlCondGroundEff(const pddl_cond_t *c,
+                      const int *arg,
+                      pddl_facts_t *facts,
+                      pddl_facts_t *funcs,
+                      pddl_fact_id_arr_t *add_eff,
+                      pddl_fact_id_arr_t *del_eff,
+                      int *cost)
+{
+    const pddl_cond_t *ca;
+    const pddl_cond_part_t *and;
+    const pddl_cond_when_t *when;
+    const pddl_cond_atom_t *atom;
+    int ret = -2;
+    bor_list_t *item;
+
+    *cost = 0;
+
+    if (c->type == PDDL_COND_ATOM){
+        atom = OBJ(c, atom);
+        if (atom->neg){
+            ret = pddlCondAtomGround(c, arg, facts, del_eff, 1);
+        }else{
+            ret = pddlCondAtomGround(c, arg, facts, add_eff, 1);
+        }
+
+    }else if (c->type == PDDL_COND_AND){
+        and = OBJ(c, part);
+        BOR_LIST_FOR_EACH(&and->part, item){
+            ca = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+            if (ca->type == PDDL_COND_WHEN){
+                ERR2("Conditional effect -- skipping for now...");
+                continue;
+
+            }else if (ca->type == PDDL_COND_ATOM){
+                atom = OBJ(ca, atom);
+                if (atom->neg){
+                    ret = pddlCondAtomGround(ca, arg, facts, del_eff, 1);
+                    if (ret != 0)
+                        break;
+                }else{
+                    ret = pddlCondAtomGround(ca, arg, facts, add_eff, 1);
+                    if (ret != 0)
+                        break;
+                }
+
+            }else if (ca->type == PDDL_COND_ASSIGN){
+                if (pddlCondAssignGround(ca, arg, funcs, cost) != 0)
+                    return -1;
+
+            }else{
+                ERR2("Effect is not a flattened conjuction!");
+                return -1;
+            }
+        }
+
+        pddlFactIdArrResize(add_eff, add_eff->size);
+        pddlFactIdArrSort(add_eff);
+        pddlFactIdArrResize(del_eff, del_eff->size);
+        pddlFactIdArrSort(del_eff);
+        return 0;
+    }
+
+    if (ret == -2){
+        ERR2("Effect is not a flattened conjuction!");
+        return -1;
+    }else if (ret == -1){
+        ERR2("Error while grounding effects");
+        return -1;
+    }
+
+    return ret;
+}
+
 
 
 /*** PRINT ***/

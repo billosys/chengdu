@@ -18,7 +18,7 @@ OBJS += action
 OBJS += pddl
 OBJS += cond
 OBJS += strips
-OBJS += strips_ground_full
+OBJS += strips_op
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

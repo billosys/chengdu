@@ -46,22 +46,15 @@ static int htableEq(const bor_list_t *k1,
     htable_fact_t *hf2 = BOR_LIST_ENTRY(k2, htable_fact_t, htable);
     pddl_fact_t *f1 = fs->fact + hf1->id;
     pddl_fact_t *f2 = fs->fact + hf2->id;
-    return pddlFactCmp(f1, f2) == 0;
+    return pddlFactEq(f1, f2);
 }
 
 static uint64_t pddlFactHash(const pddl_fact_t *f)
 {
-    char *data;
     uint64_t hash;
-    size_t size, offset;
 
-    offset = bor_offsetof(pddl_fact_t, arg_size);
-    size = sizeof(*f) + sizeof(int) * f->arg_size;
-    data = BOR_ALLOC_ARR(char, size);
-    memcpy(data, f, sizeof(*f));
-    memcpy(data + sizeof(*f), f->arg, sizeof(int) * f->arg_size);
-    hash = borCityHash_64(data + offset, size - offset);
-    BOR_FREE(data);
+    ((uint32_t *)&hash)[0] = borCityHash_32(&f->pred, sizeof(int));
+    ((uint32_t *)&hash)[1] = borCityHash_32(f->arg, sizeof(int) * f->arg_size);
     return hash;
 }
 
@@ -86,15 +79,11 @@ void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)
     }
 }
 
-int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
+int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2)
 {
-    int cmp;
-
-    cmp = memcmp((void *)&f1->arg_size, (void *)&f2->arg_size,
-                 sizeof(*f1) - bor_offsetof(pddl_fact_t, arg_size));
-    if (cmp == 0)
-        cmp = memcmp(f1->arg, f2->arg, sizeof(int) * f1->arg_size);
-    return cmp;
+    return f1->pred == f2->pred
+            && f1->arg_size == f2->arg_size
+            && memcmp(f1->arg, f2->arg, sizeof(int) * f1->arg_size) == 0;
 }
 
 int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
@@ -153,8 +142,6 @@ int pddlFactFormat(const pddl_t *pddl,
 {
     int size = strsize, i;
 
-    if (f->neg)
-        STRNFMTCPY(str, size, "N:");
     if (pddlFactIsStatic(pddl, f))
         STRNFMTCPY(str, size, "S:");
     if (f->is_private){
@@ -177,8 +164,6 @@ int pddlFuncFormat(const pddl_t *pddl,
 {
     int size = strsize, i;
 
-    if (f->neg)
-        STRNFMTCPY(str, size, "N:");
     if (f->is_private){
         STRNFMTCPY(str, size, "P");
         if (f->owner >= 0)
@@ -527,4 +512,22 @@ void pddlFactsPrintGoal(const pddl_t *pddl,
                         FILE *fout)
 {
     pddlFactsPrint(pddl, in, "Goal", 0, fout);
+}
+
+void pddlFactIdArrAdd(pddl_fact_id_arr_t *arr, int fact_id)
+{
+    if (arr->size >= arr->alloc){
+        if (arr->alloc == 0)
+            arr->alloc = 1;
+        arr->alloc *= 2;
+        arr->fact = BOR_REALLOC_ARR(arr->fact, int, arr->alloc);
+    }
+    arr->fact[arr->size++] = fact_id;
+}
+
+void pddlFactIdArrCopy(pddl_fact_id_arr_t *dst, const pddl_fact_id_arr_t *src)
+{
+    dst->alloc = dst->size = src->size;
+    dst->fact = BOR_ALLOC_ARR(int, dst->alloc);
+    memcpy(dst->fact, src->fact, sizeof(int) * src->size);
 }

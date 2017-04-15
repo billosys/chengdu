@@ -220,6 +220,27 @@ void pddlCondSetPredReadWriteEff(const pddl_cond_t *cond, pddl_preds_t *preds);
  */
 pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types);
 
+/**
+ * Ground preconditions to a list of facts.
+ */
+int pddlCondGroundPre(const pddl_cond_t *c,
+                      const int *arg,
+                      pddl_facts_t *facts,
+                      pddl_fact_id_arr_t *out,
+                      int add_fact);
+
+/**
+ * Ground preconditions to a list of facts and a cost.
+ * // TODO: Conditional effects
+ */
+int pddlCondGroundEff(const pddl_cond_t *c,
+                      const int *arg,
+                      pddl_facts_t *facts,
+                      pddl_facts_t *funcs,
+                      pddl_fact_id_arr_t *add_eff,
+                      pddl_fact_id_arr_t *del_eff,
+                      int *cost);
+
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,
                    const pddl_preds_t *predicates,

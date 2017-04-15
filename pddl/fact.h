@@ -22,6 +22,7 @@
 
 #include <boruvka/alloc.h>
 #include <boruvka/htable.h>
+#include <boruvka/sort.h>
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
@@ -36,7 +37,6 @@ struct pddl_fact {
     int *arg;       /*!< Object IDs are arguments */
     int arg_size;   /*!< Number of arguments */
     int pred;       /*!< Predicate ID */
-    int neg;        /*!< True if it is negated form */
     int func_val;   /*!< Assigned value in case of function */
     int is_private; /*!< True if the fact is private */
     int owner;      /*!< Owner object ID in case the fact is private */
@@ -59,9 +59,9 @@ void pddlFactFree(pddl_fact_t *f);
 void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src);
 
 /**
- * Comparison function for facts.
+ * Returns true if facts are equal.
  */
-int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2);
+int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
 
 /**
  * Determines whether the fact should be private and which object should be
@@ -153,19 +153,30 @@ void pddlFactsPrintGoal(const struct pddl *pddl,
 struct pddl_fact_id_arr {
     int *fact;
     int size;
+    int alloc;
 };
 typedef struct pddl_fact_id_arr pddl_fact_id_arr_t;
 
 _bor_inline void pddlFactIdArrInit(pddl_fact_id_arr_t *arr);
 _bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr);
+void pddlFactIdArrAdd(pddl_fact_id_arr_t *arr, int fact_id);
+void pddlFactIdArrCopy(pddl_fact_id_arr_t *dst, const pddl_fact_id_arr_t *src);
 _bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size);
+_bor_inline void pddlFactIdArrSort(pddl_fact_id_arr_t *arr);
+_bor_inline int pddlFactIdArrEq(const pddl_fact_id_arr_t *a1,
+                                const pddl_fact_id_arr_t *a2);
 
 
 /**** INLINES: ****/
 _bor_inline void pddlFactIdArrInit(pddl_fact_id_arr_t *arr)
 {
-    arr->fact = NULL;
-    arr->size = 0;
+    bzero(arr, sizeof(*arr));
+}
+
+_bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr)
+{
+    if (arr->fact)
+        BOR_FREE(arr->fact);
 }
 
 _bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size)
@@ -174,10 +185,16 @@ _bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size)
     arr->size = size;
 }
 
-_bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr)
+_bor_inline void pddlFactIdArrSort(pddl_fact_id_arr_t *arr)
 {
-    if (arr->fact)
-        BOR_FREE(arr->fact);
+    borSortByIntKey(arr->fact, arr->size, sizeof(int), 0);
+}
+
+_bor_inline int pddlFactIdArrEq(const pddl_fact_id_arr_t *a1,
+                                const pddl_fact_id_arr_t *a2)
+{
+    return a1->size == a2->size
+            && memcmp(a1->fact, a2->fact, sizeof(int) * a1->size) == 0;
 }
 
 #ifdef __cplusplus
