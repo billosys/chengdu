@@ -28,29 +28,90 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_strips_op {
-    const char *name;
+    char *name;
     pddl_fact_id_arr_t pre;
     pddl_fact_id_arr_t del_eff;
     pddl_fact_id_arr_t add_eff;
     int cost;
     // TODO: Conditional effects
+
+    int id;
+    uint64_t hash;
+    bor_list_t htable;
 };
 typedef struct pddl_strips_op pddl_strips_op_t;
 
 void pddlStripsOpInit(pddl_strips_op_t *op);
 void pddlStripsOpFree(pddl_strips_op_t *op);
+pddl_strips_op_t *pddlStripsOpNew(void);
+void pddlStripsOpDel(pddl_strips_op_t *op);
+int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name);
+
+_bor_inline int pddlStripsOpRmFactId(pddl_strips_op_t *op, int fact_id)
+{
+    return pddlFactIdArrRmId(&op->pre, fact_id)
+            || pddlFactIdArrRmId(&op->add_eff, fact_id)
+            || pddlFactIdArrRmId(&op->del_eff, fact_id);
+}
+
+_bor_inline int pddlStripsOpRmFactIdFromDelEff(pddl_strips_op_t *op, int fid)
+{
+    return pddlFactIdArrRmId(&op->del_eff, fid);
+}
+
+_bor_inline int pddlStripsOpRmFactIdFromAddEff(pddl_strips_op_t *op, int fid)
+{
+    return pddlFactIdArrRmId(&op->add_eff, fid);
+}
 
 struct pddl_strips_ops {
-    pddl_strips_op_t *op;
+    pddl_strips_op_t **op;
     int op_size;
     int op_alloc;
     bor_htable_t *htable;
 };
 typedef struct pddl_strips_ops pddl_strips_ops_t;
 
+#define PDDL_STRIPS_OPS_FOR_EACH(OPS, OP) \
+    for (int __i = 0; __i < (OPS)->op_size && ((OP) = (OPS)->op[__i], 1); \
+            ++__i) \
+        if ((OP) != NULL)
+
 void pddlStripsOpsInit(pddl_strips_ops_t *ops);
 void pddlStripsOpsFree(pddl_strips_ops_t *ops);
+
+/**
+ * Adds a new operator if not already added, operator add has to be
+ * finalized by pddlStripsOpFinalize().
+ */
 int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add);
+
+_bor_inline void pddlStripsOpsRmFactId(pddl_strips_ops_t *ops, int fact_id)
+{
+    pddl_strips_op_t *op;
+
+    PDDL_STRIPS_OPS_FOR_EACH(ops, op){
+        pddlStripsOpRmFactId(op, fact_id);
+    }
+}
+
+_bor_inline void pddlStripsOpsRmFactIdFromDelEff(pddl_strips_ops_t *ops, int id)
+{
+    pddl_strips_op_t *op;
+
+    PDDL_STRIPS_OPS_FOR_EACH(ops, op){
+        pddlStripsOpRmFactIdFromDelEff(op, id);
+    }
+}
+
+_bor_inline void pddlStripsOpsRmFactIdFromAddEff(pddl_strips_ops_t *ops, int id)
+{
+    pddl_strips_op_t *op;
+
+    PDDL_STRIPS_OPS_FOR_EACH(ops, op){
+        pddlStripsOpRmFactIdFromAddEff(op, id);
+    }
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

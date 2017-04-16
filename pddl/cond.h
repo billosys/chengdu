@@ -238,7 +238,7 @@ void pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
  * elements was found and grounding was prematurelly terminated.
  * On success, 0 is returned.
  */
-int _pddlCondGroundPre(const struct pddl *pddl,
+int pddlCondGroundPre(const struct pddl *pddl,
                       const pddl_cond_t *pre,
                       const int *args,
                       int (*cb)(const pddl_cond_atom_t *atom,
@@ -248,14 +248,19 @@ int _pddlCondGroundPre(const struct pddl *pddl,
 
 /**
  * Traverses eff and grounds all found atoms into facts.
- * TODO
+ * Callbacks add_eff and del_eff are called for add and delete effects
+ * respectivelly; assign is called for (assign ) atom and fvalue is either
+ * NULL or grounded from .fvalue of the corresponding pddl_cond_assign_t
+ * struct; when is called for the whole (when ) element which is not
+ * further traversed (but can be further traversed from within the
+ * callback).
  * If any callback returns something different then 0, the grounding is
  * terminated prematurelly and the same value is returned by the function.
  * If function returns -1, something different then (and ), atom, (assign
  * ), or (when ) was found and grounding was prematurelly terminated.
  * On success, 0 is returned.
  */
-int _pddlCondGroundEff(const struct pddl *pddl,
+int pddlCondGroundEff(const struct pddl *pddl,
                       const pddl_cond_t *eff,
                       const int *args,
                       int (*add_eff)(const pddl_cond_atom_t *atom,
@@ -271,27 +276,6 @@ int _pddlCondGroundEff(const struct pddl *pddl,
                       int (*when)(const pddl_cond_when_t *when,
                                   void *),
                       void *userdata);
-
-/**
- * Ground preconditions to a list of facts.
- */
-int pddlCondGroundPre(const pddl_cond_t *c,
-                      const int *arg,
-                      pddl_facts_t *facts,
-                      pddl_fact_id_arr_t *out,
-                      int add_fact);
-
-/**
- * Ground preconditions to a list of facts and a cost.
- * // TODO: Conditional effects
- */
-int pddlCondGroundEff(const pddl_cond_t *c,
-                      const int *arg,
-                      pddl_facts_t *facts,
-                      pddl_facts_t *funcs,
-                      pddl_fact_id_arr_t *add_eff,
-                      pddl_fact_id_arr_t *del_eff,
-                      int *cost);
 
 void pddlCondPrint(const pddl_cond_t *cond,
                    const pddl_objs_t *objs,

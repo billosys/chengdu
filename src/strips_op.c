@@ -20,39 +20,24 @@
 #include <boruvka/hfunc.h>
 #include "pddl/strips_op.h"
 
-struct htable_op {
-    int id;
-    uint64_t hash;
-    bor_list_t htable;
-};
-typedef struct htable_op htable_op_t;
-
-
 static bor_htable_key_t htableKey(const bor_list_t *key, void *_)
 {
-    htable_op_t *h;
-    h = BOR_LIST_ENTRY(key, htable_op_t, htable);
-    return h->hash;
+    pddl_strips_op_t *op = BOR_LIST_ENTRY(key, pddl_strips_op_t, htable);
+    return op->hash;
 }
 
 static int htableEq(const bor_list_t *k1,
-                    const bor_list_t *k2, void *_ops)
+                    const bor_list_t *k2, void *_)
 {
-    pddl_strips_ops_t *ops = _ops;
-    htable_op_t *ho1 = BOR_LIST_ENTRY(k1, htable_op_t, htable);
-    htable_op_t *ho2 = BOR_LIST_ENTRY(k2, htable_op_t, htable);
-    pddl_strips_op_t *o1, *o2;
+    pddl_strips_op_t *o1 = BOR_LIST_ENTRY(k1, pddl_strips_op_t, htable);
+    pddl_strips_op_t *o2 = BOR_LIST_ENTRY(k2, pddl_strips_op_t, htable);
 
-    if (ho1->hash != ho2->hash){
-        o1 = ops->op + ho1->id;
-        o2 = ops->op + ho2->id;
-        return strcmp(o1->name, o2->name) == 0
-                && pddlFactIdArrEq(&o1->pre, &o2->pre)
-                && pddlFactIdArrEq(&o1->add_eff, &o2->add_eff)
-                && pddlFactIdArrEq(&o1->del_eff, &o2->del_eff)
-                && o1->cost == o2->cost;
-    }
-    return 0;
+    return o1->hash == o2->hash
+            && strcmp(o1->name, o2->name) == 0
+            && pddlFactIdArrEq(&o1->pre, &o2->pre)
+            && pddlFactIdArrEq(&o1->add_eff, &o2->add_eff)
+            && pddlFactIdArrEq(&o1->del_eff, &o2->del_eff)
+            && o1->cost == o2->cost;
 }
 
 _bor_inline uint64_t nameHash(const char *name)
@@ -68,10 +53,35 @@ void pddlStripsOpInit(pddl_strips_op_t *op)
 void pddlStripsOpFree(pddl_strips_op_t *op)
 {
     if (op->name)
-        BOR_FREE((char *)op->name);
+        BOR_FREE(op->name);
     pddlFactIdArrFree(&op->pre);
     pddlFactIdArrFree(&op->del_eff);
     pddlFactIdArrFree(&op->add_eff);
+}
+
+pddl_strips_op_t *pddlStripsOpNew(void)
+{
+    pddl_strips_op_t *op;
+    op = BOR_ALLOC(pddl_strips_op_t);
+    pddlStripsOpInit(op);
+    return op;
+}
+
+void pddlStripsOpDel(pddl_strips_op_t *op)
+{
+    pddlStripsOpFree(op);
+    BOR_FREE(op);
+}
+
+int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name)
+{
+    op->name = name;
+    op->hash = nameHash(name);
+    pddlFactIdArrMinus(&op->del_eff, &op->add_eff);
+    pddlFactIdArrMinus(&op->add_eff, &op->pre);
+    if (op->add_eff.size == 0 && op->del_eff.size == 0)
+        return -1;
+    return 0;
 }
 
 void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
@@ -86,61 +96,53 @@ void pddlStripsOpsInit(pddl_strips_ops_t *ops)
 {
     bzero(ops, sizeof(*ops));
     ops->op_alloc = 4;
-    ops->op = BOR_ALLOC_ARR(pddl_strips_op_t, ops->op_alloc);
-    ops->htable = borHTableNew(htableKey, htableEq, ops);
+    ops->op = BOR_ALLOC_ARR(pddl_strips_op_t *, ops->op_alloc);
+    ops->htable = borHTableNew(htableKey, htableEq, NULL);
 }
 
 void pddlStripsOpsFree(pddl_strips_ops_t *ops)
 {
-    bor_list_t list, *h, *tmp;
     int i;
-
-    borListInit(&list);
-    borHTableGather(ops->htable, &list);
-    BOR_LIST_FOR_EACH_SAFE(&list, h, tmp){
-        BOR_FREE(BOR_LIST_ENTRY(h, htable_op_t, htable));
-    }
     borHTableDel(ops->htable);
-
-    for (i = 0; i < ops->op_size; ++i)
-        pddlStripsOpFree(ops->op + i);
+    for (i = 0; i < ops->op_size; ++i){
+        if (ops->op[i])
+            pddlStripsOpDel(ops->op[i]);
+    }
     if (ops->op != NULL)
         BOR_FREE(ops->op);
 }
 
-static pddl_strips_op_t *nextOp(pddl_strips_ops_t *ops)
+static pddl_strips_op_t *nextNewOp(pddl_strips_ops_t *ops)
 {
+    pddl_strips_op_t *op;
+
     if (ops->op_size >= ops->op_alloc){
         ops->op_alloc *= 2;
-        ops->op = BOR_REALLOC_ARR(ops->op, pddl_strips_op_t, ops->op_alloc);
+        ops->op = BOR_REALLOC_ARR(ops->op, pddl_strips_op_t *, ops->op_alloc);
     }
-    return ops->op + ops->op_size;
+
+    op = pddlStripsOpNew();
+    op->id = ops->op_size;
+    ops->op[ops->op_size] = op;
+    ++ops->op_size;
+    return op;
 }
 
 int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add)
 {
-    pddl_strips_op_t *op;
-    htable_op_t hop, *found, *hadd;
+    pddl_strips_op_t op_find, *op;
     bor_list_t *lfound;
 
-    // Get next operators
-    op = nextOp(ops);
-
-    // Create shallow copy only for finding duplicates
-    *op = *add;
-    hop.id = ops->op_size;
-    hop.hash = nameHash(add->name);
-    if ((lfound = borHTableFind(ops->htable, &hop.htable)) != NULL){
-        found = bor_container_of(lfound, htable_op_t, htable);
-        return found->id;
+    op_find = *add;
+    op_find.hash = nameHash(op_find.name);
+    if ((lfound = borHTableFind(ops->htable, &op_find.htable)) != NULL){
+        op = bor_container_of(lfound, pddl_strips_op_t, htable);
+        return op->id;
     }
 
-    // Make deep copy and add it to hash table
+    op = nextNewOp(ops);
     pddlStripsOpCopy(op, add);
-    hadd = BOR_ALLOC(htable_op_t);
-    hadd->id = ops->op_size;
-    hadd->hash = hop.hash;
-    borHTableInsert(ops->htable, &hadd->htable);
-
-    return ops->op_size++;
+    op->hash = op_find.hash;
+    borHTableInsert(ops->htable, &op->htable);
+    return op->id;
 }

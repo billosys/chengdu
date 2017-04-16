@@ -22,7 +22,6 @@
 
 #include <boruvka/alloc.h>
 #include <boruvka/htable.h>
-#include <boruvka/sort.h>
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
@@ -40,6 +39,10 @@ struct pddl_fact {
     int func_val;   /*!< Assigned value in case of function */
     int is_private; /*!< True if the fact is private */
     int owner;      /*!< Owner object ID in case the fact is private */
+
+    int id;
+    uint64_t hash;
+    bor_list_t htable;
 };
 typedef struct pddl_fact pddl_fact_t;
 
@@ -57,11 +60,13 @@ typedef struct pddl_fact pddl_fact_t;
  * Initializes empty fact.
  */
 void pddlFactInit(pddl_fact_t *f);
+pddl_fact_t *pddlFactNew(void);
 
 /**
  * Frees allocated memory
  */
 void pddlFactFree(pddl_fact_t *f);
+void pddlFactDel(pddl_fact_t *f);
 
 /**
  * Deep copy of the fact.
@@ -101,13 +106,18 @@ int pddlFactIsStatic(const struct pddl *pddl, const pddl_fact_t *f);
 
 
 struct pddl_facts {
-    pddl_fact_t *fact;
+    pddl_fact_t **fact;
     int fact_size;
     int fact_alloc;
     bor_htable_t *htable;
 };
 typedef struct pddl_facts pddl_facts_t;
 
+#define PDDL_FACTS_FOR_EACH(FACTS, FACT) \
+    for (int __i = 0; \
+            __i < (FACTS)->fact_size && ((FACT) = (FACTS)->fact[__i], 1); \
+            ++__i) \
+        if ((FACT) != NULL)
 
 /**
  * Parses :init into list of instantiated predicates and instantiated
@@ -131,14 +141,14 @@ void pddlFactsFree(pddl_facts_t *fs);
 int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *f);
 
 /**
+ * Deletes fact (and frees all its memory).
+ */
+void pddlFactsDelFact(pddl_facts_t *fs, int fact_id);
+
+/**
  * Reallocate array so that .alloc == .size.
  */
 void pddlFactsSqueeze(pddl_facts_t *fs);
-
-/**
- * Reserve at least alloc members in array.
- */
-void pddlFactsReserve(pddl_facts_t *fs, int alloc);
 
 /**
  * Copies fact from src to dst.
@@ -148,7 +158,7 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
 /**
  * Returns ID of the fact.
  */
-int pddlFactsFind(pddl_facts_t *fs, const pddl_fact_t *f);
+int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *f);
 
 void pddlFactsPrintInit(const struct pddl *pddl,
                         const pddl_facts_t *in,
@@ -172,9 +182,14 @@ _bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr);
 void pddlFactIdArrAdd(pddl_fact_id_arr_t *arr, int fact_id);
 void pddlFactIdArrCopy(pddl_fact_id_arr_t *dst, const pddl_fact_id_arr_t *src);
 _bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size);
-_bor_inline void pddlFactIdArrSort(pddl_fact_id_arr_t *arr);
 _bor_inline int pddlFactIdArrEq(const pddl_fact_id_arr_t *a1,
                                 const pddl_fact_id_arr_t *a2);
+/**
+ * a1 = a1 \setminus a2
+ * assuming both a1 and a2 are sorted
+ */
+void pddlFactIdArrMinus(pddl_fact_id_arr_t *a1, const pddl_fact_id_arr_t *a2);
+_bor_inline int pddlFactIdArrRmId(pddl_fact_id_arr_t *a, int fact_id);
 
 
 /**** INLINES: ****/
@@ -195,16 +210,25 @@ _bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size)
     arr->size = size;
 }
 
-_bor_inline void pddlFactIdArrSort(pddl_fact_id_arr_t *arr)
-{
-    borSortByIntKey(arr->fact, arr->size, sizeof(int), 0);
-}
-
 _bor_inline int pddlFactIdArrEq(const pddl_fact_id_arr_t *a1,
                                 const pddl_fact_id_arr_t *a2)
 {
     return a1->size == a2->size
             && memcmp(a1->fact, a2->fact, sizeof(int) * a1->size) == 0;
+}
+
+_bor_inline int pddlFactIdArrRmId(pddl_fact_id_arr_t *a, int fact_id)
+{
+    int i;
+
+    for (i = 0; i < a->size && a->fact[i] < fact_id; ++i);
+    if (i < a->size && a->fact[i] == fact_id){
+        for (++i; i < a->size; ++i)
+            a->fact[i - 1] = a->fact[i];
+        --a->size;
+        return 1;
+    }
+    return 0;
 }
 
 #ifdef __cplusplus

@@ -19,6 +19,59 @@
 
 #include <boruvka/alloc.h>
 #include "pddl/strips.h"
+#include "err.h"
+
+struct fact_info {
+    int reachable;
+    int pre;
+    int add;
+    int del;
+};
+typedef struct fact_info fact_info_t;
+
+struct fact_infos {
+    fact_info_t *info;
+    int size;
+};
+typedef struct fact_infos fact_infos_t;
+
+_bor_inline void factInfoInit(fact_info_t *fi)
+{
+    bzero(fi, sizeof(*fi));
+}
+
+_bor_inline void factInfoFree(fact_info_t *fi)
+{
+}
+
+_bor_inline void factInfosInit(fact_infos_t *fi)
+{
+    bzero(fi, sizeof(*fi));
+}
+
+_bor_inline void factInfosFree(fact_infos_t *fi)
+{
+    if (fi->info)
+        BOR_FREE(fi->info);
+}
+
+fact_info_t *factInfo(fact_infos_t *fi, int fact_id)
+{
+    if (fi->size <= fact_id){
+        int init_size = fi->size;
+
+        if (fi->size == 0)
+            fi->size = 1;
+        while (fi->size <= fact_id)
+            fi->size *= 2;
+        fi->info = BOR_REALLOC_ARR(fi->info, fact_info_t, fi->size);
+        for (int i = init_size; i < fi->size; ++i)
+            factInfoInit(fi->info + i);
+    }
+
+    return fi->info + fact_id;
+}
+
 
 static char *groundOpName(const pddl_t *pddl,
                           const pddl_action_t *action,
@@ -41,102 +94,228 @@ static char *groundOpName(const pddl_t *pddl,
 }
 
 
-/**** GROUND FULL ****/
-static void groundFullOpRec(pddl_strips_t *strips,
-                            const pddl_action_t *action,
-                            int *args, int argi)
+/**** GROUND NAIVE ****/
+struct ground_naive {
+    pddl_strips_t *strips;
+    pddl_facts_t fact;
+    fact_infos_t fact_info;
+
+    pddl_strips_op_t op;
+    int failed;
+};
+typedef struct ground_naive ground_naive_t;
+
+static int groundNaivePre(const pddl_cond_atom_t *atom,
+                          const pddl_fact_t *fact,
+                          void *ud)
+{
+    ground_naive_t *g = ud;
+    int fact_id;
+
+    fact_id = pddlFactsFind(&g->fact, fact);
+    if (fact_id >= 0 && factInfo(&g->fact_info, fact_id)->reachable){
+        factInfo(&g->fact_info, fact_id)->pre++;
+        pddlFactIdArrAdd(&g->op.pre, fact_id);
+    }else{
+        g->failed = 1;
+        return -2;
+    }
+    return 0;
+}
+
+static int groundNaiveAddEff(const pddl_cond_atom_t *atom,
+                             const pddl_fact_t *fact,
+                             void *ud)
+{
+    ground_naive_t *g = ud;
+    fact_info_t *fi;
+    int fact_id;
+
+    fact_id = pddlFactsAdd(&g->fact, fact);
+    fi = factInfo(&g->fact_info, fact_id);
+    fi->reachable = 1;
+    ++fi->add;
+    pddlFactIdArrAdd(&g->op.add_eff, fact_id);
+    return 0;
+}
+
+static int groundNaiveDelEff(const pddl_cond_atom_t *atom,
+                             const pddl_fact_t *fact,
+                             void *ud)
+{
+    ground_naive_t *g = ud;
+    int fact_id;
+
+    fact_id = pddlFactsAdd(&g->fact, fact);
+    factInfo(&g->fact_info, fact_id)->del++;
+    pddlFactIdArrAdd(&g->op.del_eff, fact_id);
+    return 0;
+}
+
+static int groundNaiveAssign(const pddl_cond_assign_t *assign,
+                             int value,
+                             const pddl_fact_t *fvalue,
+                             void *ud)
+{
+    ground_naive_t *g = ud;
+    int func_id;
+
+    if (fvalue != NULL){
+        func_id = pddlFactsFind(&g->strips->pddl->init_func, fvalue);
+        if (func_id < 0)
+            return -3;
+        g->op.cost += g->strips->pddl->init_func.fact[func_id]->func_val;
+    }else{
+        g->op.cost += value;
+    }
+
+    return 0;
+}
+
+static int groundNaiveWhen(const pddl_cond_when_t *when, void *ud)
+{
+    fprintf(stderr, "Skipping (when ) for now...\n");
+    return 0;
+}
+
+static void groundNaiveOpArgs(ground_naive_t *g,
+                              const pddl_action_t *action,
+                              const int *args)
+{
+    const pddl_t *pddl = g->strips->pddl;
+    int ret;
+
+    g->failed = 0;
+    pddlStripsOpInit(&g->op);
+    ret = pddlCondGroundPre(pddl, action->pre, args, groundNaivePre, g);
+    if (ret == -1){
+        ERR("Could not ground op `%s' -- precondition is not flattened"
+            " conjuction", action->name);
+        goto ground_naive_op_args_fail;
+    }else if (ret != 0){
+        goto ground_naive_op_args_fail;
+    }
+
+    ret = pddlCondGroundEff(pddl, action->eff, args,
+                            groundNaiveAddEff,
+                            groundNaiveDelEff,
+                            groundNaiveAssign,
+                            groundNaiveWhen,
+                            g);
+    if (ret == -1){
+        ERR("Could not ground op `%s' -- effect is not normalized.",
+            action->name);
+        goto ground_naive_op_args_fail;
+    }else if (ret == -3){
+        ERR("Could not ground op `%s' -- unkown function value.",
+            action->name);
+        goto ground_naive_op_args_fail;
+    }else if (ret != 0){
+        goto ground_naive_op_args_fail;
+    }
+
+    if (pddlStripsOpFinalize(&g->op, groundOpName(pddl, action, args)) != 0)
+        goto ground_naive_op_args_fail;
+
+    pddlStripsOpsAdd(&g->strips->op, &g->op);
+
+ground_naive_op_args_fail:
+    pddlStripsOpFree(&g->op);
+}
+
+static void groundNaiveOpRec(ground_naive_t *g,
+                             const pddl_action_t *action,
+                             int *args, int argi)
 {
     const int *objs;
     int size, i;
 
     if (action->param.size == argi){
-        pddl_strips_op_t op;
-        int ret;
+        groundNaiveOpArgs(g, action, args);
+        return;
+    }
 
-        pddlStripsOpInit(&op);
-        ret = pddlCondGroundPre(action->pre, args, &strips->fact, &op.pre, 0);
-        ret |= pddlCondGroundEff(action->eff, args,
-                                 &strips->fact,
-                                 (pddl_facts_t *)&strips->pddl->init_func,
-                                 &op.add_eff, &op.del_eff, &op.cost);
-        if (ret == 0){
-            op.name = groundOpName(strips->pddl, action, args);
-            pddlStripsOpsAdd(&strips->op, &op);
-        }
-        pddlStripsOpFree(&op);
-        // TODO: report error if ret != 0
-
-    }else{
-        objs = pddlTypesObjsByType(&strips->pddl->type,
-                                   action->param.param[argi].type,
-                                   &size);
-        for (i = 0; i < size; ++i){
-            args[argi] = objs[i];
-            groundFullOpRec(strips, action, args, argi + 1);
-        }
+    objs = pddlTypesObjsByType(&g->strips->pddl->type,
+                               action->param.param[argi].type, &size);
+    for (i = 0; i < size; ++i){
+        args[argi] = objs[i];
+        groundNaiveOpRec(g, action, args, argi + 1);
     }
 }
 
-static void groundFullOp(pddl_strips_t *strips,
-                         const pddl_action_t *action)
+static void groundNaiveOp(ground_naive_t *g, const pddl_action_t *action)
 {
     int args[action->param.size];
-    groundFullOpRec(strips, action, args, 0);
+    groundNaiveOpRec(g, action, args, 0);
 }
 
-
-static void groundFullPredRec(pddl_strips_t *strips, int pred_id,
-                              int *arg, int argi)
+static void groundNaiveOps(ground_naive_t *g)
 {
-    const pddl_pred_t *pred = strips->pddl->pred.pred + pred_id;
-    int i, obj_size;
-    const int *obj;
+    const pddl_actions_t *as = &g->strips->pddl->action;
+    int i;
 
-    if (argi == pred->param_size){
-        pddl_fact_t fact;
-        pddlFactInit(&fact);
-        fact.pred = pred_id;
-        fact.arg = arg;
-        fact.arg_size = argi;
-        pddlFactsAdd(&strips->fact, &fact);
+    for (i = 0; i < as->size; ++i)
+        groundNaiveOp(g, as->action + i);
+}
 
-    }else{
-        obj = pddlTypesObjsByType(&strips->pddl->type, pred->param[argi],
-                                  &obj_size);
-        for (i = 0; i < obj_size; ++i){
-            arg[argi] = obj[i];
-            groundFullPredRec(strips, pred_id, arg, argi + 1);
+static void groundNaiveRmStaticAndUnreachable(ground_naive_t *g)
+{
+    const pddl_fact_t *fact;
+    const fact_info_t *fi;
+    int rm;
+
+    PDDL_FACTS_FOR_EACH(&g->fact, fact){
+        fi = factInfo(&g->fact_info, fact->id);
+        rm = 0;
+
+        // If the fact is never added and is reachable, then it is a static
+        // fact. Therefore it can be removed all together from all
+        // operators.
+        if (fi->add == 0 && fi->reachable){
+            rm = 1;
+            pddlStripsOpsRmFactId(&g->strips->op, fact->id);
         }
+
+        // If the fact is not reachable but was created as a delete effect,
+        // we can safely remove this fact from delete effects.
+        if (!fi->reachable && fi->del > 0){
+            rm = 1;
+            pddlStripsOpsRmFactIdFromDelEff(&g->strips->op, fact->id);
+        }
+
+        if (rm)
+            pddlFactsDelFact(&g->fact, fact->id);
     }
 }
 
-static void groundFullPred(pddl_strips_t *strips, int pred_id)
+static int groundNaive(pddl_strips_t *strips, unsigned flags)
 {
-    const pddl_pred_t *pred = strips->pddl->pred.pred + pred_id;
-    int arg[pred->param_size];
-    groundFullPredRec(strips, pred_id, arg, 0);
-}
+    ground_naive_t g;
+    int num_ops;
 
-static void groundFullFacts(pddl_strips_t *strips)
-{
-    int i;
+    g.strips = strips;
+    pddlFactsInit(&g.fact);
+    factInfosInit(&g.fact_info);
 
-    for (i = 0; i < strips->pddl->pred.size; ++i)
-        groundFullPred(strips, i);
-}
+    pddlFactsCopy(&g.fact, &strips->pddl->init_fact);
+    for (int i = 0; i < g.fact.fact_size; ++i){
+        factInfo(&g.fact_info, i)->reachable = 1;
+    }
 
-static int pddlStripsGroundFull(pddl_strips_t *strips, unsigned flags)
-{
-    int i;
+    num_ops = -1;
+    while (num_ops != strips->op.op_size){
+        num_ops = strips->op.op_size;
+        groundNaiveOps(&g);
+    }
 
-    groundFullFacts(strips);
-    for (i = 0; i < strips->pddl->action.size; ++i)
-        groundFullOp(strips, strips->pddl->action.action + i);
-    // TODO: reachibility analysis
-    // TODO: well-formed operators
+    groundNaiveRmStaticAndUnreachable(&g);
+
+    factInfosFree(&g.fact_info);
+    //pddlFactsFree(&g.fact);
+    strips->fact = g.fact;
     return 0;
 }
-/**** GROUND FULL END ****/
+/**** GROUND NAIVE END ****/
 
 pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
 {
@@ -151,9 +330,12 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     pddlFactIdArrInit(&strips->goal);
 
     // TODO
-    pddlStripsGroundFull(strips, flags);
+    groundNaive(strips, flags);
 
+    // TODO: set cost to 1 if necessary
     // TODO: remove static facts
+    // TODO: remove identical operators (don't forget to keep the one with
+    // the minimal cost)
     // TODO: causal graph
     // TODO: pruning
     // TODO: is goal reachable?
@@ -173,29 +355,35 @@ void pddlStripsDel(pddl_strips_t *strips)
 
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
 {
-    int i, j;
+    const pddl_strips_op_t *op;
+    const pddl_fact_t *fact;
+    int j, cnt;
 
-    fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);
-    for (i = 0; i < strips->fact.fact_size; ++i){
-        fprintf(fout, "% 4d: ", i);
-        pddlFactPrint(strips->pddl, strips->fact.fact + i, fout);
+    cnt = 0;
+    PDDL_FACTS_FOR_EACH(&strips->fact, fact)
+        ++cnt;
+    fprintf(fout, "Fact[%d]:\n", cnt);
+    PDDL_FACTS_FOR_EACH(&strips->fact, fact){
+        fprintf(fout, "% 4d: ", fact->id);
+        pddlFactPrint(strips->pddl, fact, fout);
         fprintf(fout, "\n");
     }
 
-    fprintf(fout, "Op[%d]:\n", strips->op.op_size);
-    for (i = 0; i < strips->op.op_size; ++i){
-        fprintf(fout, "  %s, cost: %d",
-                strips->op.op[i].name,
-                strips->op.op[i].cost);
+    cnt = 0;
+    PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op)
+        ++cnt;
+    fprintf(fout, "Op[%d]:\n", cnt);
+    PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op){
+        fprintf(fout, "% 4d: %s, cost: %d", op->id, op->name, op->cost);
         fprintf(fout, ", pre:");
-        for (j = 0; j < strips->op.op[i].pre.size; ++j)
-            fprintf(fout, " %d", strips->op.op[i].pre.fact[j]);
+        for (j = 0; j < op->pre.size; ++j)
+            fprintf(fout, " %d", op->pre.fact[j]);
         fprintf(fout, ", add:");
-        for (j = 0; j < strips->op.op[i].add_eff.size; ++j)
-            fprintf(fout, " %d", strips->op.op[i].add_eff.fact[j]);
+        for (j = 0; j < op->add_eff.size; ++j)
+            fprintf(fout, " %d", op->add_eff.fact[j]);
         fprintf(fout, ", del:");
-        for (j = 0; j < strips->op.op[i].del_eff.size; ++j)
-            fprintf(fout, " %d", strips->op.op[i].del_eff.fact[j]);
+        for (j = 0; j < op->del_eff.size; ++j)
+            fprintf(fout, " %d", op->del_eff.fact[j]);
         fprintf(fout, "\n");
     }
     // TODO: facts, init, goal
