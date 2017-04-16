@@ -101,6 +101,7 @@ struct ground_naive {
     fact_infos_t fact_info;
 
     pddl_strips_op_t op;
+    int cond_eff;
     int failed;
 };
 typedef struct ground_naive ground_naive_t;
@@ -114,11 +115,7 @@ static int groundNaivePre(const pddl_cond_atom_t *atom,
 
     // TODO: do this somehow better
     // Equality predicate
-    if (strcmp(g->strips->pddl->pred.pred[atom->pred].name, "=") == 0){
-        if (fact->arg_size != 2){
-            ERR2("Invalid `=' predicate.");
-            return -2;
-        }
+    if (atom->pred == g->strips->pddl->pred.eq_pred){
         if (atom->neg){
             if (fact->arg[0] == fact->arg[1]){
                 g->failed = 1;
@@ -146,7 +143,7 @@ static int groundNaivePre(const pddl_cond_atom_t *atom,
 
     }else if (fact_id >= 0 && atom->neg){
         // This corresponds to a negative precondition on a static
-        // predicate
+        // predicate succeeding
         return 0;
 
     }else{
@@ -291,6 +288,14 @@ static void groundNaiveOps(ground_naive_t *g)
         groundNaiveOp(g, as->action + i);
 }
 
+static void groundNaiveSetCostToOne(ground_naive_t *g)
+{
+    pddl_strips_op_t *op;
+
+    PDDL_STRIPS_OPS_FOR_EACH(&g->strips->op, op)
+        op->cost = 1;
+}
+
 static void groundNaiveRmStaticAndUnreachable(ground_naive_t *g)
 {
     const pddl_fact_t *fact;
@@ -340,6 +345,10 @@ static int groundNaive(pddl_strips_t *strips, unsigned flags)
         num_ops = strips->op.op_size;
         groundNaiveOps(&g);
     }
+
+    // Set costs to 1 if metric is not defined
+    if (!strips->pddl->metric)
+        groundNaiveSetCostToOne(&g);
 
     groundNaiveRmStaticAndUnreachable(&g);
 
