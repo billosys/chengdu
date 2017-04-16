@@ -112,10 +112,43 @@ static int groundNaivePre(const pddl_cond_atom_t *atom,
     ground_naive_t *g = ud;
     int fact_id;
 
+    // TODO: do this somehow better
+    // Equality predicate
+    if (strcmp(g->strips->pddl->pred.pred[atom->pred].name, "=") == 0){
+        if (fact->arg_size != 2){
+            ERR2("Invalid `=' predicate.");
+            return -2;
+        }
+        if (atom->neg){
+            if (fact->arg[0] == fact->arg[1]){
+                g->failed = 1;
+                return -2;
+            }
+        }else{
+            if (fact->arg[0] != fact->arg[1]){
+                g->failed = 1;
+                return -2;
+            }
+        }
+        return 0;
+    }
+
     fact_id = pddlFactsFind(&g->fact, fact);
     if (fact_id >= 0 && factInfo(&g->fact_info, fact_id)->reachable){
+        if (atom->neg){
+            // negative precondition on a static predicate failed
+            g->failed = 1;
+            return -2;
+        }
+
         factInfo(&g->fact_info, fact_id)->pre++;
         pddlFactIdArrAdd(&g->op.pre, fact_id);
+
+    }else if (fact_id >= 0 && atom->neg){
+        // This corresponds to a negative precondition on a static
+        // predicate
+        return 0;
+
     }else{
         g->failed = 1;
         return -2;
