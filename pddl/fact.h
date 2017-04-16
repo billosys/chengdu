@@ -44,6 +44,16 @@ struct pddl_fact {
 typedef struct pddl_fact pddl_fact_t;
 
 /**
+ * Allocates fact struct on stack with enough space in .arg[] for any
+ * grounded atom.
+ */
+#define PDDL_FACT_FOR_GROUND(PDDL, F_NAME) \
+    pddl_fact_t F_NAME; \
+    int F_NAME ## __args__[pddlPredFuncMaxParamSize(PDDL)]; \
+    pddlFactInit(&F_NAME); \
+    F_NAME.arg = F_NAME ## __args__
+
+/**
  * Initializes empty fact.
  */
 void pddlFactInit(pddl_fact_t *f);

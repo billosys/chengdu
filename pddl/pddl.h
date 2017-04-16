@@ -61,6 +61,11 @@ void pddlDel(pddl_t *pddl);
 
 void pddlNormalize(pddl_t *pddl);
 
+/**
+ * Returns maximal number of parameters of all predicates and functions.
+ */
+int pddlPredFuncMaxParamSize(const pddl_t *pddl);
+
 void pddlDump(const pddl_t *pddl, FILE *fout);
 
 #ifdef __cplusplus

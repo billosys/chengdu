@@ -413,6 +413,18 @@ void pddlNormalize(pddl_t *pddl)
     compileOutNonStaticNegPre(pddl);
 }
 
+int pddlPredFuncMaxParamSize(const pddl_t *pddl)
+{
+    int i, max = 0;
+
+    for (i = 0; i < pddl->pred.size; ++i)
+        max = BOR_MAX(max, pddl->pred.pred[i].param_size);
+    for (i = 0; i < pddl->func.size; ++i)
+        max = BOR_MAX(max, pddl->func.pred[i].param_size);
+
+    return max;
+}
+
 void pddlDump(const pddl_t *pddl, FILE *fout)
 {
     fprintf(fout, "Domain: %s\n", pddl->domain_name);

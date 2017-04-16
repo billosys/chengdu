@@ -144,25 +144,26 @@ pddl_cond_t *pddlCondClone(const pddl_cond_t *cond);
 
 /**
  * Traverse all conditionals in a tree and call in pre/post order callbacks
- * if non-NULL. If pre returns non-zero value, the traversing stops.
- * The function returns or'ed values returned by post callback or 0 if post
- * is not defined.
+ * if non-NULL.
+ * If pre returns -1 the element is skipped (it is not traversed deeper).
+ * If pre returns -2 the whole traversing is terminated.
+ * If post returns non-zero value the whole traversing is terminated.
  */
-int pddlCondTraverse(pddl_cond_t *c,
+void pddlCondTraverse(pddl_cond_t *c,
                      int (*pre)(pddl_cond_t *, void *),
                      int (*post)(pddl_cond_t *, void *),
                      void *u);
 
 /**
- * Recursivelly rebuilds conditional from bottom up.
- * First for every part of {c} pddlCondRebuild is called and the returned
- * value is used as a replacement for that part.
- * Then {cb} is called for {c}.
+ * Same as pddlCondTraverse() but pddl_cond_t structures are passed so that
+ * they can be safely changed within callbacks.
+ * The return values of pre and post and treated the same way as in
+ * pddlCondTraverse().
  */
-int pddlCondRebuild(pddl_cond_t **c,
-                    int (*pre)(pddl_cond_t **, void *),
-                    int (*post)(pddl_cond_t **, void *),
-                    void *userdata);
+void pddlCondRebuild(pddl_cond_t **c,
+                     int (*pre)(pddl_cond_t **, void *),
+                     int (*post)(pddl_cond_t **, void *),
+                     void *userdata);
 
 /**
  * Parse condition from PDDL lisp.
@@ -219,6 +220,57 @@ void pddlCondSetPredReadWriteEff(const pddl_cond_t *cond, pddl_preds_t *preds);
  * DNF so that the actions can be split.
  */
 pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types);
+
+/**
+ * Ground atom to a fact using arguments, {fact} has to have allocated
+ * enough space in .arg[].
+ */
+void pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
+                            const int *args,
+                            pddl_fact_t *fact);
+
+/**
+ * Traverses all atoms in pre and grounds them into a fact and calls the
+ * provided callback on them. If callback returns something different then
+ * 0, the grounding is terminated prematurelly and the same value is
+ * returned by the function.
+ * If function returns -1, something different then (and ) and atom
+ * elements was found and grounding was prematurelly terminated.
+ * On success, 0 is returned.
+ */
+int _pddlCondGroundPre(const struct pddl *pddl,
+                      const pddl_cond_t *pre,
+                      const int *args,
+                      int (*cb)(const pddl_cond_atom_t *atom,
+                                const pddl_fact_t *fact,
+                                void *),
+                      void *userdata);
+
+/**
+ * Traverses eff and grounds all found atoms into facts.
+ * TODO
+ * If any callback returns something different then 0, the grounding is
+ * terminated prematurelly and the same value is returned by the function.
+ * If function returns -1, something different then (and ), atom, (assign
+ * ), or (when ) was found and grounding was prematurelly terminated.
+ * On success, 0 is returned.
+ */
+int _pddlCondGroundEff(const struct pddl *pddl,
+                      const pddl_cond_t *eff,
+                      const int *args,
+                      int (*add_eff)(const pddl_cond_atom_t *atom,
+                                     const pddl_fact_t *fact,
+                                     void *),
+                      int (*del_eff)(const pddl_cond_atom_t *atom,
+                                     const pddl_fact_t *fact,
+                                     void *),
+                      int (*assign)(const pddl_cond_assign_t *assign,
+                                    int value,
+                                    const pddl_fact_t *fvalue,
+                                    void *),
+                      int (*when)(const pddl_cond_when_t *when,
+                                  void *),
+                      void *userdata);
 
 /**
  * Ground preconditions to a list of facts.

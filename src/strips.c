@@ -132,6 +132,8 @@ static int pddlStripsGroundFull(pddl_strips_t *strips, unsigned flags)
     groundFullFacts(strips);
     for (i = 0; i < strips->pddl->action.size; ++i)
         groundFullOp(strips, strips->pddl->action.action + i);
+    // TODO: reachibility analysis
+    // TODO: well-formed operators
     return 0;
 }
 /**** GROUND FULL END ****/
@@ -150,6 +152,12 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
 
     // TODO
     pddlStripsGroundFull(strips, flags);
+
+    // TODO: remove static facts
+    // TODO: causal graph
+    // TODO: pruning
+    // TODO: is goal reachable?
+    // TODO: Compile away condition effects
 
     return strips;
 }
