@@ -100,8 +100,12 @@ struct ground_naive {
     pddl_facts_t fact;
     fact_infos_t fact_info;
 
-    pddl_strips_op_t op;
-    int cond_eff;
+    const pddl_action_t *action;
+    const pddl_cond_t *pre;
+    const pddl_cond_t *eff;
+    int *args;
+    pddl_strips_op_t op[2];
+    int op_id;
     int failed;
 };
 typedef struct ground_naive ground_naive_t;
@@ -139,7 +143,7 @@ static int groundNaivePre(const pddl_cond_atom_t *atom,
         }
 
         factInfo(&g->fact_info, fact_id)->pre++;
-        pddlStripsOpAddPre(&g->op, fact_id);
+        pddlStripsOpAddPre(&g->op[g->op_id], fact_id);
 
     }else if (fact_id >= 0 && atom->neg){
         // This corresponds to a negative precondition on a static
@@ -165,7 +169,7 @@ static int groundNaiveAddEff(const pddl_cond_atom_t *atom,
     fi = factInfo(&g->fact_info, fact_id);
     fi->reachable = 1;
     ++fi->add;
-    pddlStripsOpAddAddEff(&g->op, fact_id);
+    pddlStripsOpAddAddEff(&g->op[g->op_id], fact_id);
     return 0;
 }
 
@@ -178,7 +182,7 @@ static int groundNaiveDelEff(const pddl_cond_atom_t *atom,
 
     fact_id = pddlFactsAdd(&g->fact, fact);
     factInfo(&g->fact_info, fact_id)->del++;
-    pddlStripsOpAddDelEff(&g->op, fact_id);
+    pddlStripsOpAddDelEff(&g->op[g->op_id], fact_id);
     return 0;
 }
 
@@ -194,39 +198,89 @@ static int groundNaiveAssign(const pddl_cond_assign_t *assign,
         func_id = pddlFactsFind(&g->strips->pddl->init_func, fvalue);
         if (func_id < 0)
             return -3;
-        g->op.cost += g->strips->pddl->init_func.fact[func_id]->func_val;
+        g->op[g->op_id].cost
+                += g->strips->pddl->init_func.fact[func_id]->func_val;
     }else{
-        g->op.cost += value;
+        g->op[g->op_id].cost += value;
     }
 
     return 0;
+}
+
+static int groundNaiveGroundOpArgs(ground_naive_t *g, int op_id);
+
+static int canMergeCondEff(const ground_naive_t *g)
+{
+    const pddl_fact_id_arr_t *pre = &g->op[1].pre;
+    int i;
+
+    for (i = 0; i < pre->size; ++i){
+        if (!pddlFactIsStatic(g->strips->pddl, g->fact.fact[pre->fact[i]]))
+            return 0;
+    }
+    return 1;
+}
+
+static void mergeCondEff(ground_naive_t *g)
+{
+    int i;
+
+    for (i = 0; i < g->op[1].add_eff.size; ++i){
+        pddlStripsOpAddAddEff(&g->op[0], g->op[1].add_eff.fact[i]);
+    }
+    for (i = 0; i < g->op[1].del_eff.size; ++i)
+        pddlStripsOpAddDelEff(&g->op[0], g->op[1].del_eff.fact[i]);
 }
 
 static int groundNaiveWhen(const pddl_cond_when_t *when, void *ud)
 {
-    fprintf(stderr, "Skipping (when ) for now...\n");
-    return 0;
+    ground_naive_t *g = ud;
+    const pddl_cond_t *pre, *eff;
+    int ret = 0;
+
+    if (g->op_id == 1)
+        return -4;
+
+    pddlStripsOpInit(&g->op[1]);
+    pre = g->pre;
+    eff = g->eff;
+    g->pre = when->pre;
+    g->eff = when->eff;
+    if (groundNaiveGroundOpArgs(g, 1) == 0){
+        if (canMergeCondEff(g)){
+            mergeCondEff(g);
+        }else{
+            fprintf(stderr, "Skipping (when ) for now...\n");
+            fflush(stderr);
+            ret = -1;
+        }
+    }
+    pddlStripsOpFree(&g->op[1]);
+
+    g->op_id = 0;
+    g->pre = pre;
+    g->eff = eff;
+    return ret;
 }
 
-static void groundNaiveOpArgs(ground_naive_t *g,
-                              const pddl_action_t *action,
-                              const int *args)
+static int groundNaiveGroundOpArgs(ground_naive_t *g, int op_id)
 {
     const pddl_t *pddl = g->strips->pddl;
+    char *name;
     int ret;
 
     g->failed = 0;
-    pddlStripsOpInit(&g->op);
-    ret = pddlCondGroundPre(pddl, action->pre, args, groundNaivePre, g);
+    g->op_id = op_id;
+    ret = pddlCondGroundPre(pddl, g->pre, g->args, groundNaivePre, g);
     if (ret == -1){
         ERR("Could not ground op `%s' -- precondition is not flattened"
-            " conjuction", action->name);
-        goto ground_naive_op_args_fail;
+            " conjuction", g->action->name);
+        return -1;
     }else if (ret != 0){
-        goto ground_naive_op_args_fail;
+        return -2;
     }
 
-    ret = pddlCondGroundEff(pddl, action->eff, args,
+    ret = pddlCondGroundEff(pddl, g->eff, g->args,
                             groundNaiveAddEff,
                             groundNaiveDelEff,
                             groundNaiveAssign,
@@ -234,49 +288,60 @@ static void groundNaiveOpArgs(ground_naive_t *g,
                             g);
     if (ret == -1){
         ERR("Could not ground op `%s' -- effect is not normalized.",
-            action->name);
-        goto ground_naive_op_args_fail;
+            g->action->name);
+        return -1;
     }else if (ret == -3){
         ERR("Could not ground op `%s' -- unkown function value.",
-            action->name);
-        goto ground_naive_op_args_fail;
+            g->action->name);
+        return -1;
+    }else if (ret == -4){
+        ERR("Nested conditional effects are not supported (%s).",
+            g->action->name);
+        return -1;
     }else if (ret != 0){
-        goto ground_naive_op_args_fail;
+        return -2;
     }
 
-    if (pddlStripsOpFinalize(&g->op, groundOpName(pddl, action, args)) != 0)
-        goto ground_naive_op_args_fail;
-
-    pddlStripsOpsAdd(&g->strips->op, &g->op);
-
-ground_naive_op_args_fail:
-    pddlStripsOpFree(&g->op);
+    name = groundOpName(pddl, g->action, g->args);
+    if (pddlStripsOpFinalize(&g->op[g->op_id], name) != 0)
+        return -1;
+    return 0;
 }
 
-static void groundNaiveOpRec(ground_naive_t *g,
-                             const pddl_action_t *action,
-                             int *args, int argi)
+static void groundNaiveOpArgs(ground_naive_t *g)
+{
+    pddlStripsOpInit(&g->op[0]);
+    if (groundNaiveGroundOpArgs(g, 0) == 0)
+        pddlStripsOpsAdd(&g->strips->op, &g->op[g->op_id]);
+    pddlStripsOpFree(&g->op[g->op_id]);
+}
+
+static void groundNaiveOpRec(ground_naive_t *g, int argi)
 {
     const int *objs;
     int size, i;
 
-    if (action->param.size == argi){
-        groundNaiveOpArgs(g, action, args);
+    if (g->action->param.size == argi){
+        groundNaiveOpArgs(g);
         return;
     }
 
     objs = pddlTypesObjsByType(&g->strips->pddl->type,
-                               action->param.param[argi].type, &size);
+                               g->action->param.param[argi].type, &size);
     for (i = 0; i < size; ++i){
-        args[argi] = objs[i];
-        groundNaiveOpRec(g, action, args, argi + 1);
+        g->args[argi] = objs[i];
+        groundNaiveOpRec(g, argi + 1);
     }
 }
 
 static void groundNaiveOp(ground_naive_t *g, const pddl_action_t *action)
 {
     int args[action->param.size];
-    groundNaiveOpRec(g, action, args, 0);
+    g->action = action;
+    g->pre = action->pre;
+    g->eff = action->eff;
+    g->args = args;
+    groundNaiveOpRec(g, 0);
 }
 
 static void groundNaiveOps(ground_naive_t *g)
@@ -306,10 +371,8 @@ static void groundNaiveRmStaticAndUnreachable(ground_naive_t *g)
         fi = factInfo(&g->fact_info, fact->id);
         rm = 0;
 
-        // If the fact is never added and is reachable, then it is a static
-        // fact. Therefore it can be removed all together from all
-        // operators.
-        if (fi->add == 0 && fi->reachable){
+        // All static facts can be removed from operators.
+        if (fi->add == 0 && fi->del == 0 && fi->reachable){
             rm = 1;
             pddlStripsOpsRmFactId(&g->strips->op, fact->id);
         }
@@ -317,7 +380,6 @@ static void groundNaiveRmStaticAndUnreachable(ground_naive_t *g)
         // If the fact is not reachable but was created as a delete effect,
         // we can safely remove this fact from delete effects.
         if (!fi->reachable && fi->del > 0){
-            rm = 1;
             pddlStripsOpsRmFactIdFromDelEff(&g->strips->op, fact->id);
         }
 
@@ -427,6 +489,7 @@ void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
         fprintf(fout, ", del:");
         for (j = 0; j < op->del_eff.size; ++j)
             fprintf(fout, " %d", op->del_eff.fact[j]);
+        //fprintf(fout, ", hash: %lu", (long)op->hash);
         fprintf(fout, "\n");
     }
     // TODO: facts, init, goal

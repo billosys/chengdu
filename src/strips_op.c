@@ -87,9 +87,11 @@ int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name)
 void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
 {
     dst->name = BOR_STRDUP(src->name);
+    dst->cost = src->cost;
     pddlFactIdArrCopy(&dst->pre, &src->pre);
     pddlFactIdArrCopy(&dst->add_eff, &src->add_eff);
     pddlFactIdArrCopy(&dst->del_eff, &src->del_eff);
+    dst->hash = src->hash;
 }
 
 void pddlStripsOpsInit(pddl_strips_ops_t *ops)
