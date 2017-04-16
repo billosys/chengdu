@@ -27,12 +27,19 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct pddl_strips_op {
-    char *name;
+struct pddl_strips_op_cond_eff {
     pddl_fact_id_arr_t pre;
     pddl_fact_id_arr_t del_eff;
     pddl_fact_id_arr_t add_eff;
+};
+typedef struct pddl_strips_op_cond_eff pddl_strips_op_cond_eff_t;
+
+struct pddl_strips_op {
+    char *name;
     int cost;
+    pddl_fact_id_arr_t pre;
+    pddl_fact_id_arr_t del_eff;
+    pddl_fact_id_arr_t add_eff;
     // TODO: Conditional effects
 
     int id;
@@ -41,17 +48,44 @@ struct pddl_strips_op {
 };
 typedef struct pddl_strips_op pddl_strips_op_t;
 
+/**
+ * Initializes strips operator.
+ */
 void pddlStripsOpInit(pddl_strips_op_t *op);
-void pddlStripsOpFree(pddl_strips_op_t *op);
 pddl_strips_op_t *pddlStripsOpNew(void);
+
+/**
+ * Frees allocated memory
+ */
+void pddlStripsOpFree(pddl_strips_op_t *op);
 void pddlStripsOpDel(pddl_strips_op_t *op);
+
+/**
+ * Adds fact-id as precondition, add effect, or del effect, respectivelly.
+ */
+_bor_inline void pddlStripsOpAddPre(pddl_strips_op_t *op, int fact_id)
+{
+    pddlFactIdArrAdd(&op->pre, fact_id);
+}
+_bor_inline void pddlStripsOpAddAddEff(pddl_strips_op_t *op, int fact_id)
+{
+    pddlFactIdArrAdd(&op->add_eff, fact_id);
+}
+_bor_inline void pddlStripsOpAddDelEff(pddl_strips_op_t *op, int fact_id)
+{
+    pddlFactIdArrAdd(&op->del_eff, fact_id);
+}
+
+/**
+ * Finalizes strips operator after all parts, except name, is filled.
+ */
 int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name);
 
 _bor_inline int pddlStripsOpRmFactId(pddl_strips_op_t *op, int fact_id)
 {
     return pddlFactIdArrRmId(&op->pre, fact_id)
-            || pddlFactIdArrRmId(&op->add_eff, fact_id)
-            || pddlFactIdArrRmId(&op->del_eff, fact_id);
+            | pddlFactIdArrRmId(&op->add_eff, fact_id)
+            | pddlFactIdArrRmId(&op->del_eff, fact_id);
 }
 
 _bor_inline int pddlStripsOpRmFactIdFromDelEff(pddl_strips_op_t *op, int fid)

@@ -139,7 +139,7 @@ static int groundNaivePre(const pddl_cond_atom_t *atom,
         }
 
         factInfo(&g->fact_info, fact_id)->pre++;
-        pddlFactIdArrAdd(&g->op.pre, fact_id);
+        pddlStripsOpAddPre(&g->op, fact_id);
 
     }else if (fact_id >= 0 && atom->neg){
         // This corresponds to a negative precondition on a static
@@ -165,7 +165,7 @@ static int groundNaiveAddEff(const pddl_cond_atom_t *atom,
     fi = factInfo(&g->fact_info, fact_id);
     fi->reachable = 1;
     ++fi->add;
-    pddlFactIdArrAdd(&g->op.add_eff, fact_id);
+    pddlStripsOpAddAddEff(&g->op, fact_id);
     return 0;
 }
 
@@ -178,7 +178,7 @@ static int groundNaiveDelEff(const pddl_cond_atom_t *atom,
 
     fact_id = pddlFactsAdd(&g->fact, fact);
     factInfo(&g->fact_info, fact_id)->del++;
-    pddlFactIdArrAdd(&g->op.del_eff, fact_id);
+    pddlStripsOpAddDelEff(&g->op, fact_id);
     return 0;
 }
 
@@ -351,6 +351,8 @@ static int groundNaive(pddl_strips_t *strips, unsigned flags)
         groundNaiveSetCostToOne(&g);
 
     groundNaiveRmStaticAndUnreachable(&g);
+    // TODO: Remove operators without effects
+    // TODO: Merge conditional effects without preconditions
 
     factInfosFree(&g.fact_info);
     //pddlFactsFree(&g.fact);
@@ -374,14 +376,13 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     // TODO
     groundNaive(strips, flags);
 
-    // TODO: set cost to 1 if necessary
     // TODO: remove static facts
     // TODO: remove identical operators (don't forget to keep the one with
     // the minimal cost)
     // TODO: causal graph
     // TODO: pruning
     // TODO: is goal reachable?
-    // TODO: Compile away condition effects
+    // TODO: Compile away conditional effects if set in flags
 
     return strips;
 }
