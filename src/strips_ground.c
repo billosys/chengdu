@@ -142,7 +142,7 @@ static void condArrCopy(cond_arr_t *dst, const cond_arr_t *src)
     *dst = *src;
     if (src->cond != NULL){
         dst->cond = BOR_ALLOC_ARR(const pddl_cond_t *, dst->alloc);
-        memcpy(dst->cond, src->cond, sizeof(pddl_cond_t) * src->size);
+        memcpy(dst->cond, src->cond, sizeof(pddl_cond_t *) * src->size);
     }
 }
 
@@ -281,26 +281,39 @@ static int actionInitCondEff(pddl_cond_t *c, void *ud)
 {
     action_ctx_t *ctx = ud;
     const pddl_cond_when_t *when;
-    action_t *a;
+    action_t *a, *parent;
 
     if (c->type == PDDL_COND_WHEN){
         when = PDDL_COND_CAST(c, when);
+        fprintf(stdout, "X\n");
+        fflush(stdout);
 
-        // Create a copy of the action
+        // Create a new action
         actionsReserve(ctx->as);
         a = ctx->as->action + ctx->as->size++;
-        actionCopy(a, ctx->as->action + ctx->a_id);
-        a->parent_action = ctx->a_id;
-        a->cond_eff_size = 0;
 
-        // And parse preconditions and effects of (when ) element
+        // Parse preconditions and effects of (when ) element
         actionInit2(a, ctx->pddl, ctx->action, when->pre, when->eff);
         if (a->cond_eff_size > 0){
             ERR2("Nested conditional effects are not supported!");
             exit(-1);
         }
+
+        // Set its parent
+        parent = ctx->as->action + ctx->a_id;
+        a->parent_action = ctx->a_id;
+
+        // Copy preconditions
+        for (int i = 0; i < parent->pre_neg.size; ++i)
+            condArrAdd(&a->pre_neg, parent->pre_neg.cond[i]);
+        for (int i = 0; i < parent->pre.size; ++i)
+            condArrAdd(&a->pre, parent->pre.cond[i]);
+        a->max_arg_size = BOR_MAX(a->max_arg_size, parent->max_arg_size);
+
+
+        return -1;
     }
-    return -1;
+    return 0;
 }
 
 static void actionsAddCondEff(actions_t *as, int aid, const pddl_t *pddl)
@@ -337,6 +350,7 @@ static void actionsInit(actions_t *as, const pddl_t *pddl)
 
     for (i = 0; i < pddl->action.size; ++i){
         if (as->action[i].cond_eff_size > 0){
+            fprintf(stdout, "CE %s\n", as->action[i].action->name);
             actionsAddCondEff(as, i, pddl);
         }
     }
