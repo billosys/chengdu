@@ -28,6 +28,7 @@
 #include <pddl/param.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
+#include <pddl/fact.h>
 
 #ifdef __cplusplus
 extern "C" {
