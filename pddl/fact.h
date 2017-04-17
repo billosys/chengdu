@@ -56,6 +56,12 @@ typedef struct pddl_fact pddl_fact_t;
     pddlFactInit(&F_NAME); \
     F_NAME.arg = F_NAME ## __args__
 
+#define PDDL_FACT_FOR_GROUND2(F_NAME, ARG_SIZE) \
+    pddl_fact_t F_NAME; \
+    int F_NAME ## __args__[ARG_SIZE]; \
+    pddlFactInit(&F_NAME); \
+    F_NAME.arg = F_NAME ## __args__
+
 /**
  * Initializes empty fact.
  */

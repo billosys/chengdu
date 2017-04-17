@@ -84,6 +84,11 @@ void pddlTypesAddObj(pddl_types_t *ts, int obj_id, int type_id);
 const int *pddlTypesObjsByType(const pddl_types_t *ts, int type_id, int *size);
 
 /**
+ * Returns true if the object compatible with the specified type.
+ */
+int pddlTypesObjHasType(const pddl_types_t *ts, int type, int obj);
+
+/**
  * Returns type ID from the lisp node or -1 if error occured.
  * (either ...) types are created if necessary.
  */

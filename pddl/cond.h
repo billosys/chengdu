@@ -224,10 +224,12 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types);
 /**
  * Ground atom to a fact using arguments, {fact} has to have allocated
  * enough space in .arg[].
+ * If some argument could not be set because {args} is not bound on the
+ * corresponding position, -1 is returned.
  */
-void pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
-                            const int *args,
-                            pddl_fact_t *fact);
+int pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
+                           const int *args,
+                           pddl_fact_t *fact);
 
 /**
  * Traverses all atoms in pre and grounds them into a fact and calls the
@@ -277,10 +279,8 @@ int pddlCondGroundEff(const struct pddl *pddl,
                                   void *),
                       void *userdata);
 
-void pddlCondPrint(const pddl_cond_t *cond,
-                   const pddl_objs_t *objs,
-                   const pddl_preds_t *predicates,
-                   const pddl_preds_t *functions,
+void pddlCondPrint(const struct pddl *pddl,
+                   const pddl_cond_t *cond,
                    const pddl_params_t *params,
                    FILE *fout);
 

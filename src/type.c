@@ -184,6 +184,20 @@ const int *pddlTypesObjsByType(const pddl_types_t *ts, int type_id, int *size)
     return ts->obj_by_type[type_id].obj;
 }
 
+int pddlTypesObjHasType(const pddl_types_t *ts, int type, int obj)
+{
+    // TODO: can be done in constant time!
+    const int *objs;
+    int size, i;
+
+    objs = pddlTypesObjsByType(ts, type, &size);
+    for (i = 0; i < size; ++i){
+        if (objs[i] == obj)
+            return 1;
+    }
+    return 0;
+}
+
 
 static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
 {

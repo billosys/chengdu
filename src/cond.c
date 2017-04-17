@@ -1613,9 +1613,9 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types)
     return c;
 }
 
-void pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
-                            const int *args,
-                            pddl_fact_t *fact)
+int pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
+                           const int *args,
+                           pddl_fact_t *fact)
 {
     int i;
 
@@ -1626,8 +1626,12 @@ void pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
             fact->arg[i] = atom->arg[i].obj;
         }else{
             fact->arg[i] = args[atom->arg[i].param];
+            if (fact->arg[i] < 0)
+                return -1;
         }
     }
+
+    return 0;
 }
 
 
@@ -1778,11 +1782,9 @@ int pddlCondGroundEff(const struct pddl *pddl,
 
 
 /*** PRINT ***/
-static void condPartPrint(const pddl_cond_part_t *cond,
+static void condPartPrint(const pddl_t *pddl,
+                          pddl_cond_part_t *cond,
                           const char *name,
-                          const pddl_objs_t *objs,
-                          const pddl_preds_t *preds,
-                          const pddl_preds_t *funcs,
                           const pddl_params_t *params,
                           FILE *fout)
 {
@@ -1793,16 +1795,14 @@ static void condPartPrint(const pddl_cond_part_t *cond,
     BOR_LIST_FOR_EACH(&cond->part, item){
         child = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
         fprintf(fout, " ");
-        pddlCondPrint(child, objs, preds, funcs, params, fout);
+        pddlCondPrint(pddl, child, params, fout);
     }
     fprintf(fout, ")");
 }
 
-static void condQuantPrint(const pddl_cond_quant_t *q,
+static void condQuantPrint(const pddl_t *pddl,
+                           const pddl_cond_quant_t *q,
                            const char *name,
-                           const pddl_objs_t *objs,
-                           const pddl_preds_t *preds,
-                           const pddl_preds_t *funcs,
                            const pddl_params_t *params,
                            FILE *fout)
 {
@@ -1812,63 +1812,66 @@ static void condQuantPrint(const pddl_cond_quant_t *q,
     pddlParamsPrint(&q->param, fout);
     fprintf(fout, ") ");
 
-    pddlCondPrint(q->cond, objs, preds, funcs, &q->param, fout);
+    pddlCondPrint(pddl, q->cond, &q->param, fout);
 
     fprintf(fout, ")");
 }
 
-static void condWhenPrint(const pddl_cond_when_t *w,
-                           const pddl_objs_t *objs,
-                           const pddl_preds_t *preds,
-                           const pddl_preds_t *funcs,
-                           const pddl_params_t *params,
-                           FILE *fout)
-{
-    fprintf(fout, "(when ");
-    pddlCondPrint(w->pre, objs, preds, funcs, params, fout);
-    fprintf(fout, " ");
-    pddlCondPrint(w->eff, objs, preds, funcs, params, fout);
-    fprintf(fout, ")");
-}
-
-static void condAtomPrint(const pddl_cond_atom_t *atom,
-                          const pddl_objs_t *objs,
-                          const pddl_preds_t *preds,
+static void condWhenPrint(const pddl_t *pddl,
+                          const pddl_cond_when_t *w,
                           const pddl_params_t *params,
                           FILE *fout)
 {
+    fprintf(fout, "(when ");
+    pddlCondPrint(pddl, w->pre, params, fout);
+    fprintf(fout, " ");
+    pddlCondPrint(pddl, w->eff, params, fout);
+    fprintf(fout, ")");
+}
+
+static void condAtomPrint(const pddl_t *pddl,
+                          const pddl_cond_atom_t *atom,
+                          const pddl_params_t *params,
+                          FILE *fout, int is_func)
+{
+    const pddl_pred_t *pred;
     int i;
+
+    if (is_func){
+        pred = pddl->func.pred + atom->pred;
+    }else{
+        pred = pddl->pred.pred + atom->pred;
+    }
 
     fprintf(fout, "(");
     if (atom->neg)
         fprintf(fout, "N:");
-    if (preds->pred[atom->pred].read)
+    if (pred->read)
         fprintf(fout, "R");
-    if (preds->pred[atom->pred].write)
+    if (pred->write)
         fprintf(fout, "W");
-    fprintf(fout, ":%s", preds->pred[atom->pred].name);
+    fprintf(fout, ":%s", pred->name);
 
     for (i = 0; i < atom->arg_size; ++i){
         fprintf(fout, " ");
         if (atom->arg[i].param >= 0){
             fprintf(fout, "%s", params->param[atom->arg[i].param].name);
         }else{
-            fprintf(fout, "%s", objs->obj[atom->arg[i].obj].name);
+            fprintf(fout, "%s", pddl->obj.obj[atom->arg[i].obj].name);
         }
     }
 
     fprintf(fout, ")");
 }
 
-static void condAssignPrint(const pddl_cond_assign_t *assign,
-                            const pddl_objs_t *objs,
-                            const pddl_preds_t *funcs,
+static void condAssignPrint(const pddl_t *pddl,
+                            const pddl_cond_assign_t *assign,
                             const pddl_params_t *params,
                             FILE *fout)
 {
     fprintf(fout, "(increase (total-cost) ");
     if (assign->fvalue != NULL){
-        condAtomPrint(assign->fvalue, objs, funcs, params, fout);
+        condAtomPrint(pddl, assign->fvalue, params, fout, 1);
     }else{
         fprintf(fout, "%d", assign->value);
     }
@@ -1884,35 +1887,31 @@ static void condBoolPrint(const pddl_cond_bool_t *b, FILE *fout)
     }
 }
 
-void pddlCondPrint(const pddl_cond_t *cond,
-                   const pddl_objs_t *objs,
-                   const pddl_preds_t *preds,
-                   const pddl_preds_t *funcs,
+void pddlCondPrint(const struct pddl *pddl,
+                   const pddl_cond_t *cond,
                    const pddl_params_t *params,
                    FILE *fout)
 {
     if (cond->type == PDDL_COND_AND){
-        condPartPrint(OBJ(cond, part), "and", objs, preds, funcs, params, fout);
+        condPartPrint(pddl, OBJ(cond, part), "and", params, fout);
 
     }else if (cond->type == PDDL_COND_OR){
-        condPartPrint(OBJ(cond, part), "or", objs, preds, funcs, params, fout);
+        condPartPrint(pddl, OBJ(cond, part), "or", params, fout);
 
     }else if (cond->type == PDDL_COND_FORALL){
-        condQuantPrint(OBJ(cond, quant), "forall", objs,
-                       preds, funcs, params, fout);
+        condQuantPrint(pddl, OBJ(cond, quant), "forall", params, fout);
 
     }else if (cond->type == PDDL_COND_EXIST){
-        condQuantPrint(OBJ(cond, quant), "exists", objs,
-                       preds, funcs, params, fout);
+        condQuantPrint(pddl, OBJ(cond, quant), "exists", params, fout);
 
     }else if (cond->type == PDDL_COND_WHEN){
-        condWhenPrint(OBJ(cond, when), objs, preds, funcs, params, fout);
+        condWhenPrint(pddl, OBJ(cond, when), params, fout);
 
     }else if (cond->type == PDDL_COND_ATOM){
-        condAtomPrint(OBJ(cond, atom), objs, preds, params, fout);
+        condAtomPrint(pddl, OBJ(cond, atom), params, fout, 0);
 
     }else if (cond->type == PDDL_COND_ASSIGN){
-        condAssignPrint(OBJ(cond, assign), objs, funcs, params, fout);
+        condAssignPrint(pddl, OBJ(cond, assign), params, fout);
 
     }else if (cond->type == PDDL_COND_BOOL){
         condBoolPrint(OBJ(cond, bool), fout);

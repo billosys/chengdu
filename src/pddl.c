@@ -434,14 +434,13 @@ void pddlDump(const pddl_t *pddl, FILE *fout)
     pddlObjsPrint(&pddl->obj, fout);
     pddlPredsPrint(&pddl->pred, "Predicate", fout);
     pddlPredsPrint(&pddl->func, "Function", fout);
-    pddlActionsPrint(&pddl->action, &pddl->obj, &pddl->pred,
-                         &pddl->func, fout);
+    pddlActionsPrint(pddl, &pddl->action, fout);
 
     pddlFactsPrintInit(pddl, &pddl->init_fact, fout);
     pddlFactsPrintInitFunc(pddl, &pddl->init_func, fout);
 
     fprintf(fout, "Goal: ");
-    pddlCondPrint(pddl->goal, &pddl->obj, &pddl->pred, &pddl->func, NULL, fout);
+    pddlCondPrint(pddl, pddl->goal, NULL, fout);
     fprintf(fout, "\n");
 
     fprintf(fout, "Metric: %d\n", pddl->metric);

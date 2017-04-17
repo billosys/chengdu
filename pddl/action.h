@@ -95,10 +95,10 @@ void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as);
  */
 void pddlActionAssertPreConjuction(pddl_action_t *a);
 
-void pddlActionsPrint(const pddl_actions_t *actions,
-                      const pddl_objs_t *objs,
-                      const pddl_preds_t *predicates,
-                      const pddl_preds_t *functions,
+void pddlActionPrint(const struct pddl *pddl,
+                     const pddl_action_t *a, FILE *fout);
+void pddlActionsPrint(const struct pddl *pddl,
+                      const pddl_actions_t *actions,
                       FILE *fout);
 
 #ifdef __cplusplus

@@ -91,6 +91,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
 
     // TODO: Check compatibility of types of parameters and types of
     //       arguments of all predicates.
+    //       --> Restrict types instead of disallowing such an action?
 
     return 0;
 }
@@ -243,35 +244,28 @@ void pddlActionAssertPreConjuction(pddl_action_t *a)
     }
 }
 
-static void pddlActionPrint(const pddl_action_t *a,
-                            const pddl_objs_t *objs,
-                            const pddl_preds_t *predicates,
-                            const pddl_preds_t *functions,
-                            FILE *fout)
+void pddlActionPrint(const pddl_t *pddl, const pddl_action_t *a, FILE *fout)
 {
     fprintf(fout, "    %s: ", a->name);
     pddlParamsPrint(&a->param, fout);
     fprintf(fout, "\n");
 
     fprintf(fout, "        pre: ");
-    pddlCondPrint(a->pre, objs, predicates, functions, &a->param, fout);
+    pddlCondPrint(pddl, a->pre, &a->param, fout);
     fprintf(fout, "\n");
 
     fprintf(fout, "        eff: ");
-    pddlCondPrint(a->eff, objs, predicates, functions, &a->param, fout);
+    pddlCondPrint(pddl, a->eff, &a->param, fout);
     fprintf(fout, "\n");
 }
 
-void pddlActionsPrint(const pddl_actions_t *actions,
-                      const pddl_objs_t *objs,
-                      const pddl_preds_t *predicates,
-                      const pddl_preds_t *functions,
+void pddlActionsPrint(const pddl_t *pddl,
+                      const pddl_actions_t *actions,
                       FILE *fout)
 {
     int i;
 
     fprintf(fout, "Action[%d]:\n", actions->size);
     for (i = 0; i < actions->size; ++i)
-        pddlActionPrint(actions->action + i, objs,
-                            predicates, functions, fout);
+        pddlActionPrint(pddl, actions->action + i, fout);
 }
