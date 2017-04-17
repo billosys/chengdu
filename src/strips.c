@@ -1031,13 +1031,15 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     pddlFactIdArrInit(&strips->goal);
 
     // TODO
-    //groundNaive(strips, flags);
+    groundNaive(strips, flags);
+    /*
     {
         ground_t g;
         groundInit(&g, pddl);
         ground(&g);
         groundFree(&g);
     }
+    */
 
     // TODO: remove static facts
     // TODO: remove identical operators (don't forget to keep the one with
