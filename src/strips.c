@@ -21,6 +21,8 @@
 #include "pddl/strips.h"
 #include "err.h"
 
+void groundStrips(pddl_strips_t *strips, const pddl_t *pddl);
+
 static char *groundOpName(const pddl_t *pddl,
                           const pddl_action_t *action,
                           const int *args)
@@ -1031,7 +1033,8 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     pddlFactIdArrInit(&strips->goal);
 
     // TODO
-    groundNaive(strips, flags);
+    //groundNaive(strips, flags);
+    groundStrips(strips, pddl);
     /*
     {
         ground_t g;
