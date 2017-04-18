@@ -289,7 +289,7 @@ int pddlPrepActionCheckEq(const pddl_prep_action_t *a,
     if (atom->arg_size <= 1){
         return 1;
     }else if (atom->arg_size == 2){
-        if (atom->arg[0].param >= 0 && atom->arg[0].param >= 0)
+        if (atom->arg[0].param >= 0 && atom->arg[1].param >= 0)
             return checkEq(a, atom->arg[0].param, fact->arg[0],
                               atom->arg[1].param, fact->arg[1]);
         return 1;
@@ -304,12 +304,13 @@ static int checkPreType(const pddl_t *pddl,
                         const pddl_cond_atom_t *atom,
                         const pddl_fact_t *fact)
 {
-    int param;
+    int param, type;
 
     for (int i = 0; i < atom->arg_size; ++i){
         param = atom->arg[i].param;
         if (param >= 0){
-            if (!pddlTypesObjHasType(&pddl->type, param, fact->arg[i]))
+            type = a->action->param.param[param].type;
+            if (!pddlTypesObjHasType(&pddl->type, type, fact->arg[i]))
                 return 0;
         }else{
             if (atom->arg[i].obj != fact->arg[i])
