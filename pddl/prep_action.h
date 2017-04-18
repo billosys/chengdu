@@ -1,0 +1,82 @@
+/***
+ * cpddl
+ * -------
+ * Copyright (c)2016 Daniel Fiser <danfis@danfis.cz>,
+ * AI Center, Department of Computer Science,
+ * Faculty of Electrical Engineering, Czech Technical University in Prague.
+ * All rights reserved.
+ *
+ * This file is part of cpddl.
+ *
+ * Distributed under the OSI-approved BSD License (the "License");
+ * see accompanying file BDS-LICENSE for details or see
+ * <http://www.opensource.org/licenses/bsd-license.php>.
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License for more information.
+ */
+
+#ifndef __PDDL_PREP_ACTION_H__
+#define __PDDL_PREP_ACTION_H__
+
+#include <boruvka/htable.h>
+#include <pddl/action.h>
+#include <pddl/cond_arr.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+struct pddl;
+
+struct pddl_prep_action {
+    const pddl_action_t *action;
+    int parent_action; /*!< ID >= 0 if this is a conditional effect */
+    int param_size;
+    pddl_cond_arr_t pre_neg_static;
+    pddl_cond_arr_t pre;
+    pddl_cond_arr_t add_eff;
+    pddl_cond_arr_t del_eff;
+    pddl_cond_arr_t assign;
+    int *must_eq;
+    int *must_neq;
+    int max_arg_size;
+    int cond_eff_size;
+};
+typedef struct pddl_prep_action pddl_prep_action_t;
+
+struct pddl_prep_actions {
+    pddl_prep_action_t *action;
+    int size;
+    int alloc;
+};
+typedef struct pddl_prep_actions pddl_prep_actions_t;
+
+void pddlPrepActionsInit(const struct pddl *pddl, pddl_prep_actions_t *as);
+void pddlPrepActionsFree(pddl_prep_actions_t *as);
+
+// TODO: Comment
+int pddlPrepActionCheckEq(const pddl_prep_action_t *a,
+                          int pre_i, const pddl_fact_t *fact);
+int pddlPrepActionCheckPre(const pddl_t *pddl,
+                           const pddl_prep_action_t *a,
+                           int pre_i, const pddl_fact_t *fact);
+int pddlPrepActionCheckPreNegStatic(const pddl_prep_action_t *a,
+                                    const pddl_facts_t *static_facts,
+                                    const int *arg);
+
+#define PDDL_PREP_ACTION_MATCH_PRE(PDDL, A, F, PI) \
+    (PI) = 0; \
+    for (const pddl_cond_atom_t *__atom; \
+            (PI) < (A)->pre.size \
+                && __atom = PDDL_COND_CAST((A)->pre.cond[(PI)]; ++(PI)) \
+        if (__atom->pred == (F)->pred \
+                && pddlPrepActionCheckPre((PDDL), (A), (PI), (F)))
+
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif /* __cplusplus */
+
+#endif /* __PDDL_PREP_ACTION_H__ */

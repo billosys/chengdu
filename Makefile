@@ -15,11 +15,14 @@ OBJS += obj
 OBJS += pred
 OBJS += fact
 OBJS += action
+OBJS += prep_action
 OBJS += pddl
 OBJS += cond
+OBJS += cond_arr
 OBJS += strips
 OBJS += strips_op
 OBJS += strips_ground
+OBJS += strips_ground2
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

@@ -20,12 +20,17 @@
 #include <boruvka/alloc.h>
 #include <boruvka/hfunc.h>
 #include "pddl/pddl.h"
-#include "pddl/ground_action.h"
+#include "pddl/prep_action.h"
 #include "err.h"
 
+#define MUST_NEQ(A, I, J) \
+    ((A)->must_neq[(I) * (A)->param_size + (J)])
+#define MUST_EQ(A, I, J) \
+    ((A)->must_eq[(I) * (A)->param_size + (J)])
+
 struct action_ctx {
-    pddl_ground_actions_t *as;
-    pddl_ground_action_t *a;
+    pddl_prep_actions_t *as;
+    pddl_prep_action_t *a;
     int a_id;
     const pddl_t *pddl;
     const pddl_action_t *action;
@@ -41,10 +46,20 @@ static int actionInitPre(pddl_cond_t *c, void *ud)
     if (c->type == PDDL_COND_ATOM){
         a = PDDL_COND_CAST(c, atom);
         ctx->a->max_arg_size = BOR_MAX(ctx->a->max_arg_size, a->arg_size);
-        if (a->neg){
-            pddlCondArrAdd(&ctx->a->pre_neg, c);
+        if (a->pred == ctx->pddl->pred.eq_pred
+                && a->arg[0].param >= 0
+                && a->arg[1].param >= 0){
+            if (a->neg){
+                MUST_NEQ(ctx->a, a->arg[0].param, a->arg[1].param) = 1;
+            }else{
+                MUST_EQ(ctx->a, a->arg[0].param, a->arg[1].param) = 1;
+            }
         }else{
-            pddlCondArrAdd(&ctx->a->pre, c);
+            if (a->neg){
+                pddlCondArrAdd(&ctx->a->pre_neg_static, c);
+            }else{
+                pddlCondArrAdd(&ctx->a->pre, c);
+            }
         }
         return 0;
 
@@ -87,7 +102,7 @@ static int actionInitEff(pddl_cond_t *c, void *ud)
     }
 }
 
-static void actionInit2(pddl_ground_action_t *a,
+static void actionInit2(pddl_prep_action_t *a,
                         const pddl_t *pddl,
                         const pddl_action_t *action,
                         pddl_cond_t *pre,
@@ -101,6 +116,11 @@ static void actionInit2(pddl_ground_action_t *a,
     bzero(a, sizeof(*a));
     a->action = action;
     a->param_size = action->param.size;
+    a->must_neq = BOR_CALLOC_ARR(int, a->param_size * a->param_size);
+    a->must_eq = BOR_CALLOC_ARR(int, a->param_size * a->param_size);
+    for (int i = 0; i < a->param_size; ++i)
+        MUST_EQ(a, i, i) = 1;
+
     pddlCondTraverse(pre, actionInitPre, NULL, &ctx);
     if (ctx.failed){
         // TODO
@@ -116,7 +136,7 @@ static void actionInit2(pddl_ground_action_t *a,
     }
 }
 
-static void actionInit(pddl_ground_action_t *a,
+static void actionInit(pddl_prep_action_t *a,
                        const pddl_t *pddl,
                        const pddl_action_t *action)
 {
@@ -125,20 +145,24 @@ static void actionInit(pddl_ground_action_t *a,
                 (pddl_cond_t *)action->eff);
 }
 
-static void actionFree(pddl_ground_action_t *a)
+static void actionFree(pddl_prep_action_t *a)
 {
-    pddlCondArrFree(&a->pre_neg);
+    pddlCondArrFree(&a->pre_neg_static);
     pddlCondArrFree(&a->pre);
     pddlCondArrFree(&a->add_eff);
     pddlCondArrFree(&a->del_eff);
     pddlCondArrFree(&a->assign);
+    if (a->must_eq)
+        BOR_FREE(a->must_eq);
+    if (a->must_neq)
+        BOR_FREE(a->must_neq);
 }
 
-static void actionsReserve(pddl_ground_actions_t *as)
+static void actionsReserve(pddl_prep_actions_t *as)
 {
     if (as->size >= as->alloc){
         as->alloc *= 2;
-        as->action = BOR_REALLOC_ARR(as->action, pddl_ground_action_t, as->alloc);
+        as->action = BOR_REALLOC_ARR(as->action, pddl_prep_action_t, as->alloc);
     }
 }
 
@@ -146,7 +170,7 @@ static int actionInitCondEff(pddl_cond_t *c, void *ud)
 {
     action_ctx_t *ctx = ud;
     const pddl_cond_when_t *when;
-    pddl_ground_action_t *a, *parent;
+    pddl_prep_action_t *a, *parent;
 
     if (c->type == PDDL_COND_WHEN){
         when = PDDL_COND_CAST(c, when);
@@ -167,8 +191,8 @@ static int actionInitCondEff(pddl_cond_t *c, void *ud)
         a->parent_action = ctx->a_id;
 
         // Copy preconditions
-        for (int i = 0; i < parent->pre_neg.size; ++i)
-            pddlCondArrAdd(&a->pre_neg, parent->pre_neg.cond[i]);
+        for (int i = 0; i < parent->pre_neg_static.size; ++i)
+            pddlCondArrAdd(&a->pre_neg_static, parent->pre_neg_static.cond[i]);
         for (int i = 0; i < parent->pre.size; ++i)
             pddlCondArrAdd(&a->pre, parent->pre.cond[i]);
         a->max_arg_size = BOR_MAX(a->max_arg_size, parent->max_arg_size);
@@ -179,7 +203,7 @@ static int actionInitCondEff(pddl_cond_t *c, void *ud)
     return 0;
 }
 
-static void actionsAddCondEff(pddl_ground_actions_t *as, int aid, const pddl_t *pddl)
+static void actionsAddCondEff(pddl_prep_actions_t *as, int aid, const pddl_t *pddl)
 {
     action_ctx_t ctx;
     ctx.as = as;
@@ -197,13 +221,13 @@ static void actionsAddCondEff(pddl_ground_actions_t *as, int aid, const pddl_t *
     }
 }
 
-void pddlGroundActionsInit(const pddl_t *pddl, pddl_ground_actions_t *as)
+void pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as)
 {
     int i;
 
     bzero(as, sizeof(*as));
     as->alloc = 4;
-    as->action = BOR_ALLOC_ARR(pddl_ground_action_t, as->alloc);
+    as->action = BOR_ALLOC_ARR(pddl_prep_action_t, as->alloc);
 
     for (i = 0; i < pddl->action.size; ++i){
         actionsReserve(as);
@@ -217,10 +241,112 @@ void pddlGroundActionsInit(const pddl_t *pddl, pddl_ground_actions_t *as)
     }
 }
 
-void pddlGroundActionsFree(pddl_ground_actions_t *as)
+void pddlPrepActionsFree(pddl_prep_actions_t *as)
 {
     for (int i = 0; i < as->size; ++i)
         actionFree(as->action + i);
     if (as->action)
         BOR_FREE(as->action);
+}
+
+static int checkEq(const pddl_prep_action_t *a,
+                   int arg1, int val1, int arg2, int val2)
+{
+    int eq = MUST_EQ(a, arg1, arg2);
+    int neq = MUST_NEQ(a, arg1, arg2);
+    if (eq && val1 != val2)
+        return 0;
+    if (neq && val1 == val2)
+        return 0;
+    return 1;
+}
+
+static int checkEqRec(const pddl_prep_action_t *a,
+                      const pddl_cond_atom_t *atom,
+                      const pddl_fact_t *fact,
+                      int start)
+{
+    if (start == a->param_size - 1)
+        return 1;
+    if (atom->arg[start].param < 0)
+        return checkEqRec(a, atom, fact, start + 1);
+
+    for (int i = start + 1; i < a->param_size; ++i){
+        if (atom->arg[i].param >= 0){
+            if (checkEq(a, atom->arg[start].param, fact->arg[start],
+                           atom->arg[i].param, fact->arg[i]) == 0)
+                return 0;
+        }
+    }
+
+    return checkEqRec(a, atom, fact, start + 1);
+}
+
+int pddlPrepActionCheckEq(const pddl_prep_action_t *a,
+                          int pre_i, const pddl_fact_t *fact)
+{
+    const pddl_cond_atom_t *atom = PDDL_COND_CAST(a->pre.cond[pre_i], atom);
+    if (atom->arg_size <= 1){
+        return 1;
+    }else if (atom->arg_size == 2){
+        if (atom->arg[0].param >= 0 && atom->arg[0].param >= 0)
+            return checkEq(a, atom->arg[0].param, fact->arg[0],
+                              atom->arg[1].param, fact->arg[1]);
+        return 1;
+    }else{
+        return checkEqRec(a, atom, fact, 0);
+    }
+
+}
+
+static int checkPreType(const pddl_t *pddl,
+                        const pddl_prep_action_t *a,
+                        const pddl_cond_atom_t *atom,
+                        const pddl_fact_t *fact)
+{
+    int param;
+
+    for (int i = 0; i < atom->arg_size; ++i){
+        param = atom->arg[i].param;
+        if (param >= 0){
+            if (!pddlTypesObjHasType(&pddl->type, param, fact->arg[i]))
+                return 0;
+        }else{
+            if (atom->arg[i].obj != fact->arg[i])
+                return 0;
+        }
+    }
+
+    return 1;
+}
+
+int pddlPrepActionCheckPre(const pddl_t *pddl,
+                           const pddl_prep_action_t *a,
+                           int pre_i, const pddl_fact_t *fact)
+{
+    return pddlPrepActionCheckEq(a, pre_i, fact)
+            && checkPreType(pddl, a,
+                            PDDL_COND_CAST(a->pre.cond[pre_i], atom),
+                            fact);
+}
+
+int pddlPrepActionCheckPreNegStatic(const pddl_prep_action_t *a,
+                                    const pddl_facts_t *static_facts,
+                                    const int *arg)
+{
+    if (a->pre_neg_static.size == 0)
+        return 1;
+
+    PDDL_FACT_FOR_GROUND2(fact, a->max_arg_size);
+    const pddl_cond_atom_t *atom;
+
+    for (int i = 0; i < a->pre_neg_static.size; ++i){
+        atom = PDDL_COND_CAST(a->pre_neg_static.cond[i], atom);
+        if (pddlCondAtomGroundFact(atom, arg, &fact) == 0){
+            if (pddlFactsFind(static_facts, &fact) >= 0)
+                return 0;
+        }
+    }
+
+    return 1;
 }
