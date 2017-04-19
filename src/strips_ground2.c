@@ -79,6 +79,9 @@ struct ground {
 typedef struct ground ground_t;
 
 static void triePrint(trie_t *tr, FILE *fout);
+static void groundActionAddEff(ground_t *g,
+                               const pddl_prep_action_t *a,
+                               const obj_id_t *oarg);
 
 static tnode_t *tnodeNew(trie_t *t, tnode_t *parent, obj_id_t obj_id)
 {
@@ -161,8 +164,8 @@ static void tnodeDelChild(trie_t *tr, tnode_t *par, tnode_t *ch, int argi)
     par->child_size = i - 1;
 }
 
-static void tnodeUnifyPre(trie_t *tr, tnode_t *tn, int pre_i,
-                          int argi, obj_id_t *arg)
+static void unifyPre(trie_t *tr, tnode_t *tn, int pre_i,
+                     int argi, obj_id_t *arg)
 {
     ASSERT(!(tn->pre_mask & (1u << ((pre_mask_t)pre_i))));
 
@@ -185,6 +188,7 @@ static void tnodeUnifyPre(trie_t *tr, tnode_t *tn, int pre_i,
         // TODO: If grounding is successful, we can probably safe some
         //       memory removing part of trie. The question is whether is
         //       it useful.
+        groundActionAddEff(tr->g, tr->action, arg);
     }
 
     // Recursivelly unify predicate with the whole subtree
@@ -192,46 +196,101 @@ static void tnodeUnifyPre(trie_t *tr, tnode_t *tn, int pre_i,
         ASSERT(argi < tr->arg_size);
         ASSERT(arg[argi] == UNDEF);
         arg[argi] = tn->child[i]->obj_id;
-        tnodeUnifyPre(tr, tn->child[i], pre_i, argi + 1, arg);
+        unifyPre(tr, tn->child[i], pre_i, argi + 1, arg);
         arg[argi] = UNDEF;
     }
 }
 
-static void tnodeUnifyCloneSubtree(trie_t *tr, tnode_t *par,
-                                   int argi, obj_id_t *arg,
-                                   const tnode_t *trace)
+static pre_mask_t subsetPreMask(trie_t *tr, tnode_t *tn,
+                                int argi, const obj_id_t *arg, int max_argi)
 {
-    tnode_t *ch, *newn;
+    tnode_t *ch;
+    pre_mask_t mask = 0;
 
-    // TODO: Check equality between arg[argi] and arg[0..argi-1]?
-    for (int i = 0; i < trace->child_size; ++i){
-        ch = trace->child[i];
-        ASSERT(arg[argi] == UNDEF);
-        arg[argi] = ch->obj_id;
-        newn = tnodeAddChild(tr, par, ch->obj_id);
-        newn->pre_mask |= ch->pre_mask;
-        tnodeUnifyCloneSubtree(tr, newn, argi + 1, arg, ch);
-        arg[argi] = UNDEF;
+    if (argi > max_argi)
+        return tn->pre_mask;
+
+    for (int i = 0; i < tn->child_size; ++i){
+        ch = tn->child[i];
+
+        if (ch->obj_id == arg[argi]){
+            mask |= subsetPreMask(tr, ch, argi + 1, arg, max_argi);
+        }else if (argi < max_argi && ch->obj_id == UNDEF){
+            mask |= subsetPreMask(tr, ch, argi + 1, arg, max_argi);
+        }
     }
+
+    return mask;
 }
 
-static void tnodeUnifyNew(trie_t *tr, tnode_t *tn,
-                          int argi, obj_id_t *arg, int max_argi, int pre_i)
+static void _unifyNew(trie_t *tr, tnode_t *tn, int argi, obj_id_t *arg,
+                      int max_argi, int pre_i,
+                      tnode_t *start, int start_argi)
 {
     tnode_t *new;
 
     if (argi > max_argi){
         // Unify precondition
-        tnodeUnifyPre(tr, tn, pre_i, argi, arg);
+        tn->pre_mask |= subsetPreMask(tr, &tr->root, 0, arg, max_argi);
+        // TODO: Clone subtrees corresponding to all disjunct subsets
+        unifyPre(tr, tn, pre_i, argi, arg);
     }else{
         new = tnodeAddChild(tr, tn, arg[argi]);
-        tnodeUnifyNew(tr, new, argi + 1, arg, max_argi, pre_i);
+        _unifyNew(tr, new, argi + 1, arg, max_argi, pre_i,
+                  start, start_argi);
     }
 }
 
-static void tnodeUnify(trie_t *tr, tnode_t *tn, int argi,
-                       obj_id_t *arg, int max_argi, int pre_i,
-                       tnode_t *clone)
+static void unifyNew(trie_t *tr, tnode_t *tn,
+                     int argi, obj_id_t *arg, int max_argi, int pre_i)
+{
+    _unifyNew(tr, tn, argi, arg, max_argi, pre_i, tn, argi);
+    return;
+    // TODO
+    tnode_t *new;
+
+    if (argi > max_argi){
+        // Unify precondition
+        unifyPre(tr, tn, pre_i, argi, arg);
+    }else{
+        new = tnodeAddChild(tr, tn, arg[argi]);
+        unifyNew(tr, new, argi + 1, arg, max_argi, pre_i);
+    }
+}
+
+static void unifyClone(trie_t *tr, tnode_t *tn, tnode_t *clone)
+{
+    tnode_t *ch, *n;
+
+    for (int i = 0; i < tn->child_size; ++i){
+        ch = tn->child[i];
+        n = tnodeAddChild(tr, clone, ch->obj_id);
+        n->pre_mask |= ch->pre_mask;
+        unifyClone(tr, ch, n);
+    }
+}
+
+static void unify(trie_t *tr, tnode_t *tn, int argi,
+                  obj_id_t *arg, int max_argi, int pre_i,
+                   tnode_t *clone);
+static void unifyOrClone(trie_t *tr, tnode_t *ch, int argi,
+                         obj_id_t *arg, int max_argi, int pre_i,
+                         tnode_t *clone)
+{
+    tnode_t *cnew;
+
+    if (clone != NULL){
+        cnew = tnodeAddChild(tr, clone, arg[argi]);
+        cnew->pre_mask |= ch->pre_mask;
+        unify(tr, ch, argi + 1, arg, max_argi, pre_i, cnew);
+    }else{
+        unify(tr, ch, argi + 1, arg, max_argi, pre_i, NULL);
+    }
+}
+
+static void unify(trie_t *tr, tnode_t *tn, int argi,
+                  obj_id_t *arg, int max_argi, int pre_i,
+                  tnode_t *clone)
 {
     tnode_t *ch, *trace = NULL, *cnew;
     int match = 0;
@@ -239,27 +298,24 @@ static void tnodeUnify(trie_t *tr, tnode_t *tn, int argi,
     if (argi > max_argi){
         // We were able to match arguments completely, so the precondition
         // can be unified.
+
         if (clone == NULL){
-            tnodeUnifyPre(tr, tn, pre_i, argi, arg);
+            unifyPre(tr, tn, pre_i, argi, arg);
         }else{
-            tnodeUnifyPre(tr, clone, pre_i, argi, arg);
+            // If we are clonning, we need to clone the whole subtree first
+            unifyClone(tr, tn, clone);
+            unifyPre(tr, clone, pre_i, argi, arg);
         }
         return;
     }
 
     for (int i = 0; i < tn->child_size; ++i){
         ch = tn->child[i];
-        ASSERT(!(ch->pre_mask & (1u << pre_i)));
 
         if (ch->obj_id == arg[argi]){
+            ASSERT(!(ch->pre_mask & (1u << pre_i)));
             // Found exact match on the argument
-            if (clone != NULL){
-                cnew = tnodeAddChild(tr, clone, arg[argi]);
-                cnew->pre_mask |= ch->pre_mask;
-                tnodeUnify(tr, ch, argi + 1, arg, max_argi, pre_i, cnew);
-            }else{
-                tnodeUnify(tr, ch, argi + 1, arg, max_argi, pre_i, NULL);
-            }
+            unifyOrClone(tr, ch, argi, arg, max_argi, pre_i, clone);
             match = 1;
 
         }else if (arg[argi] != UNDEF && ch->obj_id == UNDEF){
@@ -268,17 +324,11 @@ static void tnodeUnify(trie_t *tr, tnode_t *tn, int argi,
             trace = ch;
 
         }else if (arg[argi] == UNDEF && ch->obj_id != UNDEF){
+            ASSERT(!(ch->pre_mask & (1u << pre_i)));
             // Argument is not set therefore we need to unify with all set
             // arguments
             arg[argi] = ch->obj_id;
-            // TODO: refactor with the above
-            if (clone != NULL){
-                cnew = tnodeAddChild(tr, clone, arg[argi]);
-                cnew->pre_mask |= ch->pre_mask;
-                tnodeUnify(tr, ch, argi + 1, arg, max_argi, pre_i, cnew);
-            }else{
-                tnodeUnify(tr, ch, argi + 1, arg, max_argi, pre_i, NULL);
-            }
+            unifyOrClone(tr, ch, argi, arg, max_argi, pre_i, clone);
             arg[argi] = UNDEF;
         }
     }
@@ -289,22 +339,22 @@ static void tnodeUnify(trie_t *tr, tnode_t *tn, int argi,
             ASSERT((clone->pre_mask & trace->pre_mask) == trace->pre_mask);
             // TODO: Remove the line below
             clone->pre_mask |= trace->pre_mask;
-            tnodeUnify(tr, trace, argi + 1, arg, max_argi, pre_i, clone);
+            unify(tr, trace, argi + 1, arg, max_argi, pre_i, clone);
         }else{
             cnew = tnodeAddChild(tr, clone, arg[argi]);
             ASSERT((cnew->pre_mask & trace->pre_mask) == trace->pre_mask);
             // TODO: Remove the line below
             cnew->pre_mask |= trace->pre_mask;
-            tnodeUnify(tr, trace, argi + 1, arg, max_argi, pre_i, cnew);
+            unify(tr, trace, argi + 1, arg, max_argi, pre_i, cnew);
         }
 
     }else if (!match){
         // If we haven't found a matching argument we needd to create a
         // whole new subtree.
         if (clone == NULL){
-            tnodeUnifyNew(tr, tn, argi, arg, max_argi, pre_i);
+            unifyNew(tr, tn, argi, arg, max_argi, pre_i);
         }else{
-            tnodeUnifyNew(tr, clone, argi, arg, max_argi, pre_i);
+            unifyNew(tr, clone, argi, arg, max_argi, pre_i);
         }
     }
 }
@@ -359,13 +409,13 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
 
     fprintf(stderr, "Fact: ");
     pddlFactPrint(tr->g->pddl, fact, stderr);
-    fprintf(stderr, " --> %s\n", tr->action->action->name);
+    fprintf(stderr, " --> %s, pre_i: %d\n", tr->action->action->name, pre_i);
     // TODO: check fact agains action
     // TODO: Static facts -- after using all of them disallow -1 on
     //       arguments of static facts.
     // TODO: Remove -1 nodes if all possible objects are already present
     //       and lock the argument
-    if (!pddlPrepActionCheckPre(tr->g->pddl, tr->action, pre_i, fact))
+    if (!pddlPrepActionCheckFact(tr->action, pre_i, fact))
         return;
 
     atom = PDDL_COND_CAST(tr->action->pre.cond[pre_i], atom);
@@ -378,12 +428,12 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
         }
     }
 
-    tnodeUnify(tr, &tr->root, 0, arg, max_argi, pre_i, NULL);
     fprintf(stderr, "Fact: ");
     pddlFactPrint(tr->g->pddl, fact, stderr);
     for (int i = 0; i < tr->arg_size; ++i)
         fprintf(stderr, " %d", arg[i]);
-    fprintf(stderr, "\n");
+    fprintf(stderr, " | pre_i: %d\n", pre_i);
+    unify(tr, &tr->root, 0, arg, max_argi, pre_i, NULL);
     triePrint(tr, stderr);
 }
 
@@ -491,6 +541,72 @@ static void groundFree(ground_t *g)
     pddlPrepActionsFree(&g->action);
 }
 
+static void printAction(ground_t *g, const pddl_prep_action_t *a, int *arg)
+{
+    fprintf(stderr, "%s", a->action->name);
+    for (int i = 0; i < a->param_size; ++i){
+        if (arg[i] >= 0){
+            fprintf(stderr, " %s", g->pddl->obj.obj[arg[i]].name);
+        }else{
+            fprintf(stderr, " %s", a->action->param.param[i].name);
+        }
+    }
+    fprintf(stderr, "\n");
+}
+
+static void _groundActionAddEff(ground_t *g,
+                                const pddl_prep_action_t *a,
+                                int *arg, int argi)
+{
+    const int *obj;
+    int size;
+
+    // Skip bound arguments
+    for (; argi < a->param_size && arg[argi] >= 0; ++argi);
+    if (argi < a->param_size){
+        obj = pddlTypesObjsByType(a->type, a->param_type[argi], &size);
+        for (int i = 0; i < size; ++i){
+            arg[argi] = obj[i];
+            _groundActionAddEff(g, a, arg, argi + 1);
+            arg[argi] = -1;
+        }
+        return;
+    }
+
+    if (!pddlPrepActionCheck(a, &g->static_fact, arg)){
+        fprintf(stderr, "FAIL: ");
+        printAction(g, a, arg);
+        return;
+    }
+
+    fprintf(stderr, "SUCCESS: ");
+    printAction(g, a, arg);
+
+    const pddl_cond_atom_t *atom;
+    PDDL_FACT_FOR_GROUND2(fact, a->max_arg_size);
+    for (int i = 0; i < a->add_eff.size; ++i){
+        atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
+        pddlCondAtomGroundFact(atom, arg, &fact);
+        pddlFactsAdd(&g->fact, &fact);
+
+        fprintf(stderr, "ADD FACT ");
+        pddlFactPrint(g->pddl, &fact, stderr);
+        fprintf(stderr, "\n");
+    }
+}
+
+static void groundActionAddEff(ground_t *g,
+                               const pddl_prep_action_t *a,
+                               const obj_id_t *oarg)
+{
+    int arg[a->param_size];
+
+    // TODO: What about zero params actions
+    for (int i = 0; i < a->param_size; ++i)
+        arg[i] = (oarg[i] == UNDEF ? -1 : oarg[i]);
+    _groundActionAddEff(g, a, arg, 0);
+}
+
 void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
 {
     ground_t g;
@@ -511,6 +627,7 @@ void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
         }
     }
 
+    fprintf(stderr, "END:\n");
     for (int j = 0; j < g.action.size; ++j){
         trie_t *tr = g.trie + j;
         triePrint(tr, stderr);

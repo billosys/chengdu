@@ -34,13 +34,14 @@ struct pddl_prep_action {
     const pddl_action_t *action;
     int parent_action; /*!< ID >= 0 if this is a conditional effect */
     int param_size;
+    int *param_type;
+    const pddl_types_t *type;
     pddl_cond_arr_t pre_neg_static;
+    pddl_cond_arr_t pre_eq;
     pddl_cond_arr_t pre;
     pddl_cond_arr_t add_eff;
     pddl_cond_arr_t del_eff;
     pddl_cond_arr_t assign;
-    int *must_eq;
-    int *must_neq;
     int max_arg_size;
     int cond_eff_size;
 };
@@ -56,15 +57,19 @@ typedef struct pddl_prep_actions pddl_prep_actions_t;
 void pddlPrepActionsInit(const struct pddl *pddl, pddl_prep_actions_t *as);
 void pddlPrepActionsFree(pddl_prep_actions_t *as);
 
-// TODO: Comment
-int pddlPrepActionCheckEq(const pddl_prep_action_t *a,
-                          int pre_i, const pddl_fact_t *fact);
-int pddlPrepActionCheckPre(const pddl_t *pddl,
-                           const pddl_prep_action_t *a,
-                           int pre_i, const pddl_fact_t *fact);
-int pddlPrepActionCheckPreNegStatic(const pddl_prep_action_t *a,
-                                    const pddl_facts_t *static_facts,
-                                    const int *arg);
+/**
+ * Returns true if the action can be grounded with the provided arguments.
+ */
+int pddlPrepActionCheck(const pddl_prep_action_t *a,
+                        const pddl_facts_t *static_facts,
+                        const int *arg);
+
+/**
+ * Checks the given fact against specified precondition.
+ */
+int pddlPrepActionCheckFact(const pddl_prep_action_t *a,
+                            int pre_i,
+                            const pddl_fact_t *fact);
 
 #define PDDL_PREP_ACTION_MATCH_PRE(PDDL, A, F, PI) \
     (PI) = 0; \
