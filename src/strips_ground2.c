@@ -17,6 +17,7 @@
  * See the License for more information.
  */
 
+#include <limits.h>
 #include <boruvka/alloc.h>
 #include <boruvka/htable.h>
 #include <boruvka/hfunc.h>
@@ -25,15 +26,15 @@
 #include "pddl/prep_action.h"
 #include "err.h"
 
-// TODO: Replace -1 by defined of type obj_id_t constant
+// TODO: Define mask_t as a structure with functions to set and unset bits
+//       to allow more than 64 preconditions.
 
-typedef int obj_id_t;
-typedef uint32_t pre_size_t;
-typedef uint32_t arg_size_t;
+typedef unsigned char obj_id_t;
+#define UNDEF UCHAR_MAX
 
 typedef uint32_t pre_mask_t;
 typedef uint32_t arg_mask_t;
-typedef uint64_t pred_mask_t;
+
 
 struct ground;
 
@@ -64,8 +65,8 @@ struct trie {
     const pddl_prep_action_t *action;
     int arg_size;
     int pre_size;
-    arg_size_t arg_mask;
-    pre_size_t pre_mask;
+    arg_mask_t arg_mask;
+    pre_mask_t pre_mask;
     pred_to_pre_t *pred_to_pre;
     tnode_t root;
 };
@@ -169,12 +170,12 @@ static void tnodeUnifyNew(trie_t *tr, tnode_t *par,
     }
 
     tn = tnodeAddChild(tr, par, argi, arg[argi]);
-    if (trace != NULL && arg[argi] == -1){
+    if (trace != NULL && arg[argi] == UNDEF){
         // TODO: if arg[argi] == -1 then any trace->child[i] != -1 must be
         //       used for a creation of a new path
         for (int i = 0; i < trace->child_size; ++i){
             ch = trace->child[i];
-            if (ch->obj_id != -1){
+            if (ch->obj_id != UNDEF){
                 // TODO
             }
         }
@@ -185,7 +186,7 @@ static void tnodeUnifyNew(trie_t *tr, tnode_t *par,
             if (ch->obj_id == arg[argi]){
                 trace_ch = ch;
                 break;
-            }else if (ch->obj_id == -1){
+            }else if (ch->obj_id == UNDEF){
                 trace_part_ch = ch;
             }
         }
@@ -231,16 +232,16 @@ static void tnodeUnify(trie_t *tr, tnode_t *tn, int argi,
             tnodeUnify(tr, ch, argi + 1, arg, max_argi, pre_i);
             match = 1;
 
-        }else if (ch->obj_id == -1 && arg[argi] != -1){
+        }else if (ch->obj_id == UNDEF && arg[argi] != UNDEF){
             // Need to match against partially grounded action that has not
             // set this argument
             part_match = ch;
 
-        }else if (arg[argi] == -1){
+        }else if (arg[argi] == UNDEF){
             // Argument is not set therefore any matching is admissible
             arg[argi] = ch->obj_id;
             tnodeUnify(tr, ch, argi + 1, arg, max_argi, pre_i);
-            arg[argi] = -1;
+            arg[argi] = UNDEF;
         }
     }
 
@@ -260,6 +261,9 @@ static void trieInit(trie_t *tr, ground_t *g, int action_id)
 {
     pddl_prep_action_t *a = g->action.action + action_id;
     const pddl_cond_atom_t *atom;
+
+    // TODO: Check limits on number of arguments and number of
+    //       preconditions
 
     bzero(tr, sizeof(*tr));
     tr->g = g;
@@ -304,7 +308,7 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
 
     atom = PDDL_COND_CAST(tr->action->pre.cond[pre_i], atom);
     for (int i = 0; i < tr->arg_size; ++i)
-        arg[i] = -1;
+        arg[i] = UNDEF;
     for (int i = 0; i < atom->arg_size; ++i){
         if (atom->arg[i].param >= 0){
             arg[atom->arg[i].param] = fact->arg[i];
