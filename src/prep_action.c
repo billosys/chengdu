@@ -365,6 +365,7 @@ int pddlPrepActionCheckFact(const pddl_prep_action_t *a,
 {
     const pddl_cond_atom_t *atom = PDDL_COND_CAST(a->pre.cond[pre_i], atom);
     int arg[a->param_size];
+    int param;
 
     if (!checkPreAtomFact(a, atom, fact))
         return 0;
@@ -372,8 +373,12 @@ int pddlPrepActionCheckFact(const pddl_prep_action_t *a,
     for (int i = 0; i < a->param_size; ++i)
         arg[i] = -1;
     for (int i = 0; i < atom->arg_size; ++i){
-        if (atom->arg[i].param >= 0)
-            arg[atom->arg[i].param] = fact->arg[i];
+        param = atom->arg[i].param;
+        if (param >= 0){
+            if (arg[param] != -1 && arg[param] != fact->arg[i])
+                return 0;
+            arg[param] = fact->arg[i];
+        }
     }
 
     return checkEq(a, arg, 1);
