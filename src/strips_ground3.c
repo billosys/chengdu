@@ -48,6 +48,7 @@ typedef struct tnode_child tnode_child_t;
 struct tnode {
     obj_id_t obj_id;
     pre_mask_t pre_mask; /*!< Bits set on positions where precondition is set */
+    pre_mask_t pre_set_mask;
     tnode_child_t child[];
 } bor_packed;
 typedef struct tnode tnode_t;
@@ -183,6 +184,50 @@ static void tnodeDelChild(trie_t *tr, tnode_t *par, tnode_t *ch, int argi)
     cs->child_size = i - 1;
 }
 
+static void propagatePre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
+{
+    tnode_child_t *cs;
+    int child_num;
+
+    child_num = 0;
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        cs = tn->child + argi;
+        child_num += cs->child_size;
+        for (int i = 0; i < cs->child_size; ++i){
+            //ASSERT(arg[argi] == UNDEF);
+            if (arg[argi] == UNDEF){
+                arg[argi] = cs->child[i]->obj_id;
+                cs->child[i]->pre_mask |= tn->pre_mask;
+                propagatePre(tr, cs->child[i], arg, pre_i);
+                arg[argi] = UNDEF;
+            }else{
+                cs->child[i]->pre_mask |= tn->pre_mask;
+                propagatePre(tr, cs->child[i], arg, pre_i);
+            }
+        }
+    }
+
+    // If all preconditions are unified and we are at leaf node we can
+    // ground the action using assigned arguments.
+    if (tn->pre_mask == tr->pre_mask && child_num == 0){
+        // TODO: child_num == 0 should not be required
+        // TODO: Check arg against action
+        // TODO: Ground add effects and add them to a set of reachable
+        //       facts
+        // TODO: If grounding fails then it means that this argument
+        //       assignement cannot be grounded -- can we utilize this
+        //       somehow?
+        //       Also, the reason of the failure cannot be types of
+        //       arguments, or equality of arguments, because these things
+        //       are checked at the beggining. Therefore the only reason
+        //       can be negative preconditions on static predicates.
+        // TODO: If grounding is successful, we can probably safe some
+        //       memory removing part of trie. The question is whether is
+        //       it useful.
+        groundActionAddEff(tr->g, tr->action, arg);
+    }
+}
+
 static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 {
     tnode_child_t *cs;
@@ -192,6 +237,9 @@ static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 
     // TODO: Check action for equality and predicates?
     PRE_MASK_SET(tn, pre_i);
+    tn->pre_set_mask |= ((pre_mask_t)1u << (pre_mask_t)pre_i);
+    propagatePre(tr, tn, arg, pre_i);
+    return;
 
     child_num = 0;
     for (int argi = 0; argi < tr->arg_size; ++argi){
@@ -211,7 +259,10 @@ static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 
     // If all preconditions are unified and we are at leaf node we can
     // ground the action using assigned arguments.
-    if (tn->pre_mask == tr->pre_mask && child_num == 0){
+    //if (tn->pre_mask == tr->pre_mask && child_num == 0){
+    if (tn->pre_mask == tr->pre_mask){
+        // TODO: child_num == 0 should not be required
+        ASSERT(child_num == 0);
         // TODO: Check arg against action
         // TODO: Ground add effects and add them to a set of reachable
         //       facts
@@ -252,29 +303,16 @@ static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
     return new;
 }
 
-static void unify(trie_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
-                  const obj_id_t *pre_arg, int pre_i, tnode_t *clone);
-static void unifyOrClone(trie_t *tr, tnode_t *ch, int argi,
-                         obj_id_t *arg, int remain,
-                         const obj_id_t *arg_pre, int pre_i, tnode_t *clone)
-{
-    tnode_t *cnew;
+static void unify(trie_t *tr, tnode_t *tn,
+                  obj_id_t *arg, int remain,
+                  const obj_id_t *pre_arg, int pre_i, int s);
 
-    if (clone != NULL){
-        cnew = tnodeAddChild(tr, clone, argi, arg[argi]);
-        cnew->pre_mask |= ch->pre_mask;
-        unify(tr, ch, arg, remain, arg_pre, pre_i, cnew);
-    }else{
-        unify(tr, ch, arg, remain, arg_pre, pre_i, NULL);
-    }
-}
-
-static int unifyArg(trie_t *tr, tnode_t *tn, int argi,
-                    obj_id_t *arg, int remain,
-                    const obj_id_t *arg_pre, int pre_i, tnode_t *clone)
+static int unifyArg(trie_t *tr, tnode_t *tn,
+                    int argi, obj_id_t *arg, int remain,
+                    const obj_id_t *arg_pre, int pre_i, int s)
 {
     tnode_child_t *tnc = tn->child + argi;
-    tnode_t *ch, *trace = NULL, *cnew;
+    tnode_t *ch;
     int match = 0;
 
     arg[argi] = arg_pre[argi];
@@ -282,69 +320,30 @@ static int unifyArg(trie_t *tr, tnode_t *tn, int argi,
     tnc = tn->child + argi;
     for (int i = 0; i < tnc->child_size; ++i){
         ch = tnc->child[i];
+        ASSERT(ch->obj_id != UNDEF);
 
         if (ch->obj_id == arg[argi]){
             ASSERT(!(ch->pre_mask & (1u << pre_i)));
             // Found exact match on the argument
-            if (arg[argi] != UNDEF){
-                unifyOrClone(tr, ch, argi, arg, remain - 1,
-                             arg_pre, pre_i, clone);
+            if (ch->pre_set_mask){
+                unify(tr, ch, arg, remain - 1, arg_pre, pre_i, 1);
             }else{
-                unifyOrClone(tr, ch, argi, arg, remain, arg_pre, pre_i, clone);
+                unify(tr, ch, arg, remain - 1, arg_pre, pre_i, s);
             }
-            if (ch->obj_id != UNDEF)
-                match = 1;
+            match = 1;
 
-        }else if (arg[argi] != UNDEF && ch->obj_id == UNDEF){
-            // If we will need to create a new subtree, we have to trace
-            // this node for unified preconditions.
-            trace = ch;
-
-        }else if (arg[argi] == UNDEF && ch->obj_id != UNDEF){
+        }else if (arg[argi] == UNDEF){
             ASSERT(!(ch->pre_mask & (1u << pre_i)));
             // Argument is not set therefore we need to unify with all set
             // arguments
             arg[argi] = ch->obj_id;
-            unifyOrClone(tr, ch, argi, arg, remain, arg_pre, pre_i, clone);
+            if (ch->pre_set_mask){
+                unify(tr, ch, arg, remain, arg_pre, pre_i, 1);
+            }else{
+                unify(tr, ch, arg, remain, arg_pre, pre_i, 0);
+            }
             arg[argi] = UNDEF;
         }
-    }
-
-    if (!match && trace != NULL){
-        if (clone == NULL){
-            clone = tnodeAddChild(tr, tn, argi, arg[argi]);
-            ASSERT((clone->pre_mask & trace->pre_mask) == trace->pre_mask);
-            // TODO: Remove the line below
-            clone->pre_mask |= trace->pre_mask;
-            if (arg[argi] != UNDEF){
-                unify(tr, trace, arg, remain - 1, arg_pre, pre_i, clone);
-            }else{
-                unify(tr, trace, arg, remain, arg_pre, pre_i, clone);
-            }
-        }else{
-            cnew = tnodeAddChild(tr, clone, argi, arg[argi]);
-            ASSERT((cnew->pre_mask & trace->pre_mask) == trace->pre_mask);
-            // TODO: Remove the line below
-            cnew->pre_mask |= trace->pre_mask;
-            if (arg[argi] != UNDEF){
-                unify(tr, trace, arg, remain - 1, arg_pre, pre_i, cnew);
-            }else{
-                unify(tr, trace, arg, remain, arg_pre, pre_i, cnew);
-            }
-        }
-
-        /*
-    }else if (!match){
-        // TODO
-        // If we haven't found a matching argument we needd to create a
-        // whole new subtree.
-        if (clone == NULL){
-            ch = unifyNew(tr, tn, arg, remain, arg_pre, pre_i);
-        }else{
-            ch = unifyNew(tr, clone, arg, remain, arg_pre, pre_i);
-        }
-        unifyPre(tr, ch, arg, pre_i);
-        */
     }
 
     arg[argi] = UNDEF;
@@ -352,7 +351,7 @@ static int unifyArg(trie_t *tr, tnode_t *tn, int argi,
 }
 
 static void unify(trie_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
-                  const obj_id_t *arg_pre, int pre_i, tnode_t *clone)
+                  const obj_id_t *arg_pre, int pre_i, int s)
 {
     tnode_child_t *tnc;
     int match = 0;
@@ -366,15 +365,12 @@ static void unify(trie_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
     for (int argi = 0; argi < tr->arg_size; ++argi){
         tnc = tn->child + argi;
         if (tnc->child_size > 0)
-            match |= unifyArg(tr, tn, argi, arg, remain, arg_pre, pre_i, clone);
+            match |= unifyArg(tr, tn, argi, arg, remain, arg_pre, pre_i, s);
     }
 
-    if (!match){
-        if (clone == NULL){
-            unifyNew(tr, tn, arg, remain, arg_pre, pre_i);
-        }else{
-            unifyNew(tr, clone, arg, remain, arg_pre, pre_i);
-        }
+    // TODO:
+    if (!match && s){
+        unifyNew(tr, tn, arg, remain, arg_pre, pre_i);
     }
 }
 
@@ -412,7 +408,7 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
     for (int i = 0; i < tr->arg_size; ++i)
         fprintf(stderr, " %d", arg_pre[i]);
     fprintf(stderr, " | pre_i: %d\n", pre_i);
-    unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, NULL);
+    unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1);
     triePrint(tr, stderr);
 }
 
@@ -470,6 +466,7 @@ static void tnodePrint(trie_t *tr, tnode_t *tn, int argi, int offset, FILE *fout
         off += fprintf(fout, ":%d", tn->obj_id);
     }
     off += fprintf(fout, "|%x", tn->pre_mask);
+    off += fprintf(fout, "|%x", tn->pre_set_mask);
     if (tn->pre_mask == tr->pre_mask)
         off += fprintf(fout, "*");
 
