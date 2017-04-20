@@ -281,21 +281,40 @@ static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 }
 
 static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
+                         int remain, const obj_id_t *arg_pre, int pre_i);
+static tnode_t *unifyNewArg(trie_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
+                            int remain, const obj_id_t *arg_pre, int pre_i)
+{
+    tnode_t *new;
+
+    arg[argi] = arg_pre[argi];
+    new = tnodeAddChild(tr, tn, argi, arg[argi]);
+    if (remain - 1 > 0){
+        unifyNew(tr, new, arg, remain - 1, arg_pre, pre_i);
+    }else{
+        unifyPre(tr, new, arg, pre_i);
+    }
+    arg[argi] = UNDEF;
+    return new;
+}
+
+static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
                          int remain, const obj_id_t *arg_pre, int pre_i)
 {
     tnode_t *new = NULL;
 
+    // To eliminate at least some duplicates, first try to create a new
+    // node using an argument that has some assignements on this level.
+    for (int i = 0; i < tr->arg_size; ++i){
+        tnode_child_t *cs = tn->child + i;
+        if (cs->child_size > 0 && arg[i] == UNDEF && arg_pre[i] != UNDEF){
+            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i);
+        }
+    }
+
     for (int i = 0; i < tr->arg_size; ++i){
         if (arg[i] == UNDEF && arg_pre[i] != UNDEF){
-            arg[i] = arg_pre[i];
-            new = tnodeAddChild(tr, tn, i, arg[i]);
-            if (remain - 1 > 0){
-                unifyNew(tr, new, arg, remain - 1, arg_pre, pre_i);
-            }else{
-                unifyPre(tr, new, arg, pre_i);
-            }
-            arg[i] = UNDEF;
-            return new;
+            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i);
         }
     }
 
@@ -383,7 +402,21 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
 
     fprintf(stderr, "Fact: ");
     pddlFactPrint(tr->g->pddl, fact, stderr);
-    fprintf(stderr, " --> %s, pre_i: %d\n", tr->action->action->name, pre_i);
+    fprintf(stderr, " --> %s, pre_i: %d, arg_size: %d, pre_size: %d\n",
+            tr->action->action->name, pre_i, tr->arg_size, tr->pre_size);
+    fprintf(stderr, "Param sizes:");
+    for (int i = 0; i < tr->arg_size; ++i){
+        const int *obj;
+        int size;
+        obj = pddlTypesObjsByType(tr->action->type,
+                                  tr->action->param_type[i], &size);
+        fprintf(stderr, " %d:%d[", i, size);
+        for (int j = 0; j < size; ++j)
+            fprintf(stderr, "%d;", obj[j]);
+        fprintf(stderr, "]");
+    }
+    fprintf(stderr, "\n");
+    triePrint(tr, stderr);
     // TODO: check fact agains action
     // TODO: Static facts -- after using all of them disallow -1 on
     //       arguments of static facts.
@@ -397,17 +430,23 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
         arg_pre[i] = arg[i] = UNDEF;
     for (int i = 0; i < atom->arg_size; ++i){
         param = atom->arg[i].param;
+        fprintf(stderr, "atom: %s\n",
+                tr->g->pddl->pred.pred[atom->pred].name);
         if (param >= 0){
+            fprintf(stderr, "param: %d\n", param);
             arg_pre[param] = fact->arg[i];
-            ++num_args_set;
         }
+    }
+    for (int i = 0; i < tr->arg_size; ++i){
+        if (arg_pre[i] != UNDEF)
+            ++num_args_set;
     }
 
     fprintf(stderr, "Fact: ");
     pddlFactPrint(tr->g->pddl, fact, stderr);
     for (int i = 0; i < tr->arg_size; ++i)
         fprintf(stderr, " %d", arg_pre[i]);
-    fprintf(stderr, " | pre_i: %d\n", pre_i);
+    fprintf(stderr, " | pre_i: %d, remain: %d\n", pre_i, num_args_set);
     unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1);
     triePrint(tr, stderr);
 }
@@ -602,6 +641,7 @@ static void _groundActionAddEff(ground_t *g,
     }
 
     if (!pddlPrepActionCheck(a, &g->static_fact, arg)){
+        pddlActionPrint(g->pddl, a->action, stderr);
         fprintf(stderr, "FAIL: ");
         printAction(g, a, arg);
         return;
@@ -615,9 +655,11 @@ static void _groundActionAddEff(ground_t *g,
     for (int i = 0; i < a->add_eff.size; ++i){
         atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
         pddlCondAtomGroundFact(atom, arg, &fact);
-        pddlFactsAdd(&g->fact, &fact);
+        int fact_id = pddlFactsAdd(&g->fact, &fact);
 
-        fprintf(stderr, "ADD FACT ");
+        fprintf(stderr, "%lx\n", (long)g->fact.htable);
+        fprintf(stderr, "ADD FACT[%d,%lu] ", fact_id,
+                g->fact.fact[fact_id]->hash);
         pddlFactPrint(g->pddl, &fact, stderr);
         fprintf(stderr, "\n");
     }
@@ -629,6 +671,7 @@ static void groundActionAddEff(ground_t *g,
 {
     int arg[a->param_size];
 
+    fprintf(stderr, "GH: %lx\n", (long)g->fact.htable);
     // TODO: What about zero params actions
     for (int i = 0; i < a->param_size; ++i)
         arg[i] = (oarg[i] == UNDEF ? -1 : oarg[i]);
