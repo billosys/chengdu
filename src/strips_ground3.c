@@ -72,7 +72,7 @@ struct pred_to_pre {
 };
 typedef struct pred_to_pre pred_to_pre_t;
 
-struct trie {
+struct tree {
     struct ground *g;
     int action_id;
     const pddl_prep_action_t *action;
@@ -84,7 +84,7 @@ struct trie {
     pred_to_pre_t *pred_to_pre;
     tnode_t *root;
 };
-typedef struct trie trie_t;
+typedef struct tree tree_t;
 
 struct ground {
     const pddl_t *pddl;
@@ -92,21 +92,21 @@ struct ground {
     pddl_facts_t static_fact;
     pddl_facts_t fact;
     pddl_strips_ops_t op;
-    trie_t *trie;
+    tree_t *tree;
 };
 typedef struct ground ground_t;
 
-static void triePrint(trie_t *tr, FILE *fout);
+static void treePrint(tree_t *tr, FILE *fout);
 static void groundActionAddEff(ground_t *g,
                                const pddl_prep_action_t *a,
                                const obj_id_t *oarg);
 
-_bor_inline int tnodeMaxByteSize(trie_t *tr)
+_bor_inline int tnodeMaxByteSize(tree_t *tr)
 {
     return bor_offsetof(tnode_t, child) + tr->arg_size * sizeof(tnode_child_t);
 }
 
-static tnode_t *tnodeNew(trie_t *t, tnode_t *parent, obj_id_t obj_id)
+static tnode_t *tnodeNew(tree_t *t, tnode_t *parent, obj_id_t obj_id)
 {
     tnode_t *n;
     size_t size;
@@ -122,8 +122,8 @@ static tnode_t *tnodeNew(trie_t *t, tnode_t *parent, obj_id_t obj_id)
     return n;
 }
 
-static void tnodeDel(trie_t *tr, tnode_t *t);
-static void tnodeFree(trie_t *tr, tnode_t *t)
+static void tnodeDel(tree_t *tr, tnode_t *t);
+static void tnodeFree(tree_t *tr, tnode_t *t)
 {
     for (int a = 0; a < tr->arg_size; ++a){
         tnode_child_t *cs = t->child + a;
@@ -136,13 +136,13 @@ static void tnodeFree(trie_t *tr, tnode_t *t)
     }
 }
 
-static void tnodeDel(trie_t *tr, tnode_t *t)
+static void tnodeDel(tree_t *tr, tnode_t *t)
 {
     tnodeFree(tr, t);
     BOR_FREE(t);
 }
 
-static void tnodeReserveChild(trie_t *tr, tnode_t *n, int argi)
+static void tnodeReserveChild(tree_t *tr, tnode_t *n, int argi)
 {
     tnode_child_t *cs;
 
@@ -168,7 +168,7 @@ static void _tnodeChildBubbleDown(tnode_t *tn, int argi, int idx)
     }
 }
 
-static void tnodeAddChildPtr(trie_t *t, tnode_t *par, int argi, tnode_t *add)
+static void tnodeAddChildPtr(tree_t *t, tnode_t *par, int argi, tnode_t *add)
 {
     tnode_child_t *cs = par->child + argi;
 
@@ -179,14 +179,14 @@ static void tnodeAddChildPtr(trie_t *t, tnode_t *par, int argi, tnode_t *add)
     _tnodeChildBubbleDown(par, argi, cs->child_size - 1);
 }
 
-static tnode_t *tnodeAddChild(trie_t *t, tnode_t *par, int argi, obj_id_t obj_id)
+static tnode_t *tnodeAddChild(tree_t *t, tnode_t *par, int argi, obj_id_t obj_id)
 {
     tnode_t *n = tnodeNew(t, par, obj_id);
     tnodeAddChildPtr(t, par, argi, n);
     return n;
 }
 
-static void tnodeDelChild(trie_t *tr, tnode_t *par, tnode_t *ch, int argi)
+static void tnodeDelChild(tree_t *tr, tnode_t *par, tnode_t *ch, int argi)
 {
     tnode_child_t *cs = par->child + argi;
     int i;
@@ -203,7 +203,7 @@ static void tnodeDelChild(trie_t *tr, tnode_t *par, tnode_t *ch, int argi)
     cs->child_size = i - 1;
 }
 
-static void propagatePre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
+static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 {
     tnode_child_t *cs;
     int child_num;
@@ -243,13 +243,13 @@ static void propagatePre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
         //       are checked at the beggining. Therefore the only reason
         //       can be negative preconditions on static predicates.
         // TODO: If grounding is successful, we can probably safe some
-        //       memory removing part of trie. The question is whether is
+        //       memory removing part of tree. The question is whether is
         //       it useful.
         groundActionAddEff(tr->g, tr->action, arg);
     }
 }
 
-static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
+static void unifyPre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 {
     tnode_child_t *cs;
     int child_num;
@@ -297,16 +297,16 @@ static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
         //       are checked at the beggining. Therefore the only reason
         //       can be negative preconditions on static predicates.
         // TODO: If grounding is successful, we can probably safe some
-        //       memory removing part of trie. The question is whether is
+        //       memory removing part of tree. The question is whether is
         //       it useful.
         groundActionAddEff(tr->g, tr->action, arg);
     }
 }
 
-static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
+static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
                          int remain, const obj_id_t *arg_pre, int pre_i,
                          int static_fact);
-static tnode_t *unifyNewArg(trie_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
+static tnode_t *unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
                             int remain, const obj_id_t *arg_pre, int pre_i,
                             int static_fact)
 {
@@ -324,7 +324,7 @@ static tnode_t *unifyNewArg(trie_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
     return new;
 }
 
-static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
+static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
                          int remain, const obj_id_t *arg_pre, int pre_i,
                          int static_fact)
 {
@@ -351,12 +351,12 @@ static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
     return new;
 }
 
-static void unify(trie_t *tr, tnode_t *tn,
+static void unify(tree_t *tr, tnode_t *tn,
                   obj_id_t *arg, int remain,
                   const obj_id_t *pre_arg, int pre_i,
                   int allow_new, int static_fact);
 
-static int unifyArg(trie_t *tr, tnode_t *tn,
+static int unifyArg(tree_t *tr, tnode_t *tn,
                     int argi, obj_id_t *arg, int remain,
                     const obj_id_t *arg_pre, int pre_i,
                     int allow_new, int static_fact)
@@ -394,7 +394,7 @@ static int unifyArg(trie_t *tr, tnode_t *tn,
     return match;
 }
 
-static void unify(trie_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
+static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
                   const obj_id_t *arg_pre, int pre_i,
                   int allow_new, int static_fact)
 {
@@ -427,7 +427,7 @@ static void unify(trie_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
     */
 }
 
-static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i,
+static void treeUnify(tree_t *tr, const pddl_fact_t *fact, int pre_i,
                       int static_fact)
 {
     const pddl_cond_atom_t *atom;
@@ -435,6 +435,7 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i,
     int num_args_set = 0;
     int param;
 
+    /*
     fprintf(stderr, "Fact: ");
     pddlFactPrint(tr->g->pddl, fact, stderr);
     fprintf(stderr, " --> %s, pre_i: %d, arg_size: %d, pre_size: %d\n",
@@ -451,7 +452,8 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i,
         fprintf(stderr, "]");
     }
     fprintf(stderr, "\n");
-    //triePrint(tr, stderr);
+    */
+    //treePrint(tr, stderr);
     // TODO: check fact agains action
     // TODO: Static facts -- after using all of them disallow -1 on
     //       arguments of static facts.
@@ -473,16 +475,18 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i,
             ++num_args_set;
     }
 
+    /*
     fprintf(stderr, "Fact: ");
     pddlFactPrint(tr->g->pddl, fact, stderr);
     for (int i = 0; i < tr->arg_size; ++i)
         fprintf(stderr, " %d", arg_pre[i]);
     fprintf(stderr, " | pre_i: %d, remain: %d\n", pre_i, num_args_set);
+    */
     unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1, static_fact);
-    triePrint(tr, stderr);
+    //treePrint(tr, stderr);
 }
 
-static void _trieFixStatic(trie_t *tr, tnode_t *tn)
+static void _treeFixStatic(tree_t *tr, tnode_t *tn)
 {
     tnode_child_t *cs;
     tnode_t *ch;
@@ -515,13 +519,13 @@ static void _trieFixStatic(trie_t *tr, tnode_t *tn)
 
         for (int i = 0; i < cs->child_size; ++i){
             ch = cs->child[i];
-            _trieFixStatic(tr, ch);
+            _treeFixStatic(tr, ch);
             tn->flags.blocked = 1;
         }
     }
 }
 
-static int _trieRemoveIncompleteStatic(trie_t *tr, tnode_t *tn)
+static int _treeRemoveIncompleteStatic(tree_t *tr, tnode_t *tn)
 {
     tnode_child_t *cs;
     int num_child = 0;
@@ -529,7 +533,7 @@ static int _trieRemoveIncompleteStatic(trie_t *tr, tnode_t *tn)
     for (int argi = 0; argi < tr->arg_size; ++argi){
         cs = tn->child + argi;
         for (int i = 0; i < cs->child_size; ++i){
-            if (_trieRemoveIncompleteStatic(tr, cs->child[i])){
+            if (_treeRemoveIncompleteStatic(tr, cs->child[i])){
                 tnodeDel(tr, cs->child[i]);
                 cs->child[i] = NULL;
             }
@@ -551,14 +555,14 @@ static int _trieRemoveIncompleteStatic(trie_t *tr, tnode_t *tn)
     return 0;
 }
 
-static void trieFixStatic(trie_t *tr)
+static void treeFixStatic(tree_t *tr)
 {
     // TODO: check the action agains the whole arg assignement at leafs
-    _trieFixStatic(tr, tr->root);
-    _trieRemoveIncompleteStatic(tr, tr->root);
+    _treeFixStatic(tr, tr->root);
+    _treeRemoveIncompleteStatic(tr, tr->root);
 }
 
-static int trieInstantiateSmallArgs(trie_t *tr, tnode_t *tn, int arg_start,
+static int treeInstantiateSmallArgs(tree_t *tr, tnode_t *tn, int arg_start,
                                     int arg_size, int arg_size_max)
 {
     tnode_t *ch;
@@ -572,7 +576,7 @@ static int trieInstantiateSmallArgs(trie_t *tr, tnode_t *tn, int arg_start,
                                   tr->action->param_type[argi], &size);
         for (int i = 0; i < size; ++i){
             ch = tnodeAddChild(tr, tn, argi, obj[i]);
-            trieInstantiateSmallArgs(tr, ch, argi + 1, arg_size, arg_size_max);
+            treeInstantiateSmallArgs(tr, ch, argi + 1, arg_size, arg_size_max);
         }
         if (size > 0){
             tn->flags.blocked = 1;
@@ -582,7 +586,7 @@ static int trieInstantiateSmallArgs(trie_t *tr, tnode_t *tn, int arg_start,
     }
 
     if (arg_size < arg_size_max)
-        return trieInstantiateSmallArgs(tr, tn, 0, arg_size + 1, arg_size_max);
+        return treeInstantiateSmallArgs(tr, tn, 0, arg_size + 1, arg_size_max);
     tn->flags.pre_unified = 1;
 
     return 0;
@@ -595,7 +599,7 @@ static void predToPreAdd(pred_to_pre_t *p, int pre_id)
     p->pre[p->size - 1] = pre_id;
 }
 
-static void trieInit(trie_t *tr, ground_t *g, int action_id)
+static void treeInit(tree_t *tr, ground_t *g, int action_id)
 {
     pddl_prep_action_t *a = g->action.action + action_id;
     const pddl_cond_atom_t *atom;
@@ -632,11 +636,11 @@ static void trieInit(trie_t *tr, ground_t *g, int action_id)
     // TODO: move constans 1 and 3 into either parameter of grounding or
     //       define constants. Consider also instantiation also a small
     //       number (1 or 2) of bigger arguments.
-    trieInstantiateSmallArgs(tr, tr->root, 0, 1, 3);
-    triePrint(tr, stderr);
+    treeInstantiateSmallArgs(tr, tr->root, 0, 1, 3);
+    //treePrint(tr, stderr);
 }
 
-static void trieFree(trie_t *tr)
+static void treeFree(tree_t *tr)
 {
     for (int i = 0; i < tr->g->pddl->pred.size; ++i){
         if (tr->pred_to_pre[i].pre != NULL)
@@ -647,7 +651,7 @@ static void trieFree(trie_t *tr)
     tnodeDel(tr, tr->root);
 }
 
-static void tnodePrint(trie_t *tr, tnode_t *tn, int argi, int offset, FILE *fout)
+static void tnodePrint(tree_t *tr, tnode_t *tn, int argi, int offset, FILE *fout)
 {
     int off = 0, p = 0;
 
@@ -688,9 +692,9 @@ static void tnodePrint(trie_t *tr, tnode_t *tn, int argi, int offset, FILE *fout
         fprintf(fout, "\n");
 }
 
-static void triePrint(trie_t *tr, FILE *fout)
+static void treePrint(tree_t *tr, FILE *fout)
 {
-    fprintf(fout, "Trie for %s, arg_size: %d, pre_size: %d, pre_mask: %x"
+    fprintf(fout, "Tree for %s, arg_size: %d, pre_size: %d, pre_mask: %x"
                   " root-blocked: %d, param-size:",
             tr->action->action->name, tr->arg_size, tr->pre_size,
             tr->pre_mask, tr->root->flags.blocked);
@@ -730,17 +734,17 @@ static void groundInit(ground_t *g, const pddl_t *pddl)
 
     groundInitFact(g, pddl);
 
-    g->trie = BOR_ALLOC_ARR(trie_t, g->action.size);
+    g->tree = BOR_ALLOC_ARR(tree_t, g->action.size);
     for (int i = 0; i < g->action.size; ++i)
-        trieInit(g->trie + i, g, i);
+        treeInit(g->tree + i, g, i);
 }
 
 static void groundFree(ground_t *g)
 {
     for (int i = 0; i < g->action.size; ++i)
-        trieFree(g->trie + i);
-    if (g->trie != NULL)
-        BOR_FREE(g->trie);
+        treeFree(g->tree + i);
+    if (g->tree != NULL)
+        BOR_FREE(g->tree);
     pddlStripsOpsFree(&g->op);
     pddlFactsFree(&g->fact);
     pddlFactsFree(&g->static_fact);
@@ -827,17 +831,17 @@ static void groundStaticFacts(ground_t *g)
         */
 
         for (int j = 0; j < g->action.size; ++j){
-            trie_t *tr = g->trie + j;
+            tree_t *tr = g->tree + j;
             for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
-                trieUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k], 1);
+                treeUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k], 1);
             }
         }
     }
 
     fprintf(stderr, "STATIC END\n");
     for (int i = 0; i < g->action.size; ++i){
-        trieFixStatic(g->trie + i);
-        triePrint(g->trie + i, stderr);
+        treeFixStatic(g->tree + i);
+        //treePrint(g->tree + i, stderr);
     }
 }
 
@@ -852,9 +856,9 @@ static void groundFacts(ground_t *g)
         */
 
         for (int j = 0; j < g->action.size; ++j){
-            trie_t *tr = g->trie + j;
+            tree_t *tr = g->tree + j;
             for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
-                trieUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k], 1);
+                treeUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k], 1);
             }
         }
     }
@@ -878,17 +882,17 @@ void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
         */
 
         for (int j = 0; j < g.action.size; ++j){
-            trie_t *tr = g.trie + j;
+            tree_t *tr = g.tree + j;
             for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
-                trieUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k]);
+                treeUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k]);
             }
         }
     }
 
     fprintf(stderr, "END:\n");
     for (int j = 0; j < g.action.size; ++j){
-        trie_t *tr = g.trie + j;
-        //triePrint(tr, stderr);
+        tree_t *tr = g.tree + j;
+        //treePrint(tr, stderr);
     }
 #endif
 
