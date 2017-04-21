@@ -34,7 +34,6 @@ typedef unsigned char obj_id_t;
 #define UNDEF UCHAR_MAX
 
 typedef uint32_t pre_mask_t;
-typedef uint32_t arg_mask_t;
 
 
 struct ground;
@@ -58,6 +57,7 @@ typedef struct tnode_flags tnode_flags_t;
 struct tnode {
     obj_id_t obj_id;
     pre_mask_t pre_mask; /*!< Bits set on positions where precondition is set */
+    int pre_unified; /*!< Number of unified preconditions */
     tnode_flags_t flags;
     tnode_child_t child[];
 } bor_packed;
@@ -115,8 +115,10 @@ static tnode_t *tnodeNew(trie_t *t, tnode_t *parent, obj_id_t obj_id)
     n = BOR_MALLOC(size);
     bzero(n, size);
     n->obj_id = obj_id;
-    if (parent != NULL)
+    if (parent != NULL){
         n->pre_mask = parent->pre_mask;
+        n->pre_unified = parent->pre_unified;
+    }
     return n;
 }
 
@@ -215,10 +217,12 @@ static void propagatePre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
             if (arg[argi] == UNDEF){
                 arg[argi] = cs->child[i]->obj_id;
                 cs->child[i]->pre_mask |= tn->pre_mask;
+                ++cs->child[i]->pre_unified;
                 propagatePre(tr, cs->child[i], arg, pre_i);
                 arg[argi] = UNDEF;
             }else{
                 cs->child[i]->pre_mask |= tn->pre_mask;
+                ++cs->child[i]->pre_unified;
                 propagatePre(tr, cs->child[i], arg, pre_i);
             }
         }
@@ -254,6 +258,7 @@ static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 
     // TODO: Check action for equality and predicates?
     PRE_MASK_SET(tn, pre_i);
+    ++tn->pre_unified;
     tn->flags.pre_unified = 1;
     propagatePre(tr, tn, arg, pre_i);
     return;
@@ -278,6 +283,7 @@ static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
     // ground the action using assigned arguments.
     //if (tn->pre_mask == tr->pre_mask && child_num == 0){
     if (tn->pre_mask == tr->pre_mask){
+        ASSERT(tn->pre_unified == tr->pre_size);
         // TODO: child_num == 0 should not be required
         ASSERT(child_num == 0);
         // TODO: Check arg against action
@@ -359,6 +365,7 @@ static int unifyArg(trie_t *tr, tnode_t *tn,
     tnode_t *ch;
     int match = 0;
 
+    ASSERT(tn->pre_unified == __builtin_popcount(tn->pre_mask));
     arg[argi] = arg_pre[argi];
 
     tnc = tn->child + argi;
@@ -537,7 +544,7 @@ static int _trieRemoveIncompleteStatic(trie_t *tr, tnode_t *tn)
     }
 
     if (num_child == 0
-            && tn->pre_mask != tr->pre_static_mask
+            && tn->pre_mask != tr->pre_static_mask //TODO --> .pre_unified
             && tn->flags.static_arg){
         return 1;
     }
@@ -651,6 +658,7 @@ static void tnodePrint(trie_t *tr, tnode_t *tn, int argi, int offset, FILE *fout
         off += fprintf(fout, ":%d", tn->obj_id);
     }
     off += fprintf(fout, ":P%x", tn->pre_mask);
+    off += fprintf(fout, ":%d", tn->pre_unified);
     if (tn->flags.blocked)
         off += fprintf(fout, ":B");
     if (tn->flags.pre_unified)

@@ -1020,6 +1020,7 @@ static int groundNaive(pddl_strips_t *strips, unsigned flags)
 }
 /**** GROUND NAIVE END ****/
 
+void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
 pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
 {
     pddl_strips_t *strips;
@@ -1034,7 +1035,8 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
 
     // TODO
     //groundNaive(strips, flags);
-    groundStrips(strips, pddl);
+    //groundStrips(strips, pddl);
+    __pddlStripsGround(strips, pddl);
     /*
     {
         ground_t g;
