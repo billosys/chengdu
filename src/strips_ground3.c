@@ -34,6 +34,7 @@ typedef unsigned char obj_id_t;
 #define UNDEF UCHAR_MAX
 
 typedef uint32_t pre_mask_t;
+typedef uint32_t arg_mask_t;
 
 
 struct ground;
@@ -42,13 +43,22 @@ struct tnode_child {
     obj_id_t child_size;
     obj_id_t child_alloc;
     struct tnode **child;
-};
+} bor_packed;
 typedef struct tnode_child tnode_child_t;
+
+struct tnode_flags {
+    unsigned char blocked:1; /*!< True if no new children are allowed */
+    unsigned char pre_unified:1; /*!< True if the node unified
+                                      a new precondition */
+    unsigned char static_arg:1; /*!< True if the node corresponds to an
+                                     argument of a static fact */
+} bor_packed;
+typedef struct tnode_flags tnode_flags_t;
 
 struct tnode {
     obj_id_t obj_id;
     pre_mask_t pre_mask; /*!< Bits set on positions where precondition is set */
-    pre_mask_t pre_set_mask;
+    tnode_flags_t flags;
     tnode_child_t child[];
 } bor_packed;
 typedef struct tnode tnode_t;
@@ -67,8 +77,10 @@ struct trie {
     int action_id;
     const pddl_prep_action_t *action;
     int arg_size;
+    int *arg_max_size;
     int pre_size;
     pre_mask_t pre_mask;
+    pre_mask_t pre_static_mask; /*!< Mask only on static preconditions */
     pred_to_pre_t *pred_to_pre;
     tnode_t *root;
 };
@@ -88,6 +100,11 @@ static void triePrint(trie_t *tr, FILE *fout);
 static void groundActionAddEff(ground_t *g,
                                const pddl_prep_action_t *a,
                                const obj_id_t *oarg);
+
+_bor_inline int tnodeMaxByteSize(trie_t *tr)
+{
+    return bor_offsetof(tnode_t, child) + tr->arg_size * sizeof(tnode_child_t);
+}
 
 static tnode_t *tnodeNew(trie_t *t, tnode_t *parent, obj_id_t obj_id)
 {
@@ -237,7 +254,7 @@ static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 
     // TODO: Check action for equality and predicates?
     PRE_MASK_SET(tn, pre_i);
-    tn->pre_set_mask |= ((pre_mask_t)1u << (pre_mask_t)pre_i);
+    tn->flags.pre_unified = 1;
     propagatePre(tr, tn, arg, pre_i);
     return;
 
@@ -281,16 +298,19 @@ static void unifyPre(trie_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 }
 
 static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
-                         int remain, const obj_id_t *arg_pre, int pre_i);
+                         int remain, const obj_id_t *arg_pre, int pre_i,
+                         int static_fact);
 static tnode_t *unifyNewArg(trie_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
-                            int remain, const obj_id_t *arg_pre, int pre_i)
+                            int remain, const obj_id_t *arg_pre, int pre_i,
+                            int static_fact)
 {
     tnode_t *new;
 
     arg[argi] = arg_pre[argi];
     new = tnodeAddChild(tr, tn, argi, arg[argi]);
+    new->flags.static_arg = static_fact;
     if (remain - 1 > 0){
-        unifyNew(tr, new, arg, remain - 1, arg_pre, pre_i);
+        unifyNew(tr, new, arg, remain - 1, arg_pre, pre_i, static_fact);
     }else{
         unifyPre(tr, new, arg, pre_i);
     }
@@ -299,7 +319,8 @@ static tnode_t *unifyNewArg(trie_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
 }
 
 static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
-                         int remain, const obj_id_t *arg_pre, int pre_i)
+                         int remain, const obj_id_t *arg_pre, int pre_i,
+                         int static_fact)
 {
     tnode_t *new = NULL;
 
@@ -308,13 +329,15 @@ static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
     for (int i = 0; i < tr->arg_size; ++i){
         tnode_child_t *cs = tn->child + i;
         if (cs->child_size > 0 && arg[i] == UNDEF && arg_pre[i] != UNDEF){
-            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i);
+            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i,
+                               static_fact);
         }
     }
 
     for (int i = 0; i < tr->arg_size; ++i){
         if (arg[i] == UNDEF && arg_pre[i] != UNDEF){
-            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i);
+            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i,
+                               static_fact);
         }
     }
 
@@ -324,11 +347,13 @@ static tnode_t *unifyNew(trie_t *tr, tnode_t *tn, obj_id_t *arg,
 
 static void unify(trie_t *tr, tnode_t *tn,
                   obj_id_t *arg, int remain,
-                  const obj_id_t *pre_arg, int pre_i, int s);
+                  const obj_id_t *pre_arg, int pre_i,
+                  int allow_new, int static_fact);
 
 static int unifyArg(trie_t *tr, tnode_t *tn,
                     int argi, obj_id_t *arg, int remain,
-                    const obj_id_t *arg_pre, int pre_i, int s)
+                    const obj_id_t *arg_pre, int pre_i,
+                    int allow_new, int static_fact)
 {
     tnode_child_t *tnc = tn->child + argi;
     tnode_t *ch;
@@ -343,12 +368,9 @@ static int unifyArg(trie_t *tr, tnode_t *tn,
 
         if (ch->obj_id == arg[argi]){
             ASSERT(!(ch->pre_mask & (1u << pre_i)));
+            ch->flags.static_arg = static_fact;
             // Found exact match on the argument
-            if (ch->pre_set_mask){
-                unify(tr, ch, arg, remain - 1, arg_pre, pre_i, 1);
-            }else{
-                unify(tr, ch, arg, remain - 1, arg_pre, pre_i, s);
-            }
+            unify(tr, ch, arg, remain - 1, arg_pre, pre_i, 1, static_fact);
             match = 1;
 
         }else if (arg[argi] == UNDEF){
@@ -356,11 +378,7 @@ static int unifyArg(trie_t *tr, tnode_t *tn,
             // Argument is not set therefore we need to unify with all set
             // arguments
             arg[argi] = ch->obj_id;
-            if (ch->pre_set_mask){
-                unify(tr, ch, arg, remain, arg_pre, pre_i, 1);
-            }else{
-                unify(tr, ch, arg, remain, arg_pre, pre_i, 0);
-            }
+            unify(tr, ch, arg, remain, arg_pre, pre_i, 0, static_fact);
             arg[argi] = UNDEF;
         }
     }
@@ -370,7 +388,8 @@ static int unifyArg(trie_t *tr, tnode_t *tn,
 }
 
 static void unify(trie_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
-                  const obj_id_t *arg_pre, int pre_i, int s)
+                  const obj_id_t *arg_pre, int pre_i,
+                  int allow_new, int static_fact)
 {
     tnode_child_t *tnc;
     int match = 0;
@@ -384,16 +403,25 @@ static void unify(trie_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
     for (int argi = 0; argi < tr->arg_size; ++argi){
         tnc = tn->child + argi;
         if (tnc->child_size > 0)
-            match |= unifyArg(tr, tn, argi, arg, remain, arg_pre, pre_i, s);
+            match |= unifyArg(tr, tn, argi, arg, remain, arg_pre, pre_i,
+                              allow_new, static_fact);
     }
 
-    // TODO:
-    if (!match && s){
-        unifyNew(tr, tn, arg, remain, arg_pre, pre_i);
+    if (!match && !tn->flags.blocked && (allow_new || tn->flags.pre_unified)){
+        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
     }
+    // TODO:
+    /*
+    if (!match && allow_new && !full){
+        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
+    }else if (!match && !full){
+        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
+    }
+    */
 }
 
-static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
+static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i,
+                      int static_fact)
 {
     const pddl_cond_atom_t *atom;
     obj_id_t arg[tr->arg_size], arg_pre[tr->arg_size];
@@ -416,7 +444,7 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
         fprintf(stderr, "]");
     }
     fprintf(stderr, "\n");
-    triePrint(tr, stderr);
+    //triePrint(tr, stderr);
     // TODO: check fact agains action
     // TODO: Static facts -- after using all of them disallow -1 on
     //       arguments of static facts.
@@ -430,12 +458,8 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
         arg_pre[i] = arg[i] = UNDEF;
     for (int i = 0; i < atom->arg_size; ++i){
         param = atom->arg[i].param;
-        fprintf(stderr, "atom: %s\n",
-                tr->g->pddl->pred.pred[atom->pred].name);
-        if (param >= 0){
-            fprintf(stderr, "param: %d\n", param);
+        if (param >= 0)
             arg_pre[param] = fact->arg[i];
-        }
     }
     for (int i = 0; i < tr->arg_size; ++i){
         if (arg_pre[i] != UNDEF)
@@ -447,8 +471,114 @@ static void trieUnify(trie_t *tr, const pddl_fact_t *fact, int pre_i)
     for (int i = 0; i < tr->arg_size; ++i)
         fprintf(stderr, " %d", arg_pre[i]);
     fprintf(stderr, " | pre_i: %d, remain: %d\n", pre_i, num_args_set);
-    unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1);
+    unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1, static_fact);
     triePrint(tr, stderr);
+}
+
+static void _trieFixStatic(trie_t *tr, tnode_t *tn)
+{
+    tnode_child_t *cs;
+    tnode_t *ch;
+    int num_static;
+
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        cs = tn->child + argi;
+
+        // If at least one child corresponds to a static argument, keep
+        // only static children
+        num_static = 0;
+        for (int i = 0; i < cs->child_size; ++i)
+            num_static += cs->child[i]->flags.static_arg;
+
+        if (num_static > 0){
+            for (int i = 0; i < cs->child_size; ++i){
+                ch = cs->child[i];
+                if (!ch->flags.static_arg){
+                    tnodeDel(tr, ch);
+                    cs->child[i] = NULL;
+                }
+            }
+            int ins = 0;
+            for (int i = 0; i < cs->child_size; ++i){
+                if (cs->child[i] != NULL)
+                    cs->child[ins++] = cs->child[i];
+            }
+            cs->child_size = ins;
+        }
+
+        for (int i = 0; i < cs->child_size; ++i){
+            ch = cs->child[i];
+            _trieFixStatic(tr, ch);
+            tn->flags.blocked = 1;
+        }
+    }
+}
+
+static int _trieRemoveIncompleteStatic(trie_t *tr, tnode_t *tn)
+{
+    tnode_child_t *cs;
+    int num_child = 0;
+
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        cs = tn->child + argi;
+        for (int i = 0; i < cs->child_size; ++i){
+            if (_trieRemoveIncompleteStatic(tr, cs->child[i])){
+                tnodeDel(tr, cs->child[i]);
+                cs->child[i] = NULL;
+            }
+        }
+        int ins = 0;
+        for (int i = 0; i < cs->child_size; ++i){
+            if (cs->child[i] != NULL)
+                cs->child[ins++] = cs->child[i];
+        }
+        cs->child_size = ins;
+        num_child += cs->child_size;
+    }
+
+    if (num_child == 0
+            && tn->pre_mask != tr->pre_static_mask
+            && tn->flags.static_arg){
+        return 1;
+    }
+    return 0;
+}
+
+static void trieFixStatic(trie_t *tr)
+{
+    // TODO: check the action agains the whole arg assignement at leafs
+    _trieFixStatic(tr, tr->root);
+    _trieRemoveIncompleteStatic(tr, tr->root);
+}
+
+static int trieInstantiateSmallArgs(trie_t *tr, tnode_t *tn, int arg_start,
+                                    int arg_size, int arg_size_max)
+{
+    tnode_t *ch;
+    const int *obj;
+    int size;
+
+    for (int argi = arg_start; argi < tr->arg_size; ++argi){
+        if (tr->arg_max_size[argi] != arg_size)
+            continue;
+        obj = pddlTypesObjsByType(tr->action->type,
+                                  tr->action->param_type[argi], &size);
+        for (int i = 0; i < size; ++i){
+            ch = tnodeAddChild(tr, tn, argi, obj[i]);
+            trieInstantiateSmallArgs(tr, ch, argi + 1, arg_size, arg_size_max);
+        }
+        if (size > 0){
+            tn->flags.blocked = 1;
+            return 1;
+        }
+        return 0;
+    }
+
+    if (arg_size < arg_size_max)
+        return trieInstantiateSmallArgs(tr, tn, 0, arg_size + 1, arg_size_max);
+    tn->flags.pre_unified = 1;
+
+    return 0;
 }
 
 static void predToPreAdd(pred_to_pre_t *p, int pre_id)
@@ -462,6 +592,7 @@ static void trieInit(trie_t *tr, ground_t *g, int action_id)
 {
     pddl_prep_action_t *a = g->action.action + action_id;
     const pddl_cond_atom_t *atom;
+    const pddl_pred_t *pred;
 
     // TODO: Check limits on obj_id_t, pre_mask_t, ...
 
@@ -473,14 +604,29 @@ static void trieInit(trie_t *tr, ground_t *g, int action_id)
     tr->pre_size = a->pre.size;
     tr->root = tnodeNew(tr, NULL, UNDEF);
 
-    for (int i = 0; i < tr->pre_size; ++i)
+    tr->arg_max_size = BOR_ALLOC_ARR(int, tr->arg_size);
+    for (int i = 0; i < tr->arg_size; ++i)
+        pddlTypesObjsByType(a->type, a->param_type[i], tr->arg_max_size + i);
+
+    for (int i = 0; i < tr->pre_size; ++i){
         tr->pre_mask = (tr->pre_mask << 1u) | 1u;
+        atom = PDDL_COND_CAST(tr->action->pre.cond[i], atom);
+        pred = tr->g->pddl->pred.pred + atom->pred;
+        if (pddlPredIsStatic(pred))
+            tr->pre_static_mask |= (1u << i);
+    }
 
     tr->pred_to_pre = BOR_CALLOC_ARR(pred_to_pre_t, g->pddl->pred.size);
     for (int i = 0; i < a->pre.size; ++i){
         atom = PDDL_COND_CAST(a->pre.cond[i], atom);
         predToPreAdd(tr->pred_to_pre + atom->pred, i);
     }
+
+    // TODO: move constans 1 and 3 into either parameter of grounding or
+    //       define constants. Consider also instantiation also a small
+    //       number (1 or 2) of bigger arguments.
+    trieInstantiateSmallArgs(tr, tr->root, 0, 1, 3);
+    triePrint(tr, stderr);
 }
 
 static void trieFree(trie_t *tr)
@@ -500,12 +646,17 @@ static void tnodePrint(trie_t *tr, tnode_t *tn, int argi, int offset, FILE *fout
 
     off += fprintf(fout, "%d", argi);
     if (tn->obj_id == UNDEF){
-        off += fprintf(fout, ":U");
+        off += fprintf(fout, ":X");
     }else{
         off += fprintf(fout, ":%d", tn->obj_id);
     }
-    off += fprintf(fout, "|%x", tn->pre_mask);
-    off += fprintf(fout, "|%x", tn->pre_set_mask);
+    off += fprintf(fout, ":P%x", tn->pre_mask);
+    if (tn->flags.blocked)
+        off += fprintf(fout, ":B");
+    if (tn->flags.pre_unified)
+        off += fprintf(fout, ":U");
+    if (tn->flags.static_arg)
+        off += fprintf(fout, ":S");
     if (tn->pre_mask == tr->pre_mask)
         off += fprintf(fout, "*");
 
@@ -531,9 +682,13 @@ static void tnodePrint(trie_t *tr, tnode_t *tn, int argi, int offset, FILE *fout
 
 static void triePrint(trie_t *tr, FILE *fout)
 {
-    fprintf(fout, "Trie for %s, arg_size: %d, pre_size: %d, pre_mask: %x\n",
+    fprintf(fout, "Trie for %s, arg_size: %d, pre_size: %d, pre_mask: %x"
+                  " root-blocked: %d, param-size:",
             tr->action->action->name, tr->arg_size, tr->pre_size,
-            tr->pre_mask);
+            tr->pre_mask, tr->root->flags.blocked);
+    for (int i = 0; i < tr->arg_size; ++i)
+        fprintf(fout, " %d:%d", i, tr->arg_max_size[i]);
+    fprintf(fout, "\n");
     for (int argi = 0; argi < tr->arg_size; ++argi){
         tnode_child_t *cs = tr->root->child + argi;
         for (int i = 0; i < cs->child_size; ++i)
@@ -542,7 +697,7 @@ static void triePrint(trie_t *tr, FILE *fout)
 }
 
 
-static void groundInitStaticFact(ground_t *g, const pddl_t *pddl)
+static void groundInitFact(ground_t *g, const pddl_t *pddl)
 {
     const pddl_fact_t *fact;
 
@@ -550,30 +705,7 @@ static void groundInitStaticFact(ground_t *g, const pddl_t *pddl)
         fact = pddl->init_fact.fact[i];
         if (pddlFactIsStatic(pddl, fact)){
             pddlFactsAdd(&g->static_fact, fact);
-            pddlFactsAdd(&g->fact, fact);
-        }
-    }
-
-    if (pddl->pred.eq_pred >= 0){
-        PDDL_FACT_FOR_GROUND2(eq_fact, 2);
-        for (int i = 0; i < pddl->obj.size; ++i){
-            eq_fact.pred = pddl->pred.eq_pred;
-            eq_fact.arg_size = 2;
-            eq_fact.arg[0] = i;
-            eq_fact.arg[1] = i;
-            pddlFactsAdd(&g->static_fact, &eq_fact);
-            pddlFactsAdd(&g->fact, &eq_fact);
-        }
-    }
-}
-
-static void groundInitFact(ground_t *g, const pddl_t *pddl)
-{
-    const pddl_fact_t *fact;
-
-    for (int i = 0; i < pddl->init_fact.fact_size; ++i){
-        fact = pddl->init_fact.fact[i];
-        if (!pddlFactIsStatic(pddl, fact)){
+        }else{
             pddlFactsAdd(&g->fact, fact);
         }
     }
@@ -588,7 +720,6 @@ static void groundInit(ground_t *g, const pddl_t *pddl)
     pddlFactsInit(&g->fact);
     pddlStripsOpsInit(&g->op);
 
-    groundInitStaticFact(g, pddl);
     groundInitFact(g, pddl);
 
     g->trie = BOR_ALLOC_ARR(trie_t, g->action.size);
@@ -641,7 +772,7 @@ static void _groundActionAddEff(ground_t *g,
     }
 
     if (!pddlPrepActionCheck(a, &g->static_fact, arg)){
-        pddlActionPrint(g->pddl, a->action, stderr);
+        //pddlActionPrint(g->pddl, a->action, stderr);
         fprintf(stderr, "FAIL: ");
         printAction(g, a, arg);
         return;
@@ -655,13 +786,13 @@ static void _groundActionAddEff(ground_t *g,
     for (int i = 0; i < a->add_eff.size; ++i){
         atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
         pddlCondAtomGroundFact(atom, arg, &fact);
-        int fact_id = pddlFactsAdd(&g->fact, &fact);
+        pddlFactsAdd(&g->fact, &fact);
 
-        fprintf(stderr, "%lx\n", (long)g->fact.htable);
-        fprintf(stderr, "ADD FACT[%d,%lu] ", fact_id,
-                g->fact.fact[fact_id]->hash);
+        /*
+        fprintf(stderr, "ADD FACT ");
         pddlFactPrint(g->pddl, &fact, stderr);
         fprintf(stderr, "\n");
+        */
     }
 }
 
@@ -671,11 +802,54 @@ static void groundActionAddEff(ground_t *g,
 {
     int arg[a->param_size];
 
-    fprintf(stderr, "GH: %lx\n", (long)g->fact.htable);
     // TODO: What about zero params actions
     for (int i = 0; i < a->param_size; ++i)
         arg[i] = (oarg[i] == UNDEF ? -1 : oarg[i]);
     _groundActionAddEff(g, a, arg, 0);
+}
+
+static void groundStaticFacts(ground_t *g)
+{
+    for (int i = 0; i < g->static_fact.fact_size; ++i){
+        const pddl_fact_t *fact = g->static_fact.fact[i];
+        /*
+        fprintf(stderr, "Pop Fact: ");
+        pddlFactPrint(g.pddl, fact, stderr);
+        fprintf(stderr, " \n");
+        */
+
+        for (int j = 0; j < g->action.size; ++j){
+            trie_t *tr = g->trie + j;
+            for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
+                trieUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k], 1);
+            }
+        }
+    }
+
+    fprintf(stderr, "STATIC END\n");
+    for (int i = 0; i < g->action.size; ++i){
+        trieFixStatic(g->trie + i);
+        triePrint(g->trie + i, stderr);
+    }
+}
+
+static void groundFacts(ground_t *g)
+{
+    for (int i = 0; i < g->fact.fact_size; ++i){
+        const pddl_fact_t *fact = g->fact.fact[i];
+        /*
+        fprintf(stderr, "Pop Fact: ");
+        pddlFactPrint(g.pddl, fact, stderr);
+        fprintf(stderr, " \n");
+        */
+
+        for (int j = 0; j < g->action.size; ++j){
+            trie_t *tr = g->trie + j;
+            for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
+                trieUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k], 1);
+            }
+        }
+    }
 }
 
 void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
@@ -683,12 +857,17 @@ void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     ground_t g;
 
     groundInit(&g, pddl);
+    groundStaticFacts(&g);
+    groundFacts(&g);
 
+#if 0
     for (int i = 0; i < g.fact.fact_size; ++i){
         const pddl_fact_t *fact = g.fact.fact[i];
+        /*
         fprintf(stderr, "Pop Fact: ");
         pddlFactPrint(g.pddl, fact, stderr);
         fprintf(stderr, " \n");
+        */
 
         for (int j = 0; j < g.action.size; ++j){
             trie_t *tr = g.trie + j;
@@ -701,8 +880,9 @@ void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     fprintf(stderr, "END:\n");
     for (int j = 0; j < g.action.size; ++j){
         trie_t *tr = g.trie + j;
-        triePrint(tr, stderr);
+        //triePrint(tr, stderr);
     }
+#endif
 
     groundFree(&g);
 }
