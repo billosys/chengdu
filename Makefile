@@ -5,6 +5,8 @@ CFLAGS += -I.
 CFLAGS += $(BORUVKA_CFLAGS)
 CFLAGS += $(LP_CFLAGS)
 
+CPPCHECK_FLAGS += --platform=unix64 --enable=all -I. -Ithird-party/boruvka
+
 TARGETS  = libpddl.a
 
 OBJS  = lisp
@@ -61,6 +63,8 @@ check-valgrind:
 	$(MAKE) -C testsuites check-valgrind
 check-segfault:
 	$(MAKE) -C testsuites check-segfault
+static-check:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) pddl/ src/
 
 doc:
 	$(MAKE) -C doc

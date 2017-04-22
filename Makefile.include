@@ -5,6 +5,7 @@ CC ?= gcc
 M4 ?= m4
 SCAN_BUILD ?= scan-build
 PYTHON2 ?= python2
+CPPCHECK ?= cppcheck
 
 SYSTEM = $(shell uname)
 
