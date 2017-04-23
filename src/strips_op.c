@@ -18,6 +18,7 @@
  */
 
 #include <boruvka/hfunc.h>
+#include "pddl/pddl.h"
 #include "pddl/strips_op.h"
 
 static bor_htable_key_t htableKey(const bor_list_t *key, void *_)
@@ -193,38 +194,70 @@ int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add)
     return op->id;
 }
 
-void pddlStripsOpPrint(const pddl_strips_op_t *op, FILE *fout)
+void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                       const pddl_strips_op_t *op, FILE *fout)
 {
-    fprintf(fout, "%s, cost: %d", op->name, op->cost);
-    fprintf(fout, ", pre:");
-    for (int i = 0; i < op->pre.size; ++i)
-        fprintf(fout, " %d", op->pre.fact[i]);
-    fprintf(fout, ", add:");
-    for (int i = 0; i < op->add_eff.size; ++i)
-        fprintf(fout, " %d", op->add_eff.fact[i]);
-    fprintf(fout, ", del:");
-    for (int i = 0; i < op->del_eff.size; ++i)
-        fprintf(fout, " %d", op->del_eff.fact[i]);
+    fprintf(fout, "  %s, cost: %d\n", op->name, op->cost);
+
+    fprintf(fout, "    pre: ");
+    for (int i = 0; i < op->pre.size; ++i){
+        if (i > 0)
+            fprintf(fout, ", ");
+        pddlFactPrint(pddl, fs->fact[op->pre.fact[i]], fout);
+    }
+    fprintf(fout, "\n");
+
+    fprintf(fout, "    add: ");
+    for (int i = 0; i < op->add_eff.size; ++i){
+        if (i > 0)
+            fprintf(fout, ", ");
+        pddlFactPrint(pddl, fs->fact[op->add_eff.fact[i]], fout);
+    }
+    fprintf(fout, "\n");
+
+    fprintf(fout, "    del: ");
+    for (int i = 0; i < op->del_eff.size; ++i){
+        if (i > 0)
+            fprintf(fout, ", ");
+        pddlFactPrint(pddl, fs->fact[op->del_eff.fact[i]], fout);
+    }
+    fprintf(fout, "\n");
+
+    if (op->cond_eff_size > 0)
+        fprintf(fout, "    cond-eff[%d]:\n", op->cond_eff_size);
 
     for (int j = 0; j < op->cond_eff_size; ++j){
         const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
-        fprintf(fout, " [pre:");
-        for (int i = 0; i < ce->pre.size; ++i)
-            fprintf(fout, " %d", ce->pre.fact[i]);
-        fprintf(fout, ", add:");
-        for (int i = 0; i < ce->add_eff.size; ++i)
-            fprintf(fout, " %d", ce->add_eff.fact[i]);
-        fprintf(fout, ", del:");
-        for (int i = 0; i < ce->del_eff.size; ++i)
-            fprintf(fout, " %d", ce->del_eff.fact[i]);
-        fprintf(fout, "]");
+
+        fprintf(fout, "    pre: ");
+        for (int i = 0; i < ce->pre.size; ++i){
+            if (i > 0)
+                fprintf(fout, ", ");
+            pddlFactPrint(pddl, fs->fact[ce->pre.fact[i]], fout);
+        }
+        fprintf(fout, "\n");
+
+        fprintf(fout, "    add: ");
+        for (int i = 0; i < ce->add_eff.size; ++i){
+            if (i > 0)
+                fprintf(fout, ", ");
+            pddlFactPrint(pddl, fs->fact[ce->add_eff.fact[i]], fout);
+        }
+        fprintf(fout, "\n");
+
+        fprintf(fout, "    del: ");
+        for (int i = 0; i < ce->del_eff.size; ++i){
+            if (i > 0)
+                fprintf(fout, ", ");
+            pddlFactPrint(pddl, fs->fact[ce->del_eff.fact[i]], fout);
+        }
+        fprintf(fout, "\n");
     }
 }
 
-void pddlStripsOpsPrint(const pddl_strips_ops_t *ops, FILE *fout)
+void pddlStripsOpsPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                        const pddl_strips_ops_t *ops, FILE *fout)
 {
-    for (int i = 0; i < ops->op_size; ++i){
-        pddlStripsOpPrint(ops->op[i], fout);
-        fprintf(fout, "\n");
-    }
+    for (int i = 0; i < ops->op_size; ++i)
+        pddlStripsOpPrint(pddl, fs, ops->op[i], fout);
 }

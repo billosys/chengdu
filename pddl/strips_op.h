@@ -27,6 +27,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl;
+
 struct pddl_strips_op_cond_eff {
     pddl_fact_id_arr_t pre;
     pddl_fact_id_arr_t del_eff;
@@ -163,8 +165,10 @@ _bor_inline void pddlStripsOpsRmFactIdFromAddEff(pddl_strips_ops_t *ops, int id)
     }
 }
 
-void pddlStripsOpPrint(const pddl_strips_op_t *op, FILE *fout);
-void pddlStripsOpsPrint(const pddl_strips_ops_t *ops, FILE *fout);
+void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                       const pddl_strips_op_t *op, FILE *fout);
+void pddlStripsOpsPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                        const pddl_strips_ops_t *ops, FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */

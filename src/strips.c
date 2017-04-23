@@ -60,15 +60,9 @@ void pddlStripsDel(pddl_strips_t *strips)
 
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
 {
-    const pddl_fact_t *fact;
-
     fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);
-    PDDL_FACTS_FOR_EACH(&strips->fact, fact){
-        fprintf(fout, "% 4d: ", fact->id);
-        pddlFactPrint(strips->pddl, fact, fout);
-        fprintf(fout, "\n");
-    }
+    pddlFactsPrintSorted(strips->pddl, &strips->fact, fout);
 
     fprintf(fout, "Op[%d]:\n", strips->op.op_size);
-    pddlStripsOpsPrint(&strips->op, fout);
+    pddlStripsOpsPrint(strips->pddl, &strips->fact, &strips->op, fout);
 }

@@ -80,6 +80,11 @@ void pddlFactDel(pddl_fact_t *f);
 void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src);
 
 /**
+ * Compares two facts.
+ */
+int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2);
+
+/**
  * Returns true if facts are equal.
  */
 int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
@@ -92,15 +97,9 @@ int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
  */
 int pddlFactSetPrivate(const struct pddl *pddl, pddl_fact_t *fact);
 
-int pddlFactFormat(const struct pddl *pddl,
-                   const pddl_fact_t *f,
-                   char *str,
-                   int strsize);
-int pddlFuncFormat(const struct pddl *pddl,
-                   const pddl_fact_t *f,
-                   char *str,
-                   int strsize);
-
+/**
+ * Print formatted fact/func.
+ */
 void pddlFactPrint(const struct pddl *p, const pddl_fact_t *f, FILE *fout);
 void pddlFuncPrint(const struct pddl *p, const pddl_fact_t *f, FILE *fout);
 
@@ -166,15 +165,22 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
  */
 int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *f);
 
+void pddlFactsPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                    FILE *fout);
+void pddlFuncsPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                    FILE *fout);
+void pddlFactsPrintSorted(const struct pddl *pddl,
+                          const pddl_facts_t *fs,
+                          FILE *fout);
+void pddlFuncsPrintSorted(const struct pddl *pddl,
+                          const pddl_facts_t *fs,
+                          FILE *fout);
 void pddlFactsPrintInit(const struct pddl *pddl,
                         const pddl_facts_t *in,
                         FILE *fout);
 void pddlFactsPrintInitFunc(const struct pddl *pddl,
                             const pddl_facts_t *in,
                             FILE *fout);
-void pddlFactsPrintGoal(const struct pddl *pddl,
-                        const pddl_facts_t *in,
-                        FILE *fout);
 
 struct pddl_fact_id_arr {
     int *fact;
