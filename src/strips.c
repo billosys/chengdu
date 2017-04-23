@@ -21,7 +21,9 @@
 #include "pddl/strips.h"
 #include "err.h"
 
-void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
+/** Implemented in strips_ground.c */
+void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
+
 pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
 {
     pddl_strips_t *strips;
@@ -34,18 +36,7 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     pddlFactIdArrInit(&strips->init);
     pddlFactIdArrInit(&strips->goal);
 
-    // TODO
-    //groundNaive(strips, flags);
-    //groundStrips(strips, pddl);
-    __pddlStripsGround(strips, pddl);
-    /*
-    {
-        ground_t g;
-        groundInit(&g, pddl);
-        ground(&g);
-        groundFree(&g);
-    }
-    */
+    _pddlStripsGround(strips, pddl);
 
     // TODO: remove static facts
     // TODO: remove identical operators (don't forget to keep the one with

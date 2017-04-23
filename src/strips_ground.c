@@ -55,7 +55,7 @@ struct tnode_flags {
 typedef struct tnode_flags tnode_flags_t;
 
 struct tnode {
-    obj_id_t obj_id;
+    obj_id_t obj_id; /*!< Assigned object ID */
     pre_mask_t pre_mask; /*!< Bits set on positions where precondition is set */
     int pre_unified; /*!< Number of unified preconditions */
     tnode_flags_t flags;
@@ -102,11 +102,10 @@ struct ground_args_arr {
 typedef struct ground_args_arr ground_args_arr_t;
 
 struct ground {
+    pddl_strips_t *strips;
     const pddl_t *pddl;
     pddl_prep_actions_t action;
     pddl_facts_t static_fact;
-    pddl_facts_t fact;
-    pddl_strips_ops_t op;
     tree_t *tree;
     ground_args_arr_t ground_args;
 };
@@ -815,19 +814,18 @@ static void groundInitFact(ground_t *g, const pddl_t *pddl)
         if (pddlFactIsStatic(pddl, fact)){
             pddlFactsAdd(&g->static_fact, fact);
         }else{
-            pddlFactsAdd(&g->fact, fact);
+            pddlFactsAdd(&g->strips->fact, fact);
         }
     }
 }
 
-static void groundInit(ground_t *g, const pddl_t *pddl)
+static void groundInit(ground_t *g, pddl_strips_t *strips, const pddl_t *pddl)
 {
     bzero(g, sizeof(*g));
+    g->strips = strips;
     g->pddl = pddl;
     pddlPrepActionsInit(pddl, &g->action);
     pddlFactsInit(&g->static_fact);
-    pddlFactsInit(&g->fact);
-    pddlStripsOpsInit(&g->op);
 
     groundInitFact(g, pddl);
 
@@ -842,8 +840,6 @@ static void groundFree(ground_t *g)
         treeFree(g->tree + i);
     if (g->tree != NULL)
         BOR_FREE(g->tree);
-    pddlStripsOpsFree(&g->op);
-    pddlFactsFree(&g->fact);
     pddlFactsFree(&g->static_fact);
     pddlPrepActionsFree(&g->action);
     groundArgsFree(&g->ground_args);
@@ -896,7 +892,7 @@ static void _groundActionAddEff(ground_t *g,
     for (int i = 0; i < a->add_eff.size; ++i){
         atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
         pddlCondAtomGroundFact(atom, arg, &fact);
-        pddlFactsAdd(&g->fact, &fact);
+        pddlFactsAdd(&g->strips->fact, &fact);
 
         /*
         fprintf(stderr, "ADD FACT ");
@@ -1019,11 +1015,12 @@ static void groundActions(ground_t *g)
 
         pddlStripsOpInit(&op);
         // Ground precontions, add and delete effects and set cost
-        groundAtoms(a->max_arg_size, ga->arg, &a->pre, &g->fact, &op.pre);
-        groundAtoms(a->max_arg_size, ga->arg, &a->add_eff, &g->fact,
-                    &op.add_eff);
-        groundAtoms(a->max_arg_size, ga->arg, &a->del_eff, &g->fact,
-                    &op.del_eff);
+        groundAtoms(a->max_arg_size, ga->arg, &a->pre,
+                    &g->strips->fact, &op.pre);
+        groundAtoms(a->max_arg_size, ga->arg, &a->add_eff,
+                    &g->strips->fact, &op.add_eff);
+        groundAtoms(a->max_arg_size, ga->arg, &a->del_eff,
+                    &g->strips->fact, &op.del_eff);
         op.cost = 1;
         if (g->pddl->metric){
             op.cost = groundAssign(a->max_arg_size, ga->arg, &a->assign,
@@ -1045,7 +1042,7 @@ static void groundActions(ground_t *g)
             // parent must be known already, because this is the way we
             // sorted ground_args_t structures.
             ASSERT(parent_ga != NULL);
-            parent = g->op.op[parent_ga->op_id];
+            parent = g->strips->op.op[parent_ga->op_id];
 
             // Find out preconditions that belong only to the conditional
             // effect.
@@ -1068,7 +1065,7 @@ static void groundActions(ground_t *g)
             }
 
         }else{
-            op_id = pddlStripsOpsAdd(&g->op, &op);
+            op_id = pddlStripsOpsAdd(&g->strips->op, &op);
             ga->op_id = op_id;
             parent_ga = ga;
         }
@@ -1076,8 +1073,8 @@ static void groundActions(ground_t *g)
         pddlStripsOpFree(&op);
     }
 
-    fprintf(stderr, "Ops[%d]:\n", g->op.op_size);
-    pddlStripsOpsPrint(&g->op, stderr);
+    fprintf(stderr, "Ops[%d]:\n", g->strips->op.op_size);
+    pddlStripsOpsPrint(&g->strips->op, stderr);
 }
 
 
@@ -1085,11 +1082,6 @@ static void groundStaticFacts(ground_t *g)
 {
     for (int i = 0; i < g->static_fact.fact_size; ++i){
         const pddl_fact_t *fact = g->static_fact.fact[i];
-        /*
-        fprintf(stderr, "Pop Fact: ");
-        pddlFactPrint(g.pddl, fact, stderr);
-        fprintf(stderr, " \n");
-        */
 
         for (int j = 0; j < g->action.size; ++j){
             tree_t *tr = g->tree + j;
@@ -1108,13 +1100,8 @@ static void groundStaticFacts(ground_t *g)
 
 static void groundFacts(ground_t *g)
 {
-    for (int i = 0; i < g->fact.fact_size; ++i){
-        const pddl_fact_t *fact = g->fact.fact[i];
-        /*
-        fprintf(stderr, "Pop Fact: ");
-        pddlFactPrint(g.pddl, fact, stderr);
-        fprintf(stderr, " \n");
-        */
+    for (int i = 0; i < g->strips->fact.fact_size; ++i){
+        const pddl_fact_t *fact = g->strips->fact.fact[i];
 
         for (int j = 0; j < g->action.size; ++j){
             tree_t *tr = g->tree + j;
@@ -1125,38 +1112,14 @@ static void groundFacts(ground_t *g)
     }
 }
 
-void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
+void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
 {
     ground_t g;
 
-    groundInit(&g, pddl);
+    groundInit(&g, strips, pddl);
     groundStaticFacts(&g);
     groundFacts(&g);
     groundActions(&g);
-
-#if 0
-    for (int i = 0; i < g.fact.fact_size; ++i){
-        const pddl_fact_t *fact = g.fact.fact[i];
-        /*
-        fprintf(stderr, "Pop Fact: ");
-        pddlFactPrint(g.pddl, fact, stderr);
-        fprintf(stderr, " \n");
-        */
-
-        for (int j = 0; j < g.action.size; ++j){
-            tree_t *tr = g.tree + j;
-            for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
-                treeUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k]);
-            }
-        }
-    }
-
-    fprintf(stderr, "END:\n");
-    for (int j = 0; j < g.action.size; ++j){
-        tree_t *tr = g.tree + j;
-        //treePrint(tr, stderr);
-    }
-#endif
 
     groundFree(&g);
 }
