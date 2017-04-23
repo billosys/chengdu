@@ -79,6 +79,7 @@ struct tree {
     int arg_size;
     int *arg_max_size;
     int pre_size;
+    int pre_static_size;
     pre_mask_t pre_mask;
     pre_mask_t pre_static_mask; /*!< Mask only on static preconditions */
     pred_to_pre_t *pred_to_pre;
@@ -302,6 +303,28 @@ static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
     tnode_child_t *cs;
     int child_num;
 
+    // If all preconditions are unified, we can ground the action using
+    // assigned arguments. Note that we don't actually need to be in a
+    // leaf.
+    if (tn->pre_unified == tr->pre_size){
+        // TODO: child_num == 0 should not be required
+        // TODO: Check arg against action
+        // TODO: Ground add effects and add them to a set of reachable
+        //       facts
+        // TODO: If grounding fails then it means that this argument
+        //       assignement cannot be grounded -- can we utilize this
+        //       somehow?
+        //       Also, the reason of the failure cannot be types of
+        //       arguments, or equality of arguments, because these things
+        //       are checked at the beggining. Therefore the only reason
+        //       can be negative preconditions on static predicates.
+        // TODO: If grounding is successful, we can probably safe some
+        //       memory removing part of tree. The question is whether is
+        //       it useful.
+        groundActionAddEff(tr->g, tr->action, arg);
+        return;
+    }
+
     child_num = 0;
     for (int argi = 0; argi < tr->arg_size; ++argi){
         cs = tn->child + argi;
@@ -321,33 +344,10 @@ static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
             }
         }
     }
-
-    // If all preconditions are unified and we are at leaf node we can
-    // ground the action using assigned arguments.
-    if (tn->pre_mask == tr->pre_mask && child_num == 0){
-        // TODO: child_num == 0 should not be required
-        // TODO: Check arg against action
-        // TODO: Ground add effects and add them to a set of reachable
-        //       facts
-        // TODO: If grounding fails then it means that this argument
-        //       assignement cannot be grounded -- can we utilize this
-        //       somehow?
-        //       Also, the reason of the failure cannot be types of
-        //       arguments, or equality of arguments, because these things
-        //       are checked at the beggining. Therefore the only reason
-        //       can be negative preconditions on static predicates.
-        // TODO: If grounding is successful, we can probably safe some
-        //       memory removing part of tree. The question is whether is
-        //       it useful.
-        groundActionAddEff(tr->g, tr->action, arg);
-    }
 }
 
 static void unifyPre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 {
-    tnode_child_t *cs;
-    int child_num;
-
     ASSERT(!(tn->pre_mask & (1u << ((pre_mask_t)pre_i))));
 
     // TODO: Check action for equality and predicates?
@@ -355,46 +355,6 @@ static void unifyPre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
     ++tn->pre_unified;
     tn->flags.pre_unified = 1;
     propagatePre(tr, tn, arg, pre_i);
-    return;
-
-    child_num = 0;
-    for (int argi = 0; argi < tr->arg_size; ++argi){
-        cs = tn->child + argi;
-        child_num += cs->child_size;
-        for (int i = 0; i < cs->child_size; ++i){
-            //ASSERT(arg[argi] == UNDEF);
-            if (arg[argi] == UNDEF){
-                arg[argi] = cs->child[i]->obj_id;
-                unifyPre(tr, cs->child[i], arg, pre_i);
-                arg[argi] = UNDEF;
-            }else{
-                unifyPre(tr, cs->child[i], arg, pre_i);
-            }
-        }
-    }
-
-    // If all preconditions are unified and we are at leaf node we can
-    // ground the action using assigned arguments.
-    //if (tn->pre_mask == tr->pre_mask && child_num == 0){
-    if (tn->pre_mask == tr->pre_mask){
-        ASSERT(tn->pre_unified == tr->pre_size);
-        // TODO: child_num == 0 should not be required
-        ASSERT(child_num == 0);
-        // TODO: Check arg against action
-        // TODO: Ground add effects and add them to a set of reachable
-        //       facts
-        // TODO: If grounding fails then it means that this argument
-        //       assignement cannot be grounded -- can we utilize this
-        //       somehow?
-        //       Also, the reason of the failure cannot be types of
-        //       arguments, or equality of arguments, because these things
-        //       are checked at the beggining. Therefore the only reason
-        //       can be negative preconditions on static predicates.
-        // TODO: If grounding is successful, we can probably safe some
-        //       memory removing part of tree. The question is whether is
-        //       it useful.
-        groundActionAddEff(tr->g, tr->action, arg);
-    }
 }
 
 static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
@@ -707,6 +667,7 @@ static void treeInit(tree_t *tr, ground_t *g, int action_id)
     tr->action = a;
     tr->arg_size = a->param_size;
     tr->pre_size = a->pre.size;
+    tr->pre_static_size = 0;
     tr->root = tnodeNew(tr, NULL, UNDEF);
 
     tr->arg_max_size = BOR_ALLOC_ARR(int, tr->arg_size);
@@ -717,8 +678,10 @@ static void treeInit(tree_t *tr, ground_t *g, int action_id)
         tr->pre_mask = (tr->pre_mask << 1u) | 1u;
         atom = PDDL_COND_CAST(tr->action->pre.cond[i], atom);
         pred = tr->g->pddl->pred.pred + atom->pred;
-        if (pddlPredIsStatic(pred))
+        if (pddlPredIsStatic(pred)){
+            ++tr->pre_static_size;
             tr->pre_static_mask |= (1u << i);
+        }
     }
 
     tr->pred_to_pre = BOR_CALLOC_ARR(pred_to_pre_t, g->pddl->pred.size);
