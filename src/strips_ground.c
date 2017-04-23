@@ -29,8 +29,8 @@
 
 
 // TODO: Move this to common.h and define also pddl_type_id_t, etc...
-typedef unsigned char obj_id_t;
-#define UNDEF UCHAR_MAX
+typedef int obj_id_t;
+#define UNDEF -1
 
 #ifdef PDDL_DEBUG
 typedef uint32_t pre_mask_t;
@@ -206,6 +206,7 @@ static void _tnodeChildBubbleDown(tnode_t *tn, int argi, int idx)
 static void tnodeAddChildPtr(tree_t *t, tnode_t *par, int argi, tnode_t *add)
 {
     tnode_child_t *cs = par->child + argi;
+    ASSERT(par != NULL);
 
     tnodeReserveChild(t, par, argi);
     cs->child[cs->child_size++] = add;
