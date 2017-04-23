@@ -24,8 +24,6 @@ OBJS += cond_arr
 OBJS += strips
 OBJS += strips_op
 OBJS += strips_ground
-OBJS += strips_ground2
-OBJS += strips_ground3
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

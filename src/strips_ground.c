@@ -17,753 +17,794 @@
  * See the License for more information.
  */
 
+#include <limits.h>
 #include <boruvka/alloc.h>
 #include <boruvka/htable.h>
 #include <boruvka/hfunc.h>
+#include <boruvka/sort.h>
 #include "pddl/strips.h"
-#include "pddl/cond.h"
+#include "pddl/prep_action.h"
 #include "err.h"
+#include "assert.h"
 
-struct cond_arr {
-    const pddl_cond_t **cond;
+// TODO: Define mask_t as a structure with functions to set and unset bits
+//       to allow more than 64 preconditions.
+
+typedef unsigned char obj_id_t;
+#define UNDEF UCHAR_MAX
+
+typedef uint32_t pre_mask_t;
+
+
+struct ground;
+
+struct tnode_child {
+    obj_id_t child_size;
+    obj_id_t child_alloc;
+    struct tnode **child;
+} bor_packed;
+typedef struct tnode_child tnode_child_t;
+
+struct tnode_flags {
+    unsigned char blocked:1; /*!< True if no new children are allowed */
+    unsigned char pre_unified:1; /*!< True if the node unified
+                                      a new precondition */
+    unsigned char static_arg:1; /*!< True if the node corresponds to an
+                                     argument of a static fact */
+} bor_packed;
+typedef struct tnode_flags tnode_flags_t;
+
+struct tnode {
+    obj_id_t obj_id;
+    pre_mask_t pre_mask; /*!< Bits set on positions where precondition is set */
+    int pre_unified; /*!< Number of unified preconditions */
+    tnode_flags_t flags;
+    tnode_child_t child[];
+} bor_packed;
+typedef struct tnode tnode_t;
+
+#define PRE_MASK_SET(N, IDX) \
+    ((N)->pre_mask = (N)->pre_mask | (((pre_mask_t)1u) << (pre_mask_t)(IDX)))
+
+struct pred_to_pre {
+    int *pre;
     int size;
-    int alloc;
 };
-typedef struct cond_arr cond_arr_t;
+typedef struct pred_to_pre pred_to_pre_t;
 
-struct action {
-    const pddl_action_t *action;
-    // TODO
-    int parent_action; /*!< ID >= 0 if this conditional effect */
-    int param_size;
-    cond_arr_t pre_neg;
-    cond_arr_t pre;
-    cond_arr_t add_eff;
-    cond_arr_t del_eff;
-    cond_arr_t assign;
-    int max_arg_size;
-    int cond_eff_size;
-};
-typedef struct action action_t;
-
-struct actions {
-    action_t *action;
-    int size;
-    int alloc;
-};
-typedef struct actions actions_t;
-
-struct ground_atom {
-    bor_list_t htable;
-    int id;
-
-    int pred;
-    int arg_size;
-    pddl_cond_atom_arg_t arg[];
-};
-typedef struct ground_atom ground_atom_t;
-
-struct ground_atoms {
-    ground_atom_t **atom;
-    int size;
-    int alloc;
-    bor_htable_t *htable;
-};
-typedef struct ground_atoms ground_atoms_t;
-
-struct ground_action {
-    bor_list_t htable;
-    int id;
-
+struct tree {
+    struct ground *g;
     int action_id;
+    const pddl_prep_action_t *action;
     int arg_size;
-    int ground_atom_size;
-    int data[];
+    int *arg_max_size;
+    int pre_size;
+    pre_mask_t pre_mask;
+    pre_mask_t pre_static_mask; /*!< Mask only on static preconditions */
+    pred_to_pre_t *pred_to_pre;
+    tnode_t *root;
 };
-typedef struct ground_action ground_action_t;
+typedef struct tree tree_t;
 
-#define GROUND_ACTION_GROUND_ATOM(GA) \
-    ((GA)->data + 0)
-#define GROUND_ACTION_ARG(GA) \
-    ((GA)->data + (GA)->ground_atom_size)
+struct ground_args {
+    int *arg;
+    int action_id;
+    const pddl_prep_action_t *action;
+    int op_id;
+};
+typedef struct ground_args ground_args_t;
 
-struct ground_actions {
-    ground_action_t **action;
+struct ground_args_arr {
+    ground_args_t *arg;
     int size;
     int alloc;
-    bor_htable_t *htable;
 };
-typedef struct ground_actions ground_actions_t;
-
-struct pred_map {
-    int **map_ground_action;
-    int **map_pre_id;
-    int *map_size;
-    int *map_alloc;
-    int pred_size;
-};
-typedef struct pred_map pred_map_t;
+typedef struct ground_args_arr ground_args_arr_t;
 
 struct ground {
     const pddl_t *pddl;
-    actions_t action;
-    ground_atoms_t ground_atom;
-    ground_actions_t ground_action;
-    pred_map_t pred_map;
-
+    pddl_prep_actions_t action;
     pddl_facts_t static_fact;
     pddl_facts_t fact;
     pddl_strips_ops_t op;
+    tree_t *tree;
+    ground_args_arr_t ground_args;
 };
 typedef struct ground ground_t;
 
-static void groundActionPrint(ground_t *g, const ground_action_t *ga,
-                              FILE *fout);
+static void treePrint(tree_t *tr, FILE *fout);
+static void groundActionAddEff(ground_t *g,
+                               const pddl_prep_action_t *a,
+                               const obj_id_t *oarg);
 
-static void condArrFree(cond_arr_t *ca)
+static void groundArgsFree(ground_args_arr_t *ga)
 {
-    if (ca->cond)
-        BOR_FREE(ca->cond);
-}
-
-static void condArrAdd(cond_arr_t *ca, const pddl_cond_t *c)
-{
-    if (ca->size >= ca->alloc){
-        if (ca->alloc == 0)
-            ca->alloc = 1;
-        ca->alloc *= 2;
-        ca->cond = BOR_REALLOC_ARR(ca->cond, const pddl_cond_t *, ca->alloc);
+    for (int i = 0; i < ga->size; ++i){
+        if (ga->arg[i].arg != NULL)
+            BOR_FREE(ga->arg[i].arg);
     }
-    ca->cond[ca->size++] = c;
+    if (ga->arg != NULL)
+        BOR_FREE(ga->arg);
 }
-
-static void condArrCopy(cond_arr_t *dst, const cond_arr_t *src)
+static void groundArgsAdd(ground_args_arr_t *ga, int action_id,
+                          const pddl_prep_action_t *action,
+                          const int *arg)
 {
-    *dst = *src;
-    if (src->cond != NULL){
-        dst->cond = BOR_ALLOC_ARR(const pddl_cond_t *, dst->alloc);
-        memcpy(dst->cond, src->cond, sizeof(pddl_cond_t *) * src->size);
+    ground_args_t *garg;
+
+    if (ga->size >= ga->alloc){
+        if (ga->alloc == 0)
+            ga->alloc = 4;
+        ga->alloc *= 2;
+        ga->arg = BOR_REALLOC_ARR(ga->arg, ground_args_t, ga->alloc);
     }
+
+    garg = ga->arg + ga->size++;
+    garg->arg = BOR_ALLOC_ARR(int, action->param_size);
+    memcpy(garg->arg, arg, sizeof(int) * action->param_size);
+    garg->action_id = action_id;
+    garg->action = action;
+    garg->op_id = -1;
 }
 
-struct action_ctx {
-    actions_t *as;
-    action_t *a;
-    int a_id;
-    const pddl_t *pddl;
-    const pddl_action_t *action;
-    int failed;
-};
-typedef struct action_ctx action_ctx_t;
-
-static int actionInitPre(pddl_cond_t *c, void *ud)
+static int groundArgsCmp(const void *a, const void *b, void *_)
 {
-    action_ctx_t *ctx = ud;
-    pddl_cond_atom_t *a;
+    const ground_args_t *g1 = a;
+    const ground_args_t *g2 = b;
+    int g1_action_id = g1->action_id;
+    int g2_action_id = g2->action_id;
+    int cmp;
 
-    if (c->type == PDDL_COND_ATOM){
-        a = PDDL_COND_CAST(c, atom);
-        ctx->a->max_arg_size = BOR_MAX(ctx->a->max_arg_size, a->arg_size);
-        if (a->neg){
-            condArrAdd(&ctx->a->pre_neg, c);
+    if (g1->action->parent_action >= 0)
+        g1_action_id = g1->action->parent_action;
+    if (g2->action->parent_action >= 0)
+        g2_action_id = g2->action->parent_action;
+
+    if (g1_action_id == g2_action_id){
+        cmp = memcmp(g1->arg, g2->arg, sizeof(int) * g1->action->param_size);
+        if (cmp != 0)
+            return cmp;
+        if (g1->action->parent_action < 0 && g2->action->parent_action < 0)
+            return 0;
+        if (g1->action->parent_action < 0)
+            return -1;
+        if (g2->action->parent_action < 0)
+            return 1;
+    }
+    return g1_action_id - g2_action_id;
+}
+
+static void groundArgsSortAndUniq(ground_args_arr_t *ga)
+{
+    int ins;
+
+    if (ga->arg == 0)
+        return;
+
+    borSort(ga->arg, ga->size, sizeof(ground_args_t), groundArgsCmp, NULL);
+
+    ins = 0;
+    for (int i = 1; i < ga->size; ++i){
+        if (groundArgsCmp(ga->arg + i, ga->arg + ins, NULL) == 0){
+            if (ga->arg[i].arg != NULL)
+                BOR_FREE(ga->arg[i].arg);
         }else{
-            condArrAdd(&ctx->a->pre, c);
+            ga->arg[++ins] = ga->arg[i];
         }
-        return 0;
+    }
+    ga->size = ins + 1;
+}
 
-    }else if (c->type == PDDL_COND_AND){
-        return 0;
+
+_bor_inline int tnodeMaxByteSize(tree_t *tr)
+{
+    return bor_offsetof(tnode_t, child) + tr->arg_size * sizeof(tnode_child_t);
+}
+
+static tnode_t *tnodeNew(tree_t *t, tnode_t *parent, obj_id_t obj_id)
+{
+    tnode_t *n;
+    size_t size;
+
+    size = sizeof(*n) + sizeof(tnode_child_t) * t->arg_size;
+    n = BOR_MALLOC(size);
+    bzero(n, size);
+    n->obj_id = obj_id;
+    if (parent != NULL){
+        n->pre_mask = parent->pre_mask;
+        n->pre_unified = parent->pre_unified;
+    }
+    return n;
+}
+
+static void tnodeDel(tree_t *tr, tnode_t *t);
+static void tnodeFree(tree_t *tr, tnode_t *t)
+{
+    for (int a = 0; a < tr->arg_size; ++a){
+        tnode_child_t *cs = t->child + a;
+        for (int i = 0; i < cs->child_size; ++i){
+            if (cs->child[i] != NULL)
+                tnodeDel(tr, cs->child[i]);
+        }
+        if (cs->child != NULL)
+            BOR_FREE(cs->child);
+    }
+}
+
+static void tnodeDel(tree_t *tr, tnode_t *t)
+{
+    tnodeFree(tr, t);
+    BOR_FREE(t);
+}
+
+static void tnodeReserveChild(tree_t *tr, tnode_t *n, int argi)
+{
+    tnode_child_t *cs;
+
+    cs = n->child + argi;
+    if (cs->child_size == cs->child_alloc){
+        if (cs->child_alloc == 0)
+            cs->child_alloc = 1;
+        cs->child_alloc *= 2;
+        cs->child = BOR_REALLOC_ARR(cs->child, tnode_t *, cs->child_alloc);
+    }
+}
+
+static void _tnodeChildBubbleDown(tnode_t *tn, int argi, int idx)
+{
+    tnode_child_t *cs = tn->child + argi;
+
+    // sort childs according to .obj_id
+    for (tnode_t **c = cs->child + idx - 1;
+            c >= cs->child && c[0]->obj_id > c[1]->obj_id; --c){
+        tnode_t *s = c[0];
+        c[0] = c[1];
+        c[1] = s;
+    }
+}
+
+static void tnodeAddChildPtr(tree_t *t, tnode_t *par, int argi, tnode_t *add)
+{
+    tnode_child_t *cs = par->child + argi;
+
+    tnodeReserveChild(t, par, argi);
+    cs->child[cs->child_size++] = add;
+
+    // sort childs according to .obj_id
+    _tnodeChildBubbleDown(par, argi, cs->child_size - 1);
+}
+
+static tnode_t *tnodeAddChild(tree_t *t, tnode_t *par, int argi, obj_id_t obj_id)
+{
+    tnode_t *n = tnodeNew(t, par, obj_id);
+    tnodeAddChildPtr(t, par, argi, n);
+    return n;
+}
+
+static void tnodeDelChild(tree_t *tr, tnode_t *par, tnode_t *ch, int argi)
+{
+    tnode_child_t *cs = par->child + argi;
+    int i;
+
+    // TODO: binary search?
+    for (i = 0; i < cs->child_size; ++i){
+        if (cs->child[i] == ch){
+            tnodeDel(tr, ch);
+            break;
+        }
+    }
+    for (++i; i < cs->child_size; ++i)
+        cs->child[i - 1] = cs->child[i];
+    cs->child_size = i - 1;
+}
+
+static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
+{
+    tnode_child_t *cs;
+    int child_num;
+
+    child_num = 0;
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        cs = tn->child + argi;
+        child_num += cs->child_size;
+        for (int i = 0; i < cs->child_size; ++i){
+            //ASSERT(arg[argi] == UNDEF);
+            if (arg[argi] == UNDEF){
+                arg[argi] = cs->child[i]->obj_id;
+                cs->child[i]->pre_mask |= tn->pre_mask;
+                ++cs->child[i]->pre_unified;
+                propagatePre(tr, cs->child[i], arg, pre_i);
+                arg[argi] = UNDEF;
+            }else{
+                cs->child[i]->pre_mask |= tn->pre_mask;
+                ++cs->child[i]->pre_unified;
+                propagatePre(tr, cs->child[i], arg, pre_i);
+            }
+        }
+    }
+
+    // If all preconditions are unified and we are at leaf node we can
+    // ground the action using assigned arguments.
+    if (tn->pre_mask == tr->pre_mask && child_num == 0){
+        // TODO: child_num == 0 should not be required
+        // TODO: Check arg against action
+        // TODO: Ground add effects and add them to a set of reachable
+        //       facts
+        // TODO: If grounding fails then it means that this argument
+        //       assignement cannot be grounded -- can we utilize this
+        //       somehow?
+        //       Also, the reason of the failure cannot be types of
+        //       arguments, or equality of arguments, because these things
+        //       are checked at the beggining. Therefore the only reason
+        //       can be negative preconditions on static predicates.
+        // TODO: If grounding is successful, we can probably safe some
+        //       memory removing part of tree. The question is whether is
+        //       it useful.
+        groundActionAddEff(tr->g, tr->action, arg);
+    }
+}
+
+static void unifyPre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
+{
+    tnode_child_t *cs;
+    int child_num;
+
+    ASSERT(!(tn->pre_mask & (1u << ((pre_mask_t)pre_i))));
+
+    // TODO: Check action for equality and predicates?
+    PRE_MASK_SET(tn, pre_i);
+    ++tn->pre_unified;
+    tn->flags.pre_unified = 1;
+    propagatePre(tr, tn, arg, pre_i);
+    return;
+
+    child_num = 0;
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        cs = tn->child + argi;
+        child_num += cs->child_size;
+        for (int i = 0; i < cs->child_size; ++i){
+            //ASSERT(arg[argi] == UNDEF);
+            if (arg[argi] == UNDEF){
+                arg[argi] = cs->child[i]->obj_id;
+                unifyPre(tr, cs->child[i], arg, pre_i);
+                arg[argi] = UNDEF;
+            }else{
+                unifyPre(tr, cs->child[i], arg, pre_i);
+            }
+        }
+    }
+
+    // If all preconditions are unified and we are at leaf node we can
+    // ground the action using assigned arguments.
+    //if (tn->pre_mask == tr->pre_mask && child_num == 0){
+    if (tn->pre_mask == tr->pre_mask){
+        ASSERT(tn->pre_unified == tr->pre_size);
+        // TODO: child_num == 0 should not be required
+        ASSERT(child_num == 0);
+        // TODO: Check arg against action
+        // TODO: Ground add effects and add them to a set of reachable
+        //       facts
+        // TODO: If grounding fails then it means that this argument
+        //       assignement cannot be grounded -- can we utilize this
+        //       somehow?
+        //       Also, the reason of the failure cannot be types of
+        //       arguments, or equality of arguments, because these things
+        //       are checked at the beggining. Therefore the only reason
+        //       can be negative preconditions on static predicates.
+        // TODO: If grounding is successful, we can probably safe some
+        //       memory removing part of tree. The question is whether is
+        //       it useful.
+        groundActionAddEff(tr->g, tr->action, arg);
+    }
+}
+
+static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
+                         int remain, const obj_id_t *arg_pre, int pre_i,
+                         int static_fact);
+static tnode_t *unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
+                            int remain, const obj_id_t *arg_pre, int pre_i,
+                            int static_fact)
+{
+    tnode_t *new;
+
+    arg[argi] = arg_pre[argi];
+    new = tnodeAddChild(tr, tn, argi, arg[argi]);
+    new->flags.static_arg = static_fact;
+    if (remain - 1 > 0){
+        unifyNew(tr, new, arg, remain - 1, arg_pre, pre_i, static_fact);
     }else{
-        ctx->failed = 1;
-        return -2;
+        unifyPre(tr, new, arg, pre_i);
     }
+    arg[argi] = UNDEF;
+    return new;
 }
 
-static int actionInitEff(pddl_cond_t *c, void *ud)
+static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
+                         int remain, const obj_id_t *arg_pre, int pre_i,
+                         int static_fact)
 {
-    action_ctx_t *ctx = ud;
-    pddl_cond_atom_t *a;
+    tnode_t *new = NULL;
 
-    if (c->type == PDDL_COND_ATOM){
-        a = PDDL_COND_CAST(c, atom);
-        ctx->a->max_arg_size = BOR_MAX(ctx->a->max_arg_size, a->arg_size);
-        if (a->neg){
-            condArrAdd(&ctx->a->del_eff, c);
-        }else{
-            condArrAdd(&ctx->a->add_eff, c);
+    // To eliminate at least some duplicates, first try to create a new
+    // node using an argument that has some assignements on this level.
+    for (int i = 0; i < tr->arg_size; ++i){
+        tnode_child_t *cs = tn->child + i;
+        if (cs->child_size > 0 && arg[i] == UNDEF && arg_pre[i] != UNDEF){
+            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i,
+                               static_fact);
         }
-        return 0;
-
-    }else if (c->type == PDDL_COND_ASSIGN){
-        condArrAdd(&ctx->a->assign, c);
-        return 0;
-
-    }else if (c->type == PDDL_COND_WHEN){
-        ++ctx->a->cond_eff_size;
-        return -1;
-
-    }else if (c->type == PDDL_COND_AND){
-        return 0;
-    }else{
-        ctx->failed = 1;
-        return -2;
     }
+
+    for (int i = 0; i < tr->arg_size; ++i){
+        if (arg[i] == UNDEF && arg_pre[i] != UNDEF){
+            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i,
+                               static_fact);
+        }
+    }
+
+    ASSERT(new != NULL);
+    return new;
 }
 
-static void actionInit2(action_t *a,
-                        const pddl_t *pddl,
-                        const pddl_action_t *action,
-                        pddl_cond_t *pre,
-                        pddl_cond_t *eff)
-{
-    action_ctx_t ctx;
-    ctx.a = a;
-    ctx.pddl = pddl;
-    ctx.failed = 0;
+static void unify(tree_t *tr, tnode_t *tn,
+                  obj_id_t *arg, int remain,
+                  const obj_id_t *pre_arg, int pre_i,
+                  int allow_new, int static_fact);
 
-    bzero(a, sizeof(*a));
-    a->action = action;
-    a->param_size = action->param.size;
-    pddlCondTraverse(pre, actionInitPre, NULL, &ctx);
-    if (ctx.failed){
+static int unifyArg(tree_t *tr, tnode_t *tn,
+                    int argi, obj_id_t *arg, int remain,
+                    const obj_id_t *arg_pre, int pre_i,
+                    int allow_new, int static_fact)
+{
+    tnode_child_t *tnc = tn->child + argi;
+    tnode_t *ch;
+    int match = 0;
+
+    ASSERT(tn->pre_unified == __builtin_popcount(tn->pre_mask));
+    arg[argi] = arg_pre[argi];
+
+    tnc = tn->child + argi;
+    for (int i = 0; i < tnc->child_size; ++i){
+        ch = tnc->child[i];
+        ASSERT(ch->obj_id != UNDEF);
+
+        if (ch->obj_id == arg[argi]){
+            ASSERT(!(ch->pre_mask & (1u << pre_i)));
+            ch->flags.static_arg = static_fact;
+            // Found exact match on the argument
+            unify(tr, ch, arg, remain - 1, arg_pre, pre_i, 1, static_fact);
+            match = 1;
+
+        }else if (arg[argi] == UNDEF){
+            ASSERT(!(ch->pre_mask & (1u << pre_i)));
+            // Argument is not set therefore we need to unify with all set
+            // arguments
+            arg[argi] = ch->obj_id;
+            unify(tr, ch, arg, remain, arg_pre, pre_i, 0, static_fact);
+            arg[argi] = UNDEF;
+        }
+    }
+
+    arg[argi] = UNDEF;
+    return match;
+}
+
+static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
+                  const obj_id_t *arg_pre, int pre_i,
+                  int allow_new, int static_fact)
+{
+    tnode_child_t *tnc;
+    int match = 0;
+
+    if (remain == 0){
+        unifyPre(tr, tn, arg, pre_i);
+        return;
         // TODO
-        ERR("Prepapration of action %s failed!\n", action->name);
-        exit(-1);
     }
 
-    pddlCondTraverse(eff, actionInitEff, NULL, &ctx);
-    if (ctx.failed){
-        // TODO
-        ERR("Prepapration of action %s failed!\n", action->name);
-        exit(-1);
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        tnc = tn->child + argi;
+        if (tnc->child_size > 0)
+            match |= unifyArg(tr, tn, argi, arg, remain, arg_pre, pre_i,
+                              allow_new, static_fact);
     }
-}
 
-static void actionInit(action_t *a,
-                       const pddl_t *pddl, const pddl_action_t *action)
-{
-    actionInit2(a, pddl, action,
-                (pddl_cond_t *)action->pre,
-                (pddl_cond_t *)action->eff);
-}
-
-static void actionFree(action_t *a)
-{
-    condArrFree(&a->pre_neg);
-    condArrFree(&a->pre);
-    condArrFree(&a->add_eff);
-    condArrFree(&a->del_eff);
-    condArrFree(&a->assign);
-}
-
-static void actionCopy(action_t *dst, const action_t *src)
-{
-    dst->action = src->action;
-    dst->parent_action = src->parent_action;
-    condArrCopy(&dst->pre_neg, &src->pre_neg);
-    condArrCopy(&dst->pre, &src->pre);
-    condArrCopy(&dst->add_eff, &src->add_eff);
-    condArrCopy(&dst->del_eff, &src->del_eff);
-    condArrCopy(&dst->assign, &src->assign);
-    dst->max_arg_size = src->max_arg_size;
-    dst->cond_eff_size = src->cond_eff_size;
-}
-
-static void actionsReserve(actions_t *as)
-{
-    if (as->size >= as->alloc){
-        as->alloc *= 2;
-        as->action = BOR_REALLOC_ARR(as->action, action_t, as->alloc);
+    if (!match && !tn->flags.blocked && (allow_new || tn->flags.pre_unified)){
+        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
     }
+    // TODO:
+    /*
+    if (!match && allow_new && !full){
+        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
+    }else if (!match && !full){
+        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
+    }
+    */
 }
 
-static int actionInitCondEff(pddl_cond_t *c, void *ud)
+static void treeUnify(tree_t *tr, const pddl_fact_t *fact, int pre_i,
+                      int static_fact)
 {
-    action_ctx_t *ctx = ud;
-    const pddl_cond_when_t *when;
-    action_t *a, *parent;
+    const pddl_cond_atom_t *atom;
+    obj_id_t arg[tr->arg_size], arg_pre[tr->arg_size];
+    int num_args_set = 0;
+    int param;
 
-    if (c->type == PDDL_COND_WHEN){
-        when = PDDL_COND_CAST(c, when);
-        fprintf(stdout, "X\n");
-        fflush(stdout);
+    /*
+    fprintf(stderr, "Fact: ");
+    pddlFactPrint(tr->g->pddl, fact, stderr);
+    fprintf(stderr, " --> %s, pre_i: %d, arg_size: %d, pre_size: %d\n",
+            tr->action->action->name, pre_i, tr->arg_size, tr->pre_size);
+    fprintf(stderr, "Param sizes:");
+    for (int i = 0; i < tr->arg_size; ++i){
+        const int *obj;
+        int size;
+        obj = pddlTypesObjsByType(tr->action->type,
+                                  tr->action->param_type[i], &size);
+        fprintf(stderr, " %d:%d[", i, size);
+        for (int j = 0; j < size; ++j)
+            fprintf(stderr, "%d;", obj[j]);
+        fprintf(stderr, "]");
+    }
+    fprintf(stderr, "\n");
+    */
+    //treePrint(tr, stderr);
+    // TODO: check fact agains action
+    // TODO: Static facts -- after using all of them disallow -1 on
+    //       arguments of static facts.
+    // TODO: Remove -1 nodes if all possible objects are already present
+    //       and lock the argument
+    if (!pddlPrepActionCheckFact(tr->action, pre_i, fact))
+        return;
 
-        // Create a new action
-        actionsReserve(ctx->as);
-        a = ctx->as->action + ctx->as->size++;
+    atom = PDDL_COND_CAST(tr->action->pre.cond[pre_i], atom);
+    for (int i = 0; i < tr->arg_size; ++i)
+        arg_pre[i] = arg[i] = UNDEF;
+    for (int i = 0; i < atom->arg_size; ++i){
+        param = atom->arg[i].param;
+        if (param >= 0)
+            arg_pre[param] = fact->arg[i];
+    }
+    for (int i = 0; i < tr->arg_size; ++i){
+        if (arg_pre[i] != UNDEF)
+            ++num_args_set;
+    }
 
-        // Parse preconditions and effects of (when ) element
-        actionInit2(a, ctx->pddl, ctx->action, when->pre, when->eff);
-        if (a->cond_eff_size > 0){
-            ERR2("Nested conditional effects are not supported!");
-            exit(-1);
+    /*
+    fprintf(stderr, "Fact: ");
+    pddlFactPrint(tr->g->pddl, fact, stderr);
+    for (int i = 0; i < tr->arg_size; ++i)
+        fprintf(stderr, " %d", arg_pre[i]);
+    fprintf(stderr, " | pre_i: %d, remain: %d\n", pre_i, num_args_set);
+    */
+    unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1, static_fact);
+    //treePrint(tr, stderr);
+}
+
+static void _treeFixStatic(tree_t *tr, tnode_t *tn)
+{
+    tnode_child_t *cs;
+    tnode_t *ch;
+    int num_static;
+
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        cs = tn->child + argi;
+
+        // If at least one child corresponds to a static argument, keep
+        // only static children
+        num_static = 0;
+        for (int i = 0; i < cs->child_size; ++i)
+            num_static += cs->child[i]->flags.static_arg;
+
+        if (num_static > 0){
+            for (int i = 0; i < cs->child_size; ++i){
+                ch = cs->child[i];
+                if (!ch->flags.static_arg){
+                    tnodeDel(tr, ch);
+                    cs->child[i] = NULL;
+                }
+            }
+            int ins = 0;
+            for (int i = 0; i < cs->child_size; ++i){
+                if (cs->child[i] != NULL)
+                    cs->child[ins++] = cs->child[i];
+            }
+            cs->child_size = ins;
         }
 
-        // Set its parent
-        parent = ctx->as->action + ctx->a_id;
-        a->parent_action = ctx->a_id;
+        for (int i = 0; i < cs->child_size; ++i){
+            ch = cs->child[i];
+            _treeFixStatic(tr, ch);
+            tn->flags.blocked = 1;
+        }
+    }
+}
 
-        // Copy preconditions
-        for (int i = 0; i < parent->pre_neg.size; ++i)
-            condArrAdd(&a->pre_neg, parent->pre_neg.cond[i]);
-        for (int i = 0; i < parent->pre.size; ++i)
-            condArrAdd(&a->pre, parent->pre.cond[i]);
-        a->max_arg_size = BOR_MAX(a->max_arg_size, parent->max_arg_size);
+static int _treeRemoveIncompleteStatic(tree_t *tr, tnode_t *tn)
+{
+    tnode_child_t *cs;
+    int num_child = 0;
 
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        cs = tn->child + argi;
+        for (int i = 0; i < cs->child_size; ++i){
+            if (_treeRemoveIncompleteStatic(tr, cs->child[i])){
+                tnodeDel(tr, cs->child[i]);
+                cs->child[i] = NULL;
+            }
+        }
+        int ins = 0;
+        for (int i = 0; i < cs->child_size; ++i){
+            if (cs->child[i] != NULL)
+                cs->child[ins++] = cs->child[i];
+        }
+        cs->child_size = ins;
+        num_child += cs->child_size;
+    }
 
-        return -1;
+    if (num_child == 0
+            && tn->pre_mask != tr->pre_static_mask //TODO --> .pre_unified
+            && tn->flags.static_arg){
+        return 1;
     }
     return 0;
 }
 
-static void actionsAddCondEff(actions_t *as, int aid, const pddl_t *pddl)
+static void treeFixStatic(tree_t *tr)
 {
-    action_ctx_t ctx;
-    ctx.as = as;
-    ctx.a_id = aid;
-    ctx.pddl = pddl;
-    ctx.action = as->action[aid].action;
-    ctx.failed = 0;
-
-    pddlCondTraverse((pddl_cond_t *)ctx.action->eff,
-                     actionInitCondEff, NULL, &ctx);
-    if (ctx.failed){
-        // TODO
-        ERR("Prepapration of action %s failed!\n", ctx.action->name);
-        exit(-1);
-    }
+    // TODO: check the action agains the whole arg assignement at leafs
+    _treeFixStatic(tr, tr->root);
+    _treeRemoveIncompleteStatic(tr, tr->root);
 }
 
-static void actionsInit(actions_t *as, const pddl_t *pddl)
+static int treeInstantiateSmallArgs(tree_t *tr, tnode_t *tn, int arg_start,
+                                    int arg_size, int arg_size_max)
 {
-    int i;
+    tnode_t *ch;
+    const int *obj;
+    int size;
 
-    bzero(as, sizeof(*as));
-    as->alloc = 4;
-    as->action = BOR_ALLOC_ARR(action_t, as->alloc);
-
-    for (i = 0; i < pddl->action.size; ++i){
-        actionsReserve(as);
-        actionInit(as->action + as->size, pddl, pddl->action.action + i);
-        ++as->size;
-    }
-
-    for (i = 0; i < pddl->action.size; ++i){
-        if (as->action[i].cond_eff_size > 0){
-            fprintf(stdout, "CE %s\n", as->action[i].action->name);
-            actionsAddCondEff(as, i, pddl);
+    for (int argi = arg_start; argi < tr->arg_size; ++argi){
+        if (tr->arg_max_size[argi] != arg_size)
+            continue;
+        obj = pddlTypesObjsByType(tr->action->type,
+                                  tr->action->param_type[argi], &size);
+        for (int i = 0; i < size; ++i){
+            ch = tnodeAddChild(tr, tn, argi, obj[i]);
+            treeInstantiateSmallArgs(tr, ch, argi + 1, arg_size, arg_size_max);
         }
-    }
-}
-
-static void actionsFree(actions_t *as)
-{
-    for (int i = 0; i < as->size; ++i)
-        actionFree(as->action + i);
-    if (as->action)
-        BOR_FREE(as->action);
-}
-
-static ground_atom_t *groundAtomFromAtom(const pddl_cond_atom_t *atom)
-{
-    ground_atom_t *ga;
-    size_t alloc;
-
-    alloc  = bor_offsetof(ground_atom_t, arg);
-    alloc += sizeof(pddl_cond_atom_arg_t) * atom->arg_size;
-    ga = BOR_MALLOC(alloc);
-    ga->pred = atom->pred;
-    ga->arg_size = atom->arg_size;
-    memcpy(ga->arg, atom->arg, sizeof(pddl_cond_atom_arg_t) * ga->arg_size);
-    return ga;
-}
-
-static ground_atom_t *groundAtomUnify(const ground_atom_t *from,
-                                      const int *arg)
-{
-    ground_atom_t *ga;
-    size_t alloc;
-    int param_id;
-
-    alloc  = bor_offsetof(ground_atom_t, arg);
-    alloc += sizeof(pddl_cond_atom_arg_t) * from->arg_size;
-    ga = BOR_MALLOC(alloc);
-    ga->pred = from->pred;
-    ga->arg_size = from->arg_size;
-    memcpy(ga->arg, from->arg, sizeof(pddl_cond_atom_arg_t) * ga->arg_size);
-    for (int i = 0; i < ga->arg_size; ++i){
-        param_id = ga->arg[i].param;
-        if (param_id >= 0 && arg[param_id] >= 0){
-            ga->arg[i].param = -1;
-            ga->arg[i].obj = arg[param_id];
+        if (size > 0){
+            tn->flags.blocked = 1;
+            return 1;
         }
+        return 0;
     }
-    return ga;
+
+    if (arg_size < arg_size_max)
+        return treeInstantiateSmallArgs(tr, tn, 0, arg_size + 1, arg_size_max);
+    tn->flags.pre_unified = 1;
+
+    return 0;
 }
 
-static void groundAtomDel(ground_atom_t *ga)
+static void predToPreAdd(pred_to_pre_t *p, int pre_id)
 {
-    BOR_FREE(ga);
+    ++p->size;
+    p->pre = BOR_REALLOC_ARR(p->pre, int, p->size);
+    p->pre[p->size - 1] = pre_id;
 }
 
-static bor_htable_key_t groundAtomHash(const bor_list_t *key, void *_)
+static void treeInit(tree_t *tr, ground_t *g, int action_id)
 {
-    const ground_atom_t *ga = BOR_LIST_ENTRY(key, ground_atom_t, htable);
-    char *d;
-    size_t size;
-    size = bor_offsetof(ground_atom_t, arg)
-            - bor_offsetof(ground_atom_t, pred)
-            + sizeof(pddl_cond_atom_arg_t) * ga->arg_size;
-    d = (char *)ga;
-    d += bor_offsetof(ground_atom_t, pred);
-    return borCityHash_64(d, size);
-}
-
-static int groundAtomEq(const bor_list_t *k1, const bor_list_t *k2, void *_)
-{
-    const ground_atom_t *ga1 = BOR_LIST_ENTRY(k1, ground_atom_t, htable);
-    const ground_atom_t *ga2 = BOR_LIST_ENTRY(k2, ground_atom_t, htable);
-    return ga1->pred == ga2->pred
-            && ga1->arg_size == ga2->arg_size
-            && memcmp(ga1->arg, ga2->arg,
-                      sizeof(pddl_cond_atom_arg_t) * ga1->arg_size) == 0;
-}
-
-static void groundAtomsInit(ground_atoms_t *gas)
-{
-    bzero(gas, sizeof(*gas));
-    gas->alloc = 16;
-    gas->atom = BOR_ALLOC_ARR(ground_atom_t *, gas->alloc);
-    gas->htable = borHTableNew(groundAtomHash, groundAtomEq, NULL);
-}
-
-static void groundAtomsFree(ground_atoms_t *gas)
-{
-    borHTableDel(gas->htable);
-    for (int i = 0; i < gas->size; ++i)
-        groundAtomDel(gas->atom[i]);
-    if (gas->atom)
-        BOR_FREE(gas->atom);
-}
-
-static int groundAtomsAdd(ground_atoms_t *gas, ground_atom_t *ga)
-{
-    bor_list_t *found;
-    ground_atom_t *found_ga;
-
-    if ((found = borHTableFind(gas->htable, &ga->htable)) == NULL){
-        if (gas->size >= gas->alloc){
-            gas->alloc *= 2;
-            gas->atom = BOR_REALLOC_ARR(gas->atom, ground_atom_t *,
-                                        gas->alloc);
-        }
-        ga->id = gas->size;
-        gas->atom[gas->size++] = ga;
-        borHTableInsert(gas->htable, &ga->htable);
-        return ga->id;
-
-    }else{
-        groundAtomDel(ga);
-        found_ga = BOR_LIST_ENTRY(found, ground_atom_t, htable);
-        return found_ga->id;
-    }
-}
-
-static int groundAtomsAddFromAtom(ground_atoms_t *gas,
-                                  const pddl_cond_atom_t *a)
-{
-    ground_atom_t *ga = groundAtomFromAtom(a);
-    return groundAtomsAdd(gas, ga);
-}
-
-static int groundAtomsAddUnified(ground_atoms_t *gas,
-                                 const ground_atom_t *from,
-                                 const int *arg)
-{
-    ground_atom_t *ga = groundAtomUnify(from, arg);
-    return groundAtomsAdd(gas, ga);
-}
-
-static bor_htable_key_t groundActionHash(const bor_list_t *key, void *_)
-{
-    const ground_action_t *a = BOR_LIST_ENTRY(key, ground_action_t, htable);
-    char *d;
-    size_t size;
-    size = bor_offsetof(ground_action_t, data)
-            - bor_offsetof(ground_action_t, action_id)
-            + sizeof(int) * a->arg_size
-            + sizeof(int) * a->ground_atom_size;
-    d = (char *)a;
-    d += bor_offsetof(ground_action_t, action_id);
-    return borCityHash_64(d, size);
-}
-
-static int groundActionEq(const bor_list_t *k1, const bor_list_t *k2, void *_)
-{
-    const ground_action_t *ga1 = BOR_LIST_ENTRY(k1, ground_action_t, htable);
-    const ground_action_t *ga2 = BOR_LIST_ENTRY(k2, ground_action_t, htable);
-    return ga1->action_id == ga2->action_id
-            && ga1->ground_atom_size == ga2->ground_atom_size
-            && memcmp(ga1->data, ga2->data,
-                      sizeof(int) * ga1->arg_size
-                        + sizeof(int) * ga1->ground_atom_size) == 0;
-}
-
-static ground_action_t *groundActionFromAction(ground_t *g, int aid)
-{
-    const action_t *a = g->action.action + aid;
-    ground_action_t *ga;
-    size_t alloc;
+    pddl_prep_action_t *a = g->action.action + action_id;
     const pddl_cond_atom_t *atom;
-    int *ground_atom, *arg;
+    const pddl_pred_t *pred;
 
-    alloc  = bor_offsetof(ground_action_t, data);
-    alloc += sizeof(int) * a->pre.size;
-    alloc += sizeof(int) * a->param_size;
-    ga = BOR_MALLOC(alloc);
+    // TODO: Check limits on obj_id_t, pre_mask_t, ...
 
-    ga->action_id = aid;
-    ga->arg_size = a->param_size;
-    ga->ground_atom_size = a->pre.size;
+    bzero(tr, sizeof(*tr));
+    tr->g = g;
+    tr->action_id = action_id;
+    tr->action = a;
+    tr->arg_size = a->param_size;
+    tr->pre_size = a->pre.size;
+    tr->root = tnodeNew(tr, NULL, UNDEF);
 
-    ground_atom = GROUND_ACTION_GROUND_ATOM(ga);
+    tr->arg_max_size = BOR_ALLOC_ARR(int, tr->arg_size);
+    for (int i = 0; i < tr->arg_size; ++i)
+        pddlTypesObjsByType(a->type, a->param_type[i], tr->arg_max_size + i);
+
+    for (int i = 0; i < tr->pre_size; ++i){
+        tr->pre_mask = (tr->pre_mask << 1u) | 1u;
+        atom = PDDL_COND_CAST(tr->action->pre.cond[i], atom);
+        pred = tr->g->pddl->pred.pred + atom->pred;
+        if (pddlPredIsStatic(pred))
+            tr->pre_static_mask |= (1u << i);
+    }
+
+    tr->pred_to_pre = BOR_CALLOC_ARR(pred_to_pre_t, g->pddl->pred.size);
     for (int i = 0; i < a->pre.size; ++i){
         atom = PDDL_COND_CAST(a->pre.cond[i], atom);
-        ground_atom[i] = groundAtomsAddFromAtom(&g->ground_atom, atom);
+        predToPreAdd(tr->pred_to_pre + atom->pred, i);
     }
 
-    arg = GROUND_ACTION_ARG(ga);
-    for (int i = 0; i < ga->arg_size; ++i)
-        arg[i] = -1;
-    return ga;
+    // TODO: move constans 1 and 3 into either parameter of grounding or
+    //       define constants. Consider also instantiation also a small
+    //       number (1 or 2) of bigger arguments.
+    treeInstantiateSmallArgs(tr, tr->root, 0, 1, 3);
+    //treePrint(tr, stderr);
 }
 
-static ground_action_t *groundActionUnify(ground_t *g,
-                                          const ground_action_t *from,
-                                          const pddl_fact_t *fact,
-                                          int atom_id)
+static void treeFree(tree_t *tr)
 {
-    ground_atom_t *gatom;
-    ground_action_t *ga;
-    size_t alloc;
-    int *ground_atom, *arg;
-    const int *from_ground_atom, *from_arg;
-
-    alloc  = bor_offsetof(ground_action_t, data);
-    alloc += sizeof(int) * from->arg_size;
-    alloc += sizeof(int) * (from->ground_atom_size - 1);
-    ga = BOR_MALLOC(alloc);
-    ga->id = -1;
-    ga->action_id = from->action_id;
-    ga->arg_size = from->arg_size;
-    ga->ground_atom_size = from->ground_atom_size - 1;
-
-    from_arg = GROUND_ACTION_ARG(from);
-    from_ground_atom = GROUND_ACTION_GROUND_ATOM(from);
-    arg = GROUND_ACTION_ARG(ga);
-    ground_atom = GROUND_ACTION_GROUND_ATOM(ga);
-
-    memcpy(arg, from_arg, sizeof(int) * ga->arg_size);
-    gatom = g->ground_atom.atom[from_ground_atom[atom_id]];
-    for (int i = 0; i < fact->arg_size; ++i){
-        if (gatom->arg[i].param >= 0)
-            arg[gatom->arg[i].param] = fact->arg[i];
+    for (int i = 0; i < tr->g->pddl->pred.size; ++i){
+        if (tr->pred_to_pre[i].pre != NULL)
+            BOR_FREE(tr->pred_to_pre[i].pre);
     }
-
-    for (int i = 0, j = 0; i < from->ground_atom_size; ++i){
-        if (i == atom_id)
-            continue;
-        gatom = g->ground_atom.atom[from_ground_atom[i]];
-        ground_atom[j++] = groundAtomsAddUnified(&g->ground_atom, gatom, arg);
-    }
-
-    /*
-    fprintf(stdout, "UNIFY-FROM: ");
-    groundActionPrint(g, from, stdout);
-    fprintf(stdout, "UNIFY-TO[%d]: ", atom_id);
-    groundActionPrint(g, ga, stdout);
-    */
-
-    return ga;
+    if (tr->pred_to_pre != NULL)
+        BOR_FREE(tr->pred_to_pre);
+    tnodeDel(tr, tr->root);
+    if (tr->arg_max_size != NULL)
+        BOR_FREE(tr->arg_max_size);
 }
 
-static void groundActionDel(ground_action_t *ga)
+static void tnodePrint(tree_t *tr, tnode_t *tn, int argi, int offset, FILE *fout)
 {
-    BOR_FREE(ga);
-}
+    int off = 0, p = 0;
 
-static void groundActionPrint(ground_t *g, const ground_action_t *ga,
-                              FILE *fout)
-{
-    const action_t *a = g->action.action + ga->action_id;
-    const ground_atom_t *gatom;
-    const int *ga_arg = GROUND_ACTION_ARG(ga);
-    const int *ga_ground_atom = GROUND_ACTION_GROUND_ATOM(ga);
-
-    fprintf(fout, "%d:(%s", ga->id, a->action->name);
-    for (int i = 0; i < ga->arg_size; ++i){
-        if (ga_arg[i] >= 0){
-            fprintf(fout, " %s", g->pddl->obj.obj[ga_arg[i]].name);
-        }else{
-            fprintf(fout, " %s", a->action->param.param[i].name);
-        }
-    }
-    fprintf(fout, ") ::");
-    for (int i = 0; i < ga->ground_atom_size; ++i){
-        gatom = g->ground_atom.atom[ga_ground_atom[i]];
-        fprintf(fout, " [%d:%s:", i, g->pddl->pred.pred[gatom->pred].name);
-        for (int j = 0; j < gatom->arg_size; ++j){
-            if (gatom->arg[j].obj >= 0){
-                fprintf(fout, " %s", g->pddl->obj.obj[gatom->arg[j].obj].name);
-            }else{
-                fprintf(fout, " %s",
-                        a->action->param.param[gatom->arg[j].param].name);
-            }
-        }
-        fprintf(fout, "]");
-    }
-    fprintf(fout, "\n");
-}
-
-
-static void groundActionsInit(ground_actions_t *gas)
-{
-    bzero(gas, sizeof(*gas));
-    gas->alloc = 4;
-    gas->action = BOR_ALLOC_ARR(ground_action_t *, gas->alloc);
-    gas->htable = borHTableNew(groundActionHash, groundActionEq, NULL);
-}
-
-static void groundActionsFree(ground_actions_t *gas)
-{
-    borHTableDel(gas->htable);
-    for (int i = 0; i < gas->size; ++i)
-        groundActionDel(gas->action[i]);
-    if (gas->action)
-        BOR_FREE(gas->action);
-}
-
-static int groundActionsAdd(ground_actions_t *gas, ground_action_t *ga,
-                            int *ga_id)
-{
-    bor_list_t *found;
-    ground_action_t *found_ga;
-
-    if ((found = borHTableFind(gas->htable, &ga->htable)) == NULL){
-        if (gas->size >= gas->alloc){
-            gas->alloc *= 2;
-            gas->action = BOR_REALLOC_ARR(gas->action,
-                                          ground_action_t *, gas->alloc);
-        }
-        ga->id = gas->size;
-        gas->action[gas->size++] = ga;
-        borHTableInsert(gas->htable, &ga->htable);
-        if (ga_id)
-            *ga_id = ga->id;
-        return 0;
-
+    off += fprintf(fout, "%d", argi);
+    if (tn->obj_id == UNDEF){
+        off += fprintf(fout, ":X");
     }else{
-        groundActionDel(ga);
-        if (ga_id){
-            found_ga = BOR_LIST_ENTRY(found, ground_action_t, htable);
-            *ga_id = found_ga->id;
-        }
-        return -1;
+        off += fprintf(fout, ":%d", tn->obj_id);
     }
-}
+    off += fprintf(fout, ":P%x", tn->pre_mask);
+    off += fprintf(fout, ":%d", tn->pre_unified);
+    if (tn->flags.blocked)
+        off += fprintf(fout, ":B");
+    if (tn->flags.pre_unified)
+        off += fprintf(fout, ":U");
+    if (tn->flags.static_arg)
+        off += fprintf(fout, ":S");
+    if (tn->pre_mask == tr->pre_mask)
+        off += fprintf(fout, "*");
 
-static int groundActionsAddFromAction(ground_t *g, ground_actions_t *gas,
-                                      int aid, int *ga_id)
-{
-    ground_action_t *ga = groundActionFromAction(g, aid);
-    return groundActionsAdd(gas, ga, ga_id);
-}
-
-static int groundActionsAddUnified(ground_t *g,
-                                   ground_actions_t *gas,
-                                   const ground_action_t *from,
-                                   const pddl_fact_t *fact,
-                                   int atom_id,
-                                   int *ga_id)
-{
-    ground_action_t *ga;
-    ga = groundActionUnify(g, from, fact, atom_id);
-    return groundActionsAdd(gas, ga, ga_id);
-}
-
-static void predMapInit(pred_map_t *map, const pddl_t *pddl)
-{
-    bzero(map, sizeof(*map));
-    map->pred_size = pddl->pred.size;
-    map->map_ground_action = BOR_CALLOC_ARR(int *, map->pred_size);
-    map->map_pre_id = BOR_CALLOC_ARR(int *, map->pred_size);
-    map->map_size = BOR_CALLOC_ARR(int , map->pred_size);
-    map->map_alloc = BOR_CALLOC_ARR(int , map->pred_size);
-    for (int i = 0; i < map->pred_size; ++i){
-        map->map_alloc[i] = 4;
-        map->map_ground_action[i] = BOR_ALLOC_ARR(int, map->map_alloc[i]);
-        map->map_pre_id[i] = BOR_ALLOC_ARR(int, map->map_alloc[i]);
-    }
-}
-
-static void predMapFree(pred_map_t *map)
-{
-    for (int i = 0; i < map->pred_size; ++i){
-        if (map->map_ground_action[i])
-            BOR_FREE(map->map_ground_action[i]);
-        if (map->map_pre_id[i])
-            BOR_FREE(map->map_pre_id[i]);
-    }
-    if (map->map_ground_action)
-        BOR_FREE(map->map_ground_action);
-    if (map->map_pre_id)
-        BOR_FREE(map->map_pre_id);
-    if (map->map_size)
-        BOR_FREE(map->map_size);
-    if (map->map_alloc)
-        BOR_FREE(map->map_alloc);
-}
-
-static void predMapAdd(pred_map_t *map, int pred_id, int ga_id, int pre_id)
-{
-    if (map->map_size[pred_id] >= map->map_alloc[pred_id]){
-        map->map_alloc[pred_id] *= 2;
-        map->map_ground_action[pred_id]
-            = BOR_REALLOC_ARR(map->map_ground_action[pred_id],
-                              int, map->map_alloc[pred_id]);
-        map->map_pre_id[pred_id]
-            = BOR_REALLOC_ARR(map->map_pre_id[pred_id],
-                              int, map->map_alloc[pred_id]);
-    }
-    map->map_ground_action[pred_id][map->map_size[pred_id]] = ga_id;
-    map->map_pre_id[pred_id][map->map_size[pred_id]] = pre_id;
-    ++map->map_size[pred_id];
-}
-
-static void groundInitStaticFact(ground_t *g, const pddl_t *pddl)
-{
-    const pddl_fact_t *fact;
-
-    for (int i = 0; i < pddl->init_fact.fact_size; ++i){
-        fact = pddl->init_fact.fact[i];
-        if (pddlFactIsStatic(pddl, fact)){
-            pddlFactsAdd(&g->static_fact, fact);
-            pddlFactsAdd(&g->fact, fact);
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        tnode_child_t *cs = tn->child + argi;
+        for (int i = 0; i < cs->child_size; ++i){
+            if (p){
+                fprintf(fout, "\n");
+                for (int i = 0; i < offset + off; ++i)
+                    fprintf(fout, " ");
+                fprintf(fout, "`");
+            }else{
+                fprintf(fout, " ");
+                p = 1;
+            }
+            tnodePrint(tr, cs->child[i], argi, offset + off + 1, fout);
         }
     }
 
-    if (pddl->pred.eq_pred >= 0){
-        for (int i = 0; i < pddl->obj.size; ++i){
-            PDDL_FACT_FOR_GROUND2(eq_fact, 2);
-            eq_fact.pred = pddl->pred.eq_pred;
-            eq_fact.arg_size = 2;
-            eq_fact.arg[0] = i;
-            eq_fact.arg[1] = i;
-            pddlFactsAdd(&g->static_fact, &eq_fact);
-            pddlFactsAdd(&g->fact, &eq_fact);
-        }
+    if (offset == 0)
+        fprintf(fout, "\n");
+}
+
+static void treePrint(tree_t *tr, FILE *fout)
+{
+    fprintf(fout, "Tree for %s, arg_size: %d, pre_size: %d, pre_mask: %x"
+                  " root-blocked: %d, param-size:",
+            tr->action->action->name, tr->arg_size, tr->pre_size,
+            tr->pre_mask, tr->root->flags.blocked);
+    for (int i = 0; i < tr->arg_size; ++i)
+        fprintf(fout, " %d:%d", i, tr->arg_max_size[i]);
+    fprintf(fout, "\n");
+    for (int argi = 0; argi < tr->arg_size; ++argi){
+        tnode_child_t *cs = tr->root->child + argi;
+        for (int i = 0; i < cs->child_size; ++i)
+            tnodePrint(tr, cs->child[i], argi, 0, fout);
     }
 }
+
 
 static void groundInitFact(ground_t *g, const pddl_t *pddl)
 {
@@ -771,83 +812,11 @@ static void groundInitFact(ground_t *g, const pddl_t *pddl)
 
     for (int i = 0; i < pddl->init_fact.fact_size; ++i){
         fact = pddl->init_fact.fact[i];
-        if (!pddlFactIsStatic(pddl, fact)){
+        if (pddlFactIsStatic(pddl, fact)){
+            pddlFactsAdd(&g->static_fact, fact);
+        }else{
             pddlFactsAdd(&g->fact, fact);
         }
-    }
-}
-
-static void groundAddGroundActionToTable(ground_t *g,
-                                         const ground_action_t *ga)
-{
-    ground_atom_t *gatom;
-    int pred_id;
-    const int *ga_ground_atom = GROUND_ACTION_GROUND_ATOM(ga);
-
-    for (int i = 0; i < ga->ground_atom_size; ++i){
-        gatom = g->ground_atom.atom[ga_ground_atom[i]];
-        pred_id = gatom->pred;
-        predMapAdd(&g->pred_map, pred_id, ga->id, i);
-        fprintf(stdout, "    --> table [pred: %d, id: %d, pre_id: %d]\n",
-                pred_id, ga->id, i);
-    }
-}
-
-static void _groundEnqueueAddEff(ground_t *g,
-                                 ground_action_t *ga,
-                                 int argi)
-{
-    const action_t *a = g->action.action + ga->action_id;
-    int *ga_arg = GROUND_ACTION_ARG(ga);
-
-    // Skip bound arguments
-    for (; argi < ga->arg_size && ga_arg[argi] >= 0; ++argi);
-
-    if (argi >= ga->arg_size){
-        const pddl_cond_atom_t *atom;
-        PDDL_FACT_FOR_GROUND2(fact, a->max_arg_size);
-
-        for (int i = 0; i < a->add_eff.size; ++i){
-            atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
-            pddlCondAtomGroundFact(atom, ga_arg, &fact);
-            pddlFactsAdd(&g->fact, &fact);
-            fprintf(stdout, "  FACT ");
-            pddlFactPrint(g->pddl, &fact, stdout);
-            fprintf(stdout, "\n");
-        }
-
-    }else{
-        const int *obj;
-        int size;
-        obj = pddlTypesObjsByType(&g->pddl->type,
-                                  a->action->param.param[argi].type, &size);
-        for (int i = 0; i < size; ++i){
-            ga_arg[argi] = obj[i];
-            _groundEnqueueAddEff(g, ga, argi + 1);
-        }
-        ga_arg[argi] = -1;
-    }
-}
-
-static void groundEnqueueAddEff(ground_t *g, ground_action_t *ga)
-{
-    _groundEnqueueAddEff(g, ga, 0);
-}
-
-static void groundInitGroundActions(ground_t *g, const pddl_t *pddl)
-{
-    ground_action_t *ga;
-    int gid;
-
-    for (int i = 0; i < g->action.size; ++i){
-        if (groundActionsAddFromAction(g, &g->ground_action, i, &gid) != 0)
-            continue;
-        ga = g->ground_action.action[gid];
-        groundAddGroundActionToTable(g, ga);
-        groundActionPrint(g, ga, stdout);
-
-        if (ga->ground_atom_size == 0)
-            groundEnqueueAddEff(g, ga);
     }
 }
 
@@ -855,160 +824,339 @@ static void groundInit(ground_t *g, const pddl_t *pddl)
 {
     bzero(g, sizeof(*g));
     g->pddl = pddl;
-    actionsInit(&g->action, pddl);
-    groundAtomsInit(&g->ground_atom);
-    groundActionsInit(&g->ground_action);
-    predMapInit(&g->pred_map, pddl);
+    pddlPrepActionsInit(pddl, &g->action);
     pddlFactsInit(&g->static_fact);
     pddlFactsInit(&g->fact);
     pddlStripsOpsInit(&g->op);
 
-    groundInitStaticFact(g, pddl);
     groundInitFact(g, pddl);
-    groundInitGroundActions(g, pddl);
 
-    pddlFactsPrintInit(pddl, &g->static_fact, stdout);
-    pddlFactsPrintInit(pddl, &g->fact, stdout);
+    g->tree = BOR_ALLOC_ARR(tree_t, g->action.size);
+    for (int i = 0; i < g->action.size; ++i)
+        treeInit(g->tree + i, g, i);
 }
 
 static void groundFree(ground_t *g)
 {
-    actionsFree(&g->action);
-    groundAtomsFree(&g->ground_atom);
-    groundActionsFree(&g->ground_action);
-    predMapFree(&g->pred_map);
-
-    pddlFactsFree(&g->static_fact);
-    pddlFactsFree(&g->fact);
+    for (int i = 0; i < g->action.size; ++i)
+        treeFree(g->tree + i);
+    if (g->tree != NULL)
+        BOR_FREE(g->tree);
     pddlStripsOpsFree(&g->op);
+    pddlFactsFree(&g->fact);
+    pddlFactsFree(&g->static_fact);
+    pddlPrepActionsFree(&g->action);
+    groundArgsFree(&g->ground_args);
 }
 
-static int groundGroundActionCheckAtom(ground_t *g,
-                                       const ground_action_t *ga,
-                                       const pddl_fact_t *fact,
-                                       const ground_atom_t *gatom)
+static void printAction(ground_t *g, const pddl_prep_action_t *a, int *arg)
 {
-    const action_t *a = g->action.action + ga->action_id;
-    int param_id, param_type, obj_id;
-
-    for (int i = 0; i < fact->arg_size; ++i){
-        obj_id = fact->arg[i];
-        if (gatom->arg[i].obj >= 0){
-            if (obj_id != gatom->arg[i].obj)
-                return -1;
+    fprintf(stderr, "%s", a->action->name);
+    for (int i = 0; i < a->param_size; ++i){
+        if (arg[i] >= 0){
+            fprintf(stderr, " %s", g->pddl->obj.obj[arg[i]].name);
         }else{
-            param_id = gatom->arg[i].param;
-            param_type = a->action->param.param[param_id].type;
-            if (!pddlTypesObjHasType(&g->pddl->type, param_type, obj_id))
-                return -1;
+            fprintf(stderr, " %s", a->action->param.param[i].name);
+        }
+    }
+    fprintf(stderr, "\n");
+}
+
+static void _groundActionAddEff(ground_t *g,
+                                const pddl_prep_action_t *a,
+                                int *arg, int argi)
+{
+    const int *obj;
+    int size;
+
+    // Skip bound arguments
+    for (; argi < a->param_size && arg[argi] >= 0; ++argi);
+    if (argi < a->param_size){
+        obj = pddlTypesObjsByType(a->type, a->param_type[argi], &size);
+        for (int i = 0; i < size; ++i){
+            arg[argi] = obj[i];
+            _groundActionAddEff(g, a, arg, argi + 1);
+            arg[argi] = -1;
+        }
+        return;
+    }
+
+    if (!pddlPrepActionCheck(a, &g->static_fact, arg)){
+        //pddlActionPrint(g->pddl, a->action, stderr);
+        fprintf(stderr, "FAIL: ");
+        printAction(g, a, arg);
+        return;
+    }
+
+    fprintf(stderr, "SUCCESS: ");
+    printAction(g, a, arg);
+
+    const pddl_cond_atom_t *atom;
+    PDDL_FACT_FOR_GROUND2(fact, a->max_arg_size);
+    for (int i = 0; i < a->add_eff.size; ++i){
+        atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
+        pddlCondAtomGroundFact(atom, arg, &fact);
+        pddlFactsAdd(&g->fact, &fact);
+
+        /*
+        fprintf(stderr, "ADD FACT ");
+        pddlFactPrint(g->pddl, &fact, stderr);
+        fprintf(stderr, "\n");
+        */
+    }
+
+    groundArgsAdd(&g->ground_args, a - g->action.action, a, arg);
+}
+
+static void groundActionAddEff(ground_t *g,
+                               const pddl_prep_action_t *a,
+                               const obj_id_t *oarg)
+{
+    int arg[a->param_size];
+
+    // TODO: What about zero params actions
+    for (int i = 0; i < a->param_size; ++i)
+        arg[i] = (oarg[i] == UNDEF ? -1 : oarg[i]);
+    _groundActionAddEff(g, a, arg, 0);
+}
+
+static char *groundOpName(const pddl_t *pddl,
+                          const pddl_action_t *action,
+                          const int *args)
+{
+    int i, slen;
+    char *name, *cur;
+
+    slen = strlen(action->name) + 2 + 1;
+    for (i = 0; i < action->param.size; ++i)
+        slen += 1 + strlen(pddl->obj.obj[args[i]].name);
+
+    cur = name = BOR_ALLOC_ARR(char, slen);
+    cur += sprintf(cur, "(%s", action->name);
+    for (i = 0; i < action->param.size; ++i)
+        cur += sprintf(cur, " %s", pddl->obj.obj[args[i]].name);
+    cur += sprintf(cur, ")");
+
+    return name;
+}
+
+static int groundAssign(int atom_max_arg_size,
+                        const int *arg,
+                        const pddl_cond_arr_t *atoms,
+                        const pddl_facts_t *funcs)
+{
+    const pddl_cond_assign_t *atom;
+    PDDL_FACT_FOR_GROUND2(func, atom_max_arg_size);
+    const pddl_fact_t *fvalue;
+    int func_id;
+    int cost = 0;
+
+    for (int i = 0; i < atoms->size; ++i){
+        atom = PDDL_COND_CAST(atoms->cond[i], assign);
+        if (atom->fvalue != NULL){
+            pddlCondAtomGroundFact(atom->fvalue, arg, &func);
+            func_id = pddlFactsFind(funcs, &func);
+            if (func_id >= 0){
+                fvalue = funcs->fact[func_id];
+                cost += fvalue->func_val;
+            }else{
+                // TODO
+                fprintf(stderr, "ERROR: Invalid function -- cannot ground!\n");
+                exit(-1);
+            }
+        }else{
+            cost += atom->value;
         }
     }
 
-    return 0;
+    return cost;
 }
 
-static int groundGroundActionCheckNegPre(ground_t *g,
-                                         const ground_action_t *ga,
-                                         const pddl_fact_t *fact,
-                                         const ground_atom_t *gatom)
+static void groundAtoms(int atom_max_arg_size,
+                        const int *arg,
+                        const pddl_cond_arr_t *atoms,
+                        const pddl_facts_t *facts,
+                        pddl_fact_id_arr_t *out)
 {
-    const action_t *a = g->action.action + ga->action_id;
-    if (a->pre_neg.size == 0)
-        return 0;
-
-    PDDL_FACT_FOR_GROUND2(fground, a->max_arg_size);
-    const int *ga_arg = GROUND_ACTION_ARG(ga);
-    int arg[a->param_size];
     const pddl_cond_atom_t *atom;
+    PDDL_FACT_FOR_GROUND2(fact, atom_max_arg_size);
+    int fact_id;
 
-    memcpy(arg, ga_arg, sizeof(int) * a->param_size);
-    for (int i = 0; i < gatom->arg_size; ++i){
-        if (gatom->arg[i].param >= 0)
-            arg[gatom->arg[i].param] = fact->arg[i];
+    for (int i = 0; i < atoms->size; ++i){
+        atom = PDDL_COND_CAST(atoms->cond[i], atom);
+        pddlCondAtomGroundFact(atom, arg, &fact);
+        fact_id = pddlFactsFind(facts, &fact);
+        if (fact_id >= 0){
+            pddlFactIdArrAdd(out, fact_id);
+        }
+    }
+}
+
+static void groundActions(ground_t *g)
+{
+    ground_args_t *ga, *parent_ga;
+    const pddl_prep_action_t *a;
+    pddl_strips_op_t op;
+    pddl_strips_op_t *parent;
+    char *name;
+    int op_id;
+
+    groundArgsSortAndUniq(&g->ground_args);
+    for (int i = 0; i < g->ground_args.size; ++i){
+        const ground_args_t *ga = g->ground_args.arg + i;
+        fprintf(stderr, "G[%d] id: %d, parent: %d |", i,
+                ga->action_id, ga->action->parent_action);
+        for (int j = 0; j < ga->action->param_size; ++j)
+            fprintf(stderr, " %d", ga->arg[j]);
+        fprintf(stderr, "\n");
     }
 
-    for (int i = 0; i < a->pre_neg.size; ++i){
-        atom = PDDL_COND_CAST(a->pre_neg.cond[i], atom);
-        if (pddlCondAtomGroundFact(atom, arg, &fground) == 0){
-            if (pddlFactsFind(&g->static_fact, &fground) >= 0){
-                return -1;
+    parent_ga = NULL;
+    for (int i = 0; i < g->ground_args.size; ++i){
+        ga = g->ground_args.arg + i;
+        a = ga->action;
+        ASSERT(pddlPrepActionCheck(a, &g->static_fact, ga->arg));
+
+        pddlStripsOpInit(&op);
+        // Ground precontions, add and delete effects and set cost
+        groundAtoms(a->max_arg_size, ga->arg, &a->pre, &g->fact, &op.pre);
+        groundAtoms(a->max_arg_size, ga->arg, &a->add_eff, &g->fact,
+                    &op.add_eff);
+        groundAtoms(a->max_arg_size, ga->arg, &a->del_eff, &g->fact,
+                    &op.del_eff);
+        op.cost = 1;
+        if (g->pddl->metric){
+            op.cost = groundAssign(a->max_arg_size, ga->arg, &a->assign,
+                                   &g->pddl->init_func);
+        }
+        name = groundOpName(g->pddl, a->action, ga->arg);
+
+        // Make the operator well-formed
+        pddlStripsOpFinalize(&op, name);
+
+        // Use only operators with effects
+        if (op.add_eff.size == 0 && op.del_eff.size == 0){
+            pddlStripsOpFree(&op);
+            continue;
+        }
+
+        if (a->parent_action >= 0){
+            // If the operator corresponds to a conditional effect the
+            // parent must be known already, because this is the way we
+            // sorted ground_args_t structures.
+            ASSERT(parent_ga != NULL);
+            parent = g->op.op[parent_ga->op_id];
+
+            // Find out preconditions that belong only to the conditional
+            // effect.
+            pddlFactIdArrMinus(&op.pre, &parent->pre);
+            if (op.pre.size > 0){
+                // Create conditional effect if necessary
+                pddlStripsOpAddCondEff(parent, &op);
+
+            }else{
+                // If precondition of the conditional effect is empty, then
+                // we can merge conditional effect directly to the parent
+                // operator.
+                // The operators are hashed only using its name so we can
+                // merge effects with re-inserting operator.
+                pddlStripsOpAddEffFromOp(parent, &op);
+
+                // If operator was well-formed before it must remain
+                // well-formed.
+                ASSERT(parent->add_eff.size > 0 || parent->del_eff.size > 0);
+            }
+
+        }else{
+            op_id = pddlStripsOpsAdd(&g->op, &op);
+            ga->op_id = op_id;
+            parent_ga = ga;
+        }
+
+        pddlStripsOpFree(&op);
+    }
+
+    fprintf(stderr, "Ops[%d]:\n", g->op.op_size);
+    pddlStripsOpsPrint(&g->op, stderr);
+}
+
+
+static void groundStaticFacts(ground_t *g)
+{
+    for (int i = 0; i < g->static_fact.fact_size; ++i){
+        const pddl_fact_t *fact = g->static_fact.fact[i];
+        /*
+        fprintf(stderr, "Pop Fact: ");
+        pddlFactPrint(g.pddl, fact, stderr);
+        fprintf(stderr, " \n");
+        */
+
+        for (int j = 0; j < g->action.size; ++j){
+            tree_t *tr = g->tree + j;
+            for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
+                treeUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k], 1);
             }
         }
     }
 
-    return 0;
-}
-
-static int groundUnify(ground_t *g,
-                       const pddl_fact_t *fact,
-                       const ground_action_t *ga,
-                       int pre_id)
-{
-    const ground_atom_t *gatom;
-    int ret, next_ga_id;
-    ground_action_t *next_ga;
-    const int *ga_ground_atom = GROUND_ACTION_GROUND_ATOM(ga);
-
-    fprintf(stdout, "  try(%d): ", pre_id);
-    groundActionPrint(g, ga, stdout);
-
-    gatom = g->ground_atom.atom[ga_ground_atom[pre_id]];
-    if (groundGroundActionCheckAtom(g, ga, fact, gatom) != 0)
-        return -1;
-    if (groundGroundActionCheckNegPre(g, ga, fact, gatom) != 0)
-        return -1;
-
-    ret = groundActionsAddUnified(g, &g->ground_action, ga, fact, pre_id,
-                                  &next_ga_id);
-    if (ret == 0){
-        next_ga = g->ground_action.action[next_ga_id];
-        if (next_ga->ground_atom_size == 0){
-            // TODO
-            fprintf(stdout, "ADD: ");
-            groundActionPrint(g, next_ga, stdout);
-            groundEnqueueAddEff(g, next_ga);
-        }else{
-            fprintf(stdout, "GA: ");
-            groundActionPrint(g, next_ga, stdout);
-            groundAddGroundActionToTable(g, next_ga);
-        }
-        return next_ga_id;
-    }
-    return -1;
-}
-
-static void groundFact(ground_t *g, const pddl_fact_t *fact)
-{
-    int pred_id = fact->pred;
-    const int *gas, *pre_ids;
-    ground_action_t *ga;
-
-    fprintf(stdout, "groundFact: ");
-    pddlFactPrint(g->pddl, fact, stdout);
-    fprintf(stdout, "\n");
-
-    for (int i = 0; i < g->pred_map.map_size[pred_id]; ++i){
-        gas = g->pred_map.map_ground_action[pred_id];
-        pre_ids = g->pred_map.map_pre_id[pred_id];
-        ga = g->ground_action.action[gas[i]];
-        groundUnify(g, fact, ga, pre_ids[i]);
+    fprintf(stderr, "STATIC END\n");
+    for (int i = 0; i < g->action.size; ++i){
+        treeFixStatic(g->tree + i);
+        //treePrint(g->tree + i, stderr);
     }
 }
 
-static void ground(ground_t *g)
+static void groundFacts(ground_t *g)
 {
-    const pddl_fact_t *fact;
-
     for (int i = 0; i < g->fact.fact_size; ++i){
-        fact = g->fact.fact[i];
-        groundFact(g, fact);
+        const pddl_fact_t *fact = g->fact.fact[i];
+        /*
+        fprintf(stderr, "Pop Fact: ");
+        pddlFactPrint(g.pddl, fact, stderr);
+        fprintf(stderr, " \n");
+        */
+
+        for (int j = 0; j < g->action.size; ++j){
+            tree_t *tr = g->tree + j;
+            for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
+                treeUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k], 1);
+            }
+        }
     }
 }
 
-void groundStrips(pddl_strips_t *strips, const pddl_t *pddl)
+void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
 {
     ground_t g;
+
     groundInit(&g, pddl);
-    ground(&g);
+    groundStaticFacts(&g);
+    groundFacts(&g);
+    groundActions(&g);
+
+#if 0
+    for (int i = 0; i < g.fact.fact_size; ++i){
+        const pddl_fact_t *fact = g.fact.fact[i];
+        /*
+        fprintf(stderr, "Pop Fact: ");
+        pddlFactPrint(g.pddl, fact, stderr);
+        fprintf(stderr, " \n");
+        */
+
+        for (int j = 0; j < g.action.size; ++j){
+            tree_t *tr = g.tree + j;
+            for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
+                treeUnify(tr, fact, tr->pred_to_pre[fact->pred].pre[k]);
+            }
+        }
+    }
+
+    fprintf(stderr, "END:\n");
+    for (int j = 0; j < g.action.size; ++j){
+        tree_t *tr = g.tree + j;
+        //treePrint(tr, stderr);
+    }
+#endif
+
     groundFree(&g);
 }
