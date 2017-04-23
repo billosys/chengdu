@@ -86,6 +86,21 @@ struct tree {
 };
 typedef struct tree tree_t;
 
+struct ground_args {
+    int *arg;
+    int action_id;
+    const pddl_prep_action_t *action;
+    int op_id;
+};
+typedef struct ground_args ground_args_t;
+
+struct ground_args_arr {
+    ground_args_t *arg;
+    int size;
+    int alloc;
+};
+typedef struct ground_args_arr ground_args_arr_t;
+
 struct ground {
     const pddl_t *pddl;
     pddl_prep_actions_t action;
@@ -93,6 +108,7 @@ struct ground {
     pddl_facts_t fact;
     pddl_strips_ops_t op;
     tree_t *tree;
+    ground_args_arr_t ground_args;
 };
 typedef struct ground ground_t;
 
@@ -100,6 +116,87 @@ static void treePrint(tree_t *tr, FILE *fout);
 static void groundActionAddEff(ground_t *g,
                                const pddl_prep_action_t *a,
                                const obj_id_t *oarg);
+
+static void groundArgsFree(ground_args_arr_t *ga)
+{
+    for (int i = 0; i < ga->size; ++i){
+        if (ga->arg[i].arg != NULL)
+            BOR_FREE(ga->arg[i].arg);
+    }
+    if (ga->arg != NULL)
+        BOR_FREE(ga->arg);
+}
+static void groundArgsAdd(ground_args_arr_t *ga, int action_id,
+                          const pddl_prep_action_t *action,
+                          const int *arg)
+{
+    ground_args_t *garg;
+
+    if (ga->size >= ga->alloc){
+        if (ga->alloc == 0)
+            ga->alloc = 4;
+        ga->alloc *= 2;
+        ga->arg = BOR_REALLOC_ARR(ga->arg, ground_args_t, ga->alloc);
+    }
+
+    garg = ga->arg + ga->size++;
+    garg->arg = BOR_ALLOC_ARR(int, action->param_size);
+    memcpy(garg->arg, arg, sizeof(int) * action->param_size);
+    garg->action_id = action_id;
+    garg->action = action;
+    garg->op_id = -1;
+}
+
+static int groundArgsCmp(const void *a, const void *b, void *_)
+{
+    const ground_args_t *g1 = a;
+    const ground_args_t *g2 = b;
+    int g1_action_id = g1->action_id;
+    int g2_action_id = g2->action_id;
+    int cmp;
+
+    if (g1->action->parent_action >= 0)
+        g1_action_id = g1->action->parent_action;
+    if (g2->action->parent_action >= 0)
+        g2_action_id = g2->action->parent_action;
+
+    if (g1_action_id == g2_action_id){
+        cmp = memcmp(g1->arg, g2->arg, sizeof(int) * g1->action->param_size);
+        if (cmp != 0)
+            return cmp;
+        if (g1->action->parent_action < 0 && g1->action->parent_action < 0)
+            return 0;
+        if (g1->action->parent_action < 0)
+            return -1;
+        if (g2->action->parent_action < 0)
+            return 1;
+    }
+    return g1_action_id - g2_action_id;
+}
+
+static void groundArgsSortAndUniq(ground_args_arr_t *ga)
+{
+    int ins;
+
+    if (ga->arg == 0)
+        return;
+
+    borSort(ga->arg, ga->size, sizeof(ground_args_t), groundArgsCmp, NULL);
+
+    ins = 1;
+    for (int i = 1; i < ga->size; ++i){
+        fprintf(stderr, "uniq: %d %d\n", i,
+                groundArgsCmp(ga->arg + i, ga->arg + i - 1, NULL));
+        if (groundArgsCmp(ga->arg + i, ga->arg + i - 1, NULL) == 0){
+            if (ga->arg[i].arg != NULL)
+                BOR_FREE(ga->arg[i].arg);
+        }else{
+            ga->arg[ins++] = ga->arg[i];
+        }
+    }
+    ga->size = ins;
+}
+
 
 _bor_inline int tnodeMaxByteSize(tree_t *tr)
 {
@@ -806,6 +903,8 @@ static void _groundActionAddEff(ground_t *g,
         fprintf(stderr, "\n");
         */
     }
+
+    groundArgsAdd(&g->ground_args, a - g->action.action, a, arg);
 }
 
 static void groundActionAddEff(ground_t *g,
@@ -819,6 +918,166 @@ static void groundActionAddEff(ground_t *g,
         arg[i] = (oarg[i] == UNDEF ? -1 : oarg[i]);
     _groundActionAddEff(g, a, arg, 0);
 }
+
+static char *groundOpName(const pddl_t *pddl,
+                          const pddl_action_t *action,
+                          const int *args)
+{
+    int i, slen;
+    char *name, *cur;
+
+    slen = strlen(action->name) + 2 + 1;
+    for (i = 0; i < action->param.size; ++i)
+        slen += 1 + strlen(pddl->obj.obj[args[i]].name);
+
+    cur = name = BOR_ALLOC_ARR(char, slen);
+    cur += sprintf(cur, "(%s", action->name);
+    for (i = 0; i < action->param.size; ++i)
+        cur += sprintf(cur, " %s", pddl->obj.obj[args[i]].name);
+    cur += sprintf(cur, ")");
+
+    return name;
+}
+
+static int groundAssign(int atom_max_arg_size,
+                        const int *arg,
+                        const pddl_cond_arr_t *atoms,
+                        const pddl_facts_t *funcs)
+{
+    const pddl_cond_assign_t *atom;
+    PDDL_FACT_FOR_GROUND2(func, atom_max_arg_size);
+    const pddl_fact_t *fvalue;
+    int func_id;
+    int cost = 0;
+
+    for (int i = 0; i < atoms->size; ++i){
+        atom = PDDL_COND_CAST(atoms->cond[i], assign);
+        if (atom->fvalue != NULL){
+            pddlCondAtomGroundFact(atom->fvalue, arg, &func);
+            func_id = pddlFactsFind(funcs, &func);
+            if (func_id >= 0){
+                fvalue = funcs->fact[func_id];
+                cost += fvalue->func_val;
+            }else{
+                // TODO
+                fprintf(stderr, "ERROR: Invalid function -- cannot ground!\n");
+                exit(-1);
+            }
+        }else{
+            cost += atom->value;
+        }
+    }
+
+    return cost;
+}
+
+static void groundAtoms(int atom_max_arg_size,
+                        const int *arg,
+                        const pddl_cond_arr_t *atoms,
+                        const pddl_facts_t *facts,
+                        pddl_fact_id_arr_t *out)
+{
+    const pddl_cond_atom_t *atom;
+    PDDL_FACT_FOR_GROUND2(fact, atom_max_arg_size);
+    int fact_id;
+
+    for (int i = 0; i < atoms->size; ++i){
+        atom = PDDL_COND_CAST(atoms->cond[i], atom);
+        pddlCondAtomGroundFact(atom, arg, &fact);
+        fact_id = pddlFactsFind(facts, &fact);
+        if (fact_id >= 0){
+            pddlFactIdArrAdd(out, fact_id);
+        }
+    }
+}
+
+static void groundActions(ground_t *g)
+{
+    ground_args_t *ga, *parent_ga;
+    const pddl_prep_action_t *a;
+    pddl_strips_op_t op;
+    pddl_strips_op_t *parent;
+    char *name;
+    int op_id;
+
+    groundArgsSortAndUniq(&g->ground_args);
+    for (int i = 0; i < g->ground_args.size; ++i){
+        const ground_args_t *ga = g->ground_args.arg + i;
+        fprintf(stderr, "G[%d] id: %d, parent: %d |", i,
+                ga->action_id, ga->action->parent_action);
+        for (int j = 0; j < ga->action->param_size; ++j)
+            fprintf(stderr, " %d", ga->arg[j]);
+        fprintf(stderr, "\n");
+    }
+
+    parent_ga = NULL;
+    for (int i = 0; i < g->ground_args.size; ++i){
+        ga = g->ground_args.arg + i;
+        a = ga->action;
+        ASSERT(pddlPrepActionCheck(a, &g->static_fact, ga->arg));
+
+        pddlStripsOpInit(&op);
+        // Ground precontions, add and delete effects and set cost
+        groundAtoms(a->max_arg_size, ga->arg, &a->pre, &g->fact, &op.pre);
+        groundAtoms(a->max_arg_size, ga->arg, &a->add_eff, &g->fact,
+                    &op.add_eff);
+        groundAtoms(a->max_arg_size, ga->arg, &a->del_eff, &g->fact,
+                    &op.del_eff);
+        op.cost = 1;
+        if (g->pddl->metric){
+            op.cost = groundAssign(a->max_arg_size, ga->arg, &a->assign,
+                                   &g->pddl->init_func);
+        }
+        name = groundOpName(g->pddl, a->action, ga->arg);
+
+        // Make the operator well-formed
+        pddlStripsOpFinalize(&op, name);
+
+        // Use only operators with effects
+        if (op.add_eff.size == 0 && op.del_eff.size == 0){
+            pddlStripsOpFree(&op);
+            continue;
+        }
+
+        if (a->parent_action >= 0){
+            // If the operator corresponds to a conditional effect the
+            // parent must be known already, because this is the way we
+            // sorted ground_args_t structures.
+            ASSERT(parent_ga != NULL);
+            parent = g->op.op[parent_ga->op_id];
+
+            // Find out preconditions that belong only to the conditional
+            // effect.
+            pddlFactIdArrMinus(&op.pre, &parent->pre);
+            if (op.pre.size > 0){
+                // TODO: Cond eff
+                // TODO: If cond eff should be compiled away?
+                pddlStripsOpAddEffFromOp(&op, parent);
+                fprintf(stderr, "COND EFF\n");
+
+            }else{
+                // If precondition of the conditional effect is empty, then
+                // we can merge conditional effect directly to the parent
+                // operator.
+                // The operators are hashed only using its name so we can
+                // merge effects with re-inserting operator.
+                pddlStripsOpAddEffFromOp(parent, &op);
+
+                // If operator was well-formed before it must remain
+                // well-formed.
+                ASSERT(parent->add_eff.size > 0 || parent->del_eff.size > 0);
+            }
+
+        }else{
+            op_id = pddlStripsOpsAdd(&g->op, &op);
+            ga->op_id = op_id;
+            parent_ga = ga;
+        }
+
+        pddlStripsOpFree(&op);
+    }
+}
+
 
 static void groundStaticFacts(ground_t *g)
 {
@@ -871,6 +1130,7 @@ void __pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     groundInit(&g, pddl);
     groundStaticFacts(&g);
     groundFacts(&g);
+    groundActions(&g);
 
 #if 0
     for (int i = 0; i < g.fact.fact_size; ++i){

@@ -77,9 +77,20 @@ _bor_inline void pddlStripsOpAddDelEff(pddl_strips_op_t *op, int fact_id)
 }
 
 /**
+ * Makes the operator well-formed.
+ */
+void pddlStripsOpNormalize(pddl_strips_op_t *op);
+
+/**
  * Finalizes strips operator after all parts, except name, is filled.
  */
 int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name);
+
+/**
+ * Adds all del and delete effects from src to dst.
+ */
+void pddlStripsOpAddEffFromOp(pddl_strips_op_t *dst,
+                              const pddl_strips_op_t *src);
 
 _bor_inline int pddlStripsOpRmFactId(pddl_strips_op_t *op, int fact_id)
 {

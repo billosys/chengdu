@@ -59,6 +59,7 @@ static int checkDomainName(pddl_t *pddl)
                                     PDDL_KW_DOMAIN, ":domain");
     if (problem_domain_name == NULL
             || strcmp(problem_domain_name, pddl->domain_name) != 0){
+        // TODO: Dereference of NULL pointer!
         WARN("Domain names does not match: `%s' x `%s'",
              pddl->domain_name, problem_domain_name);
         return 0;

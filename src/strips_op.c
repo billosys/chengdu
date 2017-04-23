@@ -73,15 +73,30 @@ void pddlStripsOpDel(pddl_strips_op_t *op)
     BOR_FREE(op);
 }
 
+void pddlStripsOpNormalize(pddl_strips_op_t *op)
+{
+    pddlFactIdArrMinus(&op->del_eff, &op->add_eff);
+    pddlFactIdArrMinus(&op->add_eff, &op->pre);
+}
+
 int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name)
 {
     op->name = name;
     op->hash = nameHash(name);
-    pddlFactIdArrMinus(&op->del_eff, &op->add_eff);
-    pddlFactIdArrMinus(&op->add_eff, &op->pre);
+    pddlStripsOpNormalize(op);
     if (op->add_eff.size == 0 && op->del_eff.size == 0)
         return -1;
     return 0;
+}
+
+void pddlStripsOpAddEffFromOp(pddl_strips_op_t *dst,
+                              const pddl_strips_op_t *src)
+{
+    for (int i = 0; i < src->add_eff.size; ++i)
+        pddlFactIdArrAdd(&dst->add_eff, src->add_eff.fact[i]);
+    for (int i = 0; i < src->del_eff.size; ++i)
+        pddlFactIdArrAdd(&dst->del_eff, src->del_eff.fact[i]);
+    pddlStripsOpNormalize(dst);
 }
 
 void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src)

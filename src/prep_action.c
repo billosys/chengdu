@@ -109,6 +109,7 @@ static void actionInit2(pddl_prep_action_t *a,
 
     bzero(a, sizeof(*a));
     a->action = action;
+    a->parent_action = -1;
     a->param_size = action->param.size;
     a->param_type = BOR_ALLOC_ARR(int, a->param_size);
     for (int i = 0; i < a->param_size; ++i)
