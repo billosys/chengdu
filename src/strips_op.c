@@ -57,6 +57,13 @@ void pddlStripsOpFree(pddl_strips_op_t *op)
     pddlFactIdArrFree(&op->pre);
     pddlFactIdArrFree(&op->del_eff);
     pddlFactIdArrFree(&op->add_eff);
+    for (int i = 0; i < op->cond_eff_size; ++i){
+        pddlFactIdArrFree(&op->cond_eff[i].pre);
+        pddlFactIdArrFree(&op->cond_eff[i].add_eff);
+        pddlFactIdArrFree(&op->cond_eff[i].del_eff);
+    }
+    if (op->cond_eff != NULL)
+        BOR_FREE(op->cond_eff);
 }
 
 pddl_strips_op_t *pddlStripsOpNew(void)
@@ -142,9 +149,8 @@ void pddlStripsOpsInit(pddl_strips_ops_t *ops)
 
 void pddlStripsOpsFree(pddl_strips_ops_t *ops)
 {
-    int i;
     borHTableDel(ops->htable);
-    for (i = 0; i < ops->op_size; ++i){
+    for (int i = 0; i < ops->op_size; ++i){
         if (ops->op[i])
             pddlStripsOpDel(ops->op[i]);
     }

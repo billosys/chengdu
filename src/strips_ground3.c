@@ -183,16 +183,16 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga)
 
     borSort(ga->arg, ga->size, sizeof(ground_args_t), groundArgsCmp, NULL);
 
-    ins = 1;
+    ins = 0;
     for (int i = 1; i < ga->size; ++i){
-        if (groundArgsCmp(ga->arg + i, ga->arg + i - 1, NULL) == 0){
+        if (groundArgsCmp(ga->arg + i, ga->arg + ins, NULL) == 0){
             if (ga->arg[i].arg != NULL)
                 BOR_FREE(ga->arg[i].arg);
         }else{
-            ga->arg[ins++] = ga->arg[i];
+            ga->arg[++ins] = ga->arg[i];
         }
     }
-    ga->size = ins;
+    ga->size = ins + 1;
 }
 
 
@@ -744,6 +744,8 @@ static void treeFree(tree_t *tr)
     if (tr->pred_to_pre != NULL)
         BOR_FREE(tr->pred_to_pre);
     tnodeDel(tr, tr->root);
+    if (tr->arg_max_size != NULL)
+        BOR_FREE(tr->arg_max_size);
 }
 
 static void tnodePrint(tree_t *tr, tnode_t *tn, int argi, int offset, FILE *fout)
@@ -844,6 +846,7 @@ static void groundFree(ground_t *g)
     pddlFactsFree(&g->fact);
     pddlFactsFree(&g->static_fact);
     pddlPrepActionsFree(&g->action);
+    groundArgsFree(&g->ground_args);
 }
 
 static void printAction(ground_t *g, const pddl_prep_action_t *a, int *arg)
