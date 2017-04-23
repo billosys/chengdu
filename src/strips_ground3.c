@@ -164,7 +164,7 @@ static int groundArgsCmp(const void *a, const void *b, void *_)
         cmp = memcmp(g1->arg, g2->arg, sizeof(int) * g1->action->param_size);
         if (cmp != 0)
             return cmp;
-        if (g1->action->parent_action < 0 && g1->action->parent_action < 0)
+        if (g1->action->parent_action < 0 && g2->action->parent_action < 0)
             return 0;
         if (g1->action->parent_action < 0)
             return -1;
@@ -185,8 +185,6 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga)
 
     ins = 1;
     for (int i = 1; i < ga->size; ++i){
-        fprintf(stderr, "uniq: %d %d\n", i,
-                groundArgsCmp(ga->arg + i, ga->arg + i - 1, NULL));
         if (groundArgsCmp(ga->arg + i, ga->arg + i - 1, NULL) == 0){
             if (ga->arg[i].arg != NULL)
                 BOR_FREE(ga->arg[i].arg);
@@ -1050,10 +1048,8 @@ static void groundActions(ground_t *g)
             // effect.
             pddlFactIdArrMinus(&op.pre, &parent->pre);
             if (op.pre.size > 0){
-                // TODO: Cond eff
-                // TODO: If cond eff should be compiled away?
-                pddlStripsOpAddEffFromOp(&op, parent);
-                fprintf(stderr, "COND EFF\n");
+                // Create conditional effect if necessary
+                pddlStripsOpAddCondEff(parent, &op);
 
             }else{
                 // If precondition of the conditional effect is empty, then
@@ -1076,6 +1072,9 @@ static void groundActions(ground_t *g)
 
         pddlStripsOpFree(&op);
     }
+
+    fprintf(stderr, "Ops[%d]:\n", g->op.op_size);
+    pddlStripsOpsPrint(&g->op, stderr);
 }
 
 

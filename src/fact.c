@@ -561,5 +561,7 @@ void pddlFactIdArrMinus(pddl_fact_id_arr_t *a1, const pddl_fact_id_arr_t *a2)
             ++j;
         }
     }
+    for (; i < a1->size; ++i, ++w)
+        a1->fact[w] = a1->fact[i];
     a1->size = w + a1->size - i;
 }

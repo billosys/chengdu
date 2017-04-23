@@ -40,7 +40,9 @@ struct pddl_strips_op {
     pddl_fact_id_arr_t pre;
     pddl_fact_id_arr_t del_eff;
     pddl_fact_id_arr_t add_eff;
-    // TODO: Conditional effects
+    pddl_strips_op_cond_eff_t *cond_eff;
+    int cond_eff_size;
+    int cond_eff_alloc;
 
     int id;
     uint64_t hash;
@@ -75,6 +77,9 @@ _bor_inline void pddlStripsOpAddDelEff(pddl_strips_op_t *op, int fact_id)
 {
     pddlFactIdArrAdd(&op->del_eff, fact_id);
 }
+
+pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
+                                                  const pddl_strips_op_t *f);
 
 /**
  * Makes the operator well-formed.
@@ -157,6 +162,9 @@ _bor_inline void pddlStripsOpsRmFactIdFromAddEff(pddl_strips_ops_t *ops, int id)
         pddlStripsOpRmFactIdFromAddEff(op, id);
     }
 }
+
+void pddlStripsOpPrint(const pddl_strips_op_t *op, FILE *fout);
+void pddlStripsOpsPrint(const pddl_strips_ops_t *ops, FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */
