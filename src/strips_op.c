@@ -238,11 +238,11 @@ void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
     for (int j = 0; j < op->cond_eff_size; ++j){
         const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
 
-        fprintf(fout, "    pre: ");
+        fprintf(fout, "      pre: ");
         printFactArr(pddl, fs, &ce->pre, fout);
-        fprintf(fout, "    add: ");
+        fprintf(fout, "      add: ");
         printFactArr(pddl, fs, &ce->add_eff, fout);
-        fprintf(fout, "    del: ");
+        fprintf(fout, "      del: ");
         printFactArr(pddl, fs, &ce->del_eff, fout);
     }
 }

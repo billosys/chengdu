@@ -372,12 +372,11 @@ static int groundArgsCmp(const void *a, const void *b, void *_)
         cmp = memcmp(g1->arg, g2->arg, sizeof(int) * g1->action->param_size);
         if (cmp != 0)
             return cmp;
-        if (g1->action->parent_action < 0 && g2->action->parent_action < 0)
-            return 0;
         if (g1->action->parent_action < 0)
             return -1;
         if (g2->action->parent_action < 0)
             return 1;
+        return g1->action_id - g2->action_id;
     }
     return g1_action_id - g2_action_id;
 }
@@ -391,6 +390,7 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga)
 
     borSort(ga->arg, ga->size, sizeof(ground_args_t), groundArgsCmp, NULL);
 
+    // TODO: Is it even possible that there are duplicates?
     ins = 0;
     for (int i = 1; i < ga->size; ++i){
         if (groundArgsCmp(ga->arg + i, ga->arg + ins, NULL) == 0){
