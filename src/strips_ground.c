@@ -891,13 +891,52 @@ static void setUpOp(ground_t *g, pddl_strips_op_t *op,
     pddlStripsOpFinalize(op, name);
 }
 
+static void groundCondEff(ground_t *g, pddl_strips_op_t *op,
+                          ground_args_t *ga, ground_args_t *parent_ga)
+{
+    pddl_strips_op_t *parent;
+
+    // If the operator corresponds to a conditional effect the
+    // parent must be known already, because this is the way we
+    // sorted ground_args_t structures.
+    ASSERT(parent_ga != NULL);
+    // If parent action is not created then it had to have empty
+    // effects. Therefore, we need to create the parent first.
+    if (parent_ga->op_id == -1){
+        pddl_strips_op_t op2;
+        pddlStripsOpInit(&op2);
+        setUpOp(g, &op2, parent_ga);
+        parent_ga->op_id = pddlStripsOpsAdd(&g->strips->op, &op2);
+        pddlStripsOpFree(&op2);
+    }
+    parent = g->strips->op.op[parent_ga->op_id];
+
+    // Find out preconditions that belong only to the conditional
+    // effect.
+    pddlFactIdArrMinus(&op->pre, &parent->pre);
+    if (op->pre.size > 0){
+        // Create conditional effect if necessary
+        pddlStripsOpAddCondEff(parent, op);
+
+    }else{
+        // If precondition of the conditional effect is empty, then
+        // we can merge conditional effect directly to the parent
+        // operator.
+        // The operators are hashed only using its name so we can
+        // merge effects without re-inserting operator.
+        pddlStripsOpAddEffFromOp(parent, op);
+
+        // If operator was well-formed before it must remain
+        // well-formed.
+        ASSERT(parent->add_eff.size > 0 || parent->del_eff.size > 0);
+    }
+}
+
 static void groundActions(ground_t *g)
 {
     ground_args_t *ga, *parent_ga;
     const pddl_prep_action_t *a;
     pddl_strips_op_t op;
-    pddl_strips_op_t *parent;
-    int op_id;
 
     groundArgsSortAndUniq(&g->ground_args);
 
@@ -915,50 +954,12 @@ static void groundActions(ground_t *g)
             parent_ga = ga;
 
         // Use only operators with effects
-        if (op.add_eff.size == 0 && op.del_eff.size == 0){
-            pddlStripsOpFree(&op);
-            continue;
-        }
-
-        if (a->parent_action >= 0){
-            // If the operator corresponds to a conditional effect the
-            // parent must be known already, because this is the way we
-            // sorted ground_args_t structures.
-            ASSERT(parent_ga != NULL);
-            // If parent action is not created then it had to have empty
-            // effects. Therefore, we need to create the parent first.
-            if (parent_ga->op_id == -1){
-                pddl_strips_op_t op2;
-                pddlStripsOpInit(&op2);
-                setUpOp(g, &op2, parent_ga);
-                parent_ga->op_id = pddlStripsOpsAdd(&g->strips->op, &op2);
-                pddlStripsOpFree(&op2);
-            }
-            parent = g->strips->op.op[parent_ga->op_id];
-
-            // Find out preconditions that belong only to the conditional
-            // effect.
-            pddlFactIdArrMinus(&op.pre, &parent->pre);
-            if (op.pre.size > 0){
-                // Create conditional effect if necessary
-                pddlStripsOpAddCondEff(parent, &op);
-
+        if (op.add_eff.size > 0 || op.del_eff.size > 0){
+            if (a->parent_action >= 0){
+                groundCondEff(g, &op, ga, parent_ga);
             }else{
-                // If precondition of the conditional effect is empty, then
-                // we can merge conditional effect directly to the parent
-                // operator.
-                // The operators are hashed only using its name so we can
-                // merge effects with re-inserting operator.
-                pddlStripsOpAddEffFromOp(parent, &op);
-
-                // If operator was well-formed before it must remain
-                // well-formed.
-                ASSERT(parent->add_eff.size > 0 || parent->del_eff.size > 0);
+                ga->op_id = pddlStripsOpsAdd(&g->strips->op, &op);
             }
-
-        }else{
-            op_id = pddlStripsOpsAdd(&g->strips->op, &op);
-            ga->op_id = op_id;
         }
 
         pddlStripsOpFree(&op);
