@@ -693,6 +693,13 @@ static void treeFixStatic(tree_t *tr)
     // TODO: check the action agains the whole arg assignement at leafs
     _fixStatic(tr, tr->root);
     removeIncompleteStatic(tr, tr->root);
+
+    // If the action has any static preconditions, they must be already in
+    // place therefore we can block the root node. This fixes the problem
+    // with actions that cannot be grounded because there are no
+    // corresponding static facts.
+    if (tr->pre_static_size > 0)
+        tr->root->flags.blocked = 1;
 }
 
 static void _unifyFacts(ground_t *g, pddl_facts_t *fs, int static_fact)
@@ -713,8 +720,9 @@ static void _unifyFacts(ground_t *g, pddl_facts_t *fs, int static_fact)
 static void unifyStaticFacts(ground_t *g)
 {
     _unifyFacts(g, &g->static_fact, 1);
-    for (int i = 0; i < g->action.size; ++i)
+    for (int i = 0; i < g->action.size; ++i){
         treeFixStatic(g->tree + i);
+    }
 }
 
 static void unifyFacts(ground_t *g)
@@ -967,6 +975,7 @@ void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     unifyStaticFacts(&g);
     unifyFacts(&g);
     groundActions(&g);
+    // TODO: ground init facts and goal facts
 
     groundFree(&g);
 }
