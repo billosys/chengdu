@@ -417,10 +417,6 @@ static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg)
     // assigned arguments. Note that we don't actually need to be in a
     // leaf.
     if (tn->pre_unified == tr->pre_size){
-        // TODO: child_num == 0 should not be required
-        // TODO: Check arg against action
-        // TODO: Ground add effects and add them to a set of reachable
-        //       facts
         // TODO: If grounding fails then it means that this argument
         //       assignement cannot be grounded -- can we utilize this
         //       somehow?
@@ -476,7 +472,8 @@ static tnode_t *unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
 
     arg[argi] = arg_pre[argi];
     new = tnodeAddChild(tr, tn, argi, arg[argi]);
-    new->flags.static_arg = static_fact;
+    if (static_fact)
+        new->flags.static_arg = 1;
     if (remain - 1 > 0){
         unifyNew(tr, new, arg, remain - 1, arg_pre, pre_i, static_fact);
     }else{
@@ -537,7 +534,8 @@ static int unifyArg(tree_t *tr, tnode_t *tn,
 
         if (ch->obj_id == arg[argi]){
             ASSERT(!(ch->pre_mask & (1u << pre_i)));
-            ch->flags.static_arg = static_fact;
+            if (static_fact)
+                ch->flags.static_arg = 1;
             // Found exact match on the argument
             unify(tr, ch, arg, remain - 1, arg_pre, pre_i, 1, static_fact);
             match = 1;
@@ -566,7 +564,6 @@ static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
     if (remain == 0){
         unifyPre(tr, tn, arg, pre_i);
         return;
-        // TODO
     }
 
     for (int argi = 0; argi < tr->arg_size; ++argi){
@@ -576,17 +573,8 @@ static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
                               allow_new, static_fact);
     }
 
-    if (!match && !tn->flags.blocked && (allow_new || tn->flags.pre_unified)){
+    if (!match && !tn->flags.blocked && (allow_new || tn->flags.pre_unified))
         unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
-    }
-    // TODO:
-    /*
-    if (!match && allow_new && !full){
-        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
-    }else if (!match && !full){
-        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
-    }
-    */
 }
 
 static void unifyTree(tree_t *tr, const pddl_fact_t *fact, int pre_i,
