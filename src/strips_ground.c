@@ -991,8 +991,9 @@ static void groundInit(ground_t *g, pddl_strips_t *strips, const pddl_t *pddl)
     groundInitFact(g, pddl);
 
     g->tree = BOR_ALLOC_ARR(tree_t, g->action.size);
-    for (int i = 0; i < g->action.size; ++i)
+    for (int i = 0; i < g->action.size; ++i){
         treeInit(g->tree + i, g, i);
+    }
 }
 
 static void groundFree(ground_t *g)
