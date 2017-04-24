@@ -141,6 +141,8 @@ static void groundActions(ground_t *g);
 static void groundActionAddEff(ground_t *g,
                                const pddl_prep_action_t *a,
                                const obj_id_t *oarg);
+static void groundActionAddEffEmptyPre(ground_t *g,
+                                       const pddl_prep_action_t *a);
 
 
 
@@ -407,7 +409,7 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga)
 
 
 /*** unify ***/
-static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
+static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg)
 {
     tnode_child_t *cs;
 
@@ -442,10 +444,10 @@ static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
             ++cs->child[i]->pre_unified;
             if (arg[argi] == UNDEF){
                 arg[argi] = cs->child[i]->obj_id;
-                propagatePre(tr, cs->child[i], arg, pre_i);
+                propagatePre(tr, cs->child[i], arg);
                 arg[argi] = UNDEF;
             }else{
-                propagatePre(tr, cs->child[i], arg, pre_i);
+                propagatePre(tr, cs->child[i], arg);
             }
         }
     }
@@ -460,7 +462,7 @@ static void unifyPre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
 #endif /* PDDL_DEBUG */
     ++tn->pre_unified;
     tn->flags.pre_unified = 1;
-    propagatePre(tr, tn, arg, pre_i);
+    propagatePre(tr, tn, arg);
 }
 
 static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
@@ -719,6 +721,12 @@ static void _unifyFacts(ground_t *g, pddl_facts_t *fs, int static_fact)
 
 static void unifyStaticFacts(ground_t *g)
 {
+    // First ground actions without preconditions
+    for (int i = 0; i < g->action.size; ++i){
+        if (g->tree[i].pre_size == 0)
+            groundActionAddEffEmptyPre(g, g->action.action + i);
+    }
+
     _unifyFacts(g, &g->static_fact, 1);
     for (int i = 0; i < g->action.size; ++i){
         treeFixStatic(g->tree + i);
@@ -774,6 +782,16 @@ static void groundActionAddEff(ground_t *g,
     // TODO: What about zero params actions
     for (int i = 0; i < a->param_size; ++i)
         arg[i] = (oarg[i] == UNDEF ? -1 : oarg[i]);
+    _groundActionAddEff(g, a, arg, 0);
+}
+
+static void groundActionAddEffEmptyPre(ground_t *g,
+                                       const pddl_prep_action_t *a)
+{
+    ASSERT(a->pre.size == 0);
+    int arg[a->param_size];
+    for (int i = 0; i < a->param_size; ++i)
+        arg[i] = UNDEF;
     _groundActionAddEff(g, a, arg, 0);
 }
 
@@ -849,13 +867,36 @@ static void groundAtoms(int atom_max_arg_size,
     }
 }
 
+static void setUpOp(ground_t *g, pddl_strips_op_t *op,
+                    const ground_args_t *ga)
+{
+    const pddl_prep_action_t *a = ga->action;
+    char *name;
+
+    // Ground precontions, add and delete effects and set cost
+    groundAtoms(a->max_arg_size, ga->arg, &a->pre,
+                &g->strips->fact, &op->pre);
+    groundAtoms(a->max_arg_size, ga->arg, &a->add_eff,
+                &g->strips->fact, &op->add_eff);
+    groundAtoms(a->max_arg_size, ga->arg, &a->del_eff,
+                &g->strips->fact, &op->del_eff);
+    op->cost = 1;
+    if (g->pddl->metric){
+        op->cost = groundAssign(a->max_arg_size, ga->arg, &a->assign,
+                                &g->pddl->init_func);
+    }
+    name = groundOpName(g->pddl, a->action, ga->arg);
+
+    // Make the operator well-formed
+    pddlStripsOpFinalize(op, name);
+}
+
 static void groundActions(ground_t *g)
 {
     ground_args_t *ga, *parent_ga;
     const pddl_prep_action_t *a;
     pddl_strips_op_t op;
     pddl_strips_op_t *parent;
-    char *name;
     int op_id;
 
     groundArgsSortAndUniq(&g->ground_args);
@@ -867,22 +908,11 @@ static void groundActions(ground_t *g)
         ASSERT(pddlPrepActionCheck(a, &g->static_fact, ga->arg));
 
         pddlStripsOpInit(&op);
-        // Ground precontions, add and delete effects and set cost
-        groundAtoms(a->max_arg_size, ga->arg, &a->pre,
-                    &g->strips->fact, &op.pre);
-        groundAtoms(a->max_arg_size, ga->arg, &a->add_eff,
-                    &g->strips->fact, &op.add_eff);
-        groundAtoms(a->max_arg_size, ga->arg, &a->del_eff,
-                    &g->strips->fact, &op.del_eff);
-        op.cost = 1;
-        if (g->pddl->metric){
-            op.cost = groundAssign(a->max_arg_size, ga->arg, &a->assign,
-                                   &g->pddl->init_func);
-        }
-        name = groundOpName(g->pddl, a->action, ga->arg);
+        setUpOp(g, &op, ga);
 
-        // Make the operator well-formed
-        pddlStripsOpFinalize(&op, name);
+        // Remember this action as a parent for conditional effects
+        if (a->parent_action < 0)
+            parent_ga = ga;
 
         // Use only operators with effects
         if (op.add_eff.size == 0 && op.del_eff.size == 0){
@@ -895,6 +925,15 @@ static void groundActions(ground_t *g)
             // parent must be known already, because this is the way we
             // sorted ground_args_t structures.
             ASSERT(parent_ga != NULL);
+            // If parent action is not created then it had to have empty
+            // effects. Therefore, we need to create the parent first.
+            if (parent_ga->op_id == -1){
+                pddl_strips_op_t op2;
+                pddlStripsOpInit(&op2);
+                setUpOp(g, &op2, parent_ga);
+                parent_ga->op_id = pddlStripsOpsAdd(&g->strips->op, &op2);
+                pddlStripsOpFree(&op2);
+            }
             parent = g->strips->op.op[parent_ga->op_id];
 
             // Find out preconditions that belong only to the conditional
@@ -920,7 +959,6 @@ static void groundActions(ground_t *g)
         }else{
             op_id = pddlStripsOpsAdd(&g->strips->op, &op);
             ga->op_id = op_id;
-            parent_ga = ga;
         }
 
         pddlStripsOpFree(&op);
