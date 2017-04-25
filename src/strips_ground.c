@@ -49,7 +49,7 @@ typedef struct tnode_flags tnode_flags_t;
 
 struct tnode {
     int argi; /*!< Index of the corresponding argument */
-    int obj_id; /*!< Assigned object ID */
+    obj_id_t obj_id; /*!< Assigned object ID */
     int pre_unified; /*!< Number of unified preconditions */
 #ifdef PDDL_DEBUG
     pre_mask_t pre_mask; /*!< Bits set on positions where precondition is set */
@@ -299,7 +299,6 @@ static void treeInit(tree_t *tr, ground_t *g, int action_id)
     //       define constants. Consider also instantiation also a small
     //       number (1 or 2) of bigger arguments.
     instantiateArgs(tr, tr->root, 0, 1, 3);
-    treePrint(tr, stderr);
 }
 
 static void treeFree(tree_t *tr)
@@ -509,7 +508,6 @@ static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
         return;
     }
 
-    tnodeChildSort(tn);
     TNODE_FOR_EACH_CHILD(tn, ch){
         ASSERT(ch->obj_id != UNDEF);
         arg[ch->argi] = arg_pre[ch->argi];
@@ -591,9 +589,11 @@ static void _fixStatic(tree_t *tr, tnode_t *tn)
         }
     }
 
-    TNODE_FOR_EACH_CHILD(tn, ch){
+    TNODE_FOR_EACH_CHILD(tn, ch)
         _fixStatic(tr, ch);
-    }
+
+    if (tn->child_size > 0)
+        tn->flags.blocked = 1;
 }
 
 static int removeIncompleteStatic(tree_t *tr, tnode_t *tn)
@@ -619,9 +619,6 @@ static int removeIncompleteStatic(tree_t *tr, tnode_t *tn)
 
 static void treeFixStatic(tree_t *tr)
 {
-    fprintf(stderr, "----\n");
-    treePrint(tr, stderr);
-    fprintf(stderr, "----\n");
     // TODO: check the action agains the whole arg assignement at leafs
     _fixStatic(tr, tr->root);
     removeIncompleteStatic(tr, tr->root);
@@ -660,7 +657,7 @@ static void unifyStaticFacts(ground_t *g)
     _unifyFacts(g, &g->static_fact, 1);
     for (int i = 0; i < g->action.size; ++i){
         treeFixStatic(g->tree + i);
-        treePrint(g->tree + i, stderr);
+        //treePrint(g->tree + i, stderr);
     }
 }
 
@@ -945,6 +942,9 @@ void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     groundInit(&g, strips, pddl);
     unifyStaticFacts(&g);
     unifyFacts(&g);
+    for (int i = 0; i < g.action.size; ++i){
+        //treePrint(g.tree + i, stderr);
+    }
     groundActions(&g);
     // TODO: ground init facts and goal facts
 
