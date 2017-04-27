@@ -123,7 +123,6 @@ static tnode_t *tnodeNew(tree_t *t, tnode_t *parent,
 static void tnodeDel(tree_t *tr, tnode_t *t);
 static tnode_t *tnodeAddChild(tree_t *t, tnode_t *par,
                               int argi, obj_id_t obj_id);
-static void tnodeChildSort(tnode_t *tn);
 
 static void treeInit(tree_t *tr, ground_t *g, int action_id);
 static void treeFree(tree_t *tr);
@@ -185,33 +184,13 @@ static void tnodeReserveChild(tree_t *tr, tnode_t *n)
     }
 }
 
-static void tnodeAddChildPtr(tree_t *t, tnode_t *par, tnode_t *add)
-{
-    ASSERT(par != NULL);
-    tnodeReserveChild(t, par);
-    par->child[par->child_size++] = add;
-}
-
 static tnode_t *tnodeAddChild(tree_t *t, tnode_t *par,
                               int argi, obj_id_t obj_id)
 {
     tnode_t *n = tnodeNew(t, par, argi, obj_id);
-    tnodeAddChildPtr(t, par, n);
+    tnodeReserveChild(t, par);
+    par->child[par->child_size++] = n;
     return n;
-}
-
-static int tnodeCmp(const void *a, const void *b, void *_)
-{
-    tnode_t *c1 = *(tnode_t **)a;
-    tnode_t *c2 = *(tnode_t **)b;
-    if (c1->argi != c2->argi)
-        return c1->argi - c2->argi;
-    return c1->obj_id - c2->obj_id;
-}
-
-static void tnodeChildSort(tnode_t *tn)
-{
-    borSort(tn->child, tn->child_size, sizeof(tnode_t *), tnodeCmp, NULL);
 }
 /*** tnode_t END ***/
 
