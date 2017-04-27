@@ -362,6 +362,7 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga)
 
     borSort(ga->arg, ga->size, sizeof(ground_args_t), groundArgsCmp, NULL);
 
+    // Remove duplicates
     // TODO: Is it even possible that there are duplicates?
     ins = 0;
     for (int i = 1; i < ga->size; ++i){
@@ -427,12 +428,12 @@ static void unifyPre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
     propagatePre(tr, tn, arg);
 }
 
-static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
-                         int remain, const obj_id_t *arg_pre, int pre_i,
-                         int static_fact);
-static tnode_t *unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
-                            int remain, const obj_id_t *arg_pre, int pre_i,
-                            int static_fact)
+static void unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
+                     int remain, const obj_id_t *arg_pre, int pre_i,
+                     int static_fact);
+static void unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
+                        int remain, const obj_id_t *arg_pre, int pre_i,
+                        int static_fact)
 {
     tnode_t *new;
 
@@ -446,38 +447,35 @@ static tnode_t *unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
         unifyPre(tr, new, arg, pre_i);
     }
     arg[argi] = UNDEF;
-    return new;
 }
 
-static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
-                         int remain, const obj_id_t *arg_pre, int pre_i,
-                         int static_fact)
+static void unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
+                     int remain, const obj_id_t *arg_pre, int pre_i,
+                     int static_fact)
 {
-    tnode_t *ch, *new = NULL;
+    tnode_t *ch;
 
     // To reduce branching, first try to create a new
     // node using an argument that has some assignements on this level.
     TNODE_FOR_EACH_CHILD(tn, ch){
         if (arg[ch->argi] == UNDEF && arg_pre[ch->argi] != UNDEF){
-            return unifyNewArg(tr, tn, arg, ch->argi, remain, arg_pre, pre_i,
-                               static_fact);
+            unifyNewArg(tr, tn, arg, ch->argi, remain, arg_pre, pre_i,
+                        static_fact);
+            return;
         }
     }
 
     for (int i = 0; i < tr->arg_size; ++i){
         if (arg[i] == UNDEF && arg_pre[i] != UNDEF){
-            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i,
-                               static_fact);
+            unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i, static_fact);
+            return;
         }
     }
-
-    ASSERT(new != NULL);
-    return new;
 }
 
 static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
                   const obj_id_t *arg_pre, int pre_i,
-                  int allow_new, int static_fact)
+                  int parent_match, int static_fact)
 {
     tnode_t *ch;
     int match = 0;
@@ -509,7 +507,14 @@ static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
         arg[ch->argi] = UNDEF;
     }
 
-    if (!match && !tn->flags.blocked && (allow_new || tn->flags.pre_unified))
+    // Create a new branch only if all of the following holds
+    // 1) no argument could be matched in the current node
+    // 2) the current node is allowed to have more children (it could be
+    //    blocked due to static facts)
+    // 3) there was match in the parent node
+    //    or the current node corresponds to the end of some previously
+    //    unified fact
+    if (!match && !tn->flags.blocked && (parent_match || tn->flags.pre_unified))
         unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
 }
 
@@ -526,22 +531,28 @@ static void unifyTree(tree_t *tr, const pddl_fact_t *fact, int pre_i,
     //       arguments of static facts.
     // TODO: Remove -1 nodes if all possible objects are already present
     //       and lock the argument
+    // Check whether the fact can be unified -- this test is not enough but
+    // it can filter out some facts.
     if (!pddlPrepActionCheckFact(tr->action, pre_i, fact))
         return;
 
-    atom = PDDL_COND_CAST(tr->action->pre.cond[pre_i], atom);
+    // Initialize arg[] to undef -- this array will be filled with unified
+    // arguments in unify() recursive call.
     for (int i = 0; i < tr->arg_size; ++i)
         arg_pre[i] = arg[i] = UNDEF;
+
+    // Set arg_pre[] according to the fact's arguments and count the number
+    // of set arguments.
+    atom = PDDL_COND_CAST(tr->action->pre.cond[pre_i], atom);
     for (int i = 0; i < atom->arg_size; ++i){
         param = atom->arg[i].param;
-        if (param >= 0)
+        if (param >= 0 && arg_pre[param] == UNDEF){
             arg_pre[param] = fact->arg[i];
-    }
-    for (int i = 0; i < tr->arg_size; ++i){
-        if (arg_pre[i] != UNDEF)
             ++num_args_set;
+        }
     }
 
+    // Recursivelly unify arguments
     unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1, static_fact);
 }
 
@@ -921,9 +932,6 @@ void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     groundInit(&g, strips, pddl);
     unifyStaticFacts(&g);
     unifyFacts(&g);
-    for (int i = 0; i < g.action.size; ++i){
-        //treePrint(g.tree + i, stderr);
-    }
     groundActions(&g);
     // TODO: ground init facts and goal facts
 
