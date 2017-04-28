@@ -44,8 +44,9 @@ static uint64_t pddlFactHash(const pddl_fact_t *f)
 {
     uint64_t hash;
 
-    ((uint32_t *)&hash)[0] = borCityHash_32(&f->pred, sizeof(int));
-    ((uint32_t *)&hash)[1] = borCityHash_32(f->arg, sizeof(int) * f->arg_size);
+    hash = borCityHash_32(&f->pred, sizeof(int));
+    hash <<= 32u;
+    hash |= 0xffffffffu & borCityHash_32(f->arg, sizeof(int) * f->arg_size);
     return hash;
 }
 
