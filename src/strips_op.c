@@ -195,42 +195,17 @@ int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add)
     return op->id;
 }
 
-static int factArrCmp(const void *a, const void *b, void *_fs)
-{
-    const pddl_facts_t *fs = _fs;
-    int fid1 = *(int *)a;
-    int fid2 = *(int *)b;
-    const pddl_fact_t *f1 = fs->fact[fid1];
-    const pddl_fact_t *f2 = fs->fact[fid2];
-    return pddlFactCmp(f1, f2);
-}
-
-static void printFactArr(const struct pddl *pddl, const pddl_facts_t *fs,
-                         const pddl_fact_id_arr_t *arr, FILE *fout)
-{
-    int sorted[arr->size];
-    memcpy(sorted, arr->fact, sizeof(int) * arr->size);
-    borSort(sorted, arr->size, sizeof(int), factArrCmp, (void *)fs);
-
-    for (int i = 0; i < arr->size; ++i){
-        if (i > 0)
-            fprintf(fout, ", ");
-        pddlFactPrint(pddl, fs->fact[sorted[i]], fout);
-    }
-    fprintf(fout, "\n");
-}
-
 void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
                        const pddl_strips_op_t *op, FILE *fout)
 {
     fprintf(fout, "  %s, cost: %d\n", op->name, op->cost);
 
     fprintf(fout, "    pre: ");
-    printFactArr(pddl, fs, &op->pre, fout);
+    pddlFactIdArrPrettyPrint(pddl, fs, &op->pre, fout);
     fprintf(fout, "    add: ");
-    printFactArr(pddl, fs, &op->add_eff, fout);
+    pddlFactIdArrPrettyPrint(pddl, fs, &op->add_eff, fout);
     fprintf(fout, "    del: ");
-    printFactArr(pddl, fs, &op->del_eff, fout);
+    pddlFactIdArrPrettyPrint(pddl, fs, &op->del_eff, fout);
 
     if (op->cond_eff_size > 0)
         fprintf(fout, "    cond-eff[%d]:\n", op->cond_eff_size);
@@ -239,11 +214,11 @@ void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
         const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
 
         fprintf(fout, "      pre: ");
-        printFactArr(pddl, fs, &ce->pre, fout);
+        pddlFactIdArrPrettyPrint(pddl, fs, &ce->pre, fout);
         fprintf(fout, "      add: ");
-        printFactArr(pddl, fs, &ce->add_eff, fout);
+        pddlFactIdArrPrettyPrint(pddl, fs, &ce->add_eff, fout);
         fprintf(fout, "      del: ");
-        printFactArr(pddl, fs, &ce->del_eff, fout);
+        pddlFactIdArrPrettyPrint(pddl, fs, &ce->del_eff, fout);
     }
 }
 

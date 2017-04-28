@@ -65,4 +65,10 @@ void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
 
     fprintf(fout, "Op[%d]:\n", strips->op.op_size);
     pddlStripsOpsPrint(strips->pddl, &strips->fact, &strips->op, fout);
+
+    fprintf(fout, "Init State: ");
+    pddlFactIdArrPrettyPrint(strips->pddl, &strips->fact, &strips->init, fout);
+
+    fprintf(fout, "Goal: ");
+    pddlFactIdArrPrettyPrint(strips->pddl, &strips->fact, &strips->goal, fout);
 }

@@ -111,6 +111,7 @@ struct ground {
     pddl_facts_t static_fact;
     tree_t *tree;
     ground_args_arr_t ground_args;
+    int goal_unreachable;
 };
 typedef struct ground ground_t;
 
@@ -884,6 +885,73 @@ static void groundActions(ground_t *g)
     }
 }
 
+static void groundInitState(ground_t *g)
+{
+    const pddl_fact_t *fact;
+    int fact_id;
+
+    for (int i = 0; i < g->pddl->init_fact.fact_size; ++i){
+        fact = g->pddl->init_fact.fact[i];
+        fact_id = pddlFactsFind(&g->strips->fact, fact);
+        if (fact_id >= 0)
+            pddlFactIdArrAdd(&g->strips->init, fact_id);
+    }
+}
+
+static int _groundGoal(pddl_cond_t *c, void *_g)
+{
+    ground_t *g = _g;
+
+    if (c->type == PDDL_COND_ATOM){
+        const pddl_cond_atom_t *atom = PDDL_COND_CAST(c, atom);
+        PDDL_FACT_FOR_GROUND2(fact, atom->arg_size);
+
+        // Transform atom to a fact
+        fact.pred = atom->pred;
+        fact.arg_size = atom->arg_size;
+        for (int i = 0; i < atom->arg_size; ++i){
+            if (atom->arg[i].param >= 0){
+                ERR2("Goal specification cannot contain parametrized atoms.");
+                exit(-1);
+            }else{
+                fact.arg[i] = atom->arg[i].obj;
+            }
+        }
+
+        // Find fact in the set of reachable facts
+        int fact_id = pddlFactsFind(&g->strips->fact, &fact);
+        if (fact_id >= 0){
+            // Add the fact to the goal specification
+            pddlFactIdArrAdd(&g->strips->goal, fact_id);
+        }else{
+            // The problem is unsolvable, because a goal fact is not
+            // reachable.
+            g->goal_unreachable = 1;
+            pddlFactPrint(g->pddl, &fact, stderr);
+            fprintf(stderr, "\n");
+            fprintf(stderr, "UNSOLVABLE\n");
+        }
+        return 0;
+
+    }else if (c->type == PDDL_COND_AND){
+        return 0;
+    }else{
+        ERR2("Strips supports only conjuctive goal specifications.");
+        exit(-1);
+        // TODO: Report error
+        return -2;
+    }
+}
+static void groundGoal(ground_t *g)
+{
+    if (g->pddl->goal->type == PDDL_COND_OR){
+        pddlDump(g->pddl, stderr);
+        ERR2("Strips does not support disjunctive goal specification.");
+        exit(-1);
+    }
+    pddlCondTraverse(g->pddl->goal, _groundGoal, NULL, g);
+}
+
 static void groundInitFact(ground_t *g, const pddl_t *pddl)
 {
     const pddl_fact_t *fact;
@@ -933,7 +1001,8 @@ void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     unifyStaticFacts(&g);
     unifyFacts(&g);
     groundActions(&g);
-    // TODO: ground init facts and goal facts
+    groundInitState(&g);
+    groundGoal(&g);
 
     groundFree(&g);
 }

@@ -202,6 +202,8 @@ _bor_inline int pddlFactIdArrEq(const pddl_fact_id_arr_t *a1,
  */
 void pddlFactIdArrMinus(pddl_fact_id_arr_t *a1, const pddl_fact_id_arr_t *a2);
 _bor_inline int pddlFactIdArrRmId(pddl_fact_id_arr_t *a, int fact_id);
+void pddlFactIdArrPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                              const pddl_fact_id_arr_t *arr, FILE *fout);
 
 
 /**** INLINES: ****/
