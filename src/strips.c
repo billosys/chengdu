@@ -71,4 +71,6 @@ void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
 
     fprintf(fout, "Goal: ");
     pddlFactIdArrPrettyPrint(strips->pddl, &strips->fact, &strips->goal, fout);
+    if (strips->goal_is_unreachable)
+        fprintf(fout, "Goal is unreachable\n");
 }

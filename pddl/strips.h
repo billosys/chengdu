@@ -38,6 +38,7 @@ struct pddl_strips {
     pddl_strips_ops_t op;
     pddl_fact_id_arr_t init;
     pddl_fact_id_arr_t goal;
+    int goal_is_unreachable;
 };
 typedef struct pddl_strips pddl_strips_t;
 

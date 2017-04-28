@@ -111,7 +111,6 @@ struct ground {
     pddl_facts_t static_fact;
     tree_t *tree;
     ground_args_arr_t ground_args;
-    int goal_unreachable;
 };
 typedef struct ground ground_t;
 
@@ -926,10 +925,7 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
         }else{
             // The problem is unsolvable, because a goal fact is not
             // reachable.
-            g->goal_unreachable = 1;
-            pddlFactPrint(g->pddl, &fact, stderr);
-            fprintf(stderr, "\n");
-            fprintf(stderr, "UNSOLVABLE\n");
+            g->strips->goal_is_unreachable = 1;
         }
         return 0;
 
