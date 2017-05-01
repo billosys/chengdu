@@ -44,8 +44,9 @@ static uint64_t pddlFactHash(const pddl_fact_t *f)
 {
     uint64_t hash;
 
-    ((uint32_t *)&hash)[0] = borCityHash_32(&f->pred, sizeof(int));
-    ((uint32_t *)&hash)[1] = borCityHash_32(f->arg, sizeof(int) * f->arg_size);
+    hash = borCityHash_32(&f->pred, sizeof(int));
+    hash <<= 32u;
+    hash |= 0xffffffffu & borCityHash_32(f->arg, sizeof(int) * f->arg_size);
     return hash;
 }
 
@@ -558,4 +559,30 @@ void pddlFactIdArrMinus(pddl_fact_id_arr_t *a1, const pddl_fact_id_arr_t *a2)
     for (; i < a1->size; ++i, ++w)
         a1->fact[w] = a1->fact[i];
     a1->size = w + a1->size - i;
+}
+
+static int factArrCmp(const void *a, const void *b, void *_fs)
+{
+    const pddl_facts_t *fs = _fs;
+    int fid1 = *(int *)a;
+    int fid2 = *(int *)b;
+    const pddl_fact_t *f1 = fs->fact[fid1];
+    const pddl_fact_t *f2 = fs->fact[fid2];
+    return pddlFactCmp(f1, f2);
+}
+
+
+void pddlFactIdArrPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                              const pddl_fact_id_arr_t *arr, FILE *fout)
+{
+    int sorted[arr->size];
+    memcpy(sorted, arr->fact, sizeof(int) * arr->size);
+    borSort(sorted, arr->size, sizeof(int), factArrCmp, (void *)fs);
+
+    for (int i = 0; i < arr->size; ++i){
+        if (i > 0)
+            fprintf(fout, ", ");
+        pddlFactPrint(pddl, fs->fact[sorted[i]], fout);
+    }
+    fprintf(fout, "\n");
 }

@@ -38,13 +38,6 @@ typedef uint32_t pre_mask_t;
 
 struct ground;
 
-struct tnode_child {
-    obj_id_t child_size;
-    obj_id_t child_alloc;
-    struct tnode **child;
-} bor_packed;
-typedef struct tnode_child tnode_child_t;
-
 struct tnode_flags {
     unsigned char blocked:1; /*!< True if no new children are allowed */
     unsigned char pre_unified:1; /*!< True if the node unified
@@ -55,16 +48,22 @@ struct tnode_flags {
 typedef struct tnode_flags tnode_flags_t;
 
 struct tnode {
-    int obj_id; /*!< Assigned object ID */
+    int argi; /*!< Index of the corresponding argument */
+    obj_id_t obj_id; /*!< Assigned object ID */
     int pre_unified; /*!< Number of unified preconditions */
 #ifdef PDDL_DEBUG
     pre_mask_t pre_mask; /*!< Bits set on positions where precondition is set */
 #endif /* PDDL_DEBUG */
     tnode_flags_t flags;
-    // TODO: .child[] takes most of the memory -- try to reduce this
-    tnode_child_t child[];
+    struct tnode **child;
+    int child_size;
+    int child_alloc;
 } bor_packed;
 typedef struct tnode tnode_t;
+
+#define TNODE_FOR_EACH_CHILD(TN, CH) \
+    for (int __i = 0; __i < (TN)->child_size \
+            && ((CH) = (TN)->child[__i]); ++__i)
 
 
 struct pred_to_pre {
@@ -119,9 +118,9 @@ typedef struct ground ground_t;
 static void treePrint(tree_t *tr, FILE *fout);
 #endif /* PDDL_DEBUG */
 
-static tnode_t *tnodeNew(tree_t *t, tnode_t *parent, obj_id_t obj_id);
+static tnode_t *tnodeNew(tree_t *t, tnode_t *parent,
+                         int argi, obj_id_t obj_id);
 static void tnodeDel(tree_t *tr, tnode_t *t);
-static void tnodeReserveChild(tree_t *tr, tnode_t *n, int argi);
 static tnode_t *tnodeAddChild(tree_t *t, tnode_t *par,
                               int argi, obj_id_t obj_id);
 
@@ -147,14 +146,14 @@ static void groundActionAddEffEmptyPre(ground_t *g,
 
 
 /*** tnode_t ***/
-static tnode_t *tnodeNew(tree_t *t, tnode_t *parent, obj_id_t obj_id)
+static tnode_t *tnodeNew(tree_t *t, tnode_t *parent,
+                         int argi, obj_id_t obj_id)
 {
     tnode_t *n;
-    size_t size;
 
-    size = sizeof(*n) + sizeof(tnode_child_t) * t->arg_size;
-    n = BOR_MALLOC(size);
-    bzero(n, size);
+    n = BOR_ALLOC(tnode_t);
+    bzero(n, sizeof(*n));
+    n->argi = argi;
     n->obj_id = obj_id;
     if (parent != NULL){
 #ifdef PDDL_DEBUG
@@ -167,60 +166,30 @@ static tnode_t *tnodeNew(tree_t *t, tnode_t *parent, obj_id_t obj_id)
 
 static void tnodeDel(tree_t *tr, tnode_t *t)
 {
-    for (int a = 0; a < tr->arg_size; ++a){
-        tnode_child_t *cs = t->child + a;
-        for (int i = 0; i < cs->child_size; ++i){
-            if (cs->child[i] != NULL)
-                tnodeDel(tr, cs->child[i]);
-        }
-        if (cs->child != NULL)
-            BOR_FREE(cs->child);
-    }
+    tnode_t *ch;
+    TNODE_FOR_EACH_CHILD(t, ch)
+        tnodeDel(tr, ch);
+    if (t->child != NULL)
+        BOR_FREE(t->child);
     BOR_FREE(t);
 }
 
-static void tnodeReserveChild(tree_t *tr, tnode_t *n, int argi)
+static void tnodeReserveChild(tree_t *tr, tnode_t *n)
 {
-    tnode_child_t *cs;
-
-    cs = n->child + argi;
-    if (cs->child_size == cs->child_alloc){
-        if (cs->child_alloc == 0)
-            cs->child_alloc = 1;
-        cs->child_alloc *= 2;
-        cs->child = BOR_REALLOC_ARR(cs->child, tnode_t *, cs->child_alloc);
+    if (n->child_size == n->child_alloc){
+        if (n->child_alloc == 0)
+            n->child_alloc = 1;
+        n->child_alloc *= 2;
+        n->child = BOR_REALLOC_ARR(n->child, tnode_t *, n->child_alloc);
     }
 }
 
-static void _tnodeChildBubbleDown(tnode_t *tn, int argi, int idx)
+static tnode_t *tnodeAddChild(tree_t *t, tnode_t *par,
+                              int argi, obj_id_t obj_id)
 {
-    tnode_child_t *cs = tn->child + argi;
-
-    // sort childs according to .obj_id
-    for (tnode_t **c = cs->child + idx - 1;
-            c >= cs->child && c[0]->obj_id > c[1]->obj_id; --c){
-        tnode_t *s = c[0];
-        c[0] = c[1];
-        c[1] = s;
-    }
-}
-
-static void tnodeAddChildPtr(tree_t *t, tnode_t *par, int argi, tnode_t *add)
-{
-    tnode_child_t *cs = par->child + argi;
-    ASSERT(par != NULL);
-
-    tnodeReserveChild(t, par, argi);
-    cs->child[cs->child_size++] = add;
-
-    // sort childs according to .obj_id
-    _tnodeChildBubbleDown(par, argi, cs->child_size - 1);
-}
-
-static tnode_t *tnodeAddChild(tree_t *t, tnode_t *par, int argi, obj_id_t obj_id)
-{
-    tnode_t *n = tnodeNew(t, par, obj_id);
-    tnodeAddChildPtr(t, par, argi, n);
+    tnode_t *n = tnodeNew(t, par, argi, obj_id);
+    tnodeReserveChild(t, par);
+    par->child[par->child_size++] = n;
     return n;
 }
 /*** tnode_t END ***/
@@ -279,7 +248,7 @@ static void treeInit(tree_t *tr, ground_t *g, int action_id)
     tr->arg_size = a->param_size;
     tr->pre_size = a->pre.size;
     tr->pre_static_size = 0;
-    tr->root = tnodeNew(tr, NULL, UNDEF);
+    tr->root = tnodeNew(tr, NULL, -1, UNDEF);
 
     tr->arg_max_size = BOR_ALLOC_ARR(int, tr->arg_size);
     for (int i = 0; i < tr->arg_size; ++i)
@@ -393,6 +362,7 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga)
 
     borSort(ga->arg, ga->size, sizeof(ground_args_t), groundArgsCmp, NULL);
 
+    // Remove duplicates
     // TODO: Is it even possible that there are duplicates?
     ins = 0;
     for (int i = 1; i < ga->size; ++i){
@@ -411,7 +381,7 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga)
 /*** unify ***/
 static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg)
 {
-    tnode_child_t *cs;
+    tnode_t *ch;
 
     // If all preconditions are unified, we can ground the action using
     // assigned arguments. Note that we don't actually need to be in a
@@ -431,20 +401,17 @@ static void propagatePre(tree_t *tr, tnode_t *tn, obj_id_t *arg)
         return;
     }
 
-    for (int argi = 0; argi < tr->arg_size; ++argi){
-        cs = tn->child + argi;
-        for (int i = 0; i < cs->child_size; ++i){
+    TNODE_FOR_EACH_CHILD(tn, ch){
 #ifdef PDDL_DEBUG
-            cs->child[i]->pre_mask |= tn->pre_mask;
+        ch->pre_mask |= tn->pre_mask;
 #endif /* PDDL_DEBUG */
-            ++cs->child[i]->pre_unified;
-            if (arg[argi] == UNDEF){
-                arg[argi] = cs->child[i]->obj_id;
-                propagatePre(tr, cs->child[i], arg);
-                arg[argi] = UNDEF;
-            }else{
-                propagatePre(tr, cs->child[i], arg);
-            }
+        ++ch->pre_unified;
+        if (arg[ch->argi] == UNDEF){
+            arg[ch->argi] = ch->obj_id;
+            propagatePre(tr, ch, arg);
+            arg[ch->argi] = UNDEF;
+        }else{
+            propagatePre(tr, ch, arg);
         }
     }
 }
@@ -461,12 +428,12 @@ static void unifyPre(tree_t *tr, tnode_t *tn, obj_id_t *arg, int pre_i)
     propagatePre(tr, tn, arg);
 }
 
-static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
-                         int remain, const obj_id_t *arg_pre, int pre_i,
-                         int static_fact);
-static tnode_t *unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
-                            int remain, const obj_id_t *arg_pre, int pre_i,
-                            int static_fact)
+static void unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
+                     int remain, const obj_id_t *arg_pre, int pre_i,
+                     int static_fact);
+static void unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
+                        int remain, const obj_id_t *arg_pre, int pre_i,
+                        int static_fact)
 {
     tnode_t *new;
 
@@ -480,85 +447,37 @@ static tnode_t *unifyNewArg(tree_t *tr, tnode_t *tn, obj_id_t *arg, int argi,
         unifyPre(tr, new, arg, pre_i);
     }
     arg[argi] = UNDEF;
-    return new;
 }
 
-static tnode_t *unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
-                         int remain, const obj_id_t *arg_pre, int pre_i,
-                         int static_fact)
+static void unifyNew(tree_t *tr, tnode_t *tn, obj_id_t *arg,
+                     int remain, const obj_id_t *arg_pre, int pre_i,
+                     int static_fact)
 {
-    tnode_t *new = NULL;
+    tnode_t *ch;
 
-    // To eliminate at least some duplicates, first try to create a new
+    // To reduce branching, first try to create a new
     // node using an argument that has some assignements on this level.
-    for (int i = 0; i < tr->arg_size; ++i){
-        tnode_child_t *cs = tn->child + i;
-        if (cs->child_size > 0 && arg[i] == UNDEF && arg_pre[i] != UNDEF){
-            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i,
-                               static_fact);
+    TNODE_FOR_EACH_CHILD(tn, ch){
+        if (arg[ch->argi] == UNDEF && arg_pre[ch->argi] != UNDEF){
+            unifyNewArg(tr, tn, arg, ch->argi, remain, arg_pre, pre_i,
+                        static_fact);
+            return;
         }
     }
 
     for (int i = 0; i < tr->arg_size; ++i){
         if (arg[i] == UNDEF && arg_pre[i] != UNDEF){
-            return unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i,
-                               static_fact);
+            unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i, static_fact);
+            return;
         }
     }
-
-    ASSERT(new != NULL);
-    return new;
-}
-
-static void unify(tree_t *tr, tnode_t *tn,
-                  obj_id_t *arg, int remain,
-                  const obj_id_t *pre_arg, int pre_i,
-                  int allow_new, int static_fact);
-
-static int unifyArg(tree_t *tr, tnode_t *tn,
-                    int argi, obj_id_t *arg, int remain,
-                    const obj_id_t *arg_pre, int pre_i,
-                    int allow_new, int static_fact)
-{
-    tnode_child_t *tnc = tn->child + argi;
-    tnode_t *ch;
-    int match = 0;
-
-    ASSERT(tn->pre_unified == __builtin_popcount(tn->pre_mask));
-    arg[argi] = arg_pre[argi];
-
-    tnc = tn->child + argi;
-    for (int i = 0; i < tnc->child_size; ++i){
-        ch = tnc->child[i];
-        ASSERT(ch->obj_id != UNDEF);
-
-        if (ch->obj_id == arg[argi]){
-            ASSERT(!(ch->pre_mask & (1u << pre_i)));
-            if (static_fact)
-                ch->flags.static_arg = 1;
-            // Found exact match on the argument
-            unify(tr, ch, arg, remain - 1, arg_pre, pre_i, 1, static_fact);
-            match = 1;
-
-        }else if (arg[argi] == UNDEF){
-            ASSERT(!(ch->pre_mask & (1u << pre_i)));
-            // Argument is not set therefore we need to unify with all set
-            // arguments
-            arg[argi] = ch->obj_id;
-            unify(tr, ch, arg, remain, arg_pre, pre_i, 0, static_fact);
-            arg[argi] = UNDEF;
-        }
-    }
-
-    arg[argi] = UNDEF;
-    return match;
 }
 
 static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
                   const obj_id_t *arg_pre, int pre_i,
-                  int allow_new, int static_fact)
+                  int parent_match, int static_fact)
 {
-    tnode_child_t *tnc;
+    tnode_t *ch;
     int match = 0;
 
     if (remain == 0){
@@ -566,14 +485,36 @@ static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
         return;
     }
 
-    for (int argi = 0; argi < tr->arg_size; ++argi){
-        tnc = tn->child + argi;
-        if (tnc->child_size > 0)
-            match |= unifyArg(tr, tn, argi, arg, remain, arg_pre, pre_i,
-                              allow_new, static_fact);
+    TNODE_FOR_EACH_CHILD(tn, ch){
+        ASSERT(ch->obj_id != UNDEF);
+        arg[ch->argi] = arg_pre[ch->argi];
+        if (ch->obj_id == arg[ch->argi]){
+            ASSERT(!(ch->pre_mask & (1u << pre_i)));
+            if (static_fact)
+                ch->flags.static_arg = 1;
+            // Found exact match on the argument
+            unify(tr, ch, arg, remain - 1, arg_pre, pre_i, 1, static_fact);
+            match = 1;
+
+        }else if (arg[ch->argi] == UNDEF){
+            ASSERT(!(ch->pre_mask & (1u << pre_i)));
+            // Argument is not set therefore we need to unify with all set
+            // arguments
+            arg[ch->argi] = ch->obj_id;
+            unify(tr, ch, arg, remain, arg_pre, pre_i, 0, static_fact);
+            arg[ch->argi] = UNDEF;
+        }
+        arg[ch->argi] = UNDEF;
     }
 
-    if (!match && !tn->flags.blocked && (allow_new || tn->flags.pre_unified))
+    // Create a new branch only if all of the following holds
+    // 1) no argument could be matched in the current node
+    // 2) the current node is allowed to have more children (it could be
+    //    blocked due to static facts)
+    // 3) there was match in the parent node
+    //    or the current node corresponds to the end of some previously
+    //    unified fact
+    if (!match && !tn->flags.blocked && (parent_match || tn->flags.pre_unified))
         unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
 }
 
@@ -590,87 +531,75 @@ static void unifyTree(tree_t *tr, const pddl_fact_t *fact, int pre_i,
     //       arguments of static facts.
     // TODO: Remove -1 nodes if all possible objects are already present
     //       and lock the argument
+    // Check whether the fact can be unified -- this test is not enough but
+    // it can filter out some facts.
     if (!pddlPrepActionCheckFact(tr->action, pre_i, fact))
         return;
 
-    atom = PDDL_COND_CAST(tr->action->pre.cond[pre_i], atom);
+    // Initialize arg[] to undef -- this array will be filled with unified
+    // arguments in unify() recursive call.
     for (int i = 0; i < tr->arg_size; ++i)
         arg_pre[i] = arg[i] = UNDEF;
+
+    // Set arg_pre[] according to the fact's arguments and count the number
+    // of set arguments.
+    atom = PDDL_COND_CAST(tr->action->pre.cond[pre_i], atom);
     for (int i = 0; i < atom->arg_size; ++i){
         param = atom->arg[i].param;
-        if (param >= 0)
+        if (param >= 0 && arg_pre[param] == UNDEF){
             arg_pre[param] = fact->arg[i];
-    }
-    for (int i = 0; i < tr->arg_size; ++i){
-        if (arg_pre[i] != UNDEF)
             ++num_args_set;
+        }
     }
 
+    // Recursivelly unify arguments
     unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1, static_fact);
 }
 
 static void _fixStatic(tree_t *tr, tnode_t *tn)
 {
-    tnode_child_t *cs;
     tnode_t *ch;
-    int num_static;
+    int prune[tr->arg_size];
 
-    for (int argi = 0; argi < tr->arg_size; ++argi){
-        cs = tn->child + argi;
+    for (int i = 0; i < tr->arg_size; ++i)
+        prune[i] = 0;
+    TNODE_FOR_EACH_CHILD(tn, ch){
+        if (ch->flags.static_arg)
+            prune[ch->argi] = 1;
+    }
 
-        // If at least one child corresponds to a static argument, keep
-        // only static children
-        num_static = 0;
-        for (int i = 0; i < cs->child_size; ++i)
-            num_static += cs->child[i]->flags.static_arg;
-
-        if (num_static > 0){
-            for (int i = 0; i < cs->child_size; ++i){
-                ch = cs->child[i];
-                if (!ch->flags.static_arg){
-                    tnodeDel(tr, ch);
-                    cs->child[i] = NULL;
-                }
-            }
-            int ins = 0;
-            for (int i = 0; i < cs->child_size; ++i){
-                if (cs->child[i] != NULL)
-                    cs->child[ins++] = cs->child[i];
-            }
-            cs->child_size = ins;
-        }
-
-        for (int i = 0; i < cs->child_size; ++i){
-            ch = cs->child[i];
-            _fixStatic(tr, ch);
-            tn->flags.blocked = 1;
+    for (int i = 0; i < tn->child_size; ++i){
+        ch = tn->child[i];
+        if (!prune[ch->argi])
+            continue;
+        if (!ch->flags.static_arg){
+            tnodeDel(tr, ch);
+            tn->child[i] = tn->child[--tn->child_size];
+            --i;
         }
     }
+
+    TNODE_FOR_EACH_CHILD(tn, ch)
+        _fixStatic(tr, ch);
+
+    if (tn->child_size > 0)
+        tn->flags.blocked = 1;
 }
 
 static int removeIncompleteStatic(tree_t *tr, tnode_t *tn)
 {
-    tnode_child_t *cs;
-    int num_child = 0;
+    tnode_t *ch;
 
-    for (int argi = 0; argi < tr->arg_size; ++argi){
-        cs = tn->child + argi;
-        for (int i = 0; i < cs->child_size; ++i){
-            if (removeIncompleteStatic(tr, cs->child[i])){
-                tnodeDel(tr, cs->child[i]);
-                cs->child[i] = NULL;
-            }
+    for (int i = 0; i < tn->child_size; ++i){
+        ch = tn->child[i];
+        if (removeIncompleteStatic(tr, ch)){
+            tnodeDel(tr, ch);
+            tn->child[i] = tn->child[--tn->child_size];
+            --i;
         }
-        int ins = 0;
-        for (int i = 0; i < cs->child_size; ++i){
-            if (cs->child[i] != NULL)
-                cs->child[ins++] = cs->child[i];
-        }
-        cs->child_size = ins;
-        num_child += cs->child_size;
     }
 
-    if (num_child == 0
+    if (tn->child_size == 0
             && tn->pre_unified != tr->pre_static_size
             && tn->flags.static_arg){
         return 1;
@@ -718,6 +647,7 @@ static void unifyStaticFacts(ground_t *g)
     _unifyFacts(g, &g->static_fact, 1);
     for (int i = 0; i < g->action.size; ++i){
         treeFixStatic(g->tree + i);
+        //treePrint(g->tree + i, stderr);
     }
 }
 
@@ -954,6 +884,70 @@ static void groundActions(ground_t *g)
     }
 }
 
+static void groundInitState(ground_t *g)
+{
+    const pddl_fact_t *fact;
+    int fact_id;
+
+    for (int i = 0; i < g->pddl->init_fact.fact_size; ++i){
+        fact = g->pddl->init_fact.fact[i];
+        fact_id = pddlFactsFind(&g->strips->fact, fact);
+        if (fact_id >= 0)
+            pddlFactIdArrAdd(&g->strips->init, fact_id);
+    }
+}
+
+static int _groundGoal(pddl_cond_t *c, void *_g)
+{
+    ground_t *g = _g;
+
+    if (c->type == PDDL_COND_ATOM){
+        const pddl_cond_atom_t *atom = PDDL_COND_CAST(c, atom);
+        PDDL_FACT_FOR_GROUND2(fact, atom->arg_size);
+
+        // Transform atom to a fact
+        fact.pred = atom->pred;
+        fact.arg_size = atom->arg_size;
+        for (int i = 0; i < atom->arg_size; ++i){
+            if (atom->arg[i].param >= 0){
+                ERR2("Goal specification cannot contain parametrized atoms.");
+                exit(-1);
+            }else{
+                fact.arg[i] = atom->arg[i].obj;
+            }
+        }
+
+        // Find fact in the set of reachable facts
+        int fact_id = pddlFactsFind(&g->strips->fact, &fact);
+        if (fact_id >= 0){
+            // Add the fact to the goal specification
+            pddlFactIdArrAdd(&g->strips->goal, fact_id);
+        }else{
+            // The problem is unsolvable, because a goal fact is not
+            // reachable.
+            g->strips->goal_is_unreachable = 1;
+        }
+        return 0;
+
+    }else if (c->type == PDDL_COND_AND){
+        return 0;
+    }else{
+        ERR2("Strips supports only conjuctive goal specifications.");
+        exit(-1);
+        // TODO: Report error
+        return -2;
+    }
+}
+static void groundGoal(ground_t *g)
+{
+    if (g->pddl->goal->type == PDDL_COND_OR){
+        pddlDump(g->pddl, stderr);
+        ERR2("Strips does not support disjunctive goal specification.");
+        exit(-1);
+    }
+    pddlCondTraverse(g->pddl->goal, _groundGoal, NULL, g);
+}
+
 static void groundInitFact(ground_t *g, const pddl_t *pddl)
 {
     const pddl_fact_t *fact;
@@ -1003,17 +997,19 @@ void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     unifyStaticFacts(&g);
     unifyFacts(&g);
     groundActions(&g);
-    // TODO: ground init facts and goal facts
+    groundInitState(&g);
+    groundGoal(&g);
 
     groundFree(&g);
 }
 
 #ifdef PDDL_DEBUG
-static void tnodePrint(tree_t *tr, tnode_t *tn, int argi, int offset, FILE *fout)
+static void tnodePrint(tree_t *tr, tnode_t *tn, int offset, FILE *fout)
 {
+    tnode_t *ch;
     int off = 0, p = 0;
 
-    off += fprintf(fout, "%d", argi);
+    off += fprintf(fout, "%d", tn->argi);
     if (tn->obj_id == UNDEF){
         off += fprintf(fout, ":X");
     }else{
@@ -1032,20 +1028,17 @@ static void tnodePrint(tree_t *tr, tnode_t *tn, int argi, int offset, FILE *fout
     if (tn->pre_unified == tr->pre_size)
         off += fprintf(fout, "*");
 
-    for (int argi = 0; argi < tr->arg_size; ++argi){
-        tnode_child_t *cs = tn->child + argi;
-        for (int i = 0; i < cs->child_size; ++i){
-            if (p){
-                fprintf(fout, "\n");
-                for (int i = 0; i < offset + off; ++i)
-                    fprintf(fout, " ");
-                fprintf(fout, "`");
-            }else{
+    TNODE_FOR_EACH_CHILD(tn, ch){
+        if (p){
+            fprintf(fout, "\n");
+            for (int i = 0; i < offset + off; ++i)
                 fprintf(fout, " ");
-                p = 1;
-            }
-            tnodePrint(tr, cs->child[i], argi, offset + off + 1, fout);
+            fprintf(fout, "`");
+        }else{
+            fprintf(fout, " ");
+            p = 1;
         }
+        tnodePrint(tr, ch, offset + off + 1, fout);
     }
 
     if (offset == 0)
@@ -1054,17 +1047,16 @@ static void tnodePrint(tree_t *tr, tnode_t *tn, int argi, int offset, FILE *fout
 
 static void treePrint(tree_t *tr, FILE *fout)
 {
-    fprintf(fout, "Tree for %s, arg_size: %d, pre_size: %d,"
-                  " root-blocked: %d, param-size:",
+    tnode_t *ch;
+
+    fprintf(fout, "Tree for %s, arg_size: %d, pre_size: %d, "
+                  " pre_static_size: %d, root-blocked: %d, param-size:",
             tr->action->action->name, tr->arg_size, tr->pre_size,
-            tr->root->flags.blocked);
+            tr->pre_static_size, tr->root->flags.blocked);
     for (int i = 0; i < tr->arg_size; ++i)
         fprintf(fout, " %d:%d", i, tr->arg_max_size[i]);
     fprintf(fout, "\n");
-    for (int argi = 0; argi < tr->arg_size; ++argi){
-        tnode_child_t *cs = tr->root->child + argi;
-        for (int i = 0; i < cs->child_size; ++i)
-            tnodePrint(tr, cs->child[i], argi, 0, fout);
-    }
+    TNODE_FOR_EACH_CHILD(tr->root, ch)
+        tnodePrint(tr, ch, 0, fout);
 }
 #endif /* PDDL_DEBUG */

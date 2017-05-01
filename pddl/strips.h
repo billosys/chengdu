@@ -38,11 +38,25 @@ struct pddl_strips {
     pddl_strips_ops_t op;
     pddl_fact_id_arr_t init;
     pddl_fact_id_arr_t goal;
+    int goal_is_unreachable;
 };
 typedef struct pddl_strips pddl_strips_t;
 
+/**
+ * Grounds pddl into strips.
+ */
 pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags);
+
+/**
+ * Deletes allocated memory.
+ */
 void pddlStripsDel(pddl_strips_t *strips);
+
+/**
+ * Constructs a dual strips.
+ */
+pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips);
+
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
 
 #ifdef __cplusplus

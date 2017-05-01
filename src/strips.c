@@ -24,7 +24,7 @@
 /** Implemented in strips_ground.c */
 void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
 
-pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
+static pddl_strips_t *stripsNew(const pddl_t *pddl)
 {
     pddl_strips_t *strips;
 
@@ -35,6 +35,12 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     pddlStripsOpsInit(&strips->op);
     pddlFactIdArrInit(&strips->init);
     pddlFactIdArrInit(&strips->goal);
+    return strips;
+}
+
+pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
+{
+    pddl_strips_t *strips = stripsNew(pddl);
 
     _pddlStripsGround(strips, pddl);
 
@@ -58,6 +64,33 @@ void pddlStripsDel(pddl_strips_t *strips)
     BOR_FREE(strips);
 }
 
+pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
+{
+    pddl_strips_t *dual = stripsNew(strips->pddl);
+    pddl_strips_op_t op;
+
+    pddlFactsCopy(&dual->fact, &strips->fact);
+
+    // Construct initial state and goal specification
+    for (int i = 0; i < dual->fact.fact_size; ++i){
+        pddlFactIdArrAdd(&dual->init, i);
+        pddlFactIdArrAdd(&dual->goal, i);
+    }
+    pddlFactIdArrMinus(&dual->init, &strips->goal);
+    pddlFactIdArrMinus(&dual->goal, &strips->init);
+
+    // Copy dual operators
+    for (int i = 0; i < strips->op.op_size; ++i){
+        const pddl_strips_op_t *sop = strips->op.op[i];
+        pddlStripsOpInit(&op);
+        pddlStripsOpCopyDual(&op, sop);
+        pddlStripsOpsAdd(&dual->op, &op);
+        pddlStripsOpFree(&op);
+    }
+
+    return dual;
+}
+
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
 {
     fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);
@@ -65,4 +98,12 @@ void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
 
     fprintf(fout, "Op[%d]:\n", strips->op.op_size);
     pddlStripsOpsPrint(strips->pddl, &strips->fact, &strips->op, fout);
+
+    fprintf(fout, "Init State: ");
+    pddlFactIdArrPrettyPrint(strips->pddl, &strips->fact, &strips->init, fout);
+
+    fprintf(fout, "Goal: ");
+    pddlFactIdArrPrettyPrint(strips->pddl, &strips->fact, &strips->goal, fout);
+    if (strips->goal_is_unreachable)
+        fprintf(fout, "Goal is unreachable\n");
 }

@@ -82,8 +82,7 @@ void pddlStripsOpDel(pddl_strips_op_t *op)
     BOR_FREE(op);
 }
 
-pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
-                                                  const pddl_strips_op_t *f)
+static pddl_strips_op_cond_eff_t *addCondEff(pddl_strips_op_t *op)
 {
     pddl_strips_op_cond_eff_t *ce;
 
@@ -98,10 +97,16 @@ pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
 
     ce = op->cond_eff + op->cond_eff_size++;
     bzero(ce, sizeof(*ce));
+    return ce;
+}
+
+pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
+                                                  const pddl_strips_op_t *f)
+{
+    pddl_strips_op_cond_eff_t *ce = addCondEff(op);
     pddlFactIdArrCopy(&ce->pre, &f->pre);
     pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
     pddlFactIdArrCopy(&ce->del_eff, &f->del_eff);
-
     return ce;
 }
 
@@ -133,11 +138,39 @@ void pddlStripsOpAddEffFromOp(pddl_strips_op_t *dst,
 
 void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
 {
+    pddl_strips_op_cond_eff_t *ce;
+
     dst->name = BOR_STRDUP(src->name);
     dst->cost = src->cost;
     pddlFactIdArrCopy(&dst->pre, &src->pre);
     pddlFactIdArrCopy(&dst->add_eff, &src->add_eff);
     pddlFactIdArrCopy(&dst->del_eff, &src->del_eff);
+    for (int i = 0; i < src->cond_eff_size; ++i){
+        const pddl_strips_op_cond_eff_t *f = src->cond_eff + i;
+        ce = addCondEff(dst);
+        pddlFactIdArrCopy(&ce->pre, &f->pre);
+        pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
+        pddlFactIdArrCopy(&ce->del_eff, &f->del_eff);
+    }
+    dst->hash = src->hash;
+}
+
+void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
+{
+    pddl_strips_op_cond_eff_t *ce;
+
+    dst->name = BOR_STRDUP(src->name);
+    dst->cost = src->cost;
+    pddlFactIdArrCopy(&dst->pre, &src->del_eff);
+    pddlFactIdArrCopy(&dst->add_eff, &src->add_eff);
+    pddlFactIdArrCopy(&dst->del_eff, &src->pre);
+    for (int i = 0; i < src->cond_eff_size; ++i){
+        const pddl_strips_op_cond_eff_t *f = src->cond_eff + i;
+        ce = addCondEff(dst);
+        pddlFactIdArrCopy(&ce->pre, &f->del_eff);
+        pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
+        pddlFactIdArrCopy(&ce->del_eff, &f->pre);
+    }
     dst->hash = src->hash;
 }
 
@@ -195,42 +228,17 @@ int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add)
     return op->id;
 }
 
-static int factArrCmp(const void *a, const void *b, void *_fs)
-{
-    const pddl_facts_t *fs = _fs;
-    int fid1 = *(int *)a;
-    int fid2 = *(int *)b;
-    const pddl_fact_t *f1 = fs->fact[fid1];
-    const pddl_fact_t *f2 = fs->fact[fid2];
-    return pddlFactCmp(f1, f2);
-}
-
-static void printFactArr(const struct pddl *pddl, const pddl_facts_t *fs,
-                         const pddl_fact_id_arr_t *arr, FILE *fout)
-{
-    int sorted[arr->size];
-    memcpy(sorted, arr->fact, sizeof(int) * arr->size);
-    borSort(sorted, arr->size, sizeof(int), factArrCmp, (void *)fs);
-
-    for (int i = 0; i < arr->size; ++i){
-        if (i > 0)
-            fprintf(fout, ", ");
-        pddlFactPrint(pddl, fs->fact[sorted[i]], fout);
-    }
-    fprintf(fout, "\n");
-}
-
 void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
                        const pddl_strips_op_t *op, FILE *fout)
 {
     fprintf(fout, "  %s, cost: %d\n", op->name, op->cost);
 
     fprintf(fout, "    pre: ");
-    printFactArr(pddl, fs, &op->pre, fout);
+    pddlFactIdArrPrettyPrint(pddl, fs, &op->pre, fout);
     fprintf(fout, "    add: ");
-    printFactArr(pddl, fs, &op->add_eff, fout);
+    pddlFactIdArrPrettyPrint(pddl, fs, &op->add_eff, fout);
     fprintf(fout, "    del: ");
-    printFactArr(pddl, fs, &op->del_eff, fout);
+    pddlFactIdArrPrettyPrint(pddl, fs, &op->del_eff, fout);
 
     if (op->cond_eff_size > 0)
         fprintf(fout, "    cond-eff[%d]:\n", op->cond_eff_size);
@@ -239,11 +247,11 @@ void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
         const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
 
         fprintf(fout, "      pre: ");
-        printFactArr(pddl, fs, &ce->pre, fout);
+        pddlFactIdArrPrettyPrint(pddl, fs, &ce->pre, fout);
         fprintf(fout, "      add: ");
-        printFactArr(pddl, fs, &ce->add_eff, fout);
+        pddlFactIdArrPrettyPrint(pddl, fs, &ce->add_eff, fout);
         fprintf(fout, "      del: ");
-        printFactArr(pddl, fs, &ce->del_eff, fout);
+        pddlFactIdArrPrettyPrint(pddl, fs, &ce->del_eff, fout);
     }
 }
 
