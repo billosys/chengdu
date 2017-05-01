@@ -99,6 +99,11 @@ int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name);
 void pddlStripsOpAddEffFromOp(pddl_strips_op_t *dst,
                               const pddl_strips_op_t *src);
 
+/**
+ * Copy dual variant of the operator (i.e., exchanged pre and del_eff)
+ */
+void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src);
+
 _bor_inline int pddlStripsOpRmFactId(pddl_strips_op_t *op, int fact_id)
 {
     return pddlFactIdArrRmId(&op->pre, fact_id)

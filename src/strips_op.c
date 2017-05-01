@@ -82,8 +82,7 @@ void pddlStripsOpDel(pddl_strips_op_t *op)
     BOR_FREE(op);
 }
 
-pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
-                                                  const pddl_strips_op_t *f)
+static pddl_strips_op_cond_eff_t *addCondEff(pddl_strips_op_t *op)
 {
     pddl_strips_op_cond_eff_t *ce;
 
@@ -98,10 +97,16 @@ pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
 
     ce = op->cond_eff + op->cond_eff_size++;
     bzero(ce, sizeof(*ce));
+    return ce;
+}
+
+pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
+                                                  const pddl_strips_op_t *f)
+{
+    pddl_strips_op_cond_eff_t *ce = addCondEff(op);
     pddlFactIdArrCopy(&ce->pre, &f->pre);
     pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
     pddlFactIdArrCopy(&ce->del_eff, &f->del_eff);
-
     return ce;
 }
 
@@ -133,11 +138,39 @@ void pddlStripsOpAddEffFromOp(pddl_strips_op_t *dst,
 
 void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
 {
+    pddl_strips_op_cond_eff_t *ce;
+
     dst->name = BOR_STRDUP(src->name);
     dst->cost = src->cost;
     pddlFactIdArrCopy(&dst->pre, &src->pre);
     pddlFactIdArrCopy(&dst->add_eff, &src->add_eff);
     pddlFactIdArrCopy(&dst->del_eff, &src->del_eff);
+    for (int i = 0; i < src->cond_eff_size; ++i){
+        const pddl_strips_op_cond_eff_t *f = src->cond_eff + i;
+        ce = addCondEff(dst);
+        pddlFactIdArrCopy(&ce->pre, &f->pre);
+        pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
+        pddlFactIdArrCopy(&ce->del_eff, &f->del_eff);
+    }
+    dst->hash = src->hash;
+}
+
+void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
+{
+    pddl_strips_op_cond_eff_t *ce;
+
+    dst->name = BOR_STRDUP(src->name);
+    dst->cost = src->cost;
+    pddlFactIdArrCopy(&dst->pre, &src->del_eff);
+    pddlFactIdArrCopy(&dst->add_eff, &src->add_eff);
+    pddlFactIdArrCopy(&dst->del_eff, &src->pre);
+    for (int i = 0; i < src->cond_eff_size; ++i){
+        const pddl_strips_op_cond_eff_t *f = src->cond_eff + i;
+        ce = addCondEff(dst);
+        pddlFactIdArrCopy(&ce->pre, &f->del_eff);
+        pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
+        pddlFactIdArrCopy(&ce->del_eff, &f->pre);
+    }
     dst->hash = src->hash;
 }
 
