@@ -1,7 +1,7 @@
 /***
  * cpddl
  * -------
- * Copyright (c)2016 Daniel Fiser <danfis@danfis.cz>,
+ * Copyright (c)2017 Daniel Fiser <danfis@danfis.cz>,
  * AI Center, Department of Computer Science,
  * Faculty of Electrical Engineering, Czech Technical University in Prague.
  * All rights reserved.
@@ -26,6 +26,17 @@
 #include "pddl/fact_id.h"
 #include "err.h"
 #include "assert.h"
+
+int pddlFactIdSetHasId(const pddl_fact_id_set_t *s, int fact_id)
+{
+    // TODO: binary search
+    int i;
+    PDDL_FACT_ID_SET_FOR_EACH(s, i){
+        if (i == fact_id)
+            return 1;
+    }
+    return 0;
+}
 
 void pddlFactIdSetAdd(pddl_fact_id_set_t *s, int fact_id)
 {

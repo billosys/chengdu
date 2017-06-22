@@ -21,10 +21,6 @@
 #define __PDDL_FACT_ID_H__
 
 #include <boruvka/alloc.h>
-#include <boruvka/htable.h>
-#include <pddl/lisp.h>
-#include <pddl/obj.h>
-#include <pddl/pred.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +55,16 @@ _bor_inline void pddlFactIdSetInit(pddl_fact_id_set_t *s);
 _bor_inline void pddlFactIdSetFree(pddl_fact_id_set_t *s);
 
 /**
+ * Returns true if fact_id belongs to s.
+ */
+int pddlFactIdSetHasId(const pddl_fact_id_set_t *s, int fact_id);
+
+/**
+ * Makes the set empty.
+ */
+_bor_inline void pddlFactIdSetEmpty(pddl_fact_id_set_t *s);
+
+/**
  * Adds a new ID into the set if not already there.
  */
 void pddlFactIdSetAdd(pddl_fact_id_set_t *s, int fact_id);
@@ -67,6 +73,11 @@ void pddlFactIdSetAdd(pddl_fact_id_set_t *s, int fact_id);
  * Copies facts from src to dst; dst does not need to be empty.
  */
 void pddlFactIdSetCopy(pddl_fact_id_set_t *dst, const pddl_fact_id_set_t *src);
+
+/**
+ * Allocate enough memory for size elements.
+ * (It does not change s->size.)
+ */
 _bor_inline void pddlFactIdSetResize(pddl_fact_id_set_t *s, int size);
 
 /**
@@ -94,6 +105,33 @@ void pddlFactIdSetPrettyPrint(const struct pddl *pddl,
                               FILE *fout);
 
 
+/**
+ * Set of sets (powerset) of fact IDs.
+ */
+struct pddl_fact_id_pset {
+    pddl_fact_id_set_t *fact_set;
+    int size;
+    int alloc;
+};
+typedef struct pddl_fact_id_pset pddl_fact_id_pset_t;
+
+/**
+ * Initialize powerset of fact IDs.
+ */
+_bor_inline void pddlFactIdPSetInit(pddl_fact_id_pset_t *ps);
+
+/**
+ * Free all allocated memory.
+ */
+_bor_inline void pddlFactIdPSetFree(pddl_fact_id_pset_t *ps);
+
+/**
+ * Adds a new set to ps.
+ */
+void pddlFactIdPSetAdd(pddl_fact_id_pset_t *ps, const pddl_fact_id_set_t *s);
+
+
+
 /**** INLINES: ****/
 _bor_inline void pddlFactIdSetInit(pddl_fact_id_set_t *s)
 {
@@ -104,6 +142,11 @@ _bor_inline void pddlFactIdSetFree(pddl_fact_id_set_t *s)
 {
     if (s->fact)
         BOR_FREE(s->fact);
+}
+
+_bor_inline void pddlFactIdSetEmpty(pddl_fact_id_set_t *s)
+{
+    s->size = 0;
 }
 
 _bor_inline void pddlFactIdSetResize(pddl_fact_id_set_t *s, int size)
