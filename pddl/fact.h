@@ -182,69 +182,6 @@ void pddlFactsPrintInitFunc(const struct pddl *pddl,
                             const pddl_facts_t *in,
                             FILE *fout);
 
-struct pddl_fact_id_arr {
-    int *fact;
-    int size;
-    int alloc;
-};
-typedef struct pddl_fact_id_arr pddl_fact_id_arr_t;
-
-_bor_inline void pddlFactIdArrInit(pddl_fact_id_arr_t *arr);
-_bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr);
-void pddlFactIdArrAdd(pddl_fact_id_arr_t *arr, int fact_id);
-void pddlFactIdArrCopy(pddl_fact_id_arr_t *dst, const pddl_fact_id_arr_t *src);
-_bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size);
-_bor_inline int pddlFactIdArrEq(const pddl_fact_id_arr_t *a1,
-                                const pddl_fact_id_arr_t *a2);
-/**
- * a1 = a1 \setminus a2
- * assuming both a1 and a2 are sorted
- */
-void pddlFactIdArrMinus(pddl_fact_id_arr_t *a1, const pddl_fact_id_arr_t *a2);
-_bor_inline int pddlFactIdArrRmId(pddl_fact_id_arr_t *a, int fact_id);
-void pddlFactIdArrPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
-                              const pddl_fact_id_arr_t *arr, FILE *fout);
-
-
-/**** INLINES: ****/
-_bor_inline void pddlFactIdArrInit(pddl_fact_id_arr_t *arr)
-{
-    bzero(arr, sizeof(*arr));
-}
-
-_bor_inline void pddlFactIdArrFree(pddl_fact_id_arr_t *arr)
-{
-    if (arr->fact)
-        BOR_FREE(arr->fact);
-}
-
-_bor_inline void pddlFactIdArrResize(pddl_fact_id_arr_t *arr, int size)
-{
-    arr->fact = BOR_REALLOC_ARR(arr->fact, int, size);
-    arr->size = size;
-}
-
-_bor_inline int pddlFactIdArrEq(const pddl_fact_id_arr_t *a1,
-                                const pddl_fact_id_arr_t *a2)
-{
-    return a1->size == a2->size
-            && memcmp(a1->fact, a2->fact, sizeof(int) * a1->size) == 0;
-}
-
-_bor_inline int pddlFactIdArrRmId(pddl_fact_id_arr_t *a, int fact_id)
-{
-    int i;
-
-    for (i = 0; i < a->size && a->fact[i] < fact_id; ++i);
-    if (i < a->size && a->fact[i] == fact_id){
-        for (++i; i < a->size; ++i)
-            a->fact[i - 1] = a->fact[i];
-        --a->size;
-        return 1;
-    }
-    return 0;
-}
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

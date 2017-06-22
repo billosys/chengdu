@@ -36,9 +36,9 @@ static int htableEq(const bor_list_t *k1,
 
     return o1->hash == o2->hash
             && strcmp(o1->name, o2->name) == 0
-            && pddlFactIdArrEq(&o1->pre, &o2->pre)
-            && pddlFactIdArrEq(&o1->add_eff, &o2->add_eff)
-            && pddlFactIdArrEq(&o1->del_eff, &o2->del_eff)
+            && pddlFactIdSetEq(&o1->pre, &o2->pre)
+            && pddlFactIdSetEq(&o1->add_eff, &o2->add_eff)
+            && pddlFactIdSetEq(&o1->del_eff, &o2->del_eff)
             && o1->cost == o2->cost;
 }
 
@@ -56,13 +56,13 @@ void pddlStripsOpFree(pddl_strips_op_t *op)
 {
     if (op->name)
         BOR_FREE(op->name);
-    pddlFactIdArrFree(&op->pre);
-    pddlFactIdArrFree(&op->del_eff);
-    pddlFactIdArrFree(&op->add_eff);
+    pddlFactIdSetFree(&op->pre);
+    pddlFactIdSetFree(&op->del_eff);
+    pddlFactIdSetFree(&op->add_eff);
     for (int i = 0; i < op->cond_eff_size; ++i){
-        pddlFactIdArrFree(&op->cond_eff[i].pre);
-        pddlFactIdArrFree(&op->cond_eff[i].add_eff);
-        pddlFactIdArrFree(&op->cond_eff[i].del_eff);
+        pddlFactIdSetFree(&op->cond_eff[i].pre);
+        pddlFactIdSetFree(&op->cond_eff[i].add_eff);
+        pddlFactIdSetFree(&op->cond_eff[i].del_eff);
     }
     if (op->cond_eff != NULL)
         BOR_FREE(op->cond_eff);
@@ -104,16 +104,16 @@ pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
                                                   const pddl_strips_op_t *f)
 {
     pddl_strips_op_cond_eff_t *ce = addCondEff(op);
-    pddlFactIdArrCopy(&ce->pre, &f->pre);
-    pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
-    pddlFactIdArrCopy(&ce->del_eff, &f->del_eff);
+    pddlFactIdSetCopy(&ce->pre, &f->pre);
+    pddlFactIdSetCopy(&ce->add_eff, &f->add_eff);
+    pddlFactIdSetCopy(&ce->del_eff, &f->del_eff);
     return ce;
 }
 
 void pddlStripsOpNormalize(pddl_strips_op_t *op)
 {
-    pddlFactIdArrMinus(&op->del_eff, &op->add_eff);
-    pddlFactIdArrMinus(&op->add_eff, &op->pre);
+    pddlFactIdSetMinus(&op->del_eff, &op->add_eff);
+    pddlFactIdSetMinus(&op->add_eff, &op->pre);
 }
 
 int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name)
@@ -130,9 +130,9 @@ void pddlStripsOpAddEffFromOp(pddl_strips_op_t *dst,
                               const pddl_strips_op_t *src)
 {
     for (int i = 0; i < src->add_eff.size; ++i)
-        pddlFactIdArrAdd(&dst->add_eff, src->add_eff.fact[i]);
+        pddlFactIdSetAdd(&dst->add_eff, src->add_eff.fact[i]);
     for (int i = 0; i < src->del_eff.size; ++i)
-        pddlFactIdArrAdd(&dst->del_eff, src->del_eff.fact[i]);
+        pddlFactIdSetAdd(&dst->del_eff, src->del_eff.fact[i]);
     pddlStripsOpNormalize(dst);
 }
 
@@ -142,15 +142,15 @@ void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
 
     dst->name = BOR_STRDUP(src->name);
     dst->cost = src->cost;
-    pddlFactIdArrCopy(&dst->pre, &src->pre);
-    pddlFactIdArrCopy(&dst->add_eff, &src->add_eff);
-    pddlFactIdArrCopy(&dst->del_eff, &src->del_eff);
+    pddlFactIdSetCopy(&dst->pre, &src->pre);
+    pddlFactIdSetCopy(&dst->add_eff, &src->add_eff);
+    pddlFactIdSetCopy(&dst->del_eff, &src->del_eff);
     for (int i = 0; i < src->cond_eff_size; ++i){
         const pddl_strips_op_cond_eff_t *f = src->cond_eff + i;
         ce = addCondEff(dst);
-        pddlFactIdArrCopy(&ce->pre, &f->pre);
-        pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
-        pddlFactIdArrCopy(&ce->del_eff, &f->del_eff);
+        pddlFactIdSetCopy(&ce->pre, &f->pre);
+        pddlFactIdSetCopy(&ce->add_eff, &f->add_eff);
+        pddlFactIdSetCopy(&ce->del_eff, &f->del_eff);
     }
     dst->hash = src->hash;
 }
@@ -161,15 +161,15 @@ void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
 
     dst->name = BOR_STRDUP(src->name);
     dst->cost = src->cost;
-    pddlFactIdArrCopy(&dst->pre, &src->del_eff);
-    pddlFactIdArrCopy(&dst->add_eff, &src->add_eff);
-    pddlFactIdArrCopy(&dst->del_eff, &src->pre);
+    pddlFactIdSetCopy(&dst->pre, &src->del_eff);
+    pddlFactIdSetCopy(&dst->add_eff, &src->add_eff);
+    pddlFactIdSetCopy(&dst->del_eff, &src->pre);
     for (int i = 0; i < src->cond_eff_size; ++i){
         const pddl_strips_op_cond_eff_t *f = src->cond_eff + i;
         ce = addCondEff(dst);
-        pddlFactIdArrCopy(&ce->pre, &f->del_eff);
-        pddlFactIdArrCopy(&ce->add_eff, &f->add_eff);
-        pddlFactIdArrCopy(&ce->del_eff, &f->pre);
+        pddlFactIdSetCopy(&ce->pre, &f->del_eff);
+        pddlFactIdSetCopy(&ce->add_eff, &f->add_eff);
+        pddlFactIdSetCopy(&ce->del_eff, &f->pre);
     }
     dst->hash = src->hash;
 }
@@ -234,11 +234,11 @@ void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
     fprintf(fout, "  %s, cost: %d\n", op->name, op->cost);
 
     fprintf(fout, "    pre: ");
-    pddlFactIdArrPrettyPrint(pddl, fs, &op->pre, fout);
+    pddlFactIdSetPrettyPrint(pddl, fs, &op->pre, fout);
     fprintf(fout, "    add: ");
-    pddlFactIdArrPrettyPrint(pddl, fs, &op->add_eff, fout);
+    pddlFactIdSetPrettyPrint(pddl, fs, &op->add_eff, fout);
     fprintf(fout, "    del: ");
-    pddlFactIdArrPrettyPrint(pddl, fs, &op->del_eff, fout);
+    pddlFactIdSetPrettyPrint(pddl, fs, &op->del_eff, fout);
 
     if (op->cond_eff_size > 0)
         fprintf(fout, "    cond-eff[%d]:\n", op->cond_eff_size);
@@ -247,11 +247,11 @@ void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
         const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
 
         fprintf(fout, "      pre: ");
-        pddlFactIdArrPrettyPrint(pddl, fs, &ce->pre, fout);
+        pddlFactIdSetPrettyPrint(pddl, fs, &ce->pre, fout);
         fprintf(fout, "      add: ");
-        pddlFactIdArrPrettyPrint(pddl, fs, &ce->add_eff, fout);
+        pddlFactIdSetPrettyPrint(pddl, fs, &ce->add_eff, fout);
         fprintf(fout, "      del: ");
-        pddlFactIdArrPrettyPrint(pddl, fs, &ce->del_eff, fout);
+        pddlFactIdSetPrettyPrint(pddl, fs, &ce->del_eff, fout);
     }
 }
 

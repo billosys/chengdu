@@ -23,6 +23,7 @@
 #include <boruvka/htable.h>
 #include <pddl/pddl.h>
 #include <pddl/strips_op.h>
+#include <pddl/fact_id.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,8 +37,8 @@ struct pddl_strips {
     const pddl_t *pddl;
     pddl_facts_t fact;
     pddl_strips_ops_t op;
-    pddl_fact_id_arr_t init;
-    pddl_fact_id_arr_t goal;
+    pddl_fact_id_set_t init;
+    pddl_fact_id_set_t goal;
     int goal_is_unreachable;
 };
 typedef struct pddl_strips pddl_strips_t;

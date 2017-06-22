@@ -769,7 +769,7 @@ static void groundAtoms(int atom_max_arg_size,
                         const int *arg,
                         const pddl_cond_arr_t *atoms,
                         const pddl_facts_t *facts,
-                        pddl_fact_id_arr_t *out)
+                        pddl_fact_id_set_t *out)
 {
     const pddl_cond_atom_t *atom;
     PDDL_FACT_FOR_GROUND2(fact, atom_max_arg_size);
@@ -780,7 +780,7 @@ static void groundAtoms(int atom_max_arg_size,
         pddlCondAtomGroundFact(atom, arg, &fact);
         fact_id = pddlFactsFind(facts, &fact);
         if (fact_id >= 0){
-            pddlFactIdArrAdd(out, fact_id);
+            pddlFactIdSetAdd(out, fact_id);
         }
     }
 }
@@ -831,7 +831,7 @@ static void groundCondEff(ground_t *g, pddl_strips_op_t *op,
 
     // Find out preconditions that belong only to the conditional
     // effect.
-    pddlFactIdArrMinus(&op->pre, &parent->pre);
+    pddlFactIdSetMinus(&op->pre, &parent->pre);
     if (op->pre.size > 0){
         // Create conditional effect if necessary
         pddlStripsOpAddCondEff(parent, op);
@@ -893,7 +893,7 @@ static void groundInitState(ground_t *g)
         fact = g->pddl->init_fact.fact[i];
         fact_id = pddlFactsFind(&g->strips->fact, fact);
         if (fact_id >= 0)
-            pddlFactIdArrAdd(&g->strips->init, fact_id);
+            pddlFactIdSetAdd(&g->strips->init, fact_id);
     }
 }
 
@@ -921,7 +921,7 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
         int fact_id = pddlFactsFind(&g->strips->fact, &fact);
         if (fact_id >= 0){
             // Add the fact to the goal specification
-            pddlFactIdArrAdd(&g->strips->goal, fact_id);
+            pddlFactIdSetAdd(&g->strips->goal, fact_id);
         }else{
             // The problem is unsolvable, because a goal fact is not
             // reachable.

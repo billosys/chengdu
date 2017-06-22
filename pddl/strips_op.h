@@ -21,7 +21,7 @@
 #define __PDDL_STRIPS_OP_H__
 
 #include <boruvka/htable.h>
-#include <pddl/fact.h>
+#include <pddl/fact_id.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,18 +30,18 @@ extern "C" {
 struct pddl;
 
 struct pddl_strips_op_cond_eff {
-    pddl_fact_id_arr_t pre;
-    pddl_fact_id_arr_t del_eff;
-    pddl_fact_id_arr_t add_eff;
+    pddl_fact_id_set_t pre;
+    pddl_fact_id_set_t del_eff;
+    pddl_fact_id_set_t add_eff;
 };
 typedef struct pddl_strips_op_cond_eff pddl_strips_op_cond_eff_t;
 
 struct pddl_strips_op {
     char *name;
     int cost;
-    pddl_fact_id_arr_t pre;
-    pddl_fact_id_arr_t del_eff;
-    pddl_fact_id_arr_t add_eff;
+    pddl_fact_id_set_t pre;
+    pddl_fact_id_set_t del_eff;
+    pddl_fact_id_set_t add_eff;
     pddl_strips_op_cond_eff_t *cond_eff;
     int cond_eff_size;
     int cond_eff_alloc;
@@ -69,15 +69,15 @@ void pddlStripsOpDel(pddl_strips_op_t *op);
  */
 _bor_inline void pddlStripsOpAddPre(pddl_strips_op_t *op, int fact_id)
 {
-    pddlFactIdArrAdd(&op->pre, fact_id);
+    pddlFactIdSetAdd(&op->pre, fact_id);
 }
 _bor_inline void pddlStripsOpAddAddEff(pddl_strips_op_t *op, int fact_id)
 {
-    pddlFactIdArrAdd(&op->add_eff, fact_id);
+    pddlFactIdSetAdd(&op->add_eff, fact_id);
 }
 _bor_inline void pddlStripsOpAddDelEff(pddl_strips_op_t *op, int fact_id)
 {
-    pddlFactIdArrAdd(&op->del_eff, fact_id);
+    pddlFactIdSetAdd(&op->del_eff, fact_id);
 }
 
 pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
@@ -106,19 +106,19 @@ void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src);
 
 _bor_inline int pddlStripsOpRmFactId(pddl_strips_op_t *op, int fact_id)
 {
-    return pddlFactIdArrRmId(&op->pre, fact_id)
-            | pddlFactIdArrRmId(&op->add_eff, fact_id)
-            | pddlFactIdArrRmId(&op->del_eff, fact_id);
+    return pddlFactIdSetRmId(&op->pre, fact_id)
+            | pddlFactIdSetRmId(&op->add_eff, fact_id)
+            | pddlFactIdSetRmId(&op->del_eff, fact_id);
 }
 
 _bor_inline int pddlStripsOpRmFactIdFromDelEff(pddl_strips_op_t *op, int fid)
 {
-    return pddlFactIdArrRmId(&op->del_eff, fid);
+    return pddlFactIdSetRmId(&op->del_eff, fid);
 }
 
 _bor_inline int pddlStripsOpRmFactIdFromAddEff(pddl_strips_op_t *op, int fid)
 {
-    return pddlFactIdArrRmId(&op->add_eff, fid);
+    return pddlFactIdSetRmId(&op->add_eff, fid);
 }
 
 struct pddl_strips_ops {

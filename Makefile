@@ -16,6 +16,7 @@ OBJS += param
 OBJS += obj
 OBJS += pred
 OBJS += fact
+OBJS += fact_id
 OBJS += action
 OBJS += prep_action
 OBJS += pddl

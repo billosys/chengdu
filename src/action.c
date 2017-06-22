@@ -149,14 +149,6 @@ void pddlActionNormalize(pddl_action_t *a, const pddl_types_t *t)
         a->eff = pddlCondAtomToAnd(a->eff);
 }
 
-void pddlActionGroundPre(const pddl_action_t *a,
-                         const int *arg,
-                         int arg_size,
-                         pddl_facts_t *facts,
-                         pddl_fact_id_arr_t *out)
-{
-}
-
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
 {
     pddl_action_t *a;

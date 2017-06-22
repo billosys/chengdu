@@ -66,12 +66,12 @@ void pddlStripsReachabilityGraphInit(pddl_strips_reachability_graph_t *rg,
 void pddlStripsReachabilityGraphFree(pddl_strips_reachability_graph_t *rg);
 void pddlStripsReachabilityGraphRmOp(pddl_strips_reachability_graph_t *rg,
                                      int op_id,
-                                     pddl_fact_id_arr_t *removed_facts,
-                                     pddl_fact_id_arr_t *removed_ops);
+                                     pddl_fact_id_set_t *removed_facts,
+                                     pddl_fact_id_set_t *removed_ops);
 void pddlStripsReachabilityGraphRmFact(pddl_strips_reachability_graph_t *rg,
                                        int fact_id,
-                                       pddl_fact_id_arr_t *removed_facts,
-                                       pddl_fact_id_arr_t *removed_ops);
+                                       pddl_fact_id_set_t *removed_facts,
+                                       pddl_fact_id_set_t *removed_ops);
 
 #ifdef __cplusplus
 } /* extern "C" */

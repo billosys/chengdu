@@ -119,16 +119,16 @@ void pddlStripsReachabilityGraphFree(pddl_strips_reachability_graph_t *rg)
 
 void pddlStripsReachabilityGraphRmOp(pddl_strips_reachability_graph_t *rg,
                                      int op_id,
-                                     pddl_fact_id_arr_t *removed_facts,
-                                     pddl_fact_id_arr_t *removed_ops)
+                                     pddl_fact_id_set_t *removed_facts,
+                                     pddl_fact_id_set_t *removed_ops)
 {
     pddl_strips_reachability_node_t *op_node = rg->op + op_id;
     pddl_strips_reachability_node_t *fact_node;
     pddl_strips_reachability_edge_t *edge;
     bor_list_t *litem;
-    pddl_fact_id_arr_t rm_facts;
+    pddl_fact_id_set_t rm_facts;
 
-    pddlFactIdArrInit(&rm_facts);
+    pddlFactIdSetInit(&rm_facts);
 
     // Remove incoming edges
     while (!borListEmpty(&op_node->in)){
@@ -152,30 +152,30 @@ void pddlStripsReachabilityGraphRmOp(pddl_strips_reachability_graph_t *rg,
         // Determine whether the next fact node has no in edges and if so
         // schedule it for removal.
         if (borListEmpty(&fact_node->in))
-            pddlFactIdArrAdd(&rm_facts, fact_node->fact_id);
+            pddlFactIdSetAdd(&rm_facts, fact_node->fact_id);
     }
 
-    pddlFactIdArrAdd(removed_ops, op_id);
+    pddlFactIdSetAdd(removed_ops, op_id);
 
     // Remove facts with no incoming edges
     for (int i = 0; i < rm_facts.size; ++i)
         pddlStripsReachabilityGraphRmFact(rg, rm_facts.fact[i],
                                           removed_facts, removed_ops);
 
-    pddlFactIdArrFree(&rm_facts);
+    pddlFactIdSetFree(&rm_facts);
 }
 
 void pddlStripsReachabilityGraphRmFact(pddl_strips_reachability_graph_t *rg,
                                        int fact_id,
-                                       pddl_fact_id_arr_t *removed_facts,
-                                       pddl_fact_id_arr_t *removed_ops)
+                                       pddl_fact_id_set_t *removed_facts,
+                                       pddl_fact_id_set_t *removed_ops)
 {
     pddl_strips_reachability_node_t *fact_node = rg->fact + fact_id;
     pddl_strips_reachability_edge_t *edge;
     bor_list_t *litem;
-    pddl_fact_id_arr_t rm;
+    pddl_fact_id_set_t rm;
 
-    pddlFactIdArrInit(&rm);
+    pddlFactIdSetInit(&rm);
 
     while (!borListEmpty(&fact_node->in)){
         litem = borListNext(&fact_node->in);
@@ -190,16 +190,16 @@ void pddlStripsReachabilityGraphRmFact(pddl_strips_reachability_graph_t *rg,
         borListDel(litem);
         edge = BOR_LIST_ENTRY(litem, pddl_strips_reachability_edge_t,
                               from_conn);
-        pddlFactIdArrAdd(&rm, edge->to->op_id);
+        pddlFactIdSetAdd(&rm, edge->to->op_id);
         borListDel(&edge->to_conn);
         BOR_FREE(edge);
     }
 
-    pddlFactIdArrAdd(removed_facts, fact_id);
+    pddlFactIdSetAdd(removed_facts, fact_id);
 
     for (int i = 0; i < rm.size; ++i)
         pddlStripsReachabilityGraphRmOp(rg, rm.fact[i],
                                         removed_facts, removed_ops);
 
-    pddlFactIdArrFree(&rm);
+    pddlFactIdSetFree(&rm);
 }
