@@ -27,25 +27,25 @@
 #include "err.h"
 #include "assert.h"
 
-void pddlFactIdSetAdd(pddl_fact_id_set_t *arr, int fact_id)
+void pddlFactIdSetAdd(pddl_fact_id_set_t *s, int fact_id)
 {
-    if (arr->size >= arr->alloc){
-        if (arr->alloc == 0)
-            arr->alloc = 1;
-        arr->alloc *= 2;
-        arr->fact = BOR_REALLOC_ARR(arr->fact, int, arr->alloc);
+    if (s->size >= s->alloc){
+        if (s->alloc == 0)
+            s->alloc = 1;
+        s->alloc *= 2;
+        s->fact = BOR_REALLOC_ARR(s->fact, int, s->alloc);
     }
-    arr->fact[arr->size++] = fact_id;
+    s->fact[s->size++] = fact_id;
 
-    if (arr->size > 1 && fact_id < arr->fact[arr->size - 2]){
-        int *f = arr->fact + arr->size - 1;
-        for (; f > arr->fact && f[0] < f[-1]; --f){
+    if (s->size > 1 && fact_id < s->fact[s->size - 2]){
+        int *f = s->fact + s->size - 1;
+        for (; f > s->fact && f[0] < f[-1]; --f){
             int tmp = f[0];
             f[0] = f[-1];
             f[-1] = tmp;
         }
-        if (f > arr->fact && f[0] == f[-1]){
-            for (--arr->size; f != arr->fact + arr->size; ++f)
+        if (f > s->fact && f[0] == f[-1]){
+            for (--s->size; f != s->fact + s->size; ++f)
                 *f = f[1];
         }
     }
@@ -53,28 +53,27 @@ void pddlFactIdSetAdd(pddl_fact_id_set_t *arr, int fact_id)
 
 void pddlFactIdSetCopy(pddl_fact_id_set_t *dst, const pddl_fact_id_set_t *src)
 {
-    dst->alloc = dst->size = src->size;
-    dst->fact = BOR_ALLOC_ARR(int, dst->alloc);
-    memcpy(dst->fact, src->fact, sizeof(int) * src->size);
+    for (int i = 0; i < src->size; ++i)
+        pddlFactIdSetAdd(dst, src->fact[i]);
 }
 
-void pddlFactIdSetMinus(pddl_fact_id_set_t *a1, const pddl_fact_id_set_t *a2)
+void pddlFactIdSetMinus(pddl_fact_id_set_t *s1, const pddl_fact_id_set_t *s2)
 {
     int w, i, j;
 
-    for (w = i = j = 0; i < a1->size && j < a2->size;){
-        if (a1->fact[i] == a2->fact[j]){
+    for (w = i = j = 0; i < s1->size && j < s2->size;){
+        if (s1->fact[i] == s2->fact[j]){
             ++i;
             ++j;
-        }else if (a1->fact[i] < a2->fact[j]){
-            a1->fact[w++] = a1->fact[i++];
+        }else if (s1->fact[i] < s2->fact[j]){
+            s1->fact[w++] = s1->fact[i++];
         }else{
             ++j;
         }
     }
-    for (; i < a1->size; ++i, ++w)
-        a1->fact[w] = a1->fact[i];
-    a1->size = w + a1->size - i;
+    for (; i < s1->size; ++i, ++w)
+        s1->fact[w] = s1->fact[i];
+    s1->size = w + s1->size - i;
 }
 
 static int factArrCmp(const void *a, const void *b, void *_fs)
@@ -89,13 +88,13 @@ static int factArrCmp(const void *a, const void *b, void *_fs)
 
 
 void pddlFactIdSetPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
-                              const pddl_fact_id_set_t *arr, FILE *fout)
+                              const pddl_fact_id_set_t *s, FILE *fout)
 {
-    int sorted[arr->size];
-    memcpy(sorted, arr->fact, sizeof(int) * arr->size);
-    borSort(sorted, arr->size, sizeof(int), factArrCmp, (void *)fs);
+    int sorted[s->size];
+    memcpy(sorted, s->fact, sizeof(int) * s->size);
+    borSort(sorted, s->size, sizeof(int), factArrCmp, (void *)fs);
 
-    for (int i = 0; i < arr->size; ++i){
+    for (int i = 0; i < s->size; ++i){
         if (i > 0)
             fprintf(fout, ", ");
         pddlFactPrint(pddl, fs->fact[sorted[i]], fout);

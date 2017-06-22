@@ -33,6 +33,9 @@ extern "C" {
 struct pddl;
 struct pddl_facts;
 
+/**
+ * Set of fact IDs
+ */
 struct pddl_fact_id_set {
     int *fact;
     int size;
@@ -40,58 +43,91 @@ struct pddl_fact_id_set {
 };
 typedef struct pddl_fact_id_set pddl_fact_id_set_t;
 
-_bor_inline void pddlFactIdSetInit(pddl_fact_id_set_t *arr);
-_bor_inline void pddlFactIdSetFree(pddl_fact_id_set_t *arr);
-void pddlFactIdSetAdd(pddl_fact_id_set_t *arr, int fact_id);
-void pddlFactIdSetCopy(pddl_fact_id_set_t *dst, const pddl_fact_id_set_t *src);
-_bor_inline void pddlFactIdSetResize(pddl_fact_id_set_t *arr, int size);
-_bor_inline int pddlFactIdSetEq(const pddl_fact_id_set_t *a1,
-                                const pddl_fact_id_set_t *a2);
+#define PDDL_FACT_ID_SET_FOR_EACH(fs, fact_id) \
+    for (int __i = 0; \
+            __i < (fs)->size && ((fact_id) = (fs)->fact[__i], 1); \
+            ++__i)
+
 /**
- * a1 = a1 \setminus a2
- * assuming both a1 and a2 are sorted
+ * Initialize set of fact IDs
  */
-void pddlFactIdSetMinus(pddl_fact_id_set_t *a1, const pddl_fact_id_set_t *a2);
-_bor_inline int pddlFactIdSetRmId(pddl_fact_id_set_t *a, int fact_id);
+_bor_inline void pddlFactIdSetInit(pddl_fact_id_set_t *s);
+
+/**
+ * Frees allocated memory.
+ */
+_bor_inline void pddlFactIdSetFree(pddl_fact_id_set_t *s);
+
+/**
+ * Adds a new ID into the set if not already there.
+ */
+void pddlFactIdSetAdd(pddl_fact_id_set_t *s, int fact_id);
+
+/**
+ * Copies facts from src to dst; dst does not need to be empty.
+ */
+void pddlFactIdSetCopy(pddl_fact_id_set_t *dst, const pddl_fact_id_set_t *src);
+_bor_inline void pddlFactIdSetResize(pddl_fact_id_set_t *s, int size);
+
+/**
+ * Returns true if the sets are equal.
+ */
+_bor_inline int pddlFactIdSetEq(const pddl_fact_id_set_t *s1,
+                                const pddl_fact_id_set_t *s2);
+
+/**
+ * s1 = s1 \setminus s2
+ */
+void pddlFactIdSetMinus(pddl_fact_id_set_t *s1, const pddl_fact_id_set_t *s2);
+
+/**
+ * s = s \setminus {fact_id}
+ */
+_bor_inline int pddlFactIdSetRmId(pddl_fact_id_set_t *s, int fact_id);
+
+/**
+ * Prints the set s as a sorted list of fact names.
+ */
 void pddlFactIdSetPrettyPrint(const struct pddl *pddl,
                               const struct pddl_facts *fs,
-                              const pddl_fact_id_set_t *arr, FILE *fout);
+                              const pddl_fact_id_set_t *s,
+                              FILE *fout);
 
 
 /**** INLINES: ****/
-_bor_inline void pddlFactIdSetInit(pddl_fact_id_set_t *arr)
+_bor_inline void pddlFactIdSetInit(pddl_fact_id_set_t *s)
 {
-    bzero(arr, sizeof(*arr));
+    bzero(s, sizeof(*s));
 }
 
-_bor_inline void pddlFactIdSetFree(pddl_fact_id_set_t *arr)
+_bor_inline void pddlFactIdSetFree(pddl_fact_id_set_t *s)
 {
-    if (arr->fact)
-        BOR_FREE(arr->fact);
+    if (s->fact)
+        BOR_FREE(s->fact);
 }
 
-_bor_inline void pddlFactIdSetResize(pddl_fact_id_set_t *arr, int size)
+_bor_inline void pddlFactIdSetResize(pddl_fact_id_set_t *s, int size)
 {
-    arr->fact = BOR_REALLOC_ARR(arr->fact, int, size);
-    arr->size = size;
+    s->fact = BOR_REALLOC_ARR(s->fact, int, size);
+    s->size = size;
 }
 
-_bor_inline int pddlFactIdSetEq(const pddl_fact_id_set_t *a1,
-                                const pddl_fact_id_set_t *a2)
+_bor_inline int pddlFactIdSetEq(const pddl_fact_id_set_t *s1,
+                                const pddl_fact_id_set_t *s2)
 {
-    return a1->size == a2->size
-            && memcmp(a1->fact, a2->fact, sizeof(int) * a1->size) == 0;
+    return s1->size == s2->size
+            && memcmp(s1->fact, s2->fact, sizeof(int) * s1->size) == 0;
 }
 
-_bor_inline int pddlFactIdSetRmId(pddl_fact_id_set_t *a, int fact_id)
+_bor_inline int pddlFactIdSetRmId(pddl_fact_id_set_t *s, int fact_id)
 {
     int i;
 
-    for (i = 0; i < a->size && a->fact[i] < fact_id; ++i);
-    if (i < a->size && a->fact[i] == fact_id){
-        for (++i; i < a->size; ++i)
-            a->fact[i - 1] = a->fact[i];
-        --a->size;
+    for (i = 0; i < s->size && s->fact[i] < fact_id; ++i);
+    if (i < s->size && s->fact[i] == fact_id){
+        for (++i; i < s->size; ++i)
+            s->fact[i - 1] = s->fact[i];
+        --s->size;
         return 1;
     }
     return 0;
