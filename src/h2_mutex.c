@@ -19,6 +19,7 @@
 
 #include <boruvka/alloc.h>
 #include "pddl/strips.h"
+#include "pddl/mutex.h"
 
 #define FACT(h2, x, y) ((h2)->fact[(x) * (h2)->fact_size + (y)])
 
@@ -31,10 +32,18 @@ typedef struct h2 h2_t;
 
 static void h2Init(h2_t *h2, const pddl_strips_t *strips)
 {
+    int f1, f2;
+
     bzero(h2, sizeof(*h2));
     h2->fact_size = strips->fact.fact_size;
     h2->fact = BOR_CALLOC_ARR(int, h2->fact_size * h2->fact_size);
     h2->op_applied = BOR_CALLOC_ARR(int, strips->op.op_size);
+
+    BOR_ISET_FOR_EACH(&strips->init, f1){
+        BOR_ISET_FOR_EACH(&strips->init, f2){
+            FACT(h2, f1, f2) = 1;
+        }
+    }
 }
 
 static void h2Free(h2_t *h2)
@@ -117,19 +126,18 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
     return updated;
 }
 
-void pddlStripsH2Mutex(const pddl_strips_t *strips,
-                       //pddl_fact_id_pset_t *mgroups,
-                       bor_iset_t *unreachable_facts)
-                       // TODO: unreachable ops
+pddl_mutexes_t *pddlMutexFindH2(const pddl_strips_t *strips,
+                                bor_iset_t *unreachable_ops)
 {
     h2_t h2;
     int updated;
     const pddl_strips_op_t *op;
+    pddl_mutexes_t *ms;
     bor_iset_t mgroup;
 
     h2Init(&h2, strips);
-    borISetInit(&mgroup);
 
+    // TODO: Conditional effects
     do {
         updated = 0;
         PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op){
@@ -137,29 +145,28 @@ void pddlStripsH2Mutex(const pddl_strips_t *strips,
         }
     } while (updated);
 
+    ms = pddlMutexesNew();
+    borISetInit(&mgroup);
     for (int f1 = 0; f1 < h2.fact_size; ++f1){
-        for (int f2 = 0; f2 < h2.fact_size; ++f2){
-            if (f1 == f2){
-                if (!FACT(&h2, f1, f1))
-                    borISetAdd(unreachable_facts, f1);
-                continue;
-            }
-
+        for (int f2 = f1; f2 < h2.fact_size; ++f2){
             if (!FACT(&h2, f1, f2)){
-                if (f1 == f2){
-                    borISetAdd(unreachable_facts, f1);
-                }else{
-                    borISetEmpty(&mgroup);
-                    borISetAdd(&mgroup, f1);
-                    borISetAdd(&mgroup, f2);
-                    // TODO: pddlFactIdPSetAdd(mgroups, &mgroup);
-                }
+                borISetEmpty(&mgroup);
+                borISetAdd(&mgroup, f1);
+                borISetAdd(&mgroup, f2);
+                pddlMutexesAdd(ms, &mgroup);
             }
         }
     }
 
-    // TODO: Unreachable operators
+    if (unreachable_ops != NULL){
+        for (int i = 0; i < strips->op.op_size; ++i){
+            if (!h2.op_applied[i])
+                borISetAdd(unreachable_ops, i);
+        }
+    }
 
     borISetFree(&mgroup);
     h2Free(&h2);
+
+    return ms;
 }
