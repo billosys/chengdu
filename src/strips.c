@@ -33,8 +33,8 @@ static pddl_strips_t *stripsNew(const pddl_t *pddl)
     strips->pddl = pddl;
     pddlFactsInit(&strips->fact);
     pddlStripsOpsInit(&strips->op);
-    pddlFactIdSetInit(&strips->init);
-    pddlFactIdSetInit(&strips->goal);
+    borISetInit(&strips->init);
+    borISetInit(&strips->goal);
     return strips;
 }
 
@@ -59,8 +59,8 @@ void pddlStripsDel(pddl_strips_t *strips)
 {
     pddlFactsFree(&strips->fact);
     pddlStripsOpsFree(&strips->op);
-    pddlFactIdSetFree(&strips->init);
-    pddlFactIdSetFree(&strips->goal);
+    borISetFree(&strips->init);
+    borISetFree(&strips->goal);
     BOR_FREE(strips);
 }
 
@@ -73,11 +73,11 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
 
     // Construct initial state and goal specification
     for (int i = 0; i < dual->fact.fact_size; ++i){
-        pddlFactIdSetAdd(&dual->init, i);
-        pddlFactIdSetAdd(&dual->goal, i);
+        borISetAdd(&dual->init, i);
+        borISetAdd(&dual->goal, i);
     }
-    pddlFactIdSetMinus(&dual->init, &strips->goal);
-    pddlFactIdSetMinus(&dual->goal, &strips->init);
+    borISetMinus(&dual->init, &strips->goal);
+    borISetMinus(&dual->goal, &strips->init);
 
     // Copy dual operators
     for (int i = 0; i < strips->op.op_size; ++i){

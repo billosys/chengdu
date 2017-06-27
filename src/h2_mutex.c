@@ -53,8 +53,8 @@ static int isApplicable(const pddl_strips_op_t *op, h2_t *h2)
     if (h2->op_applied[op->id])
         return 1;
 
-    PDDL_FACT_ID_SET_FOR_EACH(&op->pre, f1){
-        PDDL_FACT_ID_SET_FOR_EACH(&op->pre, f2){
+    BOR_ISET_FOR_EACH(&op->pre, f1){
+        BOR_ISET_FOR_EACH(&op->pre, f2){
             if (!FACT(h2, f1, f2))
                 return 0;
         }
@@ -71,7 +71,7 @@ static int isApplicable2(const pddl_strips_op_t *op, int fact_id, h2_t *h2)
     if (!h2->op_applied[op->id])
         return 0;
 
-    PDDL_FACT_ID_SET_FOR_EACH(&op->pre, f1){
+    BOR_ISET_FOR_EACH(&op->pre, f1){
         if (!FACT(h2, f1, fact_id))
             return 0;
     }
@@ -88,11 +88,11 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
     if (!isApplicable(op, h2))
         return 0;
 
-    PDDL_FACT_ID_SET_FOR_EACH(&op->add_eff, f1){
+    BOR_ISET_FOR_EACH(&op->add_eff, f1){
         if (!h2->op_applied[op->id]){
             // This needs to be run only the first time the operator is
             // applied.
-            PDDL_FACT_ID_SET_FOR_EACH(&op->add_eff, f2){
+            BOR_ISET_FOR_EACH(&op->add_eff, f2){
                 if (!FACT(h2, f1, f2)){
                     FACT(h2, f1, f2) = FACT(h2, f2, f1) = 1;
                     updated = 1;
@@ -103,8 +103,8 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
         for (int fact_id = 0; fact_id < h2->fact_size; ++fact_id){
             if (!FACT(h2, fact_id, fact_id) || FACT(h2, f1, fact_id))
                 continue;
-            if (pddlFactIdSetHasId(&op->add_eff, fact_id)
-                    || pddlFactIdSetHasId(&op->del_eff, fact_id))
+            if (borISetHas(&op->add_eff, fact_id)
+                    || borISetHas(&op->del_eff, fact_id))
                 continue;
             if (isApplicable2(op, fact_id, h2)){
                 FACT(h2, f1, fact_id) = FACT(h2, fact_id, f1) = 1;
@@ -118,17 +118,17 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
 }
 
 void pddlStripsH2Mutex(const pddl_strips_t *strips,
-                       pddl_fact_id_pset_t *mgroups,
-                       pddl_fact_id_set_t *unreachable_facts)
+                       //pddl_fact_id_pset_t *mgroups,
+                       bor_iset_t *unreachable_facts)
                        // TODO: unreachable ops
 {
     h2_t h2;
     int updated;
     const pddl_strips_op_t *op;
-    pddl_fact_id_set_t mgroup;
+    bor_iset_t mgroup;
 
     h2Init(&h2, strips);
-    pddlFactIdSetInit(&mgroup);
+    borISetInit(&mgroup);
 
     do {
         updated = 0;
@@ -141,18 +141,18 @@ void pddlStripsH2Mutex(const pddl_strips_t *strips,
         for (int f2 = 0; f2 < h2.fact_size; ++f2){
             if (f1 == f2){
                 if (!FACT(&h2, f1, f1))
-                    pddlFactIdSetAdd(unreachable_facts, f1);
+                    borISetAdd(unreachable_facts, f1);
                 continue;
             }
 
             if (!FACT(&h2, f1, f2)){
                 if (f1 == f2){
-                    pddlFactIdSetAdd(unreachable_facts, f1);
+                    borISetAdd(unreachable_facts, f1);
                 }else{
-                    pddlFactIdSetEmpty(&mgroup);
-                    pddlFactIdSetAdd(&mgroup, f1);
-                    pddlFactIdSetAdd(&mgroup, f2);
-                    pddlFactIdPSetAdd(mgroups, &mgroup);
+                    borISetEmpty(&mgroup);
+                    borISetAdd(&mgroup, f1);
+                    borISetAdd(&mgroup, f2);
+                    // TODO: pddlFactIdPSetAdd(mgroups, &mgroup);
                 }
             }
         }
@@ -160,6 +160,6 @@ void pddlStripsH2Mutex(const pddl_strips_t *strips,
 
     // TODO: Unreachable operators
 
-    pddlFactIdSetFree(&mgroup);
+    borISetFree(&mgroup);
     h2Free(&h2);
 }

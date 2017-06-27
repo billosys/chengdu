@@ -508,3 +508,30 @@ void pddlFactsPrintInitFunc(const pddl_t *pddl,
     fprintf(fout, "Init Func[%d]:\n", in->fact_size);
     pddlFuncsPrint(pddl, in, fout);
 }
+
+
+static int factArrCmp(const void *a, const void *b, void *_fs)
+{
+    const pddl_facts_t *fs = _fs;
+    int fid1 = *(int *)a;
+    int fid2 = *(int *)b;
+    const pddl_fact_t *f1 = fs->fact[fid1];
+    const pddl_fact_t *f2 = fs->fact[fid2];
+    return pddlFactCmp(f1, f2);
+}
+
+void pddlFactIdSetPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                              const bor_iset_t *s, FILE *fout)
+{
+    int sorted[s->size];
+    memcpy(sorted, s->s, sizeof(int) * s->size);
+    borSort(sorted, s->size, sizeof(int), factArrCmp, (void *)fs);
+
+    for (int i = 0; i < s->size; ++i){
+        if (i > 0)
+            fprintf(fout, ", ");
+        pddlFactPrint(pddl, fs->fact[sorted[i]], fout);
+    }
+    fprintf(fout, "\n");
+}
+

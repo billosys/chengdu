@@ -25,6 +25,7 @@
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
+#include <boruvka/iset.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -181,6 +182,9 @@ void pddlFactsPrintInit(const struct pddl *pddl,
 void pddlFactsPrintInitFunc(const struct pddl *pddl,
                             const pddl_facts_t *in,
                             FILE *fout);
+
+void pddlFactIdSetPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+                              const bor_iset_t *s, FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -9,15 +9,13 @@ CPPCHECK_FLAGS += --platform=unix64 --enable=all -I. -Ithird-party/boruvka
 
 TARGETS  = libpddl.a
 
-OBJS  = iset
-OBJS += lisp
+OBJS  = lisp
 OBJS += require
 OBJS += type
 OBJS += param
 OBJS += obj
 OBJS += pred
 OBJS += fact
-OBJS += fact_id
 OBJS += action
 OBJS += prep_action
 OBJS += pddl
@@ -40,24 +38,6 @@ libpddl.a: $(OBJS)
 pddl/config.h: pddl/config.h.m4
 	$(M4) $(CONFIG_FLAGS) $< >$@
 
-pddl/iset.h: third-party/boruvka/boruvka/set_arr.h.m4
-	$(M4) -DGUARD=__PDDL_ISET_H__ \
-          -DTYPE=int \
-          -DSTRUCT_NAME=pddl_iset \
-          -DFUNC_PREFIX=pddlISet \
-          -DFOR_EACH_NAME=PDDL_ISET_FOR_EACH \
-          -DARR_NAME=s \
-              <$< >$@
-src/iset.c: third-party/boruvka/src/set_arr.c.m4 pddl/iset.h
-	$(M4) -DTYPE=int \
-          -DSTRUCT_NAME=pddl_iset \
-          -DFUNC_PREFIX=pddlISet \
-          -DARR_NAME=s \
-          -DLT='(x) < (y)' \
-          -DEQ='(x) == (y)' \
-          -DHEADER_FILE=pddl/iset.h \
-              <$< >$@
-
 .objs/%.o: src/%.c pddl/%.h pddl/config.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 .objs/%.o: src/%.c pddl/config.h
@@ -73,7 +53,6 @@ clean:
 	rm -f $(TARGETS)
 	rm -f pddl/config.h
 	rm -f src/*.pb.{cc,h}
-	rm -f src/iset.c pddl/iset.h
 	if [ -d bin ]; then $(MAKE) -C bin clean; fi;
 	if [ -d testsuites ]; then $(MAKE) -C testsuites clean; fi;
 	if [ -d doc ]; then $(MAKE) -C doc clean; fi;

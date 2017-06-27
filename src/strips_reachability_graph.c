@@ -86,18 +86,19 @@ void pddlStripsReachabilityGraphInit(pddl_strips_reachability_graph_t *rg,
     }
 
     for (int i = 0; i < strips->init.size; ++i){
-        addEdge(rg, &rg->root, rg->fact + strips->init.fact[i]);
-        rg->fact_flags[strips->init.fact[i]].is_init = 1;
+        addEdge(rg, &rg->root, rg->fact + strips->init.s[i]);
+        rg->fact_flags[strips->init.s[i]].is_init = 1;
     }
     for (int i = 0; i < strips->goal.size; ++i)
-        rg->fact_flags[strips->goal.fact[i]].is_goal = 1;
+        rg->fact_flags[strips->goal.s[i]].is_goal = 1;
 
     for (int i = 0; i < strips->op.op_size; ++i){
         const pddl_strips_op_t *op = strips->op.op[i];
-        for (int j = 0; j < op->pre.size; ++j)
-            addEdge(rg, &rg->fact[op->pre.fact[j]], &rg->op[i]);
-        for (int j = 0; j < op->add_eff.size; ++j)
-            addEdge(rg, &rg->op[i], &rg->fact[op->add_eff.fact[j]]);
+        int fid;
+        BOR_ISET_FOR_EACH(&op->pre, fid)
+            addEdge(rg, &rg->fact[fid], &rg->op[i]);
+        BOR_ISET_FOR_EACH(&op->add_eff, fid)
+            addEdge(rg, &rg->op[i], &rg->fact[fid]);
     }
 }
 
@@ -119,16 +120,17 @@ void pddlStripsReachabilityGraphFree(pddl_strips_reachability_graph_t *rg)
 
 void pddlStripsReachabilityGraphRmOp(pddl_strips_reachability_graph_t *rg,
                                      int op_id,
-                                     pddl_fact_id_set_t *removed_facts,
-                                     pddl_fact_id_set_t *removed_ops)
+                                     bor_iset_t *removed_facts,
+                                     bor_iset_t *removed_ops)
 {
     pddl_strips_reachability_node_t *op_node = rg->op + op_id;
     pddl_strips_reachability_node_t *fact_node;
     pddl_strips_reachability_edge_t *edge;
     bor_list_t *litem;
-    pddl_fact_id_set_t rm_facts;
+    bor_iset_t rm_facts;
+    int fid;
 
-    pddlFactIdSetInit(&rm_facts);
+    borISetInit(&rm_facts);
 
     // Remove incoming edges
     while (!borListEmpty(&op_node->in)){
@@ -152,30 +154,30 @@ void pddlStripsReachabilityGraphRmOp(pddl_strips_reachability_graph_t *rg,
         // Determine whether the next fact node has no in edges and if so
         // schedule it for removal.
         if (borListEmpty(&fact_node->in))
-            pddlFactIdSetAdd(&rm_facts, fact_node->fact_id);
+            borISetAdd(&rm_facts, fact_node->fact_id);
     }
 
-    pddlFactIdSetAdd(removed_ops, op_id);
+    borISetAdd(removed_ops, op_id);
 
     // Remove facts with no incoming edges
-    for (int i = 0; i < rm_facts.size; ++i)
-        pddlStripsReachabilityGraphRmFact(rg, rm_facts.fact[i],
-                                          removed_facts, removed_ops);
+    BOR_ISET_FOR_EACH(&rm_facts, fid)
+        pddlStripsReachabilityGraphRmFact(rg, fid, removed_facts, removed_ops);
 
-    pddlFactIdSetFree(&rm_facts);
+    borISetFree(&rm_facts);
 }
 
 void pddlStripsReachabilityGraphRmFact(pddl_strips_reachability_graph_t *rg,
                                        int fact_id,
-                                       pddl_fact_id_set_t *removed_facts,
-                                       pddl_fact_id_set_t *removed_ops)
+                                       bor_iset_t *removed_facts,
+                                       bor_iset_t *removed_ops)
 {
     pddl_strips_reachability_node_t *fact_node = rg->fact + fact_id;
     pddl_strips_reachability_edge_t *edge;
     bor_list_t *litem;
-    pddl_fact_id_set_t rm;
+    bor_iset_t rm;
+    int fid;
 
-    pddlFactIdSetInit(&rm);
+    borISetInit(&rm);
 
     while (!borListEmpty(&fact_node->in)){
         litem = borListNext(&fact_node->in);
@@ -190,16 +192,15 @@ void pddlStripsReachabilityGraphRmFact(pddl_strips_reachability_graph_t *rg,
         borListDel(litem);
         edge = BOR_LIST_ENTRY(litem, pddl_strips_reachability_edge_t,
                               from_conn);
-        pddlFactIdSetAdd(&rm, edge->to->op_id);
+        borISetAdd(&rm, edge->to->op_id);
         borListDel(&edge->to_conn);
         BOR_FREE(edge);
     }
 
-    pddlFactIdSetAdd(removed_facts, fact_id);
+    borISetAdd(removed_facts, fact_id);
 
-    for (int i = 0; i < rm.size; ++i)
-        pddlStripsReachabilityGraphRmOp(rg, rm.fact[i],
-                                        removed_facts, removed_ops);
+    BOR_ISET_FOR_EACH(&rm, fid)
+        pddlStripsReachabilityGraphRmOp(rg, fid, removed_facts, removed_ops);
 
-    pddlFactIdSetFree(&rm);
+    borISetFree(&rm);
 }
