@@ -4,12 +4,10 @@
 CFLAGS += -I../
 CFLAGS += $(BORUVKA_CFLAGS)
 CFLAGS += $(OPTS_CFLAGS)
-CFLAGS += $(LP_CFLAGS)
 LDFLAGS += -L../ -lpddl
 LDFLAGS += $(BORUVKA_LDFLAGS)
 LDFLAGS += $(OPTS_LDFLAGS)
 LDFLAGS += -pthread -lrt -lm
-LDFLAGS += $(LP_LDFLAGS)
 
 ifeq '$(BIN_STATIC)' 'yes'
   LDFLAGS += -static

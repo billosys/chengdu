@@ -3,7 +3,6 @@
 
 CFLAGS += -I.
 CFLAGS += $(BORUVKA_CFLAGS)
-CFLAGS += $(LP_CFLAGS)
 
 CPPCHECK_FLAGS += --platform=unix64 --enable=all -I. -Ithird-party/boruvka
 
@@ -27,6 +26,7 @@ OBJS += strips_ground
 OBJS += strips_reachability_graph
 OBJS += mutex
 OBJS += h2_mutex
+OBJS += mgroup
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
@@ -74,10 +74,18 @@ analyze: clean
 	$(SCAN_BUILD) $(MAKE)
 
 submodule:
-	$(MAKE) -C third-party submodule
-third-party:
-	$(MAKE) -C third-party
-third-party-clean:
-	$(MAKE) -C third-party clean
+	git submodule init -- third-party/boruvka third-party/opts
+	git submodule update -- third-party/boruvka third-party/opts
+third-party: boruvka opts
+third-party-clean: boruvka-clean opts-clean
 
-.PHONY: all clean check check-valgrind help doc install analyze examples submodule third-party
+boruvka:
+	$(MAKE) $(_BOR_MAKE_DEF) -C third-party/boruvka all
+boruvka-clean:
+	$(MAKE) -C third-party/boruvka clean
+opts:
+	$(MAKE) -C third-party/opts all
+opts-clean:
+	$(MAKE) -C third-party/opts clean
+
+.PHONY: all clean check check-valgrind help doc install analyze examples submodule third-party third-party-clean boruvka boruvka-clean opts opts-clean
