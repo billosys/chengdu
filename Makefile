@@ -27,6 +27,7 @@ OBJS += strips_reachability_graph
 OBJS += mutex
 OBJS += h2_mutex
 OBJS += mgroup
+OBJS += fa_mgroup
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
