@@ -43,6 +43,12 @@ int addCEConstrOp(bor_lp_t *lp, const pddl_strips_t *strips,
     borISetUnion(&add_eff, &op->cond_eff[cond_eff_id].add_eff);
     borISetUnion(&del_eff, odel_eff);
     borISetUnion(&del_eff, &op->cond_eff[cond_eff_id].del_eff);
+
+    // make the combined operator well-formed
+    borISetMinus(&del_eff, &add_eff);
+    borISetMinus(&add_eff, &pre);
+
+    // pre \cap del
     borISetUnion(&predel, &pre);
     borISetIntersect(&predel, &del_eff);
 
