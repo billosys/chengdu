@@ -78,9 +78,6 @@ static int prettyMutexCmp(const void *a, const void *b, void *_fs)
             return cmp;
     }
     return 0;
-    //const pddl_fact_t *f1 = fs->fact[fid1];
-    //const pddl_fact_t *f2 = fs->fact[fid2];
-    //return pddlFactCmp(f1, f2);
 }
 
 static int prettyFactCmp(const void *a, const void *b, void *_fs)

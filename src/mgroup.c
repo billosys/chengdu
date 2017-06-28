@@ -81,9 +81,6 @@ static int prettyMutexCmp(const void *a, const void *b, void *_fs)
             return cmp;
     }
     return 0;
-    //const pddl_fact_t *f1 = fs->fact[fid1];
-    //const pddl_fact_t *f2 = fs->fact[fid2];
-    //return pddlFactCmp(f1, f2);
 }
 
 static int prettyFactCmp(const void *a, const void *b, void *_fs)
@@ -123,6 +120,10 @@ void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
     borSort(p.m, p.size, sizeof(int *), prettyMutexCmp, (void *)fs);
 
     for (int i = 0; i < p.size; ++i){
+        if (ms->g[i].is_init)
+            fprintf(fout, "i:");
+        if (ms->g[i].is_goal)
+            fprintf(fout, "g:");
         if (ms->g[i].is_fa)
             fprintf(fout, "fa:");
         fprintf(fout, "%d :: ", p.m[i][0]);
