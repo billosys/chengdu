@@ -53,6 +53,12 @@ pddl_mgroups_t *pddlMGroupsNew(void);
 void pddlMGroupsDel(pddl_mgroups_t *mgs);
 pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg);
 
+/**
+ * Find fact-alternating mutex groups in the provided strips problem.
+ * The function refuses to work on problems with conditional effects, but
+ * conditional effects can be compiled out by
+ * pddlStripsCompileOutCondEff().
+ */
 pddl_mgroups_t *pddlMGroupFindFA(const pddl_strips_t *strips);
 
 void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,

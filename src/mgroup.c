@@ -44,6 +44,8 @@ void pddlMGroupsDel(pddl_mgroups_t *mgs)
 {
     for (int i = 0; i < mgs->size; ++i)
         pddlMGroupFree(mgs->g + i);
+    if (mgs->g != NULL)
+        BOR_FREE(mgs->g);
     BOR_FREE(mgs);
 }
 

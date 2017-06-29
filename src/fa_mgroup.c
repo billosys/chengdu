@@ -20,68 +20,7 @@
 #include <boruvka/alloc.h>
 #include <boruvka/lp.h>
 #include "pddl/mgroup.h"
-
-int addCEConstrOp(bor_lp_t *lp, const pddl_strips_t *strips,
-                  const pddl_strips_op_t *op, int cond_eff_id,
-                  const bor_iset_t *opre,
-                  const bor_iset_t *oadd_eff,
-                  const bor_iset_t *odel_eff,
-                  int rows)
-{
-    double rhs = 0.;
-    char sense = 'L';
-    bor_iset_t pre, add_eff, del_eff, predel;
-    int fact;
-
-    borISetInit(&pre);
-    borISetInit(&add_eff);
-    borISetInit(&del_eff);
-    borISetInit(&predel);
-    borISetUnion(&pre, opre);
-    borISetUnion(&pre, &op->cond_eff[cond_eff_id].pre);
-    borISetUnion(&add_eff, oadd_eff);
-    borISetUnion(&add_eff, &op->cond_eff[cond_eff_id].add_eff);
-    borISetUnion(&del_eff, odel_eff);
-    borISetUnion(&del_eff, &op->cond_eff[cond_eff_id].del_eff);
-
-    // make the combined operator well-formed
-    borISetMinus(&del_eff, &add_eff);
-    borISetMinus(&add_eff, &pre);
-
-    // pre \cap del
-    borISetUnion(&predel, &pre);
-    borISetIntersect(&predel, &del_eff);
-
-    borLPAddRows(lp, 1, &rhs, &sense);
-    BOR_ISET_FOR_EACH(&add_eff, fact)
-        borLPSetCoef(lp, rows, fact, 1.);
-    BOR_ISET_FOR_EACH(&predel, fact)
-        borLPSetCoef(lp, rows, fact, -1.);
-    rows += 1;
-
-    for (int i = cond_eff_id + 1; i < op->cond_eff_size; ++i){
-        rows = addCEConstrOp(lp, strips, op, i, &pre, &add_eff, &del_eff, rows);
-    }
-
-    borISetFree(&pre);
-    borISetFree(&add_eff);
-    borISetFree(&del_eff);
-    borISetFree(&predel);
-    return rows;
-}
-
-int addCEConstr(bor_lp_t *lp, const pddl_strips_t *strips, int rows)
-{
-    for (int oi = 0; oi < strips->op.op_size; ++oi){
-        const pddl_strips_op_t *op = strips->op.op[oi];
-        for (int i = 0; i < op->cond_eff_size; ++i){
-            rows = addCEConstrOp(lp, strips, op, i, &op->pre,
-                                 &op->add_eff, &op->del_eff, rows);
-        }
-    }
-
-    return rows;
-}
+#include "err.h"
 
 pddl_mgroups_t *pddlMGroupFindFA(const pddl_strips_t *strips)
 {
@@ -90,8 +29,21 @@ pddl_mgroups_t *pddlMGroupFindFA(const pddl_strips_t *strips)
     bor_lp_t *lp;
     unsigned lp_flags;
     bor_iset_t predel, fa_mgroup;
-    int rows, fact, has_ce = 0;
+    int rows, fact;
     double val, *obj;
+
+    if (!borLPSolverAvailable(BOR_LP_DEFAULT)){
+        // TODO
+        ERR2("Cannot compute fam-groups, because ILP solver is not avaiable!");
+        exit(-1);
+    }
+
+    if (strips->has_cond_eff){
+        // TODO
+        ERR2("Cannot compute fam-groups on problems with conditional"
+             " effects -- compile them out!");
+        exit(-1);
+    }
 
     // TODO: Check on availability of LP-solver!
     lp_flags  = BOR_LP_DEFAULT;
@@ -125,15 +77,8 @@ pddl_mgroups_t *pddlMGroupFindFA(const pddl_strips_t *strips)
         BOR_ISET_FOR_EACH(&predel, fact)
             borLPSetCoef(lp, oi + 1, fact, -1.);
         borLPSetRHS(lp, oi + 1, 0., 'L');
-
-        if (op->cond_eff_size > 0)
-            has_ce = 1;
     }
     borISetFree(&predel);
-
-    // Add constraints for conditional effects
-    if (has_ce)
-        rows = addCEConstr(lp, strips, rows);
 
     mgs = pddlMGroupsNew();
     borISetInit(&fa_mgroup);
