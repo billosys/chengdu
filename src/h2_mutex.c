@@ -126,8 +126,8 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
     return updated;
 }
 
-pddl_mutexes_t *pddlMutexFindH2(const pddl_strips_t *strips,
-                                bor_iset_t *unreachable_ops)
+static pddl_mutexes_t *_pddlMutexFindH2(const pddl_strips_t *strips,
+                                        bor_iset_t *unreachable_ops)
 {
     h2_t h2;
     int updated;
@@ -169,4 +169,21 @@ pddl_mutexes_t *pddlMutexFindH2(const pddl_strips_t *strips,
     h2Free(&h2);
 
     return ms;
+}
+
+pddl_mutexes_t *pddlMutexFindH2(const pddl_strips_t *strips,
+                                bor_iset_t *unreachable_ops)
+{
+    if (strips->has_cond_eff){
+        pddl_strips_t *strips_nce;
+        pddl_mutexes_t *ms;
+
+        strips_nce = pddlStripsCompileOutCondEffRelaxed(strips);
+        ms = _pddlMutexFindH2(strips_nce, unreachable_ops);
+        pddlStripsDel(strips_nce);
+        return ms;
+
+    }else{
+        return _pddlMutexFindH2(strips, unreachable_ops);
+    }
 }
