@@ -56,9 +56,15 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags);
 void pddlStripsDel(pddl_strips_t *strips);
 
 /**
- * Constructs a dual strips.
+ * Construct a dual strips problem.
  */
 pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips);
+
+/**
+ * Compile out conditional effects by enumerating possible combinations.
+ * This can lead to an exponential blow-up!
+ */
+pddl_strips_t *pddlStripsCompileOutCondEff(const pddl_strips_t *strips);
 
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
 

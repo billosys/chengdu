@@ -138,11 +138,7 @@ void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
 {
     pddl_strips_op_cond_eff_t *ce;
 
-    dst->name = BOR_STRDUP(src->name);
-    dst->cost = src->cost;
-    borISetUnion(&dst->pre, &src->pre);
-    borISetUnion(&dst->add_eff, &src->add_eff);
-    borISetUnion(&dst->del_eff, &src->del_eff);
+    pddlStripsOpCopyWithoutCondEff(dst, src);
     for (int i = 0; i < src->cond_eff_size; ++i){
         const pddl_strips_op_cond_eff_t *f = src->cond_eff + i;
         ce = addCondEff(dst);
@@ -150,7 +146,17 @@ void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
         borISetUnion(&ce->add_eff, &f->add_eff);
         borISetUnion(&ce->del_eff, &f->del_eff);
     }
+}
+
+void pddlStripsOpCopyWithoutCondEff(pddl_strips_op_t *dst,
+                                    const pddl_strips_op_t *src)
+{
+    dst->name = BOR_STRDUP(src->name);
     dst->hash = src->hash;
+    dst->cost = src->cost;
+    borISetUnion(&dst->pre, &src->pre);
+    borISetUnion(&dst->add_eff, &src->add_eff);
+    borISetUnion(&dst->del_eff, &src->del_eff);
 }
 
 void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src)

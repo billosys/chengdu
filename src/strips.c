@@ -94,6 +94,55 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
     return dual;
 }
 
+static void expandCondEff(pddl_strips_t *dst,
+                          const pddl_strips_op_t *base_op,
+                          const pddl_strips_op_t *ce_op,
+                          int cond_eff_id)
+{
+    const pddl_strips_op_cond_eff_t *ce;
+    pddl_strips_op_t op;
+
+    pddlStripsOpInit(&op);
+    pddlStripsOpCopy(&op, base_op);
+
+    ce = ce_op->cond_eff + cond_eff_id;
+    borISetUnion(&op.pre, &ce->pre);
+    borISetUnion(&op.del_eff, &ce->del_eff);
+    borISetUnion(&op.add_eff, &ce->add_eff);
+    pddlStripsOpNormalize(&op);
+    pddlStripsOpsAdd(&dst->op, &op);
+
+    for (int i = cond_eff_id + 1; i < ce_op->cond_eff_size; ++i)
+        expandCondEff(dst, &op, ce_op, i);
+
+    pddlStripsOpFree(&op);
+}
+
+pddl_strips_t *pddlStripsCompileOutCondEff(const pddl_strips_t *strips)
+{
+    pddl_strips_t *s = stripsNew(strips->pddl);
+    pddl_strips_op_t op;
+
+    pddlFactsCopy(&s->fact, &strips->fact);
+    borISetUnion(&s->init, &strips->init);
+    borISetUnion(&s->goal, &strips->goal);
+
+    for (int i = 0; i < strips->op.op_size; ++i){
+        const pddl_strips_op_t *sop = strips->op.op[i];
+        pddlStripsOpInit(&op);
+        pddlStripsOpCopyWithoutCondEff(&op, sop);
+        pddlStripsOpNormalize(&op);
+        pddlStripsOpsAdd(&s->op, &op);
+        for (int ce = 0; ce < sop->cond_eff_size; ++ce)
+            expandCondEff(s, &op, sop, ce);
+        pddlStripsOpFree(&op);
+    }
+
+    s->goal_is_unreachable = strips->goal_is_unreachable;
+
+    return s;
+}
+
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
 {
     fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);

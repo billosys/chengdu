@@ -100,6 +100,17 @@ void pddlStripsOpAddEffFromOp(pddl_strips_op_t *dst,
                               const pddl_strips_op_t *src);
 
 /**
+ * Copy the operator including conditional effects.
+ */
+void pddlStripsOpCopy(pddl_strips_op_t *dst, const pddl_strips_op_t *src);
+
+/**
+ * Copy the operator without conditional effects.
+ */
+void pddlStripsOpCopyWithoutCondEff(pddl_strips_op_t *dst,
+                                    const pddl_strips_op_t *src);
+
+/**
  * Copy dual variant of the operator (i.e., exchanged pre and del_eff)
  */
 void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src);
