@@ -35,11 +35,13 @@ extern "C" {
 
 struct pddl_strips {
     const pddl_t *pddl;
-    pddl_facts_t fact;
-    pddl_strips_ops_t op;
-    bor_iset_t init;
-    bor_iset_t goal;
-    int goal_is_unreachable;
+    pddl_facts_t fact; /*!< Set of facts */
+    pddl_strips_ops_t op; /*!< Set of operators */
+    bor_iset_t init; /*!< Initial state */
+    bor_iset_t goal; /*!< Goal specification */
+    int goal_is_unreachable; /*!< True if the goal is not reachable */
+    int has_cond_eff; /*!< True if the problem contains operators with
+                           conditinal effects. */
 };
 typedef struct pddl_strips pddl_strips_t;
 

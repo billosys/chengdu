@@ -835,6 +835,7 @@ static void groundCondEff(ground_t *g, pddl_strips_op_t *op,
     if (op->pre.size > 0){
         // Create conditional effect if necessary
         pddlStripsOpAddCondEff(parent, op);
+        g->strips->has_cond_eff = 1;
 
     }else{
         // If precondition of the conditional effect is empty, then

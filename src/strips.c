@@ -88,6 +88,9 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
         pddlStripsOpFree(&op);
     }
 
+    dual->goal_is_unreachable = strips->goal_is_unreachable;
+    dual->has_cond_eff = strips->has_cond_eff;
+
     return dual;
 }
 
@@ -106,4 +109,6 @@ void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
     pddlFactIdSetPrettyPrint(strips->pddl, &strips->fact, &strips->goal, fout);
     if (strips->goal_is_unreachable)
         fprintf(fout, "Goal is unreachable\n");
+    if (strips->has_cond_eff)
+        fprintf(fout, "Has conditional effects\n");
 }
