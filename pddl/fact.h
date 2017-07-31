@@ -99,6 +99,13 @@ int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
 int pddlFactSetPrivate(const struct pddl *pddl, pddl_fact_t *fact);
 
 /**
+ * Returns formatted name of the fact.
+ * The returned value is a static variable managed inside this module -- do
+ * not free it!
+ */
+const char *pddlFactToStr(const struct pddl *pddl, const pddl_fact_t *f);
+
+/**
  * Print formatted fact/func.
  */
 void pddlFactPrint(const struct pddl *p, const pddl_fact_t *f, FILE *fout);

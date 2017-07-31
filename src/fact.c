@@ -133,20 +133,37 @@ int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
     return fact->is_private;
 }
 
+
+#define FACT_STR_SIZE 256
+const char *pddlFactToStr(const pddl_t *pddl, const pddl_fact_t *f)
+{
+    int offset = 0;
+    static char s[FACT_STR_SIZE];
+
+    if (pddlFactIsStatic(pddl, f))
+        offset += snprintf(s + offset, FACT_STR_SIZE - offset, "S:");
+    if (f->is_private){
+        offset += snprintf(s + offset, FACT_STR_SIZE - offset, "P");
+        if (f->owner >= 0){
+            offset += snprintf(s + offset, FACT_STR_SIZE - offset,
+                              "[%d]", f->owner);
+        }
+        offset += snprintf(s + offset, FACT_STR_SIZE - offset, ":");
+    }
+    offset += snprintf(s + offset, FACT_STR_SIZE - offset,
+                       "%s:", pddl->pred.pred[f->pred].name);
+    for (int i = 0; i < f->arg_size; ++i){
+        offset += snprintf(s + offset, FACT_STR_SIZE - offset,
+                           " %s", pddl->obj.obj[f->arg[i]].name);
+    }
+    s[FACT_STR_SIZE - 1] = 0x0;
+
+    return s;
+}
+
 void pddlFactPrint(const pddl_t *pddl, const pddl_fact_t *f, FILE *fout)
 {
-    if (pddlFactIsStatic(pddl, f))
-        fprintf(fout, "S:");
-    if (f->is_private){
-        fprintf(fout, "P");
-        if (f->owner >= 0)
-            fprintf(fout, "[%d]", f->owner);
-        fprintf(fout, ":");
-    }
-    fprintf(fout, "%s:", pddl->pred.pred[f->pred].name);
-    for (int i = 0; i < f->arg_size; ++i){
-        fprintf(fout, " %s", pddl->obj.obj[f->arg[i]].name);
-    }
+    fprintf(fout, pddlFactToStr(pddl, f));
 }
 
 void pddlFuncPrint(const pddl_t *pddl, const pddl_fact_t *f, FILE *fout)
