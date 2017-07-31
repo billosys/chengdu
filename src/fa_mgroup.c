@@ -83,7 +83,7 @@ pddl_mgroups_t *pddlMGroupFindFA(const pddl_strips_t *strips)
     mgs = pddlMGroupsNew();
     borISetInit(&fa_mgroup);
     obj = BOR_ALLOC_ARR(double, strips->fact.fact_size);
-    while (borLPSolve(lp, &val, obj) == 0 && val > 1.5){
+    while (borLPSolve(lp, &val, obj) == 0 && val > 0.5){
         double rhs = 1.;
         char sense = 'G';
         borLPAddRows(lp, 1, &rhs, &sense);
