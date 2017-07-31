@@ -753,7 +753,7 @@ static int groundAssign(int atom_max_arg_size,
                 fvalue = funcs->fact[func_id];
                 cost += fvalue->func_val;
             }else{
-                // TODO
+                // TODO: Error reporting
                 fprintf(stderr, "ERROR: Invalid function -- cannot ground!\n");
                 exit(-1);
             }
