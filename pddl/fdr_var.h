@@ -20,7 +20,7 @@
 #ifndef __PDDL_FDR_VAR_H__
 #define __PDDL_FDR_VAR_H__
 
-#include <pddl/pddl.h>
+#include <pddl/mgroup.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,25 +28,29 @@ extern "C" {
 
 struct pddl_fdr_val {
     char *name;
-    int fact_id;
-    int strips_fact_id;
+    int fact_id; /*!< Global unique ID of this value */
+    int strips_fact_id; /*!< ID of the strips fact corresponding to the value */
+    int var_id; /*!< ID of the variable this value belongs to */
 };
 typedef struct pddl_fdr_val pddl_fdr_val_t;
 
 struct pddl_fdr_var {
-    int range;
     pddl_fdr_val_t *val;
+    int size;
 };
 typedef struct pddl_fdr_var pddl_fdr_var_t;
 
 struct pddl_fdr_vars {
     pddl_fdr_var_t *var;
     int size;
+    // TODO: map fact_id -> val
 };
 typedef struct pddl_fdr_vars pddl_fdr_vars_t;
 
-void pddlFDRVarsInit(pddl_fdr_vars_t *vars);
+void pddlFDRVarsInit(pddl_fdr_vars_t *vars,
+                     const pddl_mgroups_t *mg, unsigned flags);
 void pddlFDRVarsFree(pddl_fdr_vars_t *vars);
+void pddlFDRVarsPrint(const pddl_fdr_vars_t *vars, FILE *fout);
 
 
 #ifdef __cplusplus
