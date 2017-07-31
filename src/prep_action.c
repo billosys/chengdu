@@ -118,14 +118,14 @@ static void actionInit2(pddl_prep_action_t *a,
 
     pddlCondTraverse(pre, actionInitPre, NULL, &ctx);
     if (ctx.failed){
-        // TODO
+        // TODO: Error reporting
         ERR("Prepapration of action %s failed!\n", action->name);
         exit(-1);
     }
 
     pddlCondTraverse(eff, actionInitEff, NULL, &ctx);
     if (ctx.failed){
-        // TODO
+        // TODO: Error reporting
         ERR("Prepapration of action %s failed!\n", action->name);
         exit(-1);
     }
@@ -211,7 +211,7 @@ static void actionsAddCondEff(pddl_prep_actions_t *as, int aid, const pddl_t *pd
     pddlCondTraverse((pddl_cond_t *)ctx.action->eff,
                      actionInitCondEff, NULL, &ctx);
     if (ctx.failed){
-        // TODO
+        // TODO: Error reporting
         ERR("Prepapration of action %s failed!\n", ctx.action->name);
         exit(-1);
     }

@@ -33,13 +33,13 @@ pddl_mgroups_t *pddlMGroupFindFA(const pddl_strips_t *strips)
     double val, *obj;
 
     if (!borLPSolverAvailable(BOR_LP_DEFAULT)){
-        // TODO
+        // TODO: Error reporting
         ERR2("Cannot compute fam-groups, because ILP solver is not avaiable!");
         exit(-1);
     }
 
     if (strips->has_cond_eff){
-        // TODO
+        // TODO: Error reporting
         ERR2("Cannot compute fam-groups on problems with conditional"
              " effects -- compile them out!");
         exit(-1);
