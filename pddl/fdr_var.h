@@ -28,8 +28,9 @@ extern "C" {
 
 struct pddl_fdr_val {
     char *name;
-    int fact_id; /*!< Global unique ID of this value */
-    int strips_fact_id; /*!< ID of the strips fact corresponding to the value */
+    int id; /*!< Global unique ID of this value */
+    int strips_fact_id; /*!< ID of the strips fact corresponding to the
+                             value, or -1 if the value means "none of those" */
     int var_id; /*!< ID of the variable this value belongs to */
 };
 typedef struct pddl_fdr_val pddl_fdr_val_t;
@@ -47,7 +48,12 @@ struct pddl_fdr_vars {
 };
 typedef struct pddl_fdr_vars pddl_fdr_vars_t;
 
-void pddlFDRVarsInit(pddl_fdr_vars_t *vars,
+#define PDDL_FDR_VARS_LARGEST_FIRST
+// TODO
+#define PDDL_FDR_VARS_MIN_BITS
+// TODO: SymbA* uses different strategy then *LARGEST_FIRST
+
+void pddlFDRVarsInit(pddl_fdr_vars_t *vars, const pddl_strips_t *strips,
                      const pddl_mgroups_t *mg, unsigned flags);
 void pddlFDRVarsFree(pddl_fdr_vars_t *vars);
 void pddlFDRVarsPrint(const pddl_fdr_vars_t *vars, FILE *fout);

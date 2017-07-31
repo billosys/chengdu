@@ -18,21 +18,224 @@
  */
 
 #include <boruvka/alloc.h>
+#include <boruvka/sort.h>
+
 #include "pddl/fdr_var.h"
 
-void pddlFDRVarsInit(pddl_fdr_vars_t *vars,
+struct create {
+    const pddl_strips_t *strips;
+    int next_id; /*!< Next free ID for assignement */
+    bor_iset_t *mgroup; /*!< Sorted mutex groups */
+    int mgroup_size; /*< Number of non-empty mutex groups */
+};
+typedef struct create create_t;
+
+static int cmpMGroup(const void *a, const void *b, void *_)
+{
+    const bor_iset_t *i1 = a;
+    const bor_iset_t *i2 = b;
+    if (i1->size == i2->size){
+        for (int i = 0; i < i1->size; ++i){
+            if (i1->s[i] != i2->s[i])
+                return i1->s[i] - i2->s[i];
+        }
+        return 0;
+    }
+    return i2->size - i1->size;
+}
+
+static void createInit(create_t *c, const pddl_strips_t *strips,
+                       const pddl_mgroups_t *mg)
+{
+    bor_iset_t single_facts;
+    int fact_id;
+
+    // Remember strips problem
+    c->strips = strips;
+
+    // Initialize ID counter
+    c->next_id = 0;
+
+    // single_facts contains fact IDs that are not covered by any mutex
+    // group
+    borISetInit(&single_facts);
+    for (int i = 0; i < c->strips->fact.fact_size; ++i)
+        borISetAdd(&single_facts, i);
+
+    c->mgroup_size = mg->size;
+    c->mgroup = BOR_ALLOC_ARR(bor_iset_t, c->mgroup_size);
+    for (int i = 0; i < c->mgroup_size; ++i){
+        borISetInit(c->mgroup + i);
+        borISetUnion(c->mgroup + i, &mg->g[i].fact);
+        borISetMinus(&single_facts, &mg->g[i].fact);
+    }
+
+    // Create one mutex group for each fact that is not covered by the
+    // input mutex groups. This way we do not need to have separate
+    // procedure for the facts that need to be encoded in binary.
+    if (borISetSize(&single_facts) > 0){
+        c->mgroup = BOR_REALLOC_ARR(c->mgroup, bor_iset_t,
+                                c->mgroup_size + borISetSize(&single_facts));
+        BOR_ISET_FOR_EACH(&single_facts, fact_id){
+            bor_iset_t *g = c->mgroup + c->mgroup_size++;
+            borISetInit(g);
+            borISetAdd(g, fact_id);
+        }
+    }
+    borISetFree(&single_facts);
+
+    // Sort mutex groups in descending order in their size
+    borSort(c->mgroup, c->mgroup_size, sizeof(bor_iset_t), cmpMGroup, NULL);
+}
+
+static void createFree(create_t *c)
+{
+    for (int i = 0; i < c->mgroup_size; ++i)
+        borISetFree(c->mgroup + i);
+    if (c->mgroup != NULL)
+        BOR_FREE(c->mgroup);
+}
+
+static int needNoneOfThoseOp(const bor_iset_t *group,
+                             const pddl_strips_op_t *op)
+{
+    if (borISetIntersectionSizeAtLeast(group, &op->del_eff, 1)){
+        if (borISetIntersectionSizeAtLeast(group, &op->add_eff, 1))
+            return 0;
+        return 1;
+    }
+    return 0;
+}
+
+static int needNoneOfThose(const bor_iset_t *group,
+                           const pddl_strips_t *strips)
+{
+    if (!borISetIntersectionSizeAtLeast(group, &strips->init, 1))
+        return 1;
+
+    for (int i = 0; i < strips->op.op_size; ++i){
+        if (needNoneOfThoseOp(group, strips->op.op[i]))
+            return 1;
+    }
+    return 0;
+}
+
+static void createVarFromMGroup(pddl_fdr_vars_t *vars, create_t *c,
+                                const bor_iset_t *group)
+{
+    pddl_fdr_var_t *var;
+    pddl_fdr_val_t *val;
+    int none_of_those;
+    const char *name;
+
+    // Allocate a new variable
+    ++vars->size;
+    vars->var = BOR_REALLOC_ARR(vars->var, pddl_fdr_var_t, vars->size);
+    var = vars->var + vars->size - 1;
+
+    // Determine whether we need another value "none of those"
+    if (group->size == 1){
+        none_of_those = 1;
+    }else{
+        none_of_those = needNoneOfThose(group, c->strips);
+    }
+
+    // Allocate values
+    var->size = group->size;
+    if (none_of_those)
+        var->size += 1;
+    var->val = BOR_CALLOC_ARR(pddl_fdr_val_t, var->size);
+
+    // Initialize each value
+    for (int i = 0; i < group->size; ++i){
+        val = var->val + i;
+        name = pddlFactToStr(c->strips->pddl,
+                             c->strips->fact.fact[group->s[i]]);
+        val->name = BOR_STRDUP(name);
+        val->id = c->next_id++;
+        val->strips_fact_id = group->s[i];
+        val->var_id = vars->size - 1;
+    }
+
+    // Add "none of those" value
+    if (none_of_those){
+        val = var->val + var->size - 1;
+        val->name = BOR_STRDUP("<none of those>");
+        val->id = c->next_id++;
+        val->strips_fact_id = -1;
+        val->var_id = vars->size - 1;
+    }
+}
+
+static void substractMGroup(create_t *c, const bor_iset_t *mg)
+{
+    for (int i = 0; i < c->mgroup_size; ++i)
+        borISetMinus(c->mgroup + i, mg);
+    borSort(c->mgroup, c->mgroup_size, sizeof(bor_iset_t), cmpMGroup, NULL);
+
+    // Remove empty sets that appear at the end of the array
+    for (; c->mgroup_size > 0 && c->mgroup[c->mgroup_size - 1].size == 0;
+            --c->mgroup_size)
+        borISetFree(c->mgroup + c->mgroup_size - 1);
+}
+
+static void initLargestFirst(pddl_fdr_vars_t *vars,
+                             const pddl_strips_t *strips,
+                             const pddl_mgroups_t *mg)
+{
+    create_t c;
+
+    createInit(&c, strips, mg);
+    while (c.mgroup_size > 0){
+        createVarFromMGroup(vars, &c, c.mgroup + 0);
+        substractMGroup(&c, c.mgroup + 0);
+    }
+    createFree(&c);
+}
+
+void pddlFDRValFree(pddl_fdr_val_t *val)
+{
+    if (val->name != NULL)
+        BOR_FREE(val->name);
+}
+
+void pddlFDRVarFree(pddl_fdr_var_t *var)
+{
+    for (int i = 0; i < var->size; ++i)
+        pddlFDRValFree(var->val + i);
+    if (var->val != NULL)
+        BOR_FREE(var->val);
+}
+
+void pddlFDRVarsInit(pddl_fdr_vars_t *vars, const pddl_strips_t *strips,
                      const pddl_mgroups_t *mg, unsigned flags)
 {
     bzero(vars, sizeof(*vars));
+    initLargestFirst(vars, strips, mg);
 }
 
 void pddlFDRVarsFree(pddl_fdr_vars_t *vars)
 {
+    for (int i = 0; i < vars->size; ++i)
+        pddlFDRVarFree(vars->var + i);
+    if (vars->var != NULL)
+        BOR_FREE(vars->var);
 }
 
 void pddlFDRVarsPrint(const pddl_fdr_vars_t *vars, FILE *fout)
 {
+    const pddl_fdr_var_t *var;
+    const pddl_fdr_val_t *val;
+
     for (int i = 0; i < vars->size; ++i){
-        fprintf(fout, "Var %d:\n", i);
+        var = vars->var + i;
+        fprintf(fout, "Var %d [%d]:\n", i, var->size);
+        for (int j = 0; j < var->size; ++j){
+            val = var->val + j;
+            fprintf(fout, "  %d: \"%s\", id: %d, strips_fact_id: %d,"
+                          " var_id: %d\n",
+                          j, val->name, val->id, val->strips_fact_id,
+                          val->var_id);
+        }
     }
 }
