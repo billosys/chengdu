@@ -28,23 +28,27 @@ extern "C" {
 
 struct pddl_fdr_val {
     char *name;
+    int var_id; /*!< ID of the variable this value belongs to */
+    int val_id; /*!< Value ID within the variable */
     int id; /*!< Global unique ID of this value */
     int strips_fact_id; /*!< ID of the strips fact corresponding to the
                              value, or -1 if the value means "none of those" */
-    int var_id; /*!< ID of the variable this value belongs to */
 };
 typedef struct pddl_fdr_val pddl_fdr_val_t;
 
 struct pddl_fdr_var {
     pddl_fdr_val_t *val;
     int size;
+    pddl_fdr_val_t *none_of_those; /*!< "none of those" value or NULL */
 };
 typedef struct pddl_fdr_var pddl_fdr_var_t;
 
 struct pddl_fdr_vars {
     pddl_fdr_var_t *var;
     int size;
-    // TODO: map fact_id -> val
+
+    pddl_fdr_val_t **strips_fact_id_to_val; /*!< Mapping from strips fact_id
+                                                 to pddl_fdr_val_t structure */
 };
 typedef struct pddl_fdr_vars pddl_fdr_vars_t;
 

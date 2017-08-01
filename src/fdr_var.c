@@ -21,6 +21,26 @@
 #include <boruvka/sort.h>
 
 #include "pddl/fdr_var.h"
+#include "assert.h"
+
+void pddlFDRValFree(pddl_fdr_val_t *val)
+{
+    if (val->name != NULL)
+        BOR_FREE(val->name);
+}
+
+void pddlFDRVarInit(pddl_fdr_var_t *var)
+{
+    bzero(var, sizeof(*var));
+}
+
+void pddlFDRVarFree(pddl_fdr_var_t *var)
+{
+    for (int i = 0; i < var->size; ++i)
+        pddlFDRValFree(var->val + i);
+    if (var->val != NULL)
+        BOR_FREE(var->val);
+}
 
 struct create {
     const pddl_strips_t *strips;
@@ -132,6 +152,7 @@ static void createVarFromMGroup(pddl_fdr_vars_t *vars, create_t *c,
     ++vars->size;
     vars->var = BOR_REALLOC_ARR(vars->var, pddl_fdr_var_t, vars->size);
     var = vars->var + vars->size - 1;
+    pddlFDRVarInit(var);
 
     // Determine whether we need another value "none of those"
     if (group->size == 1){
@@ -152,18 +173,25 @@ static void createVarFromMGroup(pddl_fdr_vars_t *vars, create_t *c,
         name = pddlFactToStr(c->strips->pddl,
                              c->strips->fact.fact[group->s[i]]);
         val->name = BOR_STRDUP(name);
+        val->var_id = vars->size - 1;
+        val->val_id = i;
         val->id = c->next_id++;
         val->strips_fact_id = group->s[i];
-        val->var_id = vars->size - 1;
+
+        ASSERT(vars->strips_fact_id_to_val[val->strips_fact_id] == NULL);
+        vars->strips_fact_id_to_val[val->strips_fact_id] = val;
     }
 
     // Add "none of those" value
     if (none_of_those){
         val = var->val + var->size - 1;
         val->name = BOR_STRDUP("<none of those>");
+        val->var_id = vars->size - 1;
+        val->val_id = var->size - 1;
         val->id = c->next_id++;
         val->strips_fact_id = -1;
-        val->var_id = vars->size - 1;
+
+        var->none_of_those = val;
     }
 }
 
@@ -183,34 +211,27 @@ static void initLargestFirst(pddl_fdr_vars_t *vars,
                              const pddl_strips_t *strips,
                              const pddl_mgroups_t *mg)
 {
+    bor_iset_t mgroup;
     create_t c;
 
+    borISetInit(&mgroup);
     createInit(&c, strips, mg);
     while (c.mgroup_size > 0){
-        createVarFromMGroup(vars, &c, c.mgroup + 0);
-        substractMGroup(&c, c.mgroup + 0);
+        borISetEmpty(&mgroup);
+        borISetUnion(&mgroup, c.mgroup + 0);
+        createVarFromMGroup(vars, &c, &mgroup);
+        substractMGroup(&c, &mgroup);
     }
     createFree(&c);
-}
-
-void pddlFDRValFree(pddl_fdr_val_t *val)
-{
-    if (val->name != NULL)
-        BOR_FREE(val->name);
-}
-
-void pddlFDRVarFree(pddl_fdr_var_t *var)
-{
-    for (int i = 0; i < var->size; ++i)
-        pddlFDRValFree(var->val + i);
-    if (var->val != NULL)
-        BOR_FREE(var->val);
+    borISetFree(&mgroup);
 }
 
 void pddlFDRVarsInit(pddl_fdr_vars_t *vars, const pddl_strips_t *strips,
                      const pddl_mgroups_t *mg, unsigned flags)
 {
     bzero(vars, sizeof(*vars));
+    vars->strips_fact_id_to_val = BOR_CALLOC_ARR(pddl_fdr_val_t *,
+                                                 strips->fact.fact_size);
     initLargestFirst(vars, strips, mg);
 }
 
@@ -220,6 +241,8 @@ void pddlFDRVarsFree(pddl_fdr_vars_t *vars)
         pddlFDRVarFree(vars->var + i);
     if (vars->var != NULL)
         BOR_FREE(vars->var);
+    if (vars->strips_fact_id_to_val != NULL)
+        BOR_FREE(vars->strips_fact_id_to_val);
 }
 
 void pddlFDRVarsPrint(const pddl_fdr_vars_t *vars, FILE *fout)
@@ -229,7 +252,13 @@ void pddlFDRVarsPrint(const pddl_fdr_vars_t *vars, FILE *fout)
 
     for (int i = 0; i < vars->size; ++i){
         var = vars->var + i;
-        fprintf(fout, "Var %d [%d]:\n", i, var->size);
+        fprintf(fout, "Var %d [%d]", i, var->size);
+        if (var->none_of_those == NULL){
+            fprintf(fout, ", N: -1");
+        }else{
+            fprintf(fout, ", N: %d", var->none_of_those->id);
+        }
+        fprintf(fout, ":\n");
         for (int j = 0; j < var->size; ++j){
             val = var->val + j;
             fprintf(fout, "  %d: \"%s\", id: %d, strips_fact_id: %d,"
