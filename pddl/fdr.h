@@ -44,6 +44,12 @@ pddl_fdr_t *pddlFDRFromStrips(const pddl_strips_t *strips,
                               unsigned vars_flags);
 void pddlFDRDel(pddl_fdr_t *fdr);
 
+/**
+ * Prints FDR problem in Fast Downward's format
+ * (see http://www.fast-downward.org/TranslatorOutputFormat).
+ */
+void pddlFDRPrintAsFD(const pddl_fdr_t *fdr, FILE *fout);
+
 void pddlFDRPrettyPrint(const pddl_fdr_t *fdr, FILE *fout);
 
 

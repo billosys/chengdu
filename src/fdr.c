@@ -67,6 +67,14 @@ pddl_fdr_t *pddlFDRFromStrips(const pddl_strips_t *strips,
         ASSERT(pddlFDRPartStateSet(&fdr->init, val->var_id, val->val_id) == 0);
         pddlFDRPartStateSet(&fdr->init, val->var_id, val->val_id);
     }
+    // Replace -1 with "none of those"
+    for (int i = 0; i < fdr->var.size; ++i){
+        if (!pddlFDRPartStateIsSet(&fdr->init, i)){
+            ASSERT(fdr->var.var[i].none_of_those != NULL);
+            pddlFDRPartStateSet(&fdr->init, i,
+                                fdr->var.var[i].none_of_those->val_id);
+        }
+    }
 
     fdr->op = BOR_ALLOC_ARR(pddl_fdr_op_t, strips->op.op_size);
     fdr->op_size = 0;

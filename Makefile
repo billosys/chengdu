@@ -32,6 +32,7 @@ OBJS += fdr_var
 OBJS += fdr_part_state
 OBJS += fdr_op
 OBJS += fdr
+OBJS += fdr_to_fd
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
