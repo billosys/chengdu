@@ -64,6 +64,8 @@ clean:
 	if [ -d testsuites ]; then $(MAKE) -C testsuites clean; fi;
 	if [ -d doc ]; then $(MAKE) -C doc clean; fi;
 
+mrproper: clean boruvka-clean opts-clean
+
 check:
 	$(MAKE) -C testsuites check
 check-valgrind:
@@ -79,19 +81,23 @@ doc:
 analyze: clean
 	$(SCAN_BUILD) $(MAKE)
 
-submodule:
-	git submodule init -- third-party/boruvka third-party/opts
-	git submodule update -- third-party/boruvka third-party/opts
 third-party: boruvka opts
 third-party-clean: boruvka-clean opts-clean
 
-boruvka:
+boruvka: third-party/boruvka/Makefile
 	$(MAKE) $(_BOR_MAKE_DEF) -C third-party/boruvka all
 boruvka-clean:
 	$(MAKE) -C third-party/boruvka clean
-opts:
+third-part/boruvka/Makefile:
+	git submodule init -- third-party/boruvka
+	git submodule update -- third-party/boruvka
+
+opts: third-party/opts/Makefile
 	$(MAKE) -C third-party/opts all
 opts-clean:
 	$(MAKE) -C third-party/opts clean
+third-part/opts/Makefile:
+	git submodule init -- third-party/opts
+	git submodule update -- third-party/opts
 
-.PHONY: all clean check check-valgrind help doc install analyze examples submodule third-party third-party-clean boruvka boruvka-clean opts opts-clean
+.PHONY: all clean check check-valgrind help doc install analyze examples third-party third-party-clean boruvka boruvka-clean opts opts-clean mrproper
