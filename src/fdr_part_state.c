@@ -49,3 +49,25 @@ int pddlFDRPartStateIsSet(const pddl_fdr_part_state_t *s, int var)
 {
     return s->val[var] != PDDL_FDR_VAL_UNDEF;
 }
+
+void pddlFDRPartStatePrettyPrint(const pddl_fdr_part_state_t *ps,
+                                 const pddl_fdr_vars_t *vars,
+                                 FILE *fout)
+{
+    int first = 1;
+    for (int i = 0; i < vars->size; ++i){
+        if (pddlFDRPartStateIsSet(ps, i))
+            fprintf(fout, " %d:%d", i, ps->val[i]);
+    }
+
+    fprintf(fout, " |");
+    for (int i = 0; i < vars->size; ++i){
+        if (pddlFDRPartStateIsSet(ps, i)){
+            if (!first)
+                fprintf(fout, ",");
+            fprintf(fout, " %d:%s", i, vars->var[i].val[ps->val[i]].name);
+            first = 0;
+        }
+    }
+    fprintf(fout, "\n");
+}

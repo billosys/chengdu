@@ -17,35 +17,38 @@
  * See the License for more information.
  */
 
-#ifndef __PDDL_FDR_PART_STATE_H__
-#define __PDDL_FDR_PART_STATE_H__
+#ifndef __PDDL_FDR_H__
+#define __PDDL_FDR_H__
 
+#include <pddl/strips.h>
 #include <pddl/fdr_var.h>
+#include <pddl/fdr_op.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-#define PDDL_FDR_VAL_UNDEF -1
-
-struct pddl_fdr_part_state {
-    int *val;
-    int size;
+struct pddl_fdr {
+    const pddl_strips_t *strips; /*!< STRIPS from which was FDR created */
+    pddl_fdr_vars_t var; /*!< Variables */
+    pddl_fdr_op_t *op; /*!< FDR operators */
+    int op_size; /*!< Number of operators */
+    pddl_fdr_part_state_t init; /*!< The initial state */
+    pddl_fdr_part_state_t goal; /*!< The goal specification */
 };
-typedef struct pddl_fdr_part_state pddl_fdr_part_state_t;
+typedef struct pddl_fdr pddl_fdr_t;
 
-void pddlFDRPartStateInit(pddl_fdr_part_state_t *s,
-                          const pddl_fdr_vars_t *vars);
-void pddlFDRPartStateFree(pddl_fdr_part_state_t *s);
-int pddlFDRPartStateSet(pddl_fdr_part_state_t *s, int var, int val);
-int pddlFDRPartStateIsSet(const pddl_fdr_part_state_t *s, int var);
 
-void pddlFDRPartStatePrettyPrint(const pddl_fdr_part_state_t *ps,
-                                 const pddl_fdr_vars_t *vars,
-                                 FILE *fout);
+pddl_fdr_t *pddlFDRFromStrips(const pddl_strips_t *strips,
+                              const pddl_mgroups_t *mgroups,
+                              unsigned vars_flags);
+void pddlFDRDel(pddl_fdr_t *fdr);
+
+void pddlFDRPrettyPrint(const pddl_fdr_t *fdr, FILE *fout);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* __PDDL_FDR_PART_STATE_H__ */
+#endif /* __PDDL_FDR_H__ */

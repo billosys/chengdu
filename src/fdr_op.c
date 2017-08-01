@@ -139,45 +139,23 @@ void pddlFDROpFree(pddl_fdr_op_t *op)
         BOR_FREE(op->cond_eff);
 }
 
-void partStatePrettyPrint(const pddl_fdr_part_state_t *ps,
-                          const pddl_fdr_vars_t *vars,
-                          FILE *fout)
-{
-    int first = 1;
-    for (int i = 0; i < vars->size; ++i){
-        if (pddlFDRPartStateIsSet(ps, i))
-            fprintf(fout, " %d:%d", i, ps->val[i]);
-    }
-
-    fprintf(fout, " |");
-    for (int i = 0; i < vars->size; ++i){
-        if (pddlFDRPartStateIsSet(ps, i)){
-            if (!first)
-                fprintf(fout, ",");
-            fprintf(fout, " %d:%s", i, vars->var[i].val[ps->val[i]].name);
-            first = 0;
-        }
-    }
-    fprintf(fout, "\n");
-}
-
 void pddlFDROpPrettyPrint(const pddl_fdr_op_t *op,
                           const pddl_fdr_vars_t *vars,
                           FILE *fout)
 {
     fprintf(fout, "  %s, cost: %d\n", op->name, op->cost);
     fprintf(fout, "    pre:");
-    partStatePrettyPrint(&op->pre, vars, fout);
+    pddlFDRPartStatePrettyPrint(&op->pre, vars, fout);
     fprintf(fout, "    eff:");
-    partStatePrettyPrint(&op->eff, vars, fout);
+    pddlFDRPartStatePrettyPrint(&op->eff, vars, fout);
 
     if (op->cond_eff_size > 0){
         fprintf(fout, "    cond_eff[%d]:\n", op->cond_eff_size);
         for (int i = 0; i < op->cond_eff_size; ++i){
             fprintf(fout, "      pre:");
-            partStatePrettyPrint(&op->cond_eff[i].pre, vars, fout);
+            pddlFDRPartStatePrettyPrint(&op->cond_eff[i].pre, vars, fout);
             fprintf(fout, "      eff:");
-            partStatePrettyPrint(&op->cond_eff[i].eff, vars, fout);
+            pddlFDRPartStatePrettyPrint(&op->cond_eff[i].eff, vars, fout);
         }
     }
 }
