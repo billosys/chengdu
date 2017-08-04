@@ -64,22 +64,6 @@ pddl_strips_op_t *pddlStripsOpNew(void);
 void pddlStripsOpFree(pddl_strips_op_t *op);
 void pddlStripsOpDel(pddl_strips_op_t *op);
 
-/**
- * Adds fact-id as precondition, add effect, or del effect, respectivelly.
- */
-_bor_inline void pddlStripsOpAddPre(pddl_strips_op_t *op, int fact_id)
-{
-    borISetAdd(&op->pre, fact_id);
-}
-_bor_inline void pddlStripsOpAddAddEff(pddl_strips_op_t *op, int fact_id)
-{
-    borISetAdd(&op->add_eff, fact_id);
-}
-_bor_inline void pddlStripsOpAddDelEff(pddl_strips_op_t *op, int fact_id)
-{
-    borISetAdd(&op->del_eff, fact_id);
-}
-
 pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
                                                   const pddl_strips_op_t *f);
 
@@ -115,22 +99,21 @@ void pddlStripsOpCopyWithoutCondEff(pddl_strips_op_t *dst,
  */
 void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src);
 
-_bor_inline int pddlStripsOpRmFactId(pddl_strips_op_t *op, int fact_id)
-{
-    return borISetRm(&op->pre, fact_id)
-            | borISetRm(&op->add_eff, fact_id)
-            | borISetRm(&op->del_eff, fact_id);
-}
+/**
+ * Remaps fact IDs according to the provided map (old ID -> new ID).
+ * It is assumed that the mapping is monotonically increasing.
+ */
+void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap);
 
-_bor_inline int pddlStripsOpRmFactIdFromDelEff(pddl_strips_op_t *op, int fid)
-{
-    return borISetRm(&op->del_eff, fid);
-}
+/**
+ * Remove the fact from preconditions and effects including conditional
+ * effects. If the precondition of a conditional effect is made empty the
+ * effects are merged with the ordinary effects.
+ * The operator is kept well-formed.
+ */
+void pddlStripsOpRemoveFact(pddl_strips_op_t *op, int fact_id);
 
-_bor_inline int pddlStripsOpRmFactIdFromAddEff(pddl_strips_op_t *op, int fid)
-{
-    return borISetRm(&op->add_eff, fid);
-}
+
 
 struct pddl_strips_ops {
     pddl_strips_op_t **op;
@@ -154,32 +137,10 @@ void pddlStripsOpsFree(pddl_strips_ops_t *ops);
  */
 int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add);
 
-_bor_inline void pddlStripsOpsRmFactId(pddl_strips_ops_t *ops, int fact_id)
-{
-    pddl_strips_op_t *op;
-
-    PDDL_STRIPS_OPS_FOR_EACH(ops, op){
-        pddlStripsOpRmFactId(op, fact_id);
-    }
-}
-
-_bor_inline void pddlStripsOpsRmFactIdFromDelEff(pddl_strips_ops_t *ops, int id)
-{
-    pddl_strips_op_t *op;
-
-    PDDL_STRIPS_OPS_FOR_EACH(ops, op){
-        pddlStripsOpRmFactIdFromDelEff(op, id);
-    }
-}
-
-_bor_inline void pddlStripsOpsRmFactIdFromAddEff(pddl_strips_ops_t *ops, int id)
-{
-    pddl_strips_op_t *op;
-
-    PDDL_STRIPS_OPS_FOR_EACH(ops, op){
-        pddlStripsOpRmFactIdFromAddEff(op, id);
-    }
-}
+/**
+ * Calls pddlStripsOpRemapFacts for each operator.
+ */
+void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap);
 
 void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
                        const pddl_strips_op_t *op, FILE *fout);

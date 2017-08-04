@@ -414,6 +414,26 @@ void pddlFactsDelFact(pddl_facts_t *fs, int fact_id)
     fs->fact[fact_id] = NULL;
 }
 
+void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs,
+                                 const int *irrelevant,
+                                 int *remap)
+{
+    int size = 0;
+
+    for (int fact_id = 0; fact_id < fs->fact_size; ++fact_id){
+        if (irrelevant[fact_id]){
+            remap[fact_id] = -1;
+            pddlFactsDelFact(fs, fact_id);
+        }else{
+            remap[fact_id] = size;
+            fs->fact[fact_id]->id = size;
+            fs->fact[size++] = fs->fact[fact_id];
+        }
+    }
+
+    fs->fact_size = size;
+}
+
 void pddlFactsSqueeze(pddl_facts_t *fs)
 {
     fs->fact_alloc = fs->fact_size;

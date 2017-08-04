@@ -21,6 +21,7 @@ OBJS += pddl
 OBJS += cond
 OBJS += cond_arr
 OBJS += strips
+OBJS += strips_irrelevance
 OBJS += strips_op
 OBJS += strips_ground
 OBJS += strips_reachability_graph

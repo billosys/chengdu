@@ -20,9 +20,13 @@
 #include <boruvka/alloc.h>
 #include "pddl/strips.h"
 #include "err.h"
+#include "assert.h"
 
 /** Implemented in strips_ground.c */
 void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
+/** Prunes irrelevant facts and operators.
+ *  Implemented in strips_irrelevance.c */
+int _pddlStripsPruneIrrelevant(pddl_strips_t *strips);
 
 static pddl_strips_t *stripsNew(const pddl_t *pddl)
 {
@@ -43,6 +47,7 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     pddl_strips_t *strips = stripsNew(pddl);
 
     _pddlStripsGround(strips, pddl);
+    _pddlStripsPruneIrrelevant(strips);
 
     // TODO: remove static facts
     // TODO: remove identical operators (don't forget to keep the one with
@@ -50,7 +55,9 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     // TODO: causal graph
     // TODO: pruning
     // TODO: is goal reachable?
-    // TODO: Compile away conditional effects if set in flags
+    // TODO: Irrelevance == reachability from goal and from init
+    // TODO: Operators without add effects cannot be part of the stricly
+    //       optimal plan.
 
     return strips;
 }
@@ -194,4 +201,82 @@ void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
         fprintf(fout, "Goal is unreachable\n");
     if (strips->has_cond_eff)
         fprintf(fout, "Has conditional effects\n");
+}
+
+
+static void removeIrrelevantFacts(pddl_strips_t *strips)
+{
+    bor_iset_t *graph;
+    int *queue, queue_size;
+    int *relevant;
+    int from, to, fact_id;
+
+    // Construct support graph with inverse edges, i.e., facts are nodes
+    // and edges lead from add effects to preconditions.
+    graph = BOR_CALLOC_ARR(bor_iset_t, strips->fact.fact_size);
+    for (int opi = 0; opi < strips->op.op_size; ++opi){
+        const pddl_strips_op_t *op = strips->op.op[opi];
+        BOR_ISET_FOR_EACH(&op->add_eff, from){
+            bor_iset_t *f = graph + from;
+            BOR_ISET_FOR_EACH(&op->pre, to)
+                borISetAdd(f, to);
+        }
+    }
+
+    relevant = BOR_CALLOC_ARR(int, strips->fact.fact_size);
+
+    // Initilize queue with the goal
+    queue_size = 0;
+    queue = BOR_ALLOC_ARR(int, strips->fact.fact_size);
+    BOR_ISET_FOR_EACH(&strips->goal, fact_id){
+        queue[queue_size++] = fact_id;
+        relevant[fact_id] = 2;
+    }
+
+    while (queue_size > 0){
+        fact_id = queue[--queue_size];
+        relevant[fact_id] = 1;
+        BOR_ISET_FOR_EACH(graph + fact_id, to){
+            if (relevant[to] == 0){
+                relevant[to] = 2;
+                queue[queue_size++] = to;
+            }
+        }
+    }
+    BOR_FREE(queue);
+
+    for (int i = 0; i < strips->fact.fact_size; ++i){
+        ASSERT(relevant[i] != 2);
+        if (!relevant[i]){
+            for (int j = 0; j < strips->op.op_size; ++j){
+                int f, x = 0;
+                /*
+                BOR_ISET_FOR_EACH(&strips->op.op[j]->add_eff, f){
+                    if (f == i){
+                        printf(" A::");
+                        pddlFactPrint(strips->pddl, strips->fact.fact[i], stdout);
+                        x = 1;
+                        break;
+                    }
+                }
+                */
+                BOR_ISET_FOR_EACH(&strips->op.op[j]->del_eff, f){
+                    if (f == i){
+                        printf(" D::");
+                        pddlFactPrint(strips->pddl, strips->fact.fact[i], stdout);
+                        x = 1;
+                        break;
+                    }
+                }
+                if (x)
+                    break;
+            }
+        }
+    }
+    printf("\n");
+    BOR_FREE(relevant);
+
+    for (int i = 0; i < strips->fact.fact_size; ++i)
+        borISetFree(graph + i);
+    BOR_FREE(graph);
 }
