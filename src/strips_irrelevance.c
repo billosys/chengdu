@@ -307,17 +307,19 @@ static int backwardIrrelevance(pddl_strips_t *strips, prob_info_t *prob)
                                        op_relevant, queue, &queue_size);
         }
         if (strips->has_cond_eff){
-        BOR_ISET_FOR_EACH(&fact->del_eff, op_id){
-            backwardIrrelevanceEnqueue(strips, prob, op_id, relevant,
-                                       op_relevant, queue, &queue_size);
-        }
+            BOR_ISET_FOR_EACH(&fact->del_eff, op_id){
+                backwardIrrelevanceEnqueue(strips, prob, op_id, relevant,
+                                           op_relevant, queue, &queue_size);
+            }
         }
     }
 
     // Operators that were not reached are irrelevant
     for (int op_id = 0; op_id < prob->op_size; ++op_id){
-        if (!op_relevant[op_id])
+        if (!op_relevant[op_id] && !prob->op_irrelevant[op_id]){
             makeOpIrrelevant(strips, prob, op_id);
+            ret = 1;
+        }
     }
 
     // The unreached facts are irrelevant
@@ -325,11 +327,8 @@ static int backwardIrrelevance(pddl_strips_t *strips, prob_info_t *prob)
         if (!relevant[fact_id] && !prob->fact_irrelevant[fact_id]){
             makeFactIrrelevant(strips, prob, fact_id);
             ret = 1;
-            printf(" %d:", fact_id);
-            pddlFactPrint(strips->pddl, strips->fact.fact[fact_id], stdout);
         }
     }
-    printf("\n");
 
     BOR_FREE(op_relevant);
     BOR_FREE(relevant);
@@ -368,7 +367,7 @@ int _pddlStripsPruneIrrelevant(pddl_strips_t *strips)
                 continue;
             change |= factStatic(strips, &pi, fact_id);
         }
-        //change |= backwardIrrelevance(strips, &pi);
+        change |= backwardIrrelevance(strips, &pi);
     }
 
     if (pi.op_irrelevant_size > 0){
