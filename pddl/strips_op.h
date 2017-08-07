@@ -138,6 +138,11 @@ void pddlStripsOpsFree(pddl_strips_ops_t *ops);
 int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add);
 
 /**
+ * Deletes all operators for which irrelevant[op_id] is set to true.
+ */
+void pddlStripsOpsDelIrrelevant(pddl_strips_ops_t *ops, const int *irrelevant);
+
+/**
  * Calls pddlStripsOpRemapFacts for each operator.
  */
 void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap);

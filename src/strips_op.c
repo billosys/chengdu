@@ -296,6 +296,23 @@ int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add)
     return op->id;
 }
 
+void pddlStripsOpsDelIrrelevant(pddl_strips_ops_t *ops, const int *irrelevant)
+{
+    int ins = 0;
+    for (int op_id = 0; op_id < ops->op_size; ++op_id){
+        if (irrelevant[op_id]){
+            borHTableErase(ops->htable, &ops->op[op_id]->htable);
+            pddlStripsOpDel(ops->op[op_id]);
+
+        }else{
+            ops->op[op_id]->id = ins;
+            ops->op[ins++] = ops->op[op_id];
+        }
+    }
+
+    ops->op_size = ins;
+}
+
 void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap)
 {
     for (int i = 0; i < ops->op_size; ++i)
