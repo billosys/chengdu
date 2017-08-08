@@ -158,50 +158,6 @@ static void makeFactIrrelevant(pddl_strips_t *strips, prob_info_t *prob,
     fact->init = fact->goal = 0;
 }
 
-static void makeFactUnreachable(pddl_strips_t *strips, prob_info_t *prob,
-                                int fact_id)
-{
-    fact_info_t *fact = prob->fact + fact_id;
-    int op_id;
-    bor_iset_t irrelevant_ops;
-
-    if (prob->fact_irrelevant[fact_id])
-        return;
-
-    prob->fact_irrelevant[fact_id] = 1;
-    ++prob->fact_irrelevant_size;
-
-    borISetInit(&irrelevant_ops);
-    borISetUnion(&irrelevant_ops, &fact->pre);
-    borISetUnion(&irrelevant_ops, &fact->add_eff);
-    BOR_ISET_FOR_EACH(&irrelevant_ops, op_id)
-        makeOpIrrelevant(strips, prob, op_id);
-    borISetFree(&irrelevant_ops);
-
-    BOR_ISET_FOR_EACH(&fact->del_eff, op_id)
-        pddlStripsOpRemoveFact(strips->op.op[op_id], fact_id);
-    borISetEmpty(&fact->pre);
-    borISetEmpty(&fact->add_eff);
-    borISetEmpty(&fact->del_eff);
-
-    if (fact->init)
-        borISetRm(&strips->init, fact_id);
-    fact->init = 0;
-
-    // TODO: If goal contains this fact, the problem is unsolvable
-    //if (fact->goal)
-    //    borISetRm(&strips->goal, fact_id);
-    //fact->goal = 0;
-}
-
-static int opEmptyAddEff(pddl_strips_t *strips, prob_info_t *prob, int op_id)
-{
-    // TODO
-    // Also no cond eff!
-    return -1;
-}
-
-
 /**
  * Although during grounding the facts created from the static
  * predicates were already removed, there still can be facts that are
@@ -211,40 +167,15 @@ static int opEmptyAddEff(pddl_strips_t *strips, prob_info_t *prob, int op_id)
  * If such a static fact appears in the initial state, then it is true
  * troughout the whole state space, therefore it can be safely removed
  * from all operators, init and goal.
- * If the static fact is not part of the initial state (which can
- * happen only as a result of some other pruning -- this cannot happen
- * directly after grounding which is based on the reachablity analysis),
- * then the fact can never be true and theoperators having this fact in its
- * precondition must be removed. Moreover, if the such a fact appears in
- * the goal, the problem is unsolvable.
  */
 static int factStatic(pddl_strips_t *strips, prob_info_t *prob, int fact_id)
 {
+    if (prob->fact_irrelevant[fact_id])
+        return 0;
+
     const fact_info_t *fact = prob->fact + fact_id;
-    if (fact->add_eff.size == 0 && fact->del_eff.size == 0){
-        if (fact->init){
-            makeFactIrrelevant(strips, prob, fact_id);
-
-        }else{
-            // TODO: Irrelevant fact->pre ops
-            // makeFactUnreachable(strips, prob, fact_id);
-            printf("X\n");
-            pddlFactPrint(strips->pddl, strips->fact.fact[fact_id], stdout);
-            printf("\n");
-        }
-
-        return 1;
-    }
-
-    return 0;
-}
-
-static int factTriviallyUnreachable(pddl_strips_t *strips, prob_info_t *prob,
-                                    int fact_id)
-{
-    const fact_info_t *fact = prob->fact + fact_id;
-    if (fact->init == 0 && fact->add_eff.size == 0){
-        makeFactUnreachable(strips, prob, fact_id);
+    if (fact->add_eff.size == 0 && fact->del_eff.size == 0 && fact->init){
+        makeFactIrrelevant(strips, prob, fact_id);
         return 1;
     }
 
@@ -346,24 +277,16 @@ static void remapInitGoal(pddl_strips_t *strips, const int *remap)
 int _pddlStripsPruneIrrelevant(pddl_strips_t *strips)
 {
     prob_info_t pi;
-    int change, ret;
+    int ret;
 
     probInfoInit(&pi, strips);
 
-    change = 1;
-    while (change){
-        change = 0;
-        for (int fact_id = 0; fact_id < pi.fact_size; ++fact_id){
-            if (pi.fact_irrelevant[fact_id])
-                continue;
-            change |= factStatic(strips, &pi, fact_id);
-        }
-        change |= backwardIrrelevance(strips, &pi);
-    }
+    backwardIrrelevance(strips, &pi);
+    for (int fact_id = 0; fact_id < pi.fact_size; ++fact_id)
+        factStatic(strips, &pi, fact_id);
 
-    if (pi.op_irrelevant_size > 0){
+    if (pi.op_irrelevant_size > 0)
         pddlStripsOpsDelIrrelevant(&strips->op, pi.op_irrelevant);
-    }
 
     if (pi.fact_irrelevant_size > 0){
         int *fact_remap = BOR_ALLOC_ARR(int, pi.fact_size);
@@ -377,11 +300,4 @@ int _pddlStripsPruneIrrelevant(pddl_strips_t *strips)
     ret = pi.fact_irrelevant_size + pi.op_irrelevant_size;
     probInfoFree(&pi);
     return ret;
-
-    // empty add eff
-    // static facts
-    // identical operators
-    // reachability
-    // conditional effects!
-    // merge conditional effects into ordinary effects if pre is empty!
 }
