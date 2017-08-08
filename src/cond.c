@@ -18,6 +18,7 @@
  */
 
 #include <boruvka/alloc.h>
+#include <boruvka/sort.h>
 
 #include "pddl/pddl.h"
 #include "pddl/cond.h"
@@ -1622,6 +1623,44 @@ static pddl_cond_t *flattenWhen(pddl_cond_when_t *when)
     return &and->cls;
 }
 
+static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
+{
+    int cmp = a1->pred - a2->pred;
+    if (cmp == 0){
+        // This shouldn't happen, but anyway...
+        if (a1->arg_size != a2->arg_size)
+            return a1->arg_size - a2->arg_size;
+        for (int i = 0; i < a1->arg_size && cmp == 0; ++i){
+            cmp = a1->arg[i].param - a2->arg[i].param;
+            if (cmp == 0)
+                cmp = a1->arg[i].obj - a2->arg[i].obj;
+        }
+
+        if (cmp == 0)
+            return a1->neg - a2->neg;
+    }
+    return cmp;
+}
+
+static int sortCmp(const bor_list_t *l1, const bor_list_t *l2, void *_)
+{
+    pddl_cond_t *c1 = BOR_LIST_ENTRY(l1, pddl_cond_t, conn);
+    pddl_cond_t *c2 = BOR_LIST_ENTRY(l2, pddl_cond_t, conn);
+    int cmp = c1->type - c2->type;
+    if (cmp == 0 && c1->type == PDDL_COND_ATOM){
+        pddl_cond_atom_t *a1 = OBJ(c1, atom);
+        pddl_cond_atom_t *a2 = OBJ(c2, atom);
+        return cmpAtoms(a1, a2);
+    }
+    return cmp;
+}
+
+static pddl_cond_t *simplifyPart(pddl_cond_part_t *p)
+{
+    borListSort(&p->part, sortCmp, NULL);
+    return &p->cls;
+}
+
 static int flatten(pddl_cond_t **c, void *data)
 {
     if ((*c)->type == PDDL_COND_AND
@@ -1630,6 +1669,11 @@ static int flatten(pddl_cond_t **c, void *data)
 
     }else if ((*c)->type == PDDL_COND_WHEN){
         *c = flattenWhen(OBJ(*c, when));
+    }
+
+    if ((*c)->type == PDDL_COND_AND
+            || (*c)->type == PDDL_COND_OR){
+        *c = simplifyPart(OBJ(*c, part));
     }
 
     return 0;

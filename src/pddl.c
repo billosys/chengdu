@@ -454,7 +454,7 @@ void pddlNormalize(pddl_t *pddl)
 
     compileOutNonStaticNegPre(pddl);
     // TODO: Remove actions with conflicting preconditions (see molgen)
-    // TODO: Remove duplicates?
+    // TODO: Remove duplicates? (also molgen)
 }
 
 void pddlCompileAwayCondEff(pddl_t *pddl)
