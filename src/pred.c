@@ -289,6 +289,7 @@ pddl_pred_t *pddlPredsAdd(pddl_preds_t *ps)
     p = ps->pred + ps->size++;
     bzero(p, sizeof(*p));
     p->owner_param = -1;
+    p->neg_of = -1;
     return p;
 }
 
@@ -316,6 +317,8 @@ void pddlPredsPrint(const pddl_preds_t *ps,
                 ps->pred[i].is_private, ps->pred[i].owner_param);
         fprintf(fout, ", read: %d, write: %d",
                 ps->pred[i].read, ps->pred[i].write);
+        if (ps->pred[i].neg_of >= 0)
+            fprintf(fout, ", neg-of: %d", ps->pred[i].neg_of);
         fprintf(fout, "\n");
     }
 }

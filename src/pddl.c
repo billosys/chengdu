@@ -22,6 +22,17 @@
 #include "pddl/pddl.h"
 #include "err.h"
 
+static int checkConfig(const pddl_config_t *cfg)
+{
+    if (cfg->compile_away_cond_eff && !cfg->normalize){
+        // TODO
+        ERR2("Config: compile_away_conf_eff requires setting normalize to"
+             " true");
+        return 0;
+    }
+    return 1;
+}
+
 static const char *parseName(pddl_lisp_node_t *root, int kw,
                              const char *err_name)
 {
@@ -117,6 +128,9 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
     pddl_t *pddl;
     pddl_lisp_t *domain_lisp, *problem_lisp;
 
+    if (!checkConfig(cfg))
+        return NULL;
+
     domain_lisp = pddlLispParse(domain_fn);
     problem_lisp = pddlLispParse(problem_fn);
     if (domain_lisp == NULL || problem_lisp == NULL){
@@ -156,8 +170,13 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
         goto pddl_fail;
     }
 
-    if (pddl->cfg.normalize)
+    if (pddl->cfg.compile_away_cond_eff){
+        // It does normalization so we can skip pddlNormalize().
+        pddlCompileAwayCondEff(pddl);
+
+    }else if (pddl->cfg.normalize){
         pddlNormalize(pddl);
+    }
 
     return pddl;
 
@@ -232,7 +251,7 @@ static void findNonStaticPredInNegPre(pddl_t *pddl, int *np)
 /** Create a new NOT-... predicate and returns its ID */
 static int createNewNotPred(pddl_t *pddl, int pred_id)
 {
-    const pddl_pred_t *pos = pddl->pred.pred + pred_id;
+    pddl_pred_t *pos = pddl->pred.pred + pred_id;
     pddl_pred_t *neg;
     int name_size;
     char *name;
@@ -251,6 +270,8 @@ static int createNewNotPred(pddl_t *pddl, int pred_id)
         BOR_FREE((char *)neg->name);
     neg->name = name;
     neg->free_name = 1;
+    neg->neg_of = pred_id;
+    pos->neg_of = pddl->pred.size - 1;
 
     return pddl->pred.size - 1;
 }
@@ -415,6 +436,53 @@ void pddlNormalize(pddl_t *pddl)
         pddl->goal = pddlCondNormalize(pddl->goal, &pddl->type);
 
     compileOutNonStaticNegPre(pddl);
+    // TODO: Remove actions with empty effect
+    // TODO: Remove actions with conflicting preconditions (see molgen)
+    // TODO: Remove duplicates?
+}
+
+void pddlCompileAwayCondEff(pddl_t *pddl)
+{
+    pddl_action_t *a, *new_a;
+    pddl_cond_when_t *w;
+    pddl_cond_t *neg_pre;
+    int asize;
+    int change;
+
+    do {
+        change = 0;
+        pddlNormalize(pddl);
+
+        asize = pddl->action.size;
+        for (int ai = 0; ai < asize; ++ai){
+            a = pddl->action.action + ai;
+            w = pddlCondRemoveFirstNonStaticWhen(a->eff, pddl);
+            if (w != NULL){
+                // Create a new action
+                new_a = pddlActionsAdd(&pddl->action);
+
+                // Get the original action again, because pddlActionsAdd()
+                // could realloc the array.
+                a = pddl->action.action + ai;
+
+                // Copy the original to the new
+                pddlActionCopy(new_a, a);
+
+                // The original takes additional precondition which is the
+                // negation of w->pre
+                neg_pre = pddlCondNegatePre(w->pre, pddl);
+                a->pre = pddlCondNewAnd2(a->pre, neg_pre);
+
+                // The new action extends both pre and eff by w->pre and
+                // w->eff.
+                new_a->pre = pddlCondNewAnd2(new_a->pre, pddlCondClone(w->pre));
+                new_a->eff = pddlCondNewAnd2(new_a->eff, pddlCondClone(w->eff));
+
+                pddlCondDel(&w->cls);
+                change = 1;
+            }
+        }
+    } while (change);
 }
 
 int pddlPredFuncMaxParamSize(const pddl_t *pddl)

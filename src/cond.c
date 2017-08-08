@@ -208,6 +208,40 @@ static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p)
     return n;
 }
 
+static void _negate(pddl_cond_t *c, const pddl_t *pddl)
+{
+    if (c->type == PDDL_COND_ATOM){
+        pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
+        if (pddl->pred.pred[a->pred].neg_of >= 0){
+            a->pred = pddl->pred.pred[a->pred].neg_of;
+        }else{
+            a->neg = !a->neg;
+        }
+
+    }else if (c->type == PDDL_COND_AND){
+        pddl_cond_part_t *p = PDDL_COND_CAST(c, part);
+        p->cls.type = PDDL_COND_OR;
+        bor_list_t *item;
+        pddl_cond_t *ch;
+        BOR_LIST_FOR_EACH(&p->part, item){
+            ch = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+            _negate(ch, pddl);
+        }
+
+    }else{
+        ERR2("pddlCondNegatePre() can be used only on normalized"
+             " preconditions!");
+        exit(-1);
+    }
+}
+
+pddl_cond_t *pddlCondNegatePre(const pddl_cond_t *cond, const pddl_t *pddl)
+{
+    pddl_cond_t *c = pddlCondClone(cond);
+    _negate(c, pddl);
+    return c;
+}
+
 static void condPartAdd(pddl_cond_part_t *p, pddl_cond_t *add)
 {
     borListInit(&add->conn);
@@ -571,6 +605,67 @@ void pddlCondRebuild(pddl_cond_t **c,
                      void *u)
 {
     condRebuild(c, pre, post, u);
+}
+
+struct test_static {
+    const pddl_t *pddl;
+    int ret;
+};
+static int atomIsStatic(pddl_cond_t *c, void *_ts)
+{
+    struct test_static *ts = _ts;
+    if (c->type == PDDL_COND_ATOM){
+        const pddl_cond_atom_t *a = OBJ(c, atom);
+        if (!pddlPredIsStatic(ts->pddl->pred.pred + a->pred)){
+            ts->ret = 0;
+            return -2;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+static int pddlCondIsStatic(pddl_cond_t *c, const pddl_t *pddl)
+{
+    struct test_static ts;
+    ts.pddl = pddl;
+    ts.ret = 1;
+
+    pddlCondTraverse(c, atomIsStatic, NULL, &ts);
+    return ts.ret;
+}
+
+pddl_cond_when_t *pddlCondRemoveFirstNonStaticWhen(pddl_cond_t *c,
+                                                   const pddl_t *pddl)
+{
+    pddl_cond_part_t *cp;
+    pddl_cond_t *cw;
+    bor_list_t *item, *tmp;
+
+    if (c->type != PDDL_COND_AND)
+        return NULL;
+    cp = PDDL_COND_CAST(c, part);
+
+    BOR_LIST_FOR_EACH_SAFE(&cp->part, item, tmp){
+        cw = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (cw->type == PDDL_COND_WHEN){
+            pddl_cond_when_t *w = PDDL_COND_CAST(cw, when);
+            if (!pddlCondIsStatic(w->pre, pddl)){
+                borListDel(item);
+                return w;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b)
+{
+    pddl_cond_part_t *p = condPartNew(PDDL_COND_AND);
+    condPartAdd(p, a);
+    condPartAdd(p, b);
+    return &p->cls;
 }
 
 /*** PARSE ***/
@@ -1632,152 +1727,6 @@ int pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
     }
 
     return 0;
-}
-
-
-struct ground_pre {
-    const int *args;
-    int (*cb)(const pddl_cond_atom_t *, const pddl_fact_t *, void *);
-    void *userdata;
-    pddl_fact_t *fact;
-    int ret;
-};
-typedef struct ground_pre ground_pre_t;
-
-static int groundPreCB(pddl_cond_t *c, void *ud)
-{
-    ground_pre_t *d = ud;
-
-    if (c->type == PDDL_COND_ATOM){
-        pddl_cond_atom_t *a = OBJ(c, atom);
-
-        pddlCondAtomGroundFact(a, d->args, d->fact);
-        d->ret = d->cb(a, d->fact, d->userdata);
-        if (d->ret != 0)
-            return -2;
-        return 0;
-
-    }else if (c->type == PDDL_COND_AND){
-        return 0;
-    }
-
-    d->ret = -1;
-    return -2;
-}
-
-int pddlCondGroundPre(const pddl_t *pddl,
-                      const pddl_cond_t *pre,
-                      const int *args,
-                      int (*cb)(const pddl_cond_atom_t *atom,
-                                const pddl_fact_t *fact,
-                                void *),
-                      void *ud)
-{
-    ground_pre_t d;
-    PDDL_FACT_FOR_GROUND(pddl, fact);
-
-    d.cb = cb;
-    d.args = args;
-    d.userdata = ud;
-    d.fact = &fact;
-    d.ret = 0;
-
-    pddlCondTraverse((pddl_cond_t *)pre, groundPreCB, NULL, &d);
-    return d.ret;
-}
-
-
-struct ground_eff {
-    const int *args;
-    int (*add_eff)(const pddl_cond_atom_t *atom,
-                   const pddl_fact_t *fact, void *);
-    int (*del_eff)(const pddl_cond_atom_t *atom,
-                   const pddl_fact_t *fact, void *);
-    int (*assign)(const pddl_cond_assign_t *assign,
-                  int value, const pddl_fact_t *fvalue, void *);
-    int (*when)(const pddl_cond_when_t *when, void *);
-    void *userdata;
-    pddl_fact_t *fact;
-    int ret;
-};
-typedef struct ground_eff ground_eff_t;
-
-static int groundEffCB(pddl_cond_t *c, void *ud)
-{
-    ground_eff_t *d = ud;
-
-    if (c->type == PDDL_COND_ATOM){
-        pddl_cond_atom_t *a = OBJ(c, atom);
-        pddlCondAtomGroundFact(a, d->args, d->fact);
-        if (a->neg){
-            d->ret = d->del_eff(a, d->fact, d->userdata);
-        }else{
-            d->ret = d->add_eff(a, d->fact, d->userdata);
-        }
-        if (d->ret != 0)
-            return -2;
-        return 0;
-
-    }else if (c->type == PDDL_COND_AND){
-        return 0;
-
-    }else if (c->type == PDDL_COND_ASSIGN){
-        pddl_cond_assign_t *a = OBJ(c, assign);
-        if (a->fvalue != NULL){
-            pddlCondAtomGroundFact(a->fvalue, d->args, d->fact);
-            d->ret = d->assign(a, a->value, d->fact, d->userdata);
-            if (d->ret != 0)
-                return -2;
-        }else{
-            d->ret = d->assign(a, a->value, NULL, d->userdata);
-            if (d->ret != 0)
-                return -2;
-        }
-        return -1;
-
-    }else if (c->type == PDDL_COND_WHEN){
-        pddl_cond_when_t *w = OBJ(c, when);
-        d->ret = d->when(w, d->userdata);
-        if (d->ret != 0)
-            return -2;
-        return -1;
-    }
-
-    d->ret = -1;
-    return -2;
-}
-
-int pddlCondGroundEff(const struct pddl *pddl,
-                      const pddl_cond_t *eff,
-                      const int *args,
-                      int (*add_eff)(const pddl_cond_atom_t *atom,
-                                     const pddl_fact_t *fact,
-                                     void *),
-                      int (*del_eff)(const pddl_cond_atom_t *atom,
-                                     const pddl_fact_t *fact,
-                                     void *),
-                      int (*assign)(const pddl_cond_assign_t *assign,
-                                    int value,
-                                    const pddl_fact_t *fvalue,
-                                    void *),
-                      int (*when)(const pddl_cond_when_t *when,
-                                  void *),
-                      void *ud)
-{
-    ground_eff_t d;
-    PDDL_FACT_FOR_GROUND(pddl, fact);
-
-    d.add_eff = add_eff;
-    d.del_eff = del_eff;
-    d.assign = assign;
-    d.when = when;
-    d.args = args;
-    d.userdata = ud;
-    d.fact = &fact;
-    d.ret = 0;
-
-    pddlCondTraverse((pddl_cond_t *)eff, groundEffCB, NULL, &d);
-    return d.ret;
 }
 
 

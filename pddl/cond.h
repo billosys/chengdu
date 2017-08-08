@@ -144,6 +144,14 @@ void pddlCondDel(pddl_cond_t *cond);
 pddl_cond_t *pddlCondClone(const pddl_cond_t *cond);
 
 /**
+ * Creates and returns a negated copy of cond.
+ * Works only with normalized preconditions, i.e., cond can be either
+ * flattened (CNF) or atom.
+ */
+pddl_cond_t *pddlCondNegatePre(const pddl_cond_t *cond,
+                               const struct pddl *pddl);
+
+/**
  * Traverse all conditionals in a tree and call in pre/post order callbacks
  * if non-NULL.
  * If pre returns -1 the element is skipped (it is not traversed deeper).
@@ -165,6 +173,21 @@ void pddlCondRebuild(pddl_cond_t **c,
                      int (*pre)(pddl_cond_t **, void *),
                      int (*post)(pddl_cond_t **, void *),
                      void *userdata);
+
+/**
+ * When first (when ...) node, that has non-static preconditions, is found,
+ * it is removed and returned.
+ * If no (when ...) is found, NULL is returned.
+ * The function requires that c is the (and ...) node.
+ */
+pddl_cond_when_t *pddlCondRemoveFirstNonStaticWhen(pddl_cond_t *c,
+                                                   const struct pddl *pddl);
+
+/**
+ * Creates a new (and a b) node.
+ * The objects a and b should not be used after this call.
+ */
+pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b);
 
 /**
  * Parse condition from PDDL lisp.
@@ -231,54 +254,6 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types);
 int pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
                            const int *args,
                            pddl_fact_t *fact);
-
-/**
- * Traverses all atoms in pre and grounds them into a fact and calls the
- * provided callback on them. If callback returns something different then
- * 0, the grounding is terminated prematurelly and the same value is
- * returned by the function.
- * If function returns -1, something different then (and ) and atom
- * elements was found and grounding was prematurelly terminated.
- * On success, 0 is returned.
- */
-int pddlCondGroundPre(const struct pddl *pddl,
-                      const pddl_cond_t *pre,
-                      const int *args,
-                      int (*cb)(const pddl_cond_atom_t *atom,
-                                const pddl_fact_t *fact,
-                                void *),
-                      void *userdata);
-
-/**
- * Traverses eff and grounds all found atoms into facts.
- * Callbacks add_eff and del_eff are called for add and delete effects
- * respectivelly; assign is called for (assign ) atom and fvalue is either
- * NULL or grounded from .fvalue of the corresponding pddl_cond_assign_t
- * struct; when is called for the whole (when ) element which is not
- * further traversed (but can be further traversed from within the
- * callback).
- * If any callback returns something different then 0, the grounding is
- * terminated prematurelly and the same value is returned by the function.
- * If function returns -1, something different then (and ), atom, (assign
- * ), or (when ) was found and grounding was prematurelly terminated.
- * On success, 0 is returned.
- */
-int pddlCondGroundEff(const struct pddl *pddl,
-                      const pddl_cond_t *eff,
-                      const int *args,
-                      int (*add_eff)(const pddl_cond_atom_t *atom,
-                                     const pddl_fact_t *fact,
-                                     void *),
-                      int (*del_eff)(const pddl_cond_atom_t *atom,
-                                     const pddl_fact_t *fact,
-                                     void *),
-                      int (*assign)(const pddl_cond_assign_t *assign,
-                                    int value,
-                                    const pddl_fact_t *fvalue,
-                                    void *),
-                      int (*when)(const pddl_cond_when_t *when,
-                                  void *),
-                      void *userdata);
 
 void pddlCondPrint(const struct pddl *pddl,
                    const pddl_cond_t *cond,

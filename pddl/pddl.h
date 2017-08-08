@@ -37,12 +37,15 @@ struct pddl_config {
     int force_adl; /*!< Force ADL to requirements */
     int normalize; /*!< Normalize pddl, i.e., make preconditions and
                         effects CNF */
+    int compile_away_cond_eff; /*!< Compile away conditional effects --
+                                    requires .normalize set to true*/
 };
 typedef struct pddl_config pddl_config_t;
 
 #define PDDL_CONFIG_INIT \
     { 0 /* force_adl */, \
       1 /* normalize */, \
+      0 /* compile_away_cond_eff */, \
     }
 
 struct pddl {
@@ -69,6 +72,7 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
 void pddlDel(pddl_t *pddl);
 
 void pddlNormalize(pddl_t *pddl);
+void pddlCompileAwayCondEff(pddl_t *pddl);
 
 /**
  * Returns maximal number of parameters of all predicates and functions.

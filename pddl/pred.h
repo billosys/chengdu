@@ -40,6 +40,7 @@ struct pddl_pred {
     int read;         /*!< True if the predicate appears in some precondition */
     int write;        /*!< True if the predicate appreas in some effect */
     int free_name;    /*!< True if .name should be freed */
+    int neg_of;       /*!< ID of the predicate this predicate is negation of */
 };
 typedef struct pddl_pred pddl_pred_t;
 
