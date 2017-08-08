@@ -1623,44 +1623,6 @@ static pddl_cond_t *flattenWhen(pddl_cond_when_t *when)
     return &and->cls;
 }
 
-static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
-{
-    int cmp = a1->pred - a2->pred;
-    if (cmp == 0){
-        // This shouldn't happen, but anyway...
-        if (a1->arg_size != a2->arg_size)
-            return a1->arg_size - a2->arg_size;
-        for (int i = 0; i < a1->arg_size && cmp == 0; ++i){
-            cmp = a1->arg[i].param - a2->arg[i].param;
-            if (cmp == 0)
-                cmp = a1->arg[i].obj - a2->arg[i].obj;
-        }
-
-        if (cmp == 0)
-            return a1->neg - a2->neg;
-    }
-    return cmp;
-}
-
-static int sortCmp(const bor_list_t *l1, const bor_list_t *l2, void *_)
-{
-    pddl_cond_t *c1 = BOR_LIST_ENTRY(l1, pddl_cond_t, conn);
-    pddl_cond_t *c2 = BOR_LIST_ENTRY(l2, pddl_cond_t, conn);
-    int cmp = c1->type - c2->type;
-    if (cmp == 0 && c1->type == PDDL_COND_ATOM){
-        pddl_cond_atom_t *a1 = OBJ(c1, atom);
-        pddl_cond_atom_t *a2 = OBJ(c2, atom);
-        return cmpAtoms(a1, a2);
-    }
-    return cmp;
-}
-
-static pddl_cond_t *simplifyPart(pddl_cond_part_t *p)
-{
-    borListSort(&p->part, sortCmp, NULL);
-    return &p->cls;
-}
-
 static int flatten(pddl_cond_t **c, void *data)
 {
     if ((*c)->type == PDDL_COND_AND
@@ -1669,11 +1631,6 @@ static int flatten(pddl_cond_t **c, void *data)
 
     }else if ((*c)->type == PDDL_COND_WHEN){
         *c = flattenWhen(OBJ(*c, when));
-    }
-
-    if ((*c)->type == PDDL_COND_AND
-            || (*c)->type == PDDL_COND_OR){
-        *c = simplifyPart(OBJ(*c, part));
     }
 
     return 0;
@@ -1756,17 +1713,143 @@ static int moveDisjunctionsUp(pddl_cond_t **c, void *data)
     return 0;
 }
 
-pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_types_t *types)
+
+pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl)
 {
     pddl_cond_t *c = cond;
 
     // TODO: Check return values
-    pddlCondInstantiateQuant(&c, types);
+    pddlCondInstantiateQuant(&c, &pddl->type);
     pddlCondRebuild(&c, NULL, removeBool, NULL);
     pddlCondRebuild(&c, NULL, flatten, NULL);
     pddlCondRebuild(&c, NULL, moveDisjunctionsUp, NULL);
     pddlCondRebuild(&c, NULL, flatten, NULL);
     // TODO: Remove identical atoms
+    return c;
+}
+
+
+static int cmpAtomArgs(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
+{
+    int cmp = 0;
+    if (a1->arg_size != a2->arg_size)
+        return a1->arg_size - a2->arg_size;
+    for (int i = 0; i < a1->arg_size && cmp == 0; ++i){
+        cmp = a1->arg[i].param - a2->arg[i].param;
+        if (cmp == 0)
+            cmp = a1->arg[i].obj - a2->arg[i].obj;
+    }
+    return cmp;
+}
+
+static int cmpAtomsForSort(const pddl_cond_atom_t *a1,
+                           const pddl_cond_atom_t *a2,
+                           const pddl_t *pddl)
+{
+    int cmp;
+    int a1pred = a1->pred;
+    int a2pred = a2->pred;
+
+    if (pddl->pred.pred[a1->pred].neg_of >= 0)
+        a1pred = BOR_MIN(a1pred, pddl->pred.pred[a1->pred].neg_of);
+    if (pddl->pred.pred[a2->pred].neg_of >= 0)
+        a2pred = BOR_MIN(a2pred, pddl->pred.pred[a2->pred].neg_of);
+
+    cmp = a1pred - a2pred;
+    if (cmp == 0){
+        cmp = cmpAtomArgs(a1, a2);
+        if (cmp == 0){
+            cmp = a1->pred - a2->pred;
+            if (cmp == 0)
+                return a1->neg - a2->neg;
+        }
+    }
+
+    return cmp;
+}
+
+static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
+{
+    int cmp;
+
+    cmp = a1->pred - a2->pred;
+    if (cmp == 0){
+        cmp = cmpAtomArgs(a1, a2);
+        if (cmp == 0)
+            return a1->neg - a2->neg;
+    }
+
+    return cmp;
+}
+
+static int sortCmp(const bor_list_t *l1, const bor_list_t *l2, void *_pddl)
+{
+    const pddl_t *pddl = _pddl;
+    pddl_cond_t *c1 = BOR_LIST_ENTRY(l1, pddl_cond_t, conn);
+    pddl_cond_t *c2 = BOR_LIST_ENTRY(l2, pddl_cond_t, conn);
+    int cmp = c1->type - c2->type;
+    if (cmp == 0 && c1->type == PDDL_COND_ATOM){
+        pddl_cond_atom_t *a1 = OBJ(c1, atom);
+        pddl_cond_atom_t *a2 = OBJ(c2, atom);
+        return cmpAtomsForSort(a1, a2, pddl);
+    }
+    return cmp;
+}
+
+static void sortPart(pddl_cond_part_t *p, const pddl_t *pddl)
+{
+    borListSort(&p->part, sortCmp, (void *)pddl);
+}
+
+static void _deduplicate(pddl_cond_part_t *p)
+{
+    bor_list_t *item, *item2;
+    pddl_cond_t *c1, *c2;
+
+    BOR_LIST_FOR_EACH(&p->part, item){
+        c1 = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c1->type != PDDL_COND_ATOM)
+            continue;
+
+        item2 = borListNext(item);
+        for (; item2 != &p->part; item2 = borListNext(item2)){
+            c2 = BOR_LIST_ENTRY(item2, pddl_cond_t, conn);
+            if (c2->type != PDDL_COND_ATOM)
+                continue;
+            if (cmpAtoms(OBJ(c1, atom), OBJ(c2, atom)) == 0){
+                borListDel(item2);
+                pddlCondDel(c2);
+                break;
+            }
+        }
+    }
+}
+
+static int deduplicate(pddl_cond_t **c, void *data)
+{
+    if ((*c)->type == PDDL_COND_AND || (*c)->type == PDDL_COND_OR)
+        _deduplicate(OBJ(*c, part));
+    return 0;
+}
+
+pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const pddl_t *pddl)
+{
+    pddl_cond_t *c = cond;
+    pddlCondRebuild(&c, NULL, deduplicate, NULL);
+    return c;
+}
+
+pddl_cond_t *pddlCondSimplifyPre(pddl_cond_t *cond, const pddl_t *pddl)
+{
+    pddl_cond_t *c;
+    c = pddlCondDeduplicate(cond, pddl);
+    return c;
+}
+
+pddl_cond_t *pddlCondSimplifyEff(pddl_cond_t *cond, const pddl_t *pddl)
+{
+    pddl_cond_t *c;
+    c = pddlCondDeduplicate(cond, pddl);
     return c;
 }
 

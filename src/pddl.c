@@ -338,7 +338,7 @@ static void compileOutNegPreInAction(pddl_t *pddl, int pos, int neg,
     int ids[2] = { pos, neg };
     pddlCondRebuild(&a->pre, NULL, replaceNegPre, ids);
     pddlCondRebuild(&a->eff, replaceNegEff, NULL, ids);
-    pddlActionNormalize(a, &pddl->type);
+    pddlActionNormalize(a, pddl);
 }
 
 static void compileOutNegPre(pddl_t *pddl, int pos, int neg)
@@ -416,10 +416,13 @@ static void compileOutNonStaticNegPre(pddl_t *pddl)
     BOR_FREE(negpred);
 }
 
-static void removeActionsWithEmptyEff(pddl_t *pddl)
+static void removeIrrelevantActions(pddl_t *pddl)
 {
     for (int ai = 0; ai < pddl->action.size;){
         pddl_action_t *a = pddl->action.action + ai;
+        a->pre = pddlCondSimplifyPre(a->pre, pddl);
+        a->eff = pddlCondSimplifyEff(a->eff, pddl);
+
         if (!pddlCondHasAtom(a->eff)){
             pddlActionFree(a);
             if (ai != pddl->action.size - 1)
@@ -437,12 +440,12 @@ void pddlNormalize(pddl_t *pddl)
     int i;
 
     for (i = 0; i < pddl->action.size; ++i)
-        pddlActionNormalize(pddl->action.action + i, &pddl->type);
+        pddlActionNormalize(pddl->action.action + i, pddl);
 
     for (i = 0; i < pddl->action.size; ++i)
         pddlActionSplit(pddl->action.action + i, &pddl->action);
 
-    removeActionsWithEmptyEff(pddl);
+    removeIrrelevantActions(pddl);
 
 #ifdef PDDL_DEBUG
     for (i = 0; i < pddl->action.size; ++i)
@@ -450,7 +453,7 @@ void pddlNormalize(pddl_t *pddl)
 #endif
 
     if (pddl->goal)
-        pddl->goal = pddlCondNormalize(pddl->goal, &pddl->type);
+        pddl->goal = pddlCondNormalize(pddl->goal, pddl);
 
     compileOutNonStaticNegPre(pddl);
     // TODO: Remove actions with conflicting preconditions (see molgen)
