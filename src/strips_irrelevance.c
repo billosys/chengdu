@@ -337,19 +337,10 @@ static int backwardIrrelevance(pddl_strips_t *strips, prob_info_t *prob)
     return ret;
 }
 
-// TODO: refactor with the same function in strips_op.c
-static void remapISet(bor_iset_t *s, const int *remap)
-{
-    for (int i = 0; i < s->size; ++i){
-        ASSERT(remap[s->s[i]] >= 0);
-        s->s[i] = remap[s->s[i]];
-    }
-}
-
 static void remapInitGoal(pddl_strips_t *strips, const int *remap)
 {
-    remapISet(&strips->init, remap);
-    remapISet(&strips->goal, remap);
+    borISetRemap(&strips->init, remap);
+    borISetRemap(&strips->goal, remap);
 }
 
 int _pddlStripsPruneIrrelevant(pddl_strips_t *strips)

@@ -183,26 +183,18 @@ void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
     dst->hash = src->hash;
 }
 
-static void remapISet(bor_iset_t *s, const int *remap)
-{
-    for (int i = 0; i < s->size; ++i){
-        ASSERT(remap[s->s[i]] >= 0);
-        s->s[i] = remap[s->s[i]];
-    }
-}
-
 void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap)
 {
     pddl_strips_op_cond_eff_t *ce;
 
-    remapISet(&op->pre, remap);
-    remapISet(&op->add_eff, remap);
-    remapISet(&op->del_eff, remap);
+    borISetRemap(&op->pre, remap);
+    borISetRemap(&op->add_eff, remap);
+    borISetRemap(&op->del_eff, remap);
     for (int i = 0; i < op->cond_eff_size; ++i){
         ce = op->cond_eff + i;
-        remapISet(&ce->pre, remap);
-        remapISet(&ce->add_eff, remap);
-        remapISet(&ce->del_eff, remap);
+        borISetRemap(&ce->pre, remap);
+        borISetRemap(&ce->add_eff, remap);
+        borISetRemap(&ce->del_eff, remap);
     }
 }
 
