@@ -416,14 +416,23 @@ static void compileOutNonStaticNegPre(pddl_t *pddl)
     BOR_FREE(negpred);
 }
 
+static int isFalsePre(const pddl_cond_t *c)
+{
+    if (c->type == PDDL_COND_BOOL){
+        const pddl_cond_bool_t *b = PDDL_COND_CAST(c, bool);
+        return !b->val;
+    }
+    return 0;
+}
+
 static void removeIrrelevantActions(pddl_t *pddl)
 {
     for (int ai = 0; ai < pddl->action.size;){
         pddl_action_t *a = pddl->action.action + ai;
-        a->pre = pddlCondSimplifyPre(a->pre, pddl);
-        a->eff = pddlCondSimplifyEff(a->eff, pddl);
+        a->pre = pddlCondDeconflictPre(a->pre, pddl);
+        //a->eff = pddlCondDeconflictEff(a->eff, pddl);
 
-        if (!pddlCondHasAtom(a->eff)){
+        if (isFalsePre(a->pre) || !pddlCondHasAtom(a->eff)){
             pddlActionFree(a);
             if (ai != pddl->action.size - 1)
                 *a = pddl->action.action[pddl->action.size - 1];

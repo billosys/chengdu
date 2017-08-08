@@ -256,22 +256,20 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const struct pddl *pddl);
 pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const struct pddl *pddl);
 
 /**
- * And/or nodes are deduplicated and
- * if conflicting literals are found
+ * If conflicting literals are found
  *   1) in the and node, then the and node is replaced by false
  *   2) in the or node, the literals are removed (as if they were replaced
  *      by true are or simplified).
  */
-pddl_cond_t *pddlCondSimplifyPre(pddl_cond_t *cond, const struct pddl *pddl);
+pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const struct pddl *pddl);
 
 /**
- * And/or nodes are deduplicated and
- * if conflicting literals are found
+ * If conflicting literals are found
  *   1) in the and node, then the positive literal is kept (following the
  *      rule "first delete then add".
  *   2) in the or node, the error is reported.
  */
-pddl_cond_t *pddlCondSimplifyEff(pddl_cond_t *cond, const struct pddl *pddl);
+pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const struct pddl *pddl);
 
 /**
  * Ground atom to a fact using arguments, {fact} has to have allocated

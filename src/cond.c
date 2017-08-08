@@ -1724,8 +1724,7 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl)
     pddlCondRebuild(&c, NULL, flatten, NULL);
     pddlCondRebuild(&c, NULL, moveDisjunctionsUp, NULL);
     pddlCondRebuild(&c, NULL, flatten, NULL);
-    // TODO: Remove identical atoms
-    return c;
+    return pddlCondDeduplicate(c, pddl);
 }
 
 
@@ -1742,32 +1741,6 @@ static int cmpAtomArgs(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
     return cmp;
 }
 
-static int cmpAtomsForSort(const pddl_cond_atom_t *a1,
-                           const pddl_cond_atom_t *a2,
-                           const pddl_t *pddl)
-{
-    int cmp;
-    int a1pred = a1->pred;
-    int a2pred = a2->pred;
-
-    if (pddl->pred.pred[a1->pred].neg_of >= 0)
-        a1pred = BOR_MIN(a1pred, pddl->pred.pred[a1->pred].neg_of);
-    if (pddl->pred.pred[a2->pred].neg_of >= 0)
-        a2pred = BOR_MIN(a2pred, pddl->pred.pred[a2->pred].neg_of);
-
-    cmp = a1pred - a2pred;
-    if (cmp == 0){
-        cmp = cmpAtomArgs(a1, a2);
-        if (cmp == 0){
-            cmp = a1->pred - a2->pred;
-            if (cmp == 0)
-                return a1->neg - a2->neg;
-        }
-    }
-
-    return cmp;
-}
-
 static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
 {
     int cmp;
@@ -1780,25 +1753,6 @@ static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
     }
 
     return cmp;
-}
-
-static int sortCmp(const bor_list_t *l1, const bor_list_t *l2, void *_pddl)
-{
-    const pddl_t *pddl = _pddl;
-    pddl_cond_t *c1 = BOR_LIST_ENTRY(l1, pddl_cond_t, conn);
-    pddl_cond_t *c2 = BOR_LIST_ENTRY(l2, pddl_cond_t, conn);
-    int cmp = c1->type - c2->type;
-    if (cmp == 0 && c1->type == PDDL_COND_ATOM){
-        pddl_cond_atom_t *a1 = OBJ(c1, atom);
-        pddl_cond_atom_t *a2 = OBJ(c2, atom);
-        return cmpAtomsForSort(a1, a2, pddl);
-    }
-    return cmp;
-}
-
-static void sortPart(pddl_cond_part_t *p, const pddl_t *pddl)
-{
-    borListSort(&p->part, sortCmp, (void *)pddl);
 }
 
 static void _deduplicate(pddl_cond_part_t *p)
@@ -1839,17 +1793,88 @@ pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const pddl_t *pddl)
     return c;
 }
 
-pddl_cond_t *pddlCondSimplifyPre(pddl_cond_t *cond, const pddl_t *pddl)
+
+struct conflict_pre {
+    const pddl_t *pddl;
+    int change;
+};
+
+static int atomNegPred(const pddl_cond_atom_t *a, const pddl_t *pddl)
 {
-    pddl_cond_t *c;
-    c = pddlCondDeduplicate(cond, pddl);
+    int pred = a->pred;
+    if (pddl->pred.pred[a->pred].neg_of >= 0)
+        pred = BOR_MIN(pred, pddl->pred.pred[a->pred].neg_of);
+    return pred;
+}
+
+static int atomsInConflict(const pddl_cond_atom_t *a1,
+                           const pddl_cond_atom_t *a2,
+                           const pddl_t *pddl)
+{
+    if (a1->pred == a2->pred && a1->neg != a2->neg)
+        return cmpAtomArgs(a1, a2) == 0;
+    if (atomNegPred(a1, pddl) == atomNegPred(a2, pddl) && a1->neg == a2->neg)
+        return cmpAtomArgs(a1, a2) == 0;
+    return 0;
+}
+
+static int _conflictPre(pddl_cond_part_t *p, const pddl_t *pddl)
+{
+    bor_list_t *item, *item2;
+    pddl_cond_t *c1, *c2;
+    pddl_cond_atom_t *a1, *a2;
+
+    BOR_LIST_FOR_EACH(&p->part, item){
+        c1 = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c1->type != PDDL_COND_ATOM)
+            continue;
+        a1 = OBJ(c1, atom);
+
+        item2 = borListNext(item);
+        for (; item2 != &p->part; item2 = borListNext(item2)){
+            c2 = BOR_LIST_ENTRY(item2, pddl_cond_t, conn);
+            if (c2->type != PDDL_COND_ATOM)
+                continue;
+            a2 = OBJ(c2, atom);
+
+            if (atomsInConflict(a1, a2, pddl))
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int conflictPre(pddl_cond_t **c, void *data)
+{
+    struct conflict_pre *cp = data;
+
+    if ((*c)->type == PDDL_COND_AND || (*c)->type == PDDL_COND_OR){
+        if (_conflictPre(OBJ(*c, part), cp->pddl)){
+            pddlCondDel(*c);
+            *c = &(condBoolNew(0)->cls);
+            cp->change = 1;
+        }
+    }
+    return 0;
+}
+
+pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl)
+{
+    struct conflict_pre cp;
+    pddl_cond_t *c = cond;
+
+    cp.pddl = pddl;
+    cp.change = 0;
+    pddlCondRebuild(&c, NULL, conflictPre, &cp);
+    if (cp.change)
+        c = pddlCondNormalize(c, pddl);
     return c;
 }
 
-pddl_cond_t *pddlCondSimplifyEff(pddl_cond_t *cond, const pddl_t *pddl)
+pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl)
 {
-    pddl_cond_t *c;
-    c = pddlCondDeduplicate(cond, pddl);
+    pddl_cond_t *c = cond;
     return c;
 }
 
