@@ -112,7 +112,7 @@ static int parseGoal(pddl_t *pddl)
 }
 
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
-                unsigned flags)
+                const pddl_config_t *cfg)
 {
     pddl_t *pddl;
     pddl_lisp_t *domain_lisp, *problem_lisp;
@@ -131,7 +131,7 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
     bzero(pddl, sizeof(*pddl));
     pddlFactsInit(&pddl->init_fact);
     pddlFactsInit(&pddl->init_func);
-    pddl->flags = flags;
+    pddl->cfg = *cfg;
     pddl->domain_lisp = domain_lisp;
     pddl->problem_lisp = problem_lisp;
     pddl->domain_name = parseDomainName(&domain_lisp->root);
@@ -155,6 +155,9 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
             || parseMetric(pddl, &problem_lisp->root) != 0){
         goto pddl_fail;
     }
+
+    if (pddl->cfg.normalize)
+        pddlNormalize(pddl);
 
     return pddl;
 
