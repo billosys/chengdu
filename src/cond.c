@@ -668,6 +668,24 @@ pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b)
     return &p->cls;
 }
 
+static int hasAtom(pddl_cond_t *c, void *_ret)
+{
+    int *ret = _ret;
+
+    if (c->type == PDDL_COND_ATOM){
+        *ret = 1;
+        return -2;
+    }
+    return 0;
+}
+
+int pddlCondHasAtom(const pddl_cond_t *c)
+{
+    int ret = 0;
+    pddlCondTraverse((pddl_cond_t *)c, hasAtom, NULL, &ret);
+    return ret;
+}
+
 /*** PARSE ***/
 static int parseAtomArg(pddl_cond_atom_arg_t *arg,
                         const pddl_lisp_node_t *root,

@@ -190,6 +190,11 @@ pddl_cond_when_t *pddlCondRemoveFirstNonStaticWhen(pddl_cond_t *c,
 pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b);
 
 /**
+ * Returns true if the conditional contains any atom.
+ */
+int pddlCondHasAtom(const pddl_cond_t *c);
+
+/**
  * Parse condition from PDDL lisp.
  */
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,

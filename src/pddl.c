@@ -416,6 +416,21 @@ static void compileOutNonStaticNegPre(pddl_t *pddl)
     BOR_FREE(negpred);
 }
 
+static void removeActionsWithEmptyEff(pddl_t *pddl)
+{
+    for (int ai = 0; ai < pddl->action.size;){
+        pddl_action_t *a = pddl->action.action + ai;
+        if (!pddlCondHasAtom(a->eff)){
+            pddlActionFree(a);
+            if (ai != pddl->action.size - 1)
+                *a = pddl->action.action[pddl->action.size - 1];
+            --pddl->action.size;
+        }else{
+            ++ai;
+        }
+    }
+}
+
 
 void pddlNormalize(pddl_t *pddl)
 {
@@ -427,6 +442,8 @@ void pddlNormalize(pddl_t *pddl)
     for (i = 0; i < pddl->action.size; ++i)
         pddlActionSplit(pddl->action.action + i, &pddl->action);
 
+    removeActionsWithEmptyEff(pddl);
+
 #ifdef PDDL_DEBUG
     for (i = 0; i < pddl->action.size; ++i)
         pddlActionAssertPreConjuction(pddl->action.action + i);
@@ -436,7 +453,6 @@ void pddlNormalize(pddl_t *pddl)
         pddl->goal = pddlCondNormalize(pddl->goal, &pddl->type);
 
     compileOutNonStaticNegPre(pddl);
-    // TODO: Remove actions with empty effect
     // TODO: Remove actions with conflicting preconditions (see molgen)
     // TODO: Remove duplicates?
 }
