@@ -21,6 +21,7 @@
 #include <boruvka/sort.h>
 #include "pddl/pddl.h"
 #include "pddl/strips_op.h"
+#include "assert.h"
 
 static bor_htable_key_t htableKey(const bor_list_t *key, void *_)
 {
@@ -52,6 +53,13 @@ void pddlStripsOpInit(pddl_strips_op_t *op)
     bzero(op, sizeof(*op));
 }
 
+static void condEffFree(pddl_strips_op_cond_eff_t *ce)
+{
+    borISetFree(&ce->pre);
+    borISetFree(&ce->add_eff);
+    borISetFree(&ce->del_eff);
+}
+
 void pddlStripsOpFree(pddl_strips_op_t *op)
 {
     if (op->name)
@@ -59,11 +67,8 @@ void pddlStripsOpFree(pddl_strips_op_t *op)
     borISetFree(&op->pre);
     borISetFree(&op->del_eff);
     borISetFree(&op->add_eff);
-    for (int i = 0; i < op->cond_eff_size; ++i){
-        borISetFree(&op->cond_eff[i].pre);
-        borISetFree(&op->cond_eff[i].add_eff);
-        borISetFree(&op->cond_eff[i].del_eff);
-    }
+    for (int i = 0; i < op->cond_eff_size; ++i)
+        condEffFree(&op->cond_eff[i]);
     if (op->cond_eff != NULL)
         BOR_FREE(op->cond_eff);
 }
@@ -178,6 +183,57 @@ void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
     dst->hash = src->hash;
 }
 
+void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap)
+{
+    pddl_strips_op_cond_eff_t *ce;
+
+    borISetRemap(&op->pre, remap);
+    borISetRemap(&op->add_eff, remap);
+    borISetRemap(&op->del_eff, remap);
+    for (int i = 0; i < op->cond_eff_size; ++i){
+        ce = op->cond_eff + i;
+        borISetRemap(&ce->pre, remap);
+        borISetRemap(&ce->add_eff, remap);
+        borISetRemap(&ce->del_eff, remap);
+    }
+}
+
+void pddlStripsOpRemoveFact(pddl_strips_op_t *op, int fact_id)
+{
+    int reorder = 0;
+
+    borISetRm(&op->pre, fact_id);
+    borISetRm(&op->add_eff, fact_id);
+    borISetRm(&op->del_eff, fact_id);
+
+    for (int cei = 0; cei < op->cond_eff_size; ++cei){
+        pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+        borISetRm(&ce->pre, fact_id);
+        borISetRm(&ce->add_eff, fact_id);
+        borISetRm(&ce->del_eff, fact_id);
+        if (borISetSize(&ce->pre) == 0){
+            borISetUnion(&op->add_eff, &ce->add_eff);
+            borISetUnion(&op->del_eff, &ce->del_eff);
+            reorder = 1;
+        }
+    }
+
+    if (reorder){
+        int size = 0;
+        for (int cei = 0; cei < op->cond_eff_size; ++cei){
+            pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+            if (borISetSize(&ce->pre) == 0){
+                condEffFree(&op->cond_eff[cei]);
+            }else{
+                op->cond_eff[size++] = op->cond_eff[cei];
+            }
+        }
+        op->cond_eff_size = size;
+        pddlStripsOpNormalize(op);
+    }
+}
+
+
 void pddlStripsOpsInit(pddl_strips_ops_t *ops)
 {
     bzero(ops, sizeof(*ops));
@@ -230,6 +286,29 @@ int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add)
     op->hash = op_find.hash;
     borHTableInsert(ops->htable, &op->htable);
     return op->id;
+}
+
+void pddlStripsOpsDelIrrelevant(pddl_strips_ops_t *ops, const int *irrelevant)
+{
+    int ins = 0;
+    for (int op_id = 0; op_id < ops->op_size; ++op_id){
+        if (irrelevant[op_id]){
+            borHTableErase(ops->htable, &ops->op[op_id]->htable);
+            pddlStripsOpDel(ops->op[op_id]);
+
+        }else{
+            ops->op[op_id]->id = ins;
+            ops->op[ins++] = ops->op[op_id];
+        }
+    }
+
+    ops->op_size = ins;
+}
+
+void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap)
+{
+    for (int i = 0; i < ops->op_size; ++i)
+        pddlStripsOpRemapFacts(ops->op[i], remap);
 }
 
 void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,

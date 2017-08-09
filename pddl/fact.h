@@ -159,6 +159,16 @@ int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *f);
 void pddlFactsDelFact(pddl_facts_t *fs, int fact_id);
 
 /**
+ * Deletes facts marked in irrelevant array.
+ * Returns remap array containing remapping of fact IDs (old ID -> new ID)
+ * that is monotonically increasing, except for the facts that were removed
+ * where the new ID is set to -1.
+ */
+void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs,
+                                 const int *irrelevant,
+                                 int *remap);
+
+/**
  * Reallocate array so that .alloc == .size.
  */
 void pddlFactsSqueeze(pddl_facts_t *fs);

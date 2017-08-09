@@ -68,7 +68,7 @@ void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src);
 /**
  * Normalize .pre and .eff (see pddlCondNormalize()).
  */
-void pddlActionNormalize(pddl_action_t *a, const pddl_types_t *t);
+void pddlActionNormalize(pddl_action_t *a, const struct pddl *pddl);
 
 /**
  * Parses actions from domain PDDL.

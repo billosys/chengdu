@@ -90,7 +90,7 @@ int pddlRequireParse(pddl_t *pddl)
     int i;
 
     pddl->require = 0u;
-    if (pddl->flags & PDDL_FORCE_ADL)
+    if (pddl->cfg.force_adl)
         pddl->require = PDDL_REQUIRE_ADL;
 
     req_node = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_REQUIREMENTS);

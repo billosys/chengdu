@@ -138,15 +138,18 @@ void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src)
         dst->eff = pddlCondClone(src->eff);
 }
 
-void pddlActionNormalize(pddl_action_t *a, const pddl_types_t *t)
+void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl)
 {
-    a->pre = pddlCondNormalize(a->pre, t);
-    a->eff = pddlCondNormalize(a->eff, t);
+    a->pre = pddlCondNormalize(a->pre, pddl);
+    a->eff = pddlCondNormalize(a->eff, pddl);
 
     if (a->pre->type == PDDL_COND_ATOM)
         a->pre = pddlCondAtomToAnd(a->pre);
-    if (a->eff->type == PDDL_COND_ATOM)
+    if (a->eff->type == PDDL_COND_ATOM
+            || a->eff->type == PDDL_COND_ASSIGN
+            || a->eff->type == PDDL_COND_WHEN){
         a->eff = pddlCondAtomToAnd(a->eff);
+    }
 }
 
 pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
