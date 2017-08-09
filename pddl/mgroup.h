@@ -57,7 +57,7 @@ pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg);
  * Find fact-alternating mutex groups in the provided strips problem.
  * The function refuses to work on problems with conditional effects, but
  * conditional effects can be compiled out by
- * pddlStripsCompileOutCondEff().
+ * pddlStripsCompileAwayCondEff().
  */
 pddl_mgroups_t *pddlMGroupFindFA(const pddl_strips_t *strips);
 

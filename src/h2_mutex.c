@@ -178,7 +178,7 @@ pddl_mutexes_t *pddlMutexFindH2(const pddl_strips_t *strips,
         pddl_strips_t *strips_nce;
         pddl_mutexes_t *ms;
 
-        strips_nce = pddlStripsCompileOutCondEffRelaxed(strips);
+        strips_nce = pddlStripsCompileAwayCondEffRelaxed(strips);
         ms = _pddlMutexFindH2(strips_nce, unreachable_ops);
         pddlStripsDel(strips_nce);
         return ms;

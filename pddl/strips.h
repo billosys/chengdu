@@ -61,17 +61,11 @@ void pddlStripsDel(pddl_strips_t *strips);
 pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips);
 
 /**
- * Compile out conditional effects by enumerating possible combinations.
- * This can lead to an exponential blow-up!
- */
-pddl_strips_t *pddlStripsCompileOutCondEff(const pddl_strips_t *strips);
-
-/**
  * Compile out conditional effects by making each conditional effect a
  * separate operator, i.e., the compilation is linear.
  * This transformation can be useful for a reachability analysis.
  */
-pddl_strips_t *pddlStripsCompileOutCondEffRelaxed(const pddl_strips_t *strips);
+pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips);
 
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
 
