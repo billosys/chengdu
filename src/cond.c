@@ -1724,7 +1724,8 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl)
     pddlCondRebuild(&c, NULL, flatten, NULL);
     pddlCondRebuild(&c, NULL, moveDisjunctionsUp, NULL);
     pddlCondRebuild(&c, NULL, flatten, NULL);
-    return pddlCondDeduplicate(c, pddl);
+    c = pddlCondDeduplicate(c, pddl);
+    return c;
 }
 
 
@@ -1794,7 +1795,7 @@ pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const pddl_t *pddl)
 }
 
 
-struct conflict_pre {
+struct deconflict_pre {
     const pddl_t *pddl;
     int change;
 };
@@ -1807,9 +1808,9 @@ static int atomNegPred(const pddl_cond_atom_t *a, const pddl_t *pddl)
     return pred;
 }
 
-static int atomsInConflict(const pddl_cond_atom_t *a1,
-                           const pddl_cond_atom_t *a2,
-                           const pddl_t *pddl)
+static int atomsInConflictPre(const pddl_cond_atom_t *a1,
+                              const pddl_cond_atom_t *a2,
+                              const pddl_t *pddl)
 {
     if (a1->pred == a2->pred && a1->neg != a2->neg)
         return cmpAtomArgs(a1, a2) == 0;
@@ -1818,7 +1819,7 @@ static int atomsInConflict(const pddl_cond_atom_t *a1,
     return 0;
 }
 
-static int _conflictPre(pddl_cond_part_t *p, const pddl_t *pddl)
+static int preHasConflict(pddl_cond_part_t *p, const pddl_t *pddl)
 {
     bor_list_t *item, *item2;
     pddl_cond_t *c1, *c2;
@@ -1837,7 +1838,7 @@ static int _conflictPre(pddl_cond_part_t *p, const pddl_t *pddl)
                 continue;
             a2 = OBJ(c2, atom);
 
-            if (atomsInConflict(a1, a2, pddl))
+            if (atomsInConflictPre(a1, a2, pddl))
                 return 1;
         }
     }
@@ -1845,15 +1846,15 @@ static int _conflictPre(pddl_cond_part_t *p, const pddl_t *pddl)
     return 0;
 }
 
-static int conflictPre(pddl_cond_t **c, void *data)
+static int deconflictPre(pddl_cond_t **c, void *data)
 {
-    struct conflict_pre *cp = data;
+    struct deconflict_pre *dp = data;
 
     if ((*c)->type == PDDL_COND_AND || (*c)->type == PDDL_COND_OR){
-        if (_conflictPre(OBJ(*c, part), cp->pddl)){
+        if (preHasConflict(OBJ(*c, part), dp->pddl)){
             pddlCondDel(*c);
             *c = &(condBoolNew(0)->cls);
-            cp->change = 1;
+            dp->change = 1;
         }
     }
     return 0;
@@ -1861,20 +1862,95 @@ static int conflictPre(pddl_cond_t **c, void *data)
 
 pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl)
 {
-    struct conflict_pre cp;
+    struct deconflict_pre dp;
     pddl_cond_t *c = cond;
 
-    cp.pddl = pddl;
-    cp.change = 0;
-    pddlCondRebuild(&c, NULL, conflictPre, &cp);
-    if (cp.change)
+    dp.pddl = pddl;
+    dp.change = 0;
+    pddlCondRebuild(&c, NULL, deconflictPre, &dp);
+    if (dp.change)
         c = pddlCondNormalize(c, pddl);
     return c;
+}
+
+static int removeConflictsInEff(pddl_cond_part_t *p)
+{
+    bor_list_t *item, *item2, *tmp;
+    pddl_cond_t *c1, *c2;
+    pddl_cond_atom_t *a1, *a2;
+    int change = 0;
+
+    for (item = borListNext(&p->part); item != &p->part;){
+        c1 = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c1->type != PDDL_COND_ATOM){
+            item = borListNext(item);
+            continue;
+        }
+        a1 = OBJ(c1, atom);
+
+        item2 = borListNext(item);
+        for (item2 = borListNext(item); item2 != &p->part;){
+            c2 = BOR_LIST_ENTRY(item2, pddl_cond_t, conn);
+            if (c2->type != PDDL_COND_ATOM){
+                item2 = borListNext(item2);
+                continue;
+            }
+            a2 = OBJ(c2, atom);
+
+            if (a1->pred == a2->pred
+                    && a1->neg != a2->neg
+                    && cmpAtomArgs(a1, a2) == 0){
+                if (a1->neg){
+                    tmp = borListPrev(item);
+                    borListDel(item);
+                    pddlCondDel(&a1->cls);
+                    item = tmp;
+                    change = 1;
+                    break;
+
+                }else{
+                    tmp = borListPrev(item2);
+                    borListDel(item2);
+                    pddlCondDel(&a2->cls);
+                    item2 = tmp;
+                    change = 1;
+                }
+            }
+            item2 = borListNext(item2);
+        }
+
+        item = borListNext(item);
+    }
+
+    return change;
+}
+
+static int deconflictEffPost(pddl_cond_t **c, void *data)
+{
+    if ((*c)->type == PDDL_COND_AND || (*c)->type == PDDL_COND_OR){
+        if (removeConflictsInEff(OBJ(*c, part)))
+            *((int *)data) = 1;
+    }
+    return 0;
+}
+
+static int deconflictEffPre(pddl_cond_t **c, void *data)
+{
+    if ((*c)->type == PDDL_COND_WHEN){
+        pddl_cond_when_t *w = OBJ(*c, when);
+        pddlCondRebuild(&w->eff, deconflictEffPre, deconflictEffPost, data);
+        return -1;
+    }
+    return 0;
 }
 
 pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl)
 {
     pddl_cond_t *c = cond;
+    int change = 0;
+    pddlCondRebuild(&c, deconflictEffPre, deconflictEffPost, &change);
+    if (change)
+        c = pddlCondNormalize(c, pddl);
     return c;
 }
 
