@@ -430,7 +430,7 @@ static void removeIrrelevantActions(pddl_t *pddl)
     for (int ai = 0; ai < pddl->action.size;){
         pddl_action_t *a = pddl->action.action + ai;
         a->pre = pddlCondDeconflictPre(a->pre, pddl);
-        //a->eff = pddlCondDeconflictEff(a->eff, pddl);
+        a->eff = pddlCondDeconflictEff(a->eff, pddl);
 
         if (isFalsePre(a->pre) || !pddlCondHasAtom(a->eff)){
             pddlActionFree(a);

@@ -1888,7 +1888,6 @@ static int removeConflictsInEff(pddl_cond_part_t *p)
         }
         a1 = OBJ(c1, atom);
 
-        item2 = borListNext(item);
         for (item2 = borListNext(item); item2 != &p->part;){
             c2 = BOR_LIST_ENTRY(item2, pddl_cond_t, conn);
             if (c2->type != PDDL_COND_ATOM){
