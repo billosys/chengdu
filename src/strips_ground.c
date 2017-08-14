@@ -968,6 +968,7 @@ static void groundInit(ground_t *g, pddl_strips_t *strips, const pddl_t *pddl)
     bzero(g, sizeof(*g));
     g->strips = strips;
     g->pddl = pddl;
+    // TODO: Check return value
     pddlPrepActionsInit(pddl, &g->action);
     pddlFactsInit(&g->static_fact);
 
