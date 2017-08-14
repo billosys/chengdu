@@ -17,8 +17,8 @@
  * See the License for more information.
  */
 
-#ifndef __PDDL_ERR_H__
-#define __PDDL_ERR_H__
+#ifndef ___PDDL_ERR_H__
+#define ___PDDL_ERR_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,5 +92,4 @@ void _pddlTrace(const char *filename, int line, const char *func);
 } /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* __PDDL_ERR_H__ */
-
+#endif /* ___PDDL_ERR_H__ */

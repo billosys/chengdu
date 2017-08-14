@@ -20,6 +20,7 @@
 
 #include <boruvka/alloc.h>
 #include "pddl/pddl.h"
+#include "pddl/err.h"
 #include "err.h"
 
 static int checkConfig(const pddl_config_t *cfg)
@@ -500,7 +501,16 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
 
                 // The original takes additional precondition which is the
                 // negation of w->pre
-                neg_pre = pddlCondNegatePre(w->pre, pddl);
+                if ((neg_pre = pddlCondNegatePre(w->pre, pddl)) == NULL){
+                    // This shoud never fail, because we force
+                    // normalization before this.
+                    TRACE;
+                    fprintf(stderr, "Fatal Error: Encountered problem in"
+                            " the normalization.\n");
+                    pddlErrPrint();
+                    pddlErrPrintTraceback();
+                    exit(-1);
+                }
                 a->pre = pddlCondNewAnd2(a->pre, neg_pre);
 
                 // The new action extends both pre and eff by w->pre and

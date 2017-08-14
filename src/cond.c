@@ -209,7 +209,7 @@ static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p)
     return n;
 }
 
-static void _negate(pddl_cond_t *c, const pddl_t *pddl)
+static int _negate(pddl_cond_t *c, const pddl_t *pddl)
 {
     if (c->type == PDDL_COND_ATOM){
         pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
@@ -226,21 +226,25 @@ static void _negate(pddl_cond_t *c, const pddl_t *pddl)
         pddl_cond_t *ch;
         BOR_LIST_FOR_EACH(&p->part, item){
             ch = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            _negate(ch, pddl);
+            if (_negate(ch, pddl) != 0)
+                TRACE_RET(-1);
         }
 
     }else{
-        // TODO: exit?
-        ERR2("pddlCondNegatePre() can be used only on normalized"
-             " preconditions!");
-        exit(-1);
+        ERR_RET2(-1, "pddlCondNegatePre() can be used only on normalized"
+                     " preconditions!");
     }
+
+    return 0;
 }
 
 pddl_cond_t *pddlCondNegatePre(const pddl_cond_t *cond, const pddl_t *pddl)
 {
     pddl_cond_t *c = pddlCondClone(cond);
-    _negate(c, pddl);
+    if (_negate(c, pddl) != 0){
+        pddlCondDel(c);
+        TRACE_RET(NULL);
+    }
     return c;
 }
 
