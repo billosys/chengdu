@@ -1,0 +1,141 @@
+/***
+ * cpddl
+ * -------
+ * Copyright (c)2017 Daniel Fiser <danfis@danfis.cz>,
+ * AI Center, Department of Computer Science,
+ * Faculty of Electrical Engineering, Czech Technical University in Prague.
+ * All rights reserved.
+ *
+ * This file is part of cpddl.
+ *
+ * Distributed under the OSI-approved BSD License (the "License");
+ * see accompanying file BDS-LICENSE for details or see
+ * <http://www.opensource.org/licenses/bsd-license.php>.
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License for more information.
+ */
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "err.h"
+
+#ifndef PDDL_ERR_MSG_MAXLEN
+# define PDDL_ERR_MSG_MAXLEN 512
+#endif /* PDDL_ERR_MSG_MAXLEN */
+
+#ifndef PDDL_ERR_TRACE_DEPTH
+# define PDDL_ERR_TRACE_DEPTH 16
+#endif /* PDDL_ERR_TRACE_DEPTH */
+
+struct pddl_err_trace {
+    const char *filename;
+    int line;
+    const char *func;
+};
+typedef struct pddl_err_trace pddl_err_trace_t;
+
+struct pddl_err {
+    pddl_err_trace_t trace[PDDL_ERR_TRACE_DEPTH];
+    int trace_depth;
+    int trace_more;
+    char msg[PDDL_ERR_MSG_MAXLEN];
+    int err;
+    FILE *out;
+};
+typedef struct pddl_err pddl_err_t;
+
+
+static __thread pddl_err_t err = { 0 };
+
+void pddlErrReset(void)
+{
+    err.trace_depth = 0;
+    err.trace_more = 0;
+    err.msg[0] = 0;
+    err.err = -1;
+    if (err.out == NULL)
+        err.out = stderr;
+}
+
+void pddlErrPrintTraceback(void)
+{
+    if (err.out == NULL)
+        err.out = stderr;
+
+    for (int i = 0; i < err.trace_depth; ++i){
+        for (int j = 0; j < i; ++j)
+            fprintf(err.out, "  ");
+        fprintf(err.out, "  ");
+        fprintf(err.out, "%s:%d (%s)\n",
+                err.trace[i].filename,
+                err.trace[i].line,
+                err.trace[i].func);
+    }
+    fflush(err.out);
+}
+
+void pddlErrPrint(void)
+{
+    if (err.err < 0)
+        return;
+    if (err.out == NULL)
+        err.out = stderr;
+
+    fprintf(err.out, "Error: %s\n", err.msg);
+    fflush(err.out);
+}
+
+void pddlErrPrintWithTraceback(void)
+{
+    pddlErrPrint();
+    pddlErrPrintTraceback();
+}
+
+void _pddlErr(const char *filename, int line, const char *func,
+              const char *format, ...)
+{
+    va_list ap;
+
+    pddlErrReset();
+
+    err.trace[0].filename = filename;
+    err.trace[0].line = line;
+    err.trace[0].func = func;
+    err.trace_depth = 1;
+    err.trace_more = 0;
+
+    va_start(ap, format);
+    vsnprintf(err.msg, PDDL_ERR_MSG_MAXLEN, format, ap);
+    va_end(ap);
+    err.err = 1;
+}
+
+void _pddlErrPrepend(const char *format, ...)
+{
+    va_list ap;
+    char msg[PDDL_ERR_MSG_MAXLEN];
+    int size;
+
+    strcpy(msg, err.msg);
+    va_start(ap, format);
+    size = vsnprintf(err.msg, PDDL_ERR_MSG_MAXLEN, format, ap);
+    snprintf(err.msg + size, PDDL_ERR_MSG_MAXLEN - size, "%s", msg);
+    va_end(ap);
+
+}
+
+void _pddlTrace(const char *filename, int line, const char *func)
+{
+    if (err.trace_depth == PDDL_ERR_TRACE_DEPTH){
+        err.trace_more = 1;
+    }else{
+        err.trace[err.trace_depth].filename = filename;
+        err.trace[err.trace_depth].line = line;
+        err.trace[err.trace_depth].func = func;
+        ++err.trace_depth;
+    }
+}

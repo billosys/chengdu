@@ -41,7 +41,7 @@ typedef struct _kw_t kw_t;
 static kw_t kw[] = {
     { "define", PDDL_KW_DEFINE },
     { "domain", PDDL_KW_DOMAIN },
-    { ":domain", PDDL_KW_DOMAIN },
+    { ":domain", PDDL_KW_DOMAIN2 },
     { ":requirements", PDDL_KW_REQUIREMENTS },
     { ":types", PDDL_KW_TYPES },
     { ":predicates", PDDL_KW_PREDICATES },
@@ -149,7 +149,7 @@ static pddl_lisp_node_t *lispNodeAddChild(pddl_lisp_node_t *r)
     return n;
 }
 
-static int parseExp(pddl_lisp_node_t *root, int *lineno,
+static int parseExp(const char *fn, pddl_lisp_node_t *root, int *lineno,
                     char *data, int from, int size, int *cont)
 {
     pddl_lisp_node_t *sub;
@@ -157,8 +157,8 @@ static int parseExp(pddl_lisp_node_t *root, int *lineno,
     char c;
 
     if (i >= size){
-        fprintf(stderr, "Error PDDL: Error on line %d\n", *lineno);
-        return -1;
+        ERR_RET(-1, "Invalid PDDL file `%s'. Mission expression on line %d.",
+                fn, *lineno);
     }
 
     c = data[i];
@@ -181,10 +181,8 @@ static int parseExp(pddl_lisp_node_t *root, int *lineno,
             // Parse subexpression
             sub = lispNodeAddChild(root);
             sub->lineno = *lineno;
-            if (parseExp(sub, lineno, data, i + 1, size, &i) != 0){
-                fprintf(stderr, "Error PDDL: Error on line %d\n", *lineno);
-                return -1;
-            }
+            if (parseExp(fn, sub, lineno, data, i + 1, size, &i) != 0)
+                TRACE_RET(-1);
 
             c = data[i];
             continue;
@@ -203,18 +201,13 @@ static int parseExp(pddl_lisp_node_t *root, int *lineno,
                 if (data[i] >= 'A' && data[i] <= 'Z')
                     data[i] = data[i] - 'A' + 'a';
             }
-            if (i == size){
-                fprintf(stderr, "Error PDDL: Error on line %d\n", *lineno);
-                return -1;
-            }
 
             c = data[i];
             data[i] = 0x0;
             sub->kw = recongnizeKeyword(sub->value);
         }
     }
-
-    return 0;
+    ERR_RET(-1, "Invalid PDDL file `%s'. Missing ending parenthesis.", fn);
 }
 
 pddl_lisp_t *pddlLispParse(const char *fn)
@@ -226,39 +219,41 @@ pddl_lisp_t *pddlLispParse(const char *fn)
     pddl_lisp_node_t root;
 
     fd = open(fn, O_RDONLY);
-    if (fd == -1){
-        fprintf(stderr, "Error: Could not open `%s'.\n", fn);
-        fflush(stderr);
-        return NULL;
-    }
+    if (fd == -1)
+        ERR_RET(NULL, "Could not not open file `%s'.", fn);
 
     if (fstat(fd, &st) != 0){
-        fprintf(stderr, "Error: Could fstat `%s'.\n", fn);
-        fflush(stderr);
+        ERR("Could not determine size of the file `%s'.", fn);
         close(fd);
         return NULL;
     }
 
     data = mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
     if (data == MAP_FAILED){
-        fprintf(stderr, "Error: Could not mmap `%s' to memory.\n", fn);
-        fflush(stderr);
+        ERR("Could not mmap file `%s'.", fn);
         close(fd);
         return NULL;
     }
 
     lineno = 1;
+    // skip initial whitespace and comments
     for (i = 0; i < (int)st.st_size && data[i] != '('; ++i){
         if (data[i] == ';')
             for (; i < (int)st.st_size && data[i] != '\n'; ++i);
-        if (data[i] == '\n')
+        if (data[i] == '\n'){
             ++lineno;
+        }else if (!IS_WS(data[i])){
+            ERR("Incorrect PDDL file `%s'. Unexpected `%c' on line %d.",
+                fn, data[i], lineno);
+            munmap((void *)data, st.st_size);
+            close(fd);
+            return NULL;
+        }
     }
     lispNodeInit(&root);
     root.lineno = lineno;
-    if (parseExp(&root, &lineno, data, i + 1, st.st_size, NULL) != 0){
-        fprintf(stderr, "Error: Could not parse file `%s'.\n", fn);
-        fflush(stderr);
+    if (parseExp(fn, &root, &lineno, data, i + 1, st.st_size, NULL) != 0){
+        TRACE;
         munmap((void *)data, st.st_size);
         lispNodeFree(&root);
         close(fd);
@@ -266,6 +261,7 @@ pddl_lisp_t *pddlLispParse(const char *fn)
     }
 
     lisp = BOR_ALLOC(pddl_lisp_t);
+    lisp->filename = BOR_STRDUP(fn);
     lisp->fd = fd;
     lisp->data = data;
     lisp->size = st.st_size;
@@ -276,6 +272,8 @@ pddl_lisp_t *pddlLispParse(const char *fn)
 
 void pddlLispDel(pddl_lisp_t *lisp)
 {
+    if (lisp->filename)
+        BOR_FREE(lisp->filename);
     if (lisp->data)
         munmap((void *)lisp->data, lisp->size);
     if (lisp->fd >= 0)
@@ -347,44 +345,36 @@ const pddl_lisp_node_t *pddlLispFindNode(
     return NULL;
 }
 
-int pddlLispParseTypedList(const pddl_lisp_node_t *root, int from, int to,
+int pddlLispParseTypedList(const pddl_lisp_node_t *root,
+                           int child_from, int child_to,
                            pddl_lisp_parse_typed_list_fn cb, void *ud)
 {
     pddl_lisp_node_t *n;
-    int i, itfrom, itto, ittype;
+    int type_from;
 
-    ittype = -1;
-    itfrom = from;
-    itto = from;
-    for (i = from; i < to; ++i){
+    type_from = child_from;
+    for (int i = child_from; i < child_to; ++i){
         n = root->child + i;
 
-        if (n->value == NULL){
-            ERRN2(n, "Unexpected token.");
-            return -1;
-        }
+        if (n->value == NULL)
+            ERR_LISP_RET2(-1, n, "Invalid typed list. Unexpected token");
 
         if (strcmp(n->value, "-") == 0){
-            itto = i;
-            ittype = ++i;
-            if (ittype >= to){
-                ERRN2(root, "Invalid typed list.");
-                return -1;
-            }
-            if (cb(root, itfrom, itto, ittype, ud) != 0)
-                return -1;
-            itfrom = i + 1;
-            itto = i + 1;
-            ittype = -1;
-
-        }else{
-            ++itto;
+            if (type_from == i)
+                ERR_LISP_RET2(-1, n, "Invalid typed list. Unexpected `-'");
+            if (i + 1 >= child_to)
+                ERR_LISP_RET2(-1, n,
+                        "Invalid typed list. Unspecified type after `-'");
+            if (cb(root, type_from, i, i + 1, ud) != 0)
+                TRACE_RET(-1);
+            type_from = i + 2;
+            ++i;
         }
     }
 
-    if (itfrom < itto){
-        if (cb(root, itfrom, itto, -1, ud) != 0)
-            return -1;
+    if (type_from < child_to){
+        if (cb(root, type_from, child_to, -1, ud) != 0)
+            TRACE_RET(-1);
     }
 
     return 0;

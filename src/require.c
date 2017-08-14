@@ -103,13 +103,13 @@ int pddlRequireParse(pddl_t *pddl)
     for (i = 1; i < req_node->child_size; ++i){
         n = req_node->child + i;
         if (n->value == NULL){
-            ERRN2(n, "Invalid :requirements definition.");
-            return -1;
+            ERR_RET(-1, "Invalid :requirements definition in %s on line %d.",
+                    pddl->domain_lisp->filename, n->lineno);
         }
         if ((m = requireMask(n->kw)) == 0u){
-            ERRN(n, "Invalid :requirements definition: Unkown keyword `%s'.",
-                 n->value);
-            return -1;
+            ERR_RET(-1, "Invalid :requirements definition in %s on line %d."
+                        " Unknown keyword `%s'.",
+                    pddl->domain_lisp->filename, n->lineno, n->value);
         }
 
         pddl->require |= m;
