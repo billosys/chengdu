@@ -24,8 +24,39 @@
 extern "C" {
 #endif /* __cplusplus */
 
+/**
+ * Sets output stream for printing errors (by pddlErrPrint*() functions).
+ * Default ouput stream in stderr.
+ */
+void pddlErrSetOutput(FILE *out);
+
+/**
+ * Sets ouput stream for the warnings -- this also automatically calls
+ * pddlErrEnableWarn().
+ * Default ouput stream in stderr.
+ */
+void pddlErrSetWarnOutput(FILE *out);
+
+/**
+ * Enables/disables printing out warnings.
+ * Warning are disabled by default.
+ */
+void pddlErrEnableWarn(int enable);
+
+/**
+ * Prints error message.
+ */
 void pddlErrPrint(void);
+
+/**
+ * Prints traceback.
+ */
 void pddlErrPrintTraceback(void);
+
+/**
+ * Prints both error message and traceback.
+ */
+void pddlErrPrintWithTraceback(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

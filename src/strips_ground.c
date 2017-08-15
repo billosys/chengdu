@@ -366,11 +366,12 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga)
 
     borSort(ga->arg, ga->size, sizeof(ground_args_t), groundArgsCmp, NULL);
 
-    // Remove duplicates
-    // TODO: Is it even possible that there are duplicates?
+    // Remove duplicates -- it shoud not happen, but just in case...
+    // Report warning.
     ins = 0;
     for (int i = 1; i < ga->size; ++i){
         if (groundArgsCmp(ga->arg + i, ga->arg + ins, NULL) == 0){
+            WARN2("Duplicate grounded action -- this should not happen!");
             if (ga->arg[i].arg != NULL)
                 BOR_FREE(ga->arg[i].arg);
         }else{
@@ -708,8 +709,6 @@ static void groundActionAddEff(ground_t *g,
                                const obj_id_t *oarg)
 {
     int arg[a->param_size];
-
-    // TODO: What about zero params actions
     for (int i = 0; i < a->param_size; ++i)
         arg[i] = (oarg[i] == UNDEF ? -1 : oarg[i]);
     _groundActionAddEff(g, a, arg, 0);

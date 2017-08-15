@@ -24,10 +24,13 @@
 extern "C" {
 #endif /* __cplusplus */
 
+void _pddlErrReset(void);
 void _pddlErr(const char *filename, int line, const char *func,
               const char *format, ...);
 void _pddlErrPrepend(const char *format, ...);
 void _pddlTrace(const char *filename, int line, const char *func);
+void _pddlWarn(const char *filename, int line, const char *func,
+               const char *format, ...);
 
 #define TRACE _pddlTrace(__FILE__, __LINE__, __func__)
 #define TRACE_RET(V) do { \
@@ -91,12 +94,10 @@ void _pddlTrace(const char *filename, int line, const char *func);
 
 
 #define WARN(format, ...) do { \
-    fprintf(stderr, "Warning PDDL: " format "\n", __VA_ARGS__); \
-    fflush(stderr); \
+        _pddlWarn(__FILE__, __LINE__, __func__, format, __VA_ARGS__); \
     } while (0)
-#define WARN2(text) do { \
-    fprintf(stderr, "Warning PDDL: " text "\n"); \
-    fflush(stderr); \
+#define WARN2(msg) do { \
+        _pddlWarn(__FILE__, __LINE__, __func__, msg); \
     } while (0)
 
 #ifdef __cplusplus

@@ -43,26 +43,47 @@ struct pddl_err {
     int trace_depth;
     int trace_more;
     char msg[PDDL_ERR_MSG_MAXLEN];
-    int err;
     FILE *out;
+    int err;
+
+    int print_warn;
+    FILE *warn_out;
 };
 typedef struct pddl_err pddl_err_t;
 
 
 static __thread pddl_err_t err = { 0 };
 
-void pddlErrReset(void)
+void _pddlErrReset(void)
 {
     err.trace_depth = 0;
     err.trace_more = 0;
     err.msg[0] = 0;
-    err.err = -1;
     if (err.out == NULL)
         err.out = stderr;
+    err.err = 0;
+}
+
+void pddlErrSetOutput(FILE *out)
+{
+    err.out = out;
+}
+
+void pddlErrSetWarnOutput(FILE *out)
+{
+    err.warn_out = out;
+    err.print_warn = 1;
+}
+
+void pddlErrEnableWarn(int enable)
+{
+    err.print_warn = enable;
 }
 
 void pddlErrPrintTraceback(void)
 {
+    if (!err.err)
+        return;
     if (err.out == NULL)
         err.out = stderr;
 
@@ -80,7 +101,7 @@ void pddlErrPrintTraceback(void)
 
 void pddlErrPrint(void)
 {
-    if (err.err < 0)
+    if (!err.err)
         return;
     if (err.out == NULL)
         err.out = stderr;
@@ -100,7 +121,7 @@ void _pddlErr(const char *filename, int line, const char *func,
 {
     va_list ap;
 
-    pddlErrReset();
+    _pddlErrReset();
 
     err.trace[0].filename = filename;
     err.trace[0].line = line;
@@ -138,4 +159,22 @@ void _pddlTrace(const char *filename, int line, const char *func)
         err.trace[err.trace_depth].func = func;
         ++err.trace_depth;
     }
+}
+
+void _pddlWarn(const char *filename, int line, const char *func,
+               const char *format, ...)
+{
+    va_list ap;
+
+    if (err.print_warn == 0)
+        return;
+    if (err.warn_out == NULL)
+        err.warn_out = stderr;
+
+    va_start(ap, format);
+    fprintf(err.warn_out, "Warning: %s:%d [%s]: ", filename, line, func);
+    vfprintf(err.warn_out, format, ap);
+    va_end(ap);
+    fprintf(err.warn_out, "\n");
+    fflush(err.warn_out);
 }
