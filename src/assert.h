@@ -30,4 +30,6 @@
 # define ASSERT(x)
 #endif /* PDDL_DEBUG */
 
+#define ASSERT_RUNTIME(x) assert(x)
+
 #endif /* __PDDL_ASSERT_H__ */

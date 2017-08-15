@@ -75,6 +75,17 @@ void _pddlTrace(const char *filename, int line, const char *func);
     } while (0)
 
 
+#define FATAL(format, ...) do { \
+        fprintf(stderr, "Fatal Error: %s:%d [%s]: " format, \
+                __FILE__, __LINE__, __func__, __VA_ARGS__); \
+        exit(-1); \
+    } while (0)
+#define FATAL2(msg) do { \
+        fprintf(stderr, "Fatal Error: %s:%d [%s]: " msg, \
+                __FILE__, __LINE__, __func__); \
+        exit(-1); \
+    } while (0)
+
 // TODO: WARN
 // TODO: INFO
 

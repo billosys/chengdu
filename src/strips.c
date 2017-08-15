@@ -23,7 +23,7 @@
 #include "assert.h"
 
 /** Implemented in strips_ground.c */
-void _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
+int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
 /** Prunes irrelevant facts and operators.
  *  Implemented in strips_irrelevance.c */
 int _pddlStripsPruneIrrelevant(pddl_strips_t *strips);
@@ -46,7 +46,11 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
 {
     pddl_strips_t *strips = stripsNew(pddl);
 
-    _pddlStripsGround(strips, pddl);
+    if (_pddlStripsGround(strips, pddl) != 0){
+        pddlStripsDel(strips);
+        TRACE_RET(NULL);
+    }
+
     _pddlStripsPruneIrrelevant(strips);
 
     // TODO: remove identical operators (don't forget to keep the one with
