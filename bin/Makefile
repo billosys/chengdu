@@ -7,6 +7,8 @@ CFLAGS += $(OPTS_CFLAGS)
 LDFLAGS += -L../ -lpddl
 LDFLAGS += $(BORUVKA_LDFLAGS)
 LDFLAGS += $(OPTS_LDFLAGS)
+LDFLAGS += $(BOR_CPLEX_LDFLAGS)
+LDFLAGS += $(BOR_GUROBI_LDFLAGS)
 LDFLAGS += -pthread -lrt -lm
 
 ifeq '$(BIN_STATIC)' 'yes'
@@ -16,7 +18,7 @@ endif
 OBJS  = search.o
 OBJS += options.o
 
-TARGETS = pddl-check
+TARGETS = pddl-translate
 
 all: $(TARGETS)
 
