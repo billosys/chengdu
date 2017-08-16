@@ -17,6 +17,9 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    cfg.force_adl = 1;
+    cfg.normalize = 1;
+    cfg.compile_away_cond_eff = 0;
     pddl = pddlNew(argv[1], argv[2], &cfg);
     if (pddl == NULL){
         pddlErrPrintWithTraceback();
