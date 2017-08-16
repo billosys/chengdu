@@ -42,6 +42,31 @@ static pddl_strips_t *stripsNew(const pddl_t *pddl)
     return strips;
 }
 
+static void stripsMakeUnsolvable(pddl_strips_t *strips)
+{
+    // Remove all operators, empty the initial state and make sure that the
+    // goal is non-empty.
+
+    pddlStripsOpsFree(&strips->op);
+    pddlStripsOpsInit(&strips->op);
+    borISetEmpty(&strips->init);
+    if (borISetSize(&strips->goal) == 0){
+        if (strips->fact.fact_size == 0){
+            // TODO
+            FATAL2("STRIPS problem does not contain any fact."
+                   " Making unsolvable problem for this case is not yet"
+                   " implemented.");
+        }else{
+            borISetAdd(&strips->goal, 0);
+        }
+    }
+
+    ASSERT_RUNTIME(strips->fact.fact_size > 0);
+    for (int i = strips->fact.fact_size - 1; i >= 1; --i)
+        pddlFactsDelFact(&strips->fact, i);
+    strips->fact.fact_size = 1;
+}
+
 pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
 {
     pddl_strips_t *strips = stripsNew(pddl);
@@ -50,13 +75,14 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
         pddlStripsDel(strips);
         TRACE_RET(NULL);
     }
+    if (strips->goal_is_unreachable)
+        stripsMakeUnsolvable(strips);
 
     _pddlStripsPruneIrrelevant(strips);
 
-    // TODO: remove identical operators (don't forget to keep the one with
-    // the minimal cost)
+    // TODO: remove identical/dominated operators
+    //       (don't forget to keep the one with the minimal cost)
     // TODO: pruning
-    // TODO: is goal reachable?
 
     return strips;
 }

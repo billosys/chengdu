@@ -89,10 +89,6 @@ void _pddlWarn(const char *filename, int line, const char *func,
         exit(-1); \
     } while (0)
 
-// TODO: WARN
-// TODO: INFO
-
-
 #define WARN(format, ...) do { \
         _pddlWarn(__FILE__, __LINE__, __func__, format, __VA_ARGS__); \
     } while (0)
