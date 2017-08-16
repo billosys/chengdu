@@ -78,11 +78,8 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
     if (strips->goal_is_unreachable)
         stripsMakeUnsolvable(strips);
 
-    _pddlStripsPruneIrrelevant(strips);
-
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
-    // TODO: pruning
 
     return strips;
 }
@@ -124,6 +121,18 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
     dual->has_cond_eff = strips->has_cond_eff;
 
     return dual;
+}
+
+
+void pddlStripsPrune(pddl_strips_t *strips,
+                     const pddl_strips_prune_config_t *cfg)
+{
+    if (cfg->irrelevance)
+        _pddlStripsPruneIrrelevant(strips);
+    if (strips->goal_is_unreachable)
+        stripsMakeUnsolvable(strips);
+    // TODO: remove identical/dominated operators
+    //       (don't forget to keep the one with the minimal cost)
 }
 
 pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)

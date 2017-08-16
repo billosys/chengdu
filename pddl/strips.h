@@ -33,6 +33,15 @@ extern "C" {
 #define PDDL_STRIPS_GROUND_FULL 0x1u
 #define PDDL_STRIPS_GROUND_NAIVE 0x2u
 
+struct pddl_strips_prune_config {
+    int irrelevance;
+};
+typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
+
+#define PDDL_STRIPS_PRUNE_CONFIG_INIT { \
+        1, /* irrelevance */ \
+    }
+
 struct pddl_strips {
     const pddl_t *pddl;
     pddl_facts_t fact; /*!< Set of facts */
@@ -66,6 +75,12 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips);
  * This transformation can be useful for a reachability analysis.
  */
 pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips);
+
+/**
+ * Prune STRIPS planning task according to the configuration.
+ */
+void pddlStripsPrune(pddl_strips_t *strips,
+                     const pddl_strips_prune_config_t *cfg);
 
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
 
