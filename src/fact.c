@@ -197,13 +197,8 @@ static int factSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
 
     ret = pddlFactSetPrivate(pddl, fact);
     if (ret < 0){
-        // TODO
-        fprintf(stderr, "Error PDDL: Invalid definition of fact ");
-        pddlFactPrint(pddl, fact, stderr);
-        fprintf(stderr, ".\n");
-        ERR2("The fact is defined so it should be private for two"
-             " different agents.");
-        return -1;
+        ERR_RET2(-1., "The fact is defined so it is private for two"
+                      " different agents.");
     }
 
     return 0;
