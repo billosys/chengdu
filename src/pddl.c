@@ -73,7 +73,6 @@ static int checkDomainName(pddl_t *pddl)
         TRACE_RET(0);
 
     if (strcmp(problem_domain_name, pddl->domain_name) != 0){
-        // TODO: Dereference of NULL pointer!
         WARN("Domain names does not match: `%s' x `%s'",
              pddl->domain_name, problem_domain_name);
         return 0;
@@ -468,8 +467,6 @@ void pddlNormalize(pddl_t *pddl)
         pddl->goal = pddlCondNormalize(pddl->goal, pddl);
 
     compileOutNonStaticNegPre(pddl);
-    // TODO: Remove actions with conflicting preconditions (see molgen)
-    // TODO: Remove duplicates? (also molgen)
 }
 
 void pddlCompileAwayCondEff(pddl_t *pddl)
