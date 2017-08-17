@@ -20,6 +20,7 @@
 #include <boruvka/alloc.h>
 
 #include "pddl/fdr_part_state.h"
+#include "err.h"
 
 void pddlFDRPartStateInit(pddl_fdr_part_state_t *s,
                           const pddl_fdr_vars_t *vars)
@@ -40,7 +41,7 @@ void pddlFDRPartStateFree(pddl_fdr_part_state_t *s)
 int pddlFDRPartStateSet(pddl_fdr_part_state_t *s, int var, int val)
 {
     if (s->val[var] != PDDL_FDR_VAL_UNDEF)
-        return -1;
+        ERR_RET(-1, "The variable (%d) is already set.", var);
     s->val[var] = val;
     return 0;
 }
