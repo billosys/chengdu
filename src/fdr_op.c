@@ -20,6 +20,7 @@
 #include <boruvka/alloc.h>
 
 #include "pddl/fdr_op.h"
+#include "err.h"
 #include "assert.h"
 
 static int stripsPreToFDRPre(pddl_fdr_part_state_t *fdr_pre,
