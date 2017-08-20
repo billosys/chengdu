@@ -54,7 +54,7 @@ struct pddl_prep_actions {
 };
 typedef struct pddl_prep_actions pddl_prep_actions_t;
 
-void pddlPrepActionsInit(const struct pddl *pddl, pddl_prep_actions_t *as);
+int pddlPrepActionsInit(const struct pddl *pddl, pddl_prep_actions_t *as);
 void pddlPrepActionsFree(pddl_prep_actions_t *as);
 
 /**
@@ -70,14 +70,6 @@ int pddlPrepActionCheck(const pddl_prep_action_t *a,
 int pddlPrepActionCheckFact(const pddl_prep_action_t *a,
                             int pre_i,
                             const pddl_fact_t *fact);
-
-#define PDDL_PREP_ACTION_MATCH_PRE(PDDL, A, F, PI) \
-    (PI) = 0; \
-    for (const pddl_cond_atom_t *__atom; \
-            (PI) < (A)->pre.size \
-                && __atom = PDDL_COND_CAST((A)->pre.cond[(PI)]; ++(PI)) \
-        if (__atom->pred == (F)->pred \
-                && pddlPrepActionCheckPre((PDDL), (A), (PI), (F)))
 
 
 #ifdef __cplusplus

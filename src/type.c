@@ -21,6 +21,7 @@
 #include "pddl/pddl.h"
 #include "pddl/type.h"
 #include "err.h"
+#include "assert.h"
 
 static const char *object_name = "object";
 
@@ -62,17 +63,17 @@ static int setCB(const pddl_lisp_node_t *root,
     pid = 0;
     if (child_type >= 0){
         if (root->child[child_type].value == NULL){
-            ERRN2(root->child + child_type, "Invalid type definition.");
-            return -1;
+            ERR_LISP_RET2(-1, root->child + child_type,
+                          "Invalid typed list. Unexpected expression");
         }
         pid = add(t, root->child[child_type].value);
     }
 
     for (i = child_from; i < child_to; ++i){
-        if (root->child[i].value == NULL){
-            ERRN2(root->child + i, "Invalid type definition.");
-            return -1;
-        }
+        // This is checked in pddlLispParseTypedList()
+        ASSERT(root->child[i].value != NULL);
+        if (root->child[i].value == NULL)
+            ERR_LISP_RET2(-1, root->child + i, "Unexpected expression");
 
         tid = add(t, root->child[i].value);
         if (tid != 0)
@@ -99,8 +100,8 @@ int pddlTypesParse(pddl_t *pddl)
     n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_TYPES);
     if (n != NULL){
         if (pddlLispParseTypedList(n, 1, n->child_size, setCB, types) != 0){
-            ERRN2(n, "Invalid definition of :types");
-            return -1;
+            TRACE_UPDATE_RET(-1, "Invalid definition of :types in %s: ",
+                             pddl->domain_lisp->filename);
         }
     }
 
@@ -270,19 +271,13 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node)
 
     if (node->value != NULL){
         tid = pddlTypesGet(ts, node->value);
-        if (tid < 0){
-            ERRN(node, "Unkown type `%s'", node->value);
-            return -1;
-        }
-
+        if (tid < 0)
+            ERR_LISP_RET(-1, node, "Unkown type `%s'", node->value);
         return tid;
     }
 
-    if (node->child_size < 2
-            || node->child[0].kw != PDDL_KW_EITHER){
-        ERRN2(node, "Invalid type definition");
-        return -1;
-    }
+    if (node->child_size < 2 || node->child[0].kw != PDDL_KW_EITHER)
+        ERR_LISP_RET2(-1, node, "Unknown expression");
 
     if (node->child_size == 2 && node->child[1].value != NULL)
         return pddlTypeFromLispNode(ts, node->child + 1);
@@ -291,13 +286,13 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node)
     either = alloca(sizeof(int) * either_size);
     for (i = 1; i < node->child_size; ++i){
         if (node->child[i].value == NULL){
-            ERRN2(node->child + i, "Invalid (either ...) expression");
-            return -1;
+            ERR_LISP_RET2(-1, node->child + i,
+                          "Invalid (either ...) expression");
         }
         tid = pddlTypesGet(ts, node->child[i].value);
         if (tid < 0){
-            ERRN(node, "Unkown type `%s'", node->child[i].value);
-            return -1;
+            ERR_LISP_RET(-1, node->child + i, "Unkown type `%s'",
+                         node->child[i].value);
         }
 
         either[i - 1] = tid;

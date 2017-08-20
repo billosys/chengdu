@@ -90,14 +90,12 @@ static int parsePred(pddl_t *pddl,
     pddl_pred_t *p;
     set_t set;
 
-    if (n->child_size < 1 || n->child[0].value == NULL){
-        ERRN(n, "Invalid definition of %s.", errname);
-        return -1;
-    }
+    if (n->child_size < 1 || n->child[0].value == NULL)
+        ERR_LISP_RET(-1, n, "Invalid %s", errname);
 
     if (checkDuplicate(ps, n->child[0].value)){
-        ERRN(n, "Duplicate %s `%s'", errname, n->child[0].value);
-        return -1;
+        // TODO: err/warn
+        ERR_LISP_RET(-1, n, "Duplicate %s `%s'", errname, n->child[0].value);
     }
 
     p = pddlPredsAdd(ps);
@@ -106,7 +104,7 @@ static int parsePred(pddl_t *pddl,
     set.owner_var = owner_var;
     if (pddlLispParseTypedList(n, 1, n->child_size, setCB, &set) != 0){
         pddlPredsRemoveLast(ps);
-        return -1;
+        TRACE_UPDATE_RET(-1, "%s `%s': ", errname, n->child[0].value);
     }
 
     p->name = n->child[0].value;
@@ -123,11 +121,8 @@ static int parsePrivatePreds(pddl_t *pddl,
     factor = (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
 
     if (factor){
-        if (n->child_size < 2
-                || n->child[0].kw != PDDL_KW_PRIVATE){
-            ERRN2(n, "Invalid definition of :private predicate.");
-            return -1;
-        }
+        if (n->child_size < 2 || n->child[0].kw != PDDL_KW_PRIVATE)
+            ERR_LISP_RET2(-1, n, "Invalid definition of :private predicate");
 
         owner_var = NULL;
         from = 1;
@@ -138,8 +133,7 @@ static int parsePrivatePreds(pddl_t *pddl,
                 || n->child[1].value == NULL
                 || n->child[1].value[0] != '?'
                 || (n->child[2].value != NULL && n->child_size < 5)){
-            ERRN2(n, "Invalid definition of :private predicate.");
-            return -1;
+            ERR_LISP_RET2(-1, n, "Invalid definition of :private predicate");
         }
 
         owner_var = n->child[1].value;
@@ -154,7 +148,7 @@ static int parsePrivatePreds(pddl_t *pddl,
     for (i = from; i < n->child_size; ++i){
         if (parsePred(pddl, n->child + i, owner_var,
                       "private predicate", ps) != 0){
-            return -1;
+            TRACE_RET(-1);
         }
 
         ps->pred[ps->size - 1].is_private = 1;
@@ -205,14 +199,16 @@ int pddlPredsParse(pddl_t *pddl)
     // Parse non :private predicates
     for (i = 1; i < to; ++i){
         if (parsePred(pddl, n->child + i, NULL, "predicate", &pddl->pred) != 0)
-            return -1;
+            TRACE_UPDATE_RET(-1, "While parsing :predicates in %s: ",
+                             pddl->domain_lisp->filename);
     }
 
     if (private){
         // Parse :private predicates
         for (i = to; i < n->child_size; ++i){
             if (parsePrivatePreds(pddl, n->child + i, &pddl->pred) != 0)
-                return -1;
+                TRACE_UPDATE_RET(-1, "While parsing private :predicates in"
+                                 " %s: ", pddl->domain_lisp->filename);
         }
     }
 
@@ -230,15 +226,17 @@ int pddlFuncsParse(pddl_t *pddl)
 
     for (i = 1; i < n->child_size; ++i){
         if (parsePred(pddl, n->child + i, NULL, "function", &pddl->func) != 0)
-            return -1;
+            TRACE_UPDATE_RET(-1, "While parsing :functions in %s: ",
+                             pddl->domain_lisp->filename);
 
         if (i + 2 < n->child_size
                 && n->child[i + 1].value != NULL
                 && strcmp(n->child[i + 1].value, "-") == 0){
             if (n->child[i + 2].value == NULL
                     || strcmp(n->child[i + 2].value, "number") != 0){
-                ERRN2(n->child + i + 2, "Only number functions are supported.");
-                return -1;
+                ERR_RET(-1, "While parsing :functions in %s: Only number"
+                            " functions are supported (line %d).",
+                        pddl->domain_lisp->filename, n->child[i + 2].lineno);
             }
             i += 2;
         }

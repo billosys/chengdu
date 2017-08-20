@@ -20,6 +20,7 @@
 #include <boruvka/alloc.h>
 
 #include "pddl/fdr_op.h"
+#include "err.h"
 #include "assert.h"
 
 static int stripsPreToFDRPre(pddl_fdr_part_state_t *fdr_pre,
@@ -35,7 +36,7 @@ static int stripsPreToFDRPre(pddl_fdr_part_state_t *fdr_pre,
         ASSERT(vars->strips_fact_id_to_val[fact_id] != NULL);
         val = vars->strips_fact_id_to_val[fact_id];
         if (pddlFDRPartStateSet(fdr_pre, val->var_id, val->val_id) != 0)
-            return -1;
+            TRACE_RET(-1);
     }
 
     return 0;
@@ -55,10 +56,8 @@ static int stripsEffToFDREff(pddl_fdr_part_state_t *fdr_eff,
     BOR_ISET_FOR_EACH(strips_add_eff, fact_id){
         ASSERT(vars->strips_fact_id_to_val[fact_id] != NULL);
         val = vars->strips_fact_id_to_val[fact_id];
-        if (pddlFDRPartStateSet(fdr_eff, val->var_id, val->val_id) != 0){
-            // TODO: Report warning
-            return -1;
-        }
+        if (pddlFDRPartStateSet(fdr_eff, val->var_id, val->val_id) != 0)
+            TRACE_RET(-1);
     }
 
     // and then find delete effects that are not set and set the
@@ -72,10 +71,8 @@ static int stripsEffToFDREff(pddl_fdr_part_state_t *fdr_eff,
         // Get "none of those" value which is the 
         ASSERT(vars->var[val->var_id].none_of_those != NULL);
         val = vars->var[val->var_id].none_of_those;
-        if (pddlFDRPartStateSet(fdr_eff, val->var_id, val->val_id) != 0){
-            // TODO: Report warning
-            return -1;
-        }
+        if (pddlFDRPartStateSet(fdr_eff, val->var_id, val->val_id) != 0)
+            TRACE_RET(-1);
     }
 
     return 0;
@@ -93,14 +90,11 @@ int pddlFDROpInit(pddl_fdr_op_t *op,
         op->name = BOR_STRDUP(strips_op->name);
     op->cost = strips_op->cost;
 
-    if (stripsPreToFDRPre(&op->pre, &strips_op->pre, vars) != 0){
-        // TODO: Report warning
-        return -1;
-    }
+    if (stripsPreToFDRPre(&op->pre, &strips_op->pre, vars) != 0)
+        TRACE_RET(-1);
     if (stripsEffToFDREff(&op->eff, &strips_op->add_eff,
                           &strips_op->del_eff, vars) != 0){
-        // TODO: Report warning
-        return -1;
+        TRACE_RET(-1);
     }
 
     if (strips_op->cond_eff_size == 0)
@@ -111,14 +105,12 @@ int pddlFDROpInit(pddl_fdr_op_t *op,
     for (int cei = 0; cei < op->cond_eff_size; ++cei){
         if (stripsPreToFDRPre(&op->cond_eff[cei].pre,
                               &strips_op->cond_eff[cei].pre, vars) != 0){
-            // TODO: Report warning
-            return -1;
+            TRACE_RET(-1);
         }
         if (stripsEffToFDREff(&op->cond_eff[cei].eff,
                               &strips_op->cond_eff[cei].add_eff,
                               &strips_op->cond_eff[cei].del_eff, vars) != 0){
-            // TODO: Report warning
-            return -1;
+            TRACE_RET(-1);
         }
     }
 

@@ -209,7 +209,7 @@ static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p)
     return n;
 }
 
-static void _negate(pddl_cond_t *c, const pddl_t *pddl)
+static int _negate(pddl_cond_t *c, const pddl_t *pddl)
 {
     if (c->type == PDDL_COND_ATOM){
         pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
@@ -226,20 +226,25 @@ static void _negate(pddl_cond_t *c, const pddl_t *pddl)
         pddl_cond_t *ch;
         BOR_LIST_FOR_EACH(&p->part, item){
             ch = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            _negate(ch, pddl);
+            if (_negate(ch, pddl) != 0)
+                TRACE_RET(-1);
         }
 
     }else{
-        ERR2("pddlCondNegatePre() can be used only on normalized"
-             " preconditions!");
-        exit(-1);
+        ERR_RET2(-1, "pddlCondNegatePre() can be used only on normalized"
+                     " preconditions!");
     }
+
+    return 0;
 }
 
 pddl_cond_t *pddlCondNegatePre(const pddl_cond_t *cond, const pddl_t *pddl)
 {
     pddl_cond_t *c = pddlCondClone(cond);
-    _negate(c, pddl);
+    if (_negate(c, pddl) != 0){
+        pddlCondDel(c);
+        TRACE_RET(NULL);
+    }
     return c;
 }
 
@@ -696,15 +701,14 @@ static int parseAtomArg(pddl_cond_atom_arg_t *arg,
 
     if (root->value[0] == '?'){
         if (ctx->params == NULL){
-            ERRN(root, "Unexpected parameter `%s' :: %s", root->value,
-                 ctx->err);
-            return -1;
+            ERR_LISP_RET(-1, root, "%sUnexpected variable `%s'",
+                         ctx->err, root->value);
         }
 
         v = pddlParamsGetId(ctx->params, root->value);
         if (v < 0){
-            ERRN(root, "Invalid paramenter `%s' :: %s", root->value, ctx->err);
-            return -1;
+            ERR_LISP_RET(-1, root, "%sUnkown variable `%s'",
+                         ctx->err, root->value);
         }
         arg->param = v;
         arg->obj = -1;
@@ -712,8 +716,8 @@ static int parseAtomArg(pddl_cond_atom_arg_t *arg,
     }else{
         v = pddlObjsGet(ctx->objs, root->value);
         if (v < 0){
-            ERRN(root, "Unkown constant `%s' :: %s", root->value, ctx->err);
-            return -1;
+            ERR_LISP_RET(-1, root, "%sUnkown constant/object `%s'",
+                         ctx->err, root->value);
         }
         arg->param = -1;
         arg->obj = v;
@@ -732,24 +736,27 @@ static pddl_cond_t *parseAtom(const pddl_lisp_node_t *root,
 
     // Get predicate name
     name = pddlLispNodeHead(root);
-    if (name == NULL){
-        ERRN(root, "Invalid atom: missing head of expression :: %s", ctx->err);
-        return NULL;
-    }
+    if (name == NULL)
+        ERR_LISP_RET(NULL, root, "%sMissing head of the expression", ctx->err);
 
     // And resolve it against known predicates
     pred = pddlPredsGet(ctx->preds, name);
-    if (pred == -1){
-        ERRN(root, "Unkown predicate `%s' :: %s", name, ctx->err);
-        return NULL;
+    if (pred == -1)
+        ERR_LISP_RET(NULL, root, "%sUnkown predicate `%s'", ctx->err, name);
+
+    // Check correct number of predicates
+    if (root->child_size - 1 != ctx->preds->pred[pred].param_size){
+        ERR_LISP_RET(NULL, root,
+                     "%sInvalid number of arguments of the predicate `%s'",
+                     ctx->err, name);
     }
 
     // Check that all children are terminals
     for (i = 1; i < root->child_size; ++i){
         if (root->child[i].value == NULL){
-            ERRN(root, "Invalid instantiation of atom `%s' :: %s",
-                 name, ctx->err);
-            return NULL;
+            ERR_LISP_RET(NULL, root->child + i,
+                         "%sInvalid %d'th argument of the predicate `%s'",
+                         ctx->err, i, name);
         }
     }
 
@@ -760,7 +767,7 @@ static pddl_cond_t *parseAtom(const pddl_lisp_node_t *root,
     for (i = 0; i < atom->arg_size; ++i){
         if (parseAtomArg(atom->arg + i, root->child + i + 1, ctx) != 0){
             condAtomDel(atom);
-            return NULL;
+            TRACE_RET(NULL);
         }
     }
     atom->neg = negated;
@@ -773,7 +780,7 @@ static pddl_cond_t *parseAssign(const pddl_lisp_node_t *root,
                                 int negated)
 {
     pddl_cond_assign_t *assign;
-    pddl_cond_atom_t *fvalue;
+    pddl_cond_t *fvalue;
     parse_ctx_t sub_ctx;
 
     if (root->child_size != 3
@@ -781,23 +788,28 @@ static pddl_cond_t *parseAssign(const pddl_lisp_node_t *root,
             || root->child[1].child_size != 1
             || root->child[1].child[0].value == NULL
             || strcmp(root->child[1].child[0].value, "total-cost") != 0){
-        ERRN(root, "Only (increase (total-cost) int-value) is supported"
-                   " :: %s", ctx->err);
-        return NULL;
+        ERR_LISP_RET(NULL, root,
+                     "%sOnly (increase (total-cost) int-value) is supported;",
+                     ctx->err);
     }
 
     if (root->child[2].value != NULL){
         assign = condAssignNew();
         assign->value = atoi(root->child[2].value);
+        if (assign->value < 0){
+            ERR_LISP_RET(NULL, root,
+                         "%sOnly non-negative actions costs are supported;",
+                         ctx->err);
+        }
 
     }else{
         sub_ctx = *ctx;
         sub_ctx.preds = sub_ctx.funcs;
-        fvalue = (pddl_cond_atom_t *)parseAtom(root->child + 2, &sub_ctx, negated);
+        fvalue = parseAtom(root->child + 2, &sub_ctx, negated);
         if (fvalue == NULL)
-            return NULL;
+            TRACE_RET(NULL);
         assign = condAssignNew();
-        assign->fvalue = fvalue;
+        assign->fvalue = (pddl_cond_atom_t *)fvalue;
     }
 
     return &assign->cls;
@@ -817,7 +829,7 @@ static pddl_cond_t *parsePart(int part_type,
         cond = parse(root->child + i, ctx, negated);
         if (cond == NULL){
             condPartDel(part);
-            return NULL;
+            TRACE_RET(NULL);
         }
         borListAppend(&part->part, &cond->conn);
     }
@@ -835,22 +847,22 @@ static pddl_cond_t *parseImply(const pddl_lisp_node_t *left,
 
     if (negated){
         if ((cleft = parse(left, ctx, 0)) == NULL)
-            return NULL;
+            TRACE_RET(NULL);
 
         if ((cright = parse(right, ctx, 1)) == NULL){
             pddlCondDel(cleft);
-            return NULL;
+            TRACE_RET(NULL);
         }
 
         part = condPartNew(PDDL_COND_AND);
 
     }else{
         if ((cleft = parse(left, ctx, 1)) == NULL)
-            return NULL;
+            TRACE_RET(NULL);
 
         if ((cright = parse(right, ctx, 0)) == NULL){
             pddlCondDel(cleft);
-            return NULL;
+            TRACE_RET(NULL);
         }
 
         part = condPartNew(PDDL_COND_OR);
@@ -874,7 +886,7 @@ static int parseQuantParams(pddl_params_t *params,
     // Parse all parameters of the quantifier
     if (pddlParamsParse(params, root, ctx->types) != 0){
         pddlParamsFree(params);
-        return -1;
+        TRACE_RET(-1);
     }
 
     // And also add all global parameters that are not shadowed
@@ -911,20 +923,20 @@ static pddl_cond_t *parseQuant(int quant_type,
             || root->child[1].value != NULL
             || root->child[2].value != NULL){
         if (quant_type == PDDL_COND_FORALL){
-            ERRN(root, "Invalid (forall ...) condition :: %s", ctx->err);
+            ERR_LISP(root, "%sInvalid (forall ...) condition", ctx->err);
         }else{
-            ERRN(root, "Invalid (exists ...) condition :: %s", ctx->err);
+            ERR_LISP(root, "%sInvalid (exists ...) condition", ctx->err);
         }
         return NULL;
     }
 
     if (parseQuantParams(&params, root->child + 1, ctx) != 0)
-        return NULL;
+        TRACE_RET(NULL);
 
     if (params.size == 0){
         pddlParamsFree(&params);
-        ERRN(root, "Missing arguments in quantifier :: %s", ctx->err);
-        return NULL;
+        ERR_LISP_RET(NULL, root, "%sMissing variables in the quantifier",
+                     ctx->err);
     }
 
     sub_ctx = *ctx;
@@ -932,7 +944,7 @@ static pddl_cond_t *parseQuant(int quant_type,
     cond = parse(root->child + 2, &sub_ctx, negated);
     if (cond == NULL){
         pddlParamsFree(&params);
-        return NULL;
+        TRACE_RET(NULL);
     }
 
     q = condQuantNew(quant_type);
@@ -951,16 +963,15 @@ static pddl_cond_t *parseWhen(const pddl_lisp_node_t *root,
     if (root->child_size != 3
             || root->child[1].value != NULL
             || root->child[2].value != NULL){
-        ERRN(root, "Invalid (when ...) condition :: %s", ctx->err);
-        return NULL;
+        ERR_LISP_RET(NULL, root, "%sInvalid (when ...)", ctx->err);
     }
 
     if ((pre = parse(root->child + 1, ctx, 0)) == NULL)
-        return NULL;
+        TRACE_RET(NULL);
 
     if ((eff = parse(root->child + 2, ctx, 0)) == NULL){
         pddlCondDel(pre);
-        return NULL;
+        TRACE_RET(NULL);
     }
 
     w = condWhenNew();
@@ -978,18 +989,14 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
     kw = pddlLispNodeHeadKw(root);
 
     if (kw == PDDL_KW_NOT){
-        if (root->child_size != 2){
-            ERRN(root, "Invalid (not ...) :: %s", ctx->err);
-            return NULL;
-        }
+        if (root->child_size != 2)
+            ERR_LISP_RET(NULL, root, "%sInvalid (not ...)", ctx->err);
 
         return parse(root->child + 1, ctx, !negated);
 
     }else if (kw == PDDL_KW_AND){
-        if (root->child_size <= 1){
-            ERRN(root, "Invalid (and ...) :: %s", ctx->err);
-            return NULL;
-        }
+        if (root->child_size <= 1)
+            ERR_LISP_RET(NULL, root, "%sEmpty (and) expression", ctx->err);
 
         if (negated){
             return parsePart(PDDL_COND_OR, root, ctx, negated);
@@ -998,10 +1005,8 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
         }
 
     }else if (kw == PDDL_KW_OR){
-        if (root->child_size <= 1){
-            ERRN(root, "Invalid (or ...) :: %s", ctx->err);
-            return NULL;
-        }
+        if (root->child_size <= 1)
+            ERR_LISP_RET(NULL, root, "%sEmpty (or) expression", ctx->err);
 
         if (negated){
             return parsePart(PDDL_COND_AND, root, ctx, negated);
@@ -1010,10 +1015,9 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
         }
 
     }else if (kw == PDDL_KW_IMPLY){
-        if (root->child_size != 3){
-            ERRN(root, "Invalid (imply ...) :: %s", ctx->err);
-            return NULL;
-        }
+        if (root->child_size != 3)
+            ERR_LISP_RET(NULL, root, "%s(imply ...) requires two arguments",
+                         ctx->err);
 
         return parseImply(root->child + 1, root->child + 2, ctx, negated);
 
@@ -1044,15 +1048,12 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
         return parseAtom(root, ctx, negated);
     }
 
-    if (root->child_size >= 1
-            && root->child[0].value != NULL){
-        ERRN(root, "Unexpected token `%s' :: %s",
-                   root->child[0].value, ctx->err);
+    if (root->child_size >= 1 && root->child[0].value != NULL){
+        ERR_LISP_RET(NULL, root, "%sUnexpected token `%s'",
+                     ctx->err, root->child[0].value);
     }else{
-        ERRN(root, "Unexpected token :: %s", ctx->err);
+        ERR_LISP_RET(NULL, root, "%sUnexpected token", ctx->err);
     }
-
-    return NULL;
 }
 
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
@@ -1061,6 +1062,7 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
                            const char *err)
 {
     parse_ctx_t ctx;
+    pddl_cond_t *c;
 
     ctx.types = &pddl->type;
     ctx.objs = &pddl->obj;
@@ -1069,7 +1071,10 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
     ctx.params = params;
     ctx.err = err;
 
-    return parse(root, &ctx, 0);
+    c = parse(root, &ctx, 0);
+    if (c == NULL)
+        TRACE_RET(NULL);
+    return c;
 }
 
 pddl_cond_t *pddlCondEmptyPre(void)
@@ -1118,7 +1123,7 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
         BOR_LIST_FOR_EACH(&p->part, item){
             c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
             if (pddlCondCheckPre(c, require, verbose) != 0)
-                return -1;
+                TRACE_RET(-1);
         }
 
         return 0;

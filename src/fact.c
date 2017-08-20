@@ -197,12 +197,8 @@ static int factSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
 
     ret = pddlFactSetPrivate(pddl, fact);
     if (ret < 0){
-        fprintf(stderr, "Error PDDL: Invalid definition of fact ");
-        pddlFactPrint(pddl, fact, stderr);
-        fprintf(stderr, ".\n");
-        ERR2("The fact is defined so it should be private for two"
-             " different agents.");
-        return -1;
+        ERR_RET2(-1., "The fact is defined so it is private for two"
+                      " different agents.");
     }
 
     return 0;
@@ -219,16 +215,12 @@ static int parseObjsIntoArr(const pddl_lisp_node_t *n,
     *out = obj = BOR_CALLOC_ARR(int, size);
     for (i = 0; i < size; ++i){
         c = n->child + i + from;
-        if (c->value == NULL){
-            ERRN2(c, "Expecting object, got something else.");
-            return -1;
-        }
+        if (c->value == NULL)
+            ERR_LISP_RET2(-1, c, "Expecting object, got something else");
 
         obj[i] = pddlObjsGet(objs, c->value);
-        if (obj[i] < 0){
-            ERRN(c, "Unknown object `%s'.", c->value);
-            return -1;
-        }
+        if (obj[i] < 0)
+            ERR_LISP_RET(-1, c, "Unknown object `%s'.", c->value);
     }
 
     return 0;
@@ -247,28 +239,29 @@ static int parseFunc(const pddl_lisp_node_t *n,
     if (nfunc->child_size < 1
             || nfunc->child[0].value == NULL
             || nval->value == NULL){
-        ERRN2(n, "Invalid function assignement.");
-        return -1;
+        ERR_LISP_RET2(-1, n, "Invalid function assignement");
     }
 
     pddlFactInit(&func);
     func.func_val = atoi(nval->value);
     func.pred = pddlPredsGet(&pddl->func, nfunc->child[0].value);
     if (func.pred < 0){
-        ERRN(nfunc, "Unknown function `%s'", nfunc->child[0].value);
         pddlFactFree(&func);
-        return -1;
+        ERR_LISP_RET(-1, nfunc, "Unknown function `%s'", nfunc->child[0].value);
     }
 
     if (parseObjsIntoArr(nfunc, &pddl->obj, 1, nfunc->child_size,
                          &func.arg, &func.arg_size) != 0){
         pddlFactFree(&func);
-        return -1;
+        TRACE_RET(-1);
     }
+
+    if (func.arg_size != pddl->func.pred[func.pred].param_size)
+        ERR_LISP_RET2(-1, n, "Invalid number of arguments for the function");
 
     if (factSetPrivate(pddl, &func) != 0){
         pddlFactFree(&func);
-        return -1;
+        TRACE_RET(-1);
     }
 
     pddlFactsAdd(fs, &func);
@@ -286,20 +279,24 @@ static int parseFact(const pddl_lisp_node_t *n,
     pddlFactInit(&fact);
     fact.pred = pddlPredsGet(&pddl->pred, head);
     if (fact.pred < 0){
-        ERRN(n, "Unkwnown predicate `%s'.", head);
         pddlFactFree(&fact);
-        return -1;
+        ERR_LISP_RET(-1, n, "Unkwnown predicate `%s'.", head);
     }
 
     if (parseObjsIntoArr(n, &pddl->obj, 1, n->child_size,
                          &fact.arg, &fact.arg_size) != 0){
         pddlFactFree(&fact);
-        return -1;
+        TRACE_RET(-1);
+    }
+
+    if (fact.arg_size != pddl->pred.pred[fact.pred].param_size){
+        ERR_LISP_RET(-1, n, "Invalid number of arguments for the predicate %s",
+                     head);
     }
 
     if (factSetPrivate(pddl, &fact) != 0){
         pddlFactFree(&fact);
-        return -1;
+        TRACE_RET(-1);
     }
 
     pddlFactsAdd(fs, &fact);
@@ -311,10 +308,8 @@ static int parseFactFunc(pddl_t *pddl, const pddl_lisp_node_t *n)
 {
     const char *head;
 
-    if (n->child_size < 1){
-        ERRN2(n, "Invalid fact in :init.");
-        return -1;
-    }
+    if (n->child_size < 1)
+        ERR_LISP_RET2(-1, n, "Invalid expression in :init.");
 
     head = pddlLispNodeHead(n);
     if (strcmp(head, "=") == 0
@@ -332,15 +327,15 @@ int pddlFactsParseInit(pddl_t *pddl)
     int i;
 
     ninit = pddlLispFindNode(&pddl->problem_lisp->root, PDDL_KW_INIT);
-    if (ninit == NULL){
-        ERR2("Missing :init.");
-        return -1;
-    }
+    if (ninit == NULL)
+        ERR_RET(-1, "Missing :init in %s.", pddl->problem_lisp->filename);
 
     for (i = 1; i < ninit->child_size; ++i){
         n = ninit->child + i;
-        if (parseFactFunc(pddl, n) != 0)
-            return -1;
+        if (parseFactFunc(pddl, n) != 0){
+            TRACE_UPDATE_RET(-1, "While parsing :init in %s: ",
+                             pddl->problem_lisp->filename);
+        }
     }
 
     return 0;

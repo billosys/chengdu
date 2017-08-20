@@ -21,6 +21,7 @@
 
 #include "pddl/param.h"
 #include "err.h"
+#include "assert.h"
 
 void pddlParamInit(pddl_param_t *param)
 {
@@ -104,17 +105,13 @@ static int setParams(const pddl_lisp_node_t *root,
     }
 
     for (i = child_from; i < child_to; ++i){
-        if (root->child[i].value == NULL){
-            ERRN2(root->child + i, "Invalid parameter definition:"
-                                   " Unexpected expression.");
-            return -1;
-        }
+        ASSERT(root->child[i].value != NULL);
+        if (root->child[i].value == NULL)
+            ERR_LISP_RET2(-1, root->child + i, "Unexpected expression");
 
         if (root->child[i].value[0] != '?'){
-            ERRN(root->child + i, "Invalid parameter definition:"
-                                  " Expected variable, got %s.",
-                 root->child[i].value);
-            return -1;
+            ERR_LISP_RET(-1, root->child + i, "Expected variable, got `%s'.",
+                         root->child[i].value);
         }
 
         param = pddlParamsAdd(params);
@@ -135,7 +132,7 @@ int pddlParamsParse(pddl_params_t *params,
     set_param.types = types;
     if (pddlLispParseTypedList(root, 0, root->child_size,
                                 setParams, &set_param) != 0)
-        return -1;
+        TRACE_RET(-1);
     return 0;
 }
 
@@ -158,7 +155,7 @@ int pddlParamsParseAgent(pddl_params_t *params,
     set_param.param = params;
     set_param.types = types;
     if (pddlLispParseTypedList(n, nid + 1, to, setParams, &set_param) != 0)
-        return -1;
+        TRACE_RET(-1);
 
     params->param[params->size - 1].is_agent = 1;
     return to;

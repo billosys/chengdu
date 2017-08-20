@@ -29,7 +29,6 @@ extern "C" {
 
 struct pddl;
 
-// TODO: Support for (:either ...) as a type of parameter
 struct pddl_pred {
     const char *name; /*!< Name of the predicate */
     int *param;       /*!< IDs of types of parameters */

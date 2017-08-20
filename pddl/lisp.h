@@ -30,6 +30,7 @@ extern "C" {
 typedef enum {
     PDDL_KW_DEFINE = 1,
     PDDL_KW_DOMAIN,
+    PDDL_KW_DOMAIN2,
     PDDL_KW_REQUIREMENTS,
     PDDL_KW_TYPES,
     PDDL_KW_CONSTANTS,
@@ -98,6 +99,7 @@ struct pddl_lisp_node {
 };
 
 struct pddl_lisp {
+    char *filename;
     pddl_lisp_node_t root;
     int fd;
     char *data;
@@ -137,14 +139,14 @@ typedef int (*pddl_lisp_parse_typed_list_fn)(
 /**
  * Parse typed list.
  */
-int pddlLispParseTypedList(const pddl_lisp_node_t *root, int from, int to,
+int pddlLispParseTypedList(const pddl_lisp_node_t *root,
+                           int child_from, int child_to,
                            pddl_lisp_parse_typed_list_fn cb, void *ud);
 
 /**
  * Copy pddl-lisp-node from src to dst.
  */
-void pddlLispNodeCopy(pddl_lisp_node_t *dst,
-                          const pddl_lisp_node_t *src);
+void pddlLispNodeCopy(pddl_lisp_node_t *dst, const pddl_lisp_node_t *src);
 
 /**
  * Frees pddl-lisp-node -- use it as pair function to *Copy().

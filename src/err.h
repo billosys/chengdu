@@ -17,55 +17,87 @@
  * See the License for more information.
  */
 
-#ifndef __PDDL_ERR_H__
-#define __PDDL_ERR_H__
+#ifndef ___PDDL_ERR_H__
+#define ___PDDL_ERR_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-#define ERR(format, ...) do { \
-    fprintf(stderr, "Error PDDL: " format "\n", __VA_ARGS__); \
-    fflush(stderr); \
-    } while (0)
-#define ERR2(text) do { \
-    fprintf(stderr, "Error PDDL: " text "\n"); \
-    fflush(stderr); \
+void _pddlErrReset(void);
+void _pddlErr(const char *filename, int line, const char *func,
+              const char *format, ...);
+void _pddlErrPrepend(const char *format, ...);
+void _pddlTrace(const char *filename, int line, const char *func);
+void _pddlWarn(const char *filename, int line, const char *func,
+               const char *format, ...);
+
+#define TRACE _pddlTrace(__FILE__, __LINE__, __func__)
+#define TRACE_RET(V) do { \
+        TRACE; \
+        return (V); \
     } while (0)
 
-#define ERRN(NODE, format, ...) do { \
-    fprintf(stderr, "Error PDDL: Line %d: " format "\n", \
-            (NODE)->lineno, __VA_ARGS__); \
-    fflush(stderr); \
+#define TRACE_UPDATE(format, ...) do { \
+        _pddlErrPrepend(format, __VA_ARGS__); \
+        TRACE; \
     } while (0)
-#define ERRN2(NODE, text) do { \
-    fprintf(stderr, "Error PDDL: Line %d: " text "\n", \
-            (NODE)->lineno); \
-    fflush(stderr); \
+#define TRACE_UPDATE_RET(V, format, ...) do { \
+        _pddlErrPrepend(format, __VA_ARGS__); \
+        TRACE_RET(V); \
+    } while (0)
+
+#define ERR(format, ...) do { \
+        _pddlErr(__FILE__, __LINE__, __func__, format, __VA_ARGS__); \
+    } while (0)
+#define ERR2(msg) do { \
+        _pddlErr(__FILE__, __LINE__, __func__, msg); \
+    } while (0)
+#define ERR_RET(V, format, ...) do { \
+        ERR(format, __VA_ARGS__); \
+        return (V); \
+    } while (0)
+#define ERR_RET2(V, msg) do { \
+        ERR2(msg); \
+        return (V); \
+    } while (0)
+
+#define ERR_LISP(N, format, ...) do { \
+        ERR(format " on line %d.", __VA_ARGS__, (N)->lineno); \
+    } while (0)
+#define ERR_LISP2(N, msg) do { \
+        ERR(msg " on line %d.", (N)->lineno); \
+    } while (0)
+#define ERR_LISP_RET(V, N, format, ...) do { \
+        ERR_LISP(N, format, __VA_ARGS__); \
+        return (V); \
+    } while (0)
+#define ERR_LISP_RET2(V, N, msg) do { \
+        ERR_LISP2(N, msg); \
+        return (V); \
+    } while (0)
+
+
+#define FATAL(format, ...) do { \
+        fprintf(stderr, "Fatal Error: %s:%d [%s]: " format, \
+                __FILE__, __LINE__, __func__, __VA_ARGS__); \
+        exit(-1); \
+    } while (0)
+#define FATAL2(msg) do { \
+        fprintf(stderr, "Fatal Error: %s:%d [%s]: " msg, \
+                __FILE__, __LINE__, __func__); \
+        exit(-1); \
     } while (0)
 
 #define WARN(format, ...) do { \
-    fprintf(stderr, "Warning PDDL: " format "\n", __VA_ARGS__); \
-    fflush(stderr); \
+        _pddlWarn(__FILE__, __LINE__, __func__, format, __VA_ARGS__); \
     } while (0)
-#define WARN2(text) do { \
-    fprintf(stderr, "Warning PDDL: " text "\n"); \
-    fflush(stderr); \
-    } while (0)
-
-#define ERR_F(comm, format, ...) do { \
-    fprintf(stderr, "[%d] Error Factored PDDL: " format "\n", \
-            (comm)->node_id, __VA_ARGS__); \
-    fflush(stderr); \
-    } while (0)
-#define ERR2_F(comm, text) do { \
-    fprintf(stderr, "[%d] Error PDDL: " text "\n", (comm)->node_id); \
-    fflush(stderr); \
+#define WARN2(msg) do { \
+        _pddlWarn(__FILE__, __LINE__, __func__, msg); \
     } while (0)
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* __PDDL_ERR_H__ */
-
+#endif /* ___PDDL_ERR_H__ */
