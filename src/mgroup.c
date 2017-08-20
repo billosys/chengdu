@@ -19,7 +19,9 @@
 
 #include <boruvka/alloc.h>
 #include <boruvka/sort.h>
+#include <boruvka/lp.h>
 #include "pddl/mgroup.h"
+#include "err.h"
 
 void pddlMGroupInit(pddl_mgroup_t *mg)
 {
@@ -32,20 +34,30 @@ void pddlMGroupFree(pddl_mgroup_t *mg)
     borISetFree(&mg->fact);
 }
 
-pddl_mgroups_t *pddlMGroupsNew(void)
+void pddlMGroupsInit(pddl_mgroups_t *mgs)
 {
-    pddl_mgroups_t *mgs;
-    mgs = BOR_ALLOC(pddl_mgroups_t);
     bzero(mgs, sizeof(*mgs));
-    return mgs;
 }
 
-void pddlMGroupsDel(pddl_mgroups_t *mgs)
+void pddlMGroupsFree(pddl_mgroups_t *mgs)
 {
     for (int i = 0; i < mgs->size; ++i)
         pddlMGroupFree(mgs->g + i);
     if (mgs->g != NULL)
         BOR_FREE(mgs->g);
+}
+
+pddl_mgroups_t *pddlMGroupsNew(void)
+{
+    pddl_mgroups_t *mgs;
+    mgs = BOR_ALLOC(pddl_mgroups_t);
+    pddlMGroupsInit(mgs);
+    return mgs;
+}
+
+void pddlMGroupsDel(pddl_mgroups_t *mgs)
+{
+    pddlMGroupsFree(mgs);
     BOR_FREE(mgs);
 }
 
@@ -66,6 +78,95 @@ pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg)
     return g;
 }
 
+
+int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs)
+{
+    pddl_mgroup_t *mg;
+    bor_lp_t *lp;
+    unsigned lp_flags;
+    bor_iset_t predel, fa_mgroup;
+    int rows, fact;
+    double val, *obj;
+
+    if (!borLPSolverAvailable(BOR_LP_DEFAULT)){
+        ERR_RET2(-1, "Cannot compute fam-groups, because ILP solver is not"
+                     " avaiable.");
+    }
+
+    if (strips->has_cond_eff){
+        ERR_RET2(-1, "Cannot compute fam-groups on problems with conditional"
+                     " effects. (They can be compiled away.)");
+    }
+
+    lp_flags  = BOR_LP_DEFAULT;
+    lp_flags |= BOR_LP_NUM_THREADS(1); // TODO: Parametrize
+    lp_flags |= BOR_LP_MAX;
+    rows = strips->op.op_size + 1;
+    lp = borLPNew(rows, strips->fact.fact_size, lp_flags);
+
+    // Set up coeficients in the objective function and set up binary
+    // variables
+    for (int i = 0; i < strips->fact.fact_size; ++i){
+        borLPSetObj(lp, i, 1.);
+        borLPSetVarBinary(lp, i);
+    }
+
+    // Initial state constraintf
+    BOR_ISET_FOR_EACH(&strips->init, fact)
+        borLPSetCoef(lp, 0, fact, 1.);
+    borLPSetRHS(lp, 0, 1., 'L');
+
+    // Operator constraints
+    borISetInit(&predel);
+    for (int oi = 0; oi < strips->op.op_size; ++oi){
+        const pddl_strips_op_t *op = strips->op.op[oi];
+        BOR_ISET_FOR_EACH(&op->add_eff, fact)
+            borLPSetCoef(lp, oi + 1, fact, 1.);
+
+        borISetEmpty(&predel);
+        borISetUnion(&predel, &op->pre);
+        borISetIntersect(&predel, &op->del_eff);
+        BOR_ISET_FOR_EACH(&predel, fact)
+            borLPSetCoef(lp, oi + 1, fact, -1.);
+        borLPSetRHS(lp, oi + 1, 0., 'L');
+    }
+    borISetFree(&predel);
+
+    borISetInit(&fa_mgroup);
+    obj = BOR_ALLOC_ARR(double, strips->fact.fact_size);
+    while (borLPSolve(lp, &val, obj) == 0 && val > 0.5){
+        double rhs = 1.;
+        char sense = 'G';
+        borLPAddRows(lp, 1, &rhs, &sense);
+        borISetEmpty(&fa_mgroup);
+        for (int i = 0; i < strips->fact.fact_size; ++i){
+            if (obj[i] < 0.5){
+                borLPSetCoef(lp, rows, i, 1.);
+            }else{
+                borISetAdd(&fa_mgroup, i);
+            }
+        }
+        mg = pddlMGroupsAdd(mgs, &fa_mgroup);
+        mg->is_fa = 1;
+        ++rows;
+    }
+    BOR_FREE(obj);
+    borISetFree(&fa_mgroup);
+
+    borLPDel(lp);
+
+    return 0;
+}
+
+pddl_mgroups_t *pddlMGroupsFANew(const pddl_strips_t *strips)
+{
+    pddl_mgroups_t *mgs = pddlMGroupsNew();
+    if (pddlMGroupsFA(strips, mgs) != 0){
+        pddlMGroupsDel(mgs);
+        TRACE_RET(NULL);
+    }
+    return mgs;
+}
 
 
 static int prettyMutexCmp(const void *a, const void *b, void *_fs)

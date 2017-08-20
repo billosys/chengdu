@@ -30,26 +30,36 @@ void pddlMutexFree(pddl_mutex_t *m)
     borISetFree(&m->fact);
 }
 
-pddl_mutexes_t *pddlMutexesNew(void)
+void pddlMutexesInit(pddl_mutexes_t *ms)
 {
-    pddl_mutexes_t *ms;
-
-    ms = BOR_ALLOC(pddl_mutexes_t);
     bzero(ms, sizeof(*ms));
-    return ms;
 }
 
-void pddlMutexesDel(pddl_mutexes_t *ms)
+void pddlMutexesFree(pddl_mutexes_t *ms)
 {
     pddl_mutex_t *m;
     PDDL_MUTEXES_FOR_EACH(ms, m)
         pddlMutexFree(m);
     if (ms->m != NULL)
         BOR_FREE(ms->m);
+}
+
+pddl_mutexes_t *pddlMutexesNew(void)
+{
+    pddl_mutexes_t *ms;
+
+    ms = BOR_ALLOC(pddl_mutexes_t);
+    pddlMutexesInit(ms);
+    return ms;
+}
+
+void pddlMutexesDel(pddl_mutexes_t *ms)
+{
+    pddlMutexesFree(ms);
     BOR_FREE(ms);
 }
 
-void pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
+pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
 {
     if (ms->size >= ms->alloc){
         if (ms->alloc == 0)
@@ -61,6 +71,8 @@ void pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
     pddlMutexInit(ms->m + ms->size);
     borISetUnion(&ms->m[ms->size].fact, m);
     ++ms->size;
+
+    return ms->m + ms->size - 1;
 }
 
 static int prettyMutexCmp(const void *a, const void *b, void *_fs)

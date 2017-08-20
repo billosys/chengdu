@@ -212,7 +212,8 @@ static void backwardIrrelevanceEnqueue(const pddl_strips_t *strips,
     }
 }
 
-static int backwardIrrelevance(pddl_strips_t *strips, prob_info_t *prob)
+static int backwardIrrelevance(pddl_strips_t *strips, prob_info_t *prob,
+                               const pddl_strips_prune_config_t *cfg)
 {
     int queue_size, *queue, *relevant, *op_relevant;
     int fact_id, op_id, ret = 0;
@@ -237,7 +238,8 @@ static int backwardIrrelevance(pddl_strips_t *strips, prob_info_t *prob)
             backwardIrrelevanceEnqueue(strips, prob, op_id, relevant,
                                        op_relevant, queue, &queue_size);
         }
-        if (strips->has_cond_eff){
+
+        if (cfg->irrelevance_del_eff || strips->has_cond_eff){
             BOR_ISET_FOR_EACH(&fact->del_eff, op_id){
                 backwardIrrelevanceEnqueue(strips, prob, op_id, relevant,
                                            op_relevant, queue, &queue_size);
@@ -274,14 +276,15 @@ static void remapInitGoal(pddl_strips_t *strips, const int *remap)
     borISetRemap(&strips->goal, remap);
 }
 
-int _pddlStripsPruneIrrelevant(pddl_strips_t *strips)
+int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
+                               const pddl_strips_prune_config_t *cfg)
 {
     prob_info_t pi;
     int ret;
 
     probInfoInit(&pi, strips);
 
-    backwardIrrelevance(strips, &pi);
+    backwardIrrelevance(strips, &pi, cfg);
     for (int fact_id = 0; fact_id < pi.fact_size; ++fact_id)
         factStatic(strips, &pi, fact_id);
 

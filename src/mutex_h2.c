@@ -20,6 +20,7 @@
 #include <boruvka/alloc.h>
 #include "pddl/strips.h"
 #include "pddl/mutex.h"
+#include "err.h"
 
 #define FACT(h2, x, y) ((h2)->fact[(x) * (h2)->fact_size + (y)])
 
@@ -27,10 +28,12 @@ struct h2 {
     int *fact;
     int fact_size;
     int *op_applied;
+    const int *op_unreachable;
 };
 typedef struct h2 h2_t;
 
-static void h2Init(h2_t *h2, const pddl_strips_t *strips)
+static void h2Init(h2_t *h2, const pddl_strips_t *strips,
+                   const int *unreachable_op)
 {
     int f1, f2;
 
@@ -38,6 +41,7 @@ static void h2Init(h2_t *h2, const pddl_strips_t *strips)
     h2->fact_size = strips->fact.fact_size;
     h2->fact = BOR_CALLOC_ARR(int, h2->fact_size * h2->fact_size);
     h2->op_applied = BOR_CALLOC_ARR(int, strips->op.op_size);
+    h2->op_unreachable = unreachable_op;
 
     BOR_ISET_FOR_EACH(&strips->init, f1){
         BOR_ISET_FOR_EACH(&strips->init, f2){
@@ -59,6 +63,8 @@ static int isApplicable(const pddl_strips_op_t *op, h2_t *h2)
 {
     int f1, f2;
 
+    if (h2->op_unreachable != NULL && h2->op_unreachable[op->id])
+        return 0;
     if (h2->op_applied[op->id])
         return 1;
 
@@ -77,6 +83,8 @@ static int isApplicable2(const pddl_strips_op_t *op, int fact_id, h2_t *h2)
 {
     int f1;
 
+    if (h2->op_unreachable != NULL && h2->op_unreachable[op->id])
+        return 0;
     if (!h2->op_applied[op->id])
         return 0;
 
@@ -126,16 +134,19 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
     return updated;
 }
 
-static pddl_mutexes_t *_pddlMutexFindH2(const pddl_strips_t *strips,
-                                        bor_iset_t *unreachable_ops)
+int _pddlMutexesH2(const pddl_strips_t *strips, pddl_mutexes_t *ms,
+                   int *unreachable_ops)
 {
     h2_t h2;
     int updated;
     const pddl_strips_op_t *op;
-    pddl_mutexes_t *ms;
+    pddl_mutex_t *m;
     bor_iset_t mgroup;
 
-    h2Init(&h2, strips);
+    if (strips->has_cond_eff)
+        ERR_RET2(-1, "Conditional effects are not supported by h^2.");
+
+    h2Init(&h2, strips, unreachable_ops);
 
     // TODO: Conditional effects
     do {
@@ -145,7 +156,6 @@ static pddl_mutexes_t *_pddlMutexFindH2(const pddl_strips_t *strips,
         }
     } while (updated);
 
-    ms = pddlMutexesNew();
     borISetInit(&mgroup);
     for (int f1 = 0; f1 < h2.fact_size; ++f1){
         for (int f2 = f1; f2 < h2.fact_size; ++f2){
@@ -153,7 +163,8 @@ static pddl_mutexes_t *_pddlMutexFindH2(const pddl_strips_t *strips,
                 borISetEmpty(&mgroup);
                 borISetAdd(&mgroup, f1);
                 borISetAdd(&mgroup, f2);
-                pddlMutexesAdd(ms, &mgroup);
+                m = pddlMutexesAdd(ms, &mgroup);
+                m->hm = borISetSize(&mgroup);
             }
         }
     }
@@ -161,29 +172,12 @@ static pddl_mutexes_t *_pddlMutexFindH2(const pddl_strips_t *strips,
     if (unreachable_ops != NULL){
         for (int i = 0; i < strips->op.op_size; ++i){
             if (!h2.op_applied[i])
-                borISetAdd(unreachable_ops, i);
+                unreachable_ops[i] = 1;
         }
     }
 
     borISetFree(&mgroup);
     h2Free(&h2);
 
-    return ms;
-}
-
-pddl_mutexes_t *pddlMutexFindH2(const pddl_strips_t *strips,
-                                bor_iset_t *unreachable_ops)
-{
-    if (strips->has_cond_eff){
-        pddl_strips_t *strips_nce;
-        pddl_mutexes_t *ms;
-
-        strips_nce = pddlStripsCompileAwayCondEffRelaxed(strips);
-        ms = _pddlMutexFindH2(strips_nce, unreachable_ops);
-        pddlStripsDel(strips_nce);
-        return ms;
-
-    }else{
-        return _pddlMutexFindH2(strips, unreachable_ops);
-    }
+    return 0;
 }

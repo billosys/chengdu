@@ -36,6 +36,8 @@ struct pddl_mgroup {
     int is_init; /*!< True if it has non-empty intersection with the init */
     int is_goal; /*!< True if it has non-empty intersection with the goal */
     int is_fa; /*!< True if it is fact-alternatig mutex group */
+    int is_exactly_1; /*!< True if exactly one fact must be true in any
+                           reachable state. */
 };
 typedef struct pddl_mgroup pddl_mgroup_t;
 
@@ -49,17 +51,32 @@ typedef struct pddl_mgroups pddl_mgroups_t;
 void pddlMGroupInit(pddl_mgroup_t *mg);
 void pddlMGroupFree(pddl_mgroup_t *mg);
 
+/**
+ * Initialize a set of mutex groups.
+ */
+void pddlMGroupsInit(pddl_mgroups_t *mgs);
 pddl_mgroups_t *pddlMGroupsNew(void);
+
+/**
+ * Free allocated memory.
+ */
+void pddlMGroupsFree(pddl_mgroups_t *mgs);
 void pddlMGroupsDel(pddl_mgroups_t *mgs);
+
+/**
+ * Add a mutex group consisting of the given facts.
+ */
 pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg);
 
 /**
- * Find fact-alternating mutex groups in the provided strips problem.
+ * Find fact-alternating mutex groups in the provided strips problem and
+ * add them into mgs.
  * The function refuses to work on problems with conditional effects, but
- * conditional effects can be compiled out by
- * pddlStripsCompileAwayCondEff().
+ * conditional effects can be compiled away. Also, this function requires
+ * LP solver to be built-in.
  */
-pddl_mgroups_t *pddlMGroupFindFA(const pddl_strips_t *strips);
+int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs);
+pddl_mgroups_t *pddlMGroupsFANew(const pddl_strips_t *strips);
 
 void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
                             const pddl_mgroups_t *ms, FILE *fout);
