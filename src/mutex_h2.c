@@ -148,7 +148,6 @@ int _pddlMutexesH2(const pddl_strips_t *strips, pddl_mutexes_t *ms,
 
     h2Init(&h2, strips, unreachable_ops);
 
-    // TODO: Conditional effects
     do {
         updated = 0;
         PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op){
@@ -156,17 +155,20 @@ int _pddlMutexesH2(const pddl_strips_t *strips, pddl_mutexes_t *ms,
         }
     } while (updated);
 
-    borISetInit(&mgroup);
-    for (int f1 = 0; f1 < h2.fact_size; ++f1){
-        for (int f2 = f1; f2 < h2.fact_size; ++f2){
-            if (!FACT(&h2, f1, f2)){
-                borISetEmpty(&mgroup);
-                borISetAdd(&mgroup, f1);
-                borISetAdd(&mgroup, f2);
-                m = pddlMutexesAdd(ms, &mgroup);
-                m->hm = borISetSize(&mgroup);
+    if (ms != NULL){
+        borISetInit(&mgroup);
+        for (int f1 = 0; f1 < h2.fact_size; ++f1){
+            for (int f2 = f1; f2 < h2.fact_size; ++f2){
+                if (!FACT(&h2, f1, f2)){
+                    borISetEmpty(&mgroup);
+                    borISetAdd(&mgroup, f1);
+                    borISetAdd(&mgroup, f2);
+                    m = pddlMutexesAdd(ms, &mgroup);
+                    m->hm = borISetSize(&mgroup);
+                }
             }
         }
+        borISetFree(&mgroup);
     }
 
     if (unreachable_ops != NULL){
@@ -176,7 +178,6 @@ int _pddlMutexesH2(const pddl_strips_t *strips, pddl_mutexes_t *ms,
         }
     }
 
-    borISetFree(&mgroup);
     h2Free(&h2);
 
     return 0;
