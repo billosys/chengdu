@@ -25,11 +25,19 @@
 #ifdef PDDL_DEBUG
 #include <assert.h>
 # define ASSERT(x) assert(x)
+# define ASSERT_RUNTIME(x) assert(x)
 #else /* PDDL_DEBUG */
 # define NDEBUG
 # define ASSERT(x)
+# define ASSERT_RUNTIME(x) \
+    do { \
+    if (!(x)){ \
+        fprintf(stderr, "%s:%d Assertion `" #x "' failed!\n", \
+                __FILE__, __LINE__); \
+        exit(-1); \
+    } \
+    } while (0)
 #endif /* PDDL_DEBUG */
 
-#define ASSERT_RUNTIME(x) assert(x)
 
 #endif /* __PDDL_ASSERT_H__ */
