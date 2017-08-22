@@ -34,6 +34,10 @@ extern "C" {
 #define PDDL_STRIPS_GROUND_NAIVE 0x2u
 
 struct pddl_strips_prune_config {
+    /** Run pruning until fixpoint. If set to false, the pruning is run
+     *  only once. Default: 1 */
+    int fixpoint;
+
     /** Removing static facts.  Default: 1 */
     int static_facts;
 
@@ -69,6 +73,7 @@ struct pddl_strips_prune_config {
 typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
 
 #define PDDL_STRIPS_PRUNE_CONFIG_INIT { \
+        1, /* fixpoint */ \
         1, /* static_facts */ \
         1, /* irrelevance */ \
         0, /* irrelevance_del_eff */ \
@@ -116,8 +121,8 @@ pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips);
 /**
  * Prune STRIPS planning task according to the configuration.
  */
-void pddlStripsPrune(pddl_strips_t *strips,
-                     const pddl_strips_prune_config_t *cfg);
+int pddlStripsPrune(pddl_strips_t *strips,
+                    const pddl_strips_prune_config_t *cfg);
 
 void pddlStripsMakeUnsolvable(pddl_strips_t *strips);
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);

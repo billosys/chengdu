@@ -20,6 +20,7 @@
 #include "pddl/strips.h"
 #include "pddl/mgroup.h"
 #include "pddl/mutex.h"
+#include "err.h"
 
 /** Prunes irrelevant facts and operators.
  *  Implemented in strips_irrelevance.c */
@@ -45,32 +46,112 @@ _bor_inline int mgroupOpIsDeadEnd(const pddl_strips_op_t *op,
 }
 
 
-static void pruneWithMGroups(const pddl_strips_t *strips,
-                             const pddl_mgroups_t *mgs,
-                             const pddl_strips_prune_config_t *cfg,
-                             int *prune_op)
+static int pruneWithMGroups(pddl_strips_t *strips,
+                            const pddl_mgroups_t *mgs,
+                            const pddl_strips_prune_config_t *cfg)
 {
-    for (int opi = 0; opi < strips->op.op_size; ++opi){
-        const pddl_strips_op_t *op = strips->op.op[opi];
-        if (op == NULL || prune_op[opi])
-            continue;
-        for (int mgi = 0; mgi < mgs->size; ++mgi){
-            const pddl_mgroup_t *mg = mgs->g + mgi;
+    int *prune_op = BOR_CALLOC_ARR(int, strips->op.op_size);
+    int change = 0;
+
+    for (int mgi = 0; mgi < mgs->size; ++mgi){
+        const pddl_mgroup_t *mg = mgs->g + mgi;
+        for (int opi = 0; opi < strips->op.op_size; ++opi){
+            const pddl_strips_op_t *op = strips->op.op[opi];
+            if (op == NULL || prune_op[opi])
+                continue;
             if (mgroupOpIsUnreachable(op, &mg->fact)
                     || mgroupOpIsDeadEnd(op, mg, cfg)){
                 prune_op[opi] = 1;
+                change = 1;
             }
         }
     }
+
+    pddlStripsOpsDel(&strips->op, prune_op);
+
+    BOR_FREE(prune_op);
+
+    return change;
 }
 
-void pddlStripsPrune(pddl_strips_t *strips,
-                     const pddl_strips_prune_config_t *cfg)
+static int pruneWithMutexes(pddl_strips_t *strips,
+                            const pddl_mutexes_t *ms,
+                            const pddl_strips_prune_config_t *cfg,
+                            int *prune_op)
 {
-    if (cfg->irrelevance)
-        _pddlStripsPruneIrrelevant(strips, cfg);
+    int change = 0;
+
+    for (int i = 0; i < strips->op.op_size; ++i){
+        if (prune_op[i]){
+            change = 1;
+            break;
+        }
+    }
+
+    if (change)
+        pddlStripsOpsDel(&strips->op, prune_op);
+    return change;
+}
+
+int pddlStripsPrune(pddl_strips_t *strips,
+                    const pddl_strips_prune_config_t *cfg)
+{
+    pddl_mgroups_t mgroup;
+    pddl_mutexes_t mutex;
+    int change;
+    int *prune_op;
+
+    prune_op = BOR_ALLOC_ARR(int, strips->op.op_size);
+
+    do {
+        pddlMGroupsInit(&mgroup);
+        pddlMutexesInit(&mutex);
+        change = 0;
+
+        if (cfg->irrelevance || cfg->static_facts)
+            change |= _pddlStripsPruneIrrelevant(strips, cfg);
+
+        if (cfg->h_mutex > 0){
+            bzero(prune_op, sizeof(int) * strips->op.op_size);
+            if (pddlMutexesHm(cfg->h_mutex, strips, &mutex, prune_op) != 0){
+                pddlMutexesFree(&mutex);
+                pddlMGroupsFree(&mgroup);
+                BOR_FREE(prune_op);
+                TRACE_RET(-1);
+            }
+
+            change |= pruneWithMutexes(strips, &mutex, cfg, prune_op);
+        }
+
+        // TODO
+        if (cfg->h_mutex_bw > 0){
+        }
+
+        if (cfg->fa_mgroup){
+            if (pddlMGroupsFA(strips, &mgroup) != 0){
+                pddlMutexesFree(&mutex);
+                pddlMGroupsFree(&mgroup);
+                BOR_FREE(prune_op);
+                TRACE_RET(-1);
+            }
+
+            change |= pruneWithMGroups(strips, &mgroup, cfg);
+        }
+
+        // TODO
+        if (cfg->disambiguation){
+        }
+
+        pddlMutexesFree(&mutex);
+        pddlMGroupsFree(&mgroup);
+    } while (cfg->fixpoint && change);
+
+    BOR_FREE(prune_op);
+
     if (strips->goal_is_unreachable)
         pddlStripsMakeUnsolvable(strips);
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
+
+    return 0;
 }

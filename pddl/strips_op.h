@@ -138,9 +138,9 @@ void pddlStripsOpsFree(pddl_strips_ops_t *ops);
 int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add);
 
 /**
- * Deletes all operators for which irrelevant[op_id] is set to true.
+ * Deletes all operators for which m[op_id] is set to true.
  */
-void pddlStripsOpsDelIrrelevant(pddl_strips_ops_t *ops, const int *irrelevant);
+void pddlStripsOpsDel(pddl_strips_ops_t *ops, const int *m);
 
 /**
  * Calls pddlStripsOpRemapFacts for each operator.

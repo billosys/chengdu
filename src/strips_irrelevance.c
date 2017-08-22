@@ -284,12 +284,15 @@ int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
 
     probInfoInit(&pi, strips);
 
-    backwardIrrelevance(strips, &pi, cfg);
-    for (int fact_id = 0; fact_id < pi.fact_size; ++fact_id)
-        factStatic(strips, &pi, fact_id);
+    if (cfg->irrelevance)
+        backwardIrrelevance(strips, &pi, cfg);
+    if (cfg->static_facts){
+        for (int fact_id = 0; fact_id < pi.fact_size; ++fact_id)
+            factStatic(strips, &pi, fact_id);
+    }
 
     if (pi.op_irrelevant_size > 0)
-        pddlStripsOpsDelIrrelevant(&strips->op, pi.op_irrelevant);
+        pddlStripsOpsDel(&strips->op, pi.op_irrelevant);
 
     if (pi.fact_irrelevant_size > 0){
         int *fact_remap = BOR_ALLOC_ARR(int, pi.fact_size);
