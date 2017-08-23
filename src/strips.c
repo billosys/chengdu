@@ -24,9 +24,6 @@
 
 /** Implemented in strips_ground.c */
 int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
-/** Prunes irrelevant facts and operators.
- *  Implemented in strips_irrelevance.c */
-int _pddlStripsPruneIrrelevant(pddl_strips_t *strips);
 
 static pddl_strips_t *stripsNew(const pddl_t *pddl)
 {
@@ -42,7 +39,7 @@ static pddl_strips_t *stripsNew(const pddl_t *pddl)
     return strips;
 }
 
-static void stripsMakeUnsolvable(pddl_strips_t *strips)
+void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
 {
     // Remove all operators, empty the initial state and make sure that the
     // goal is non-empty.
@@ -76,7 +73,7 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
         TRACE_RET(NULL);
     }
     if (strips->goal_is_unreachable)
-        stripsMakeUnsolvable(strips);
+        pddlStripsMakeUnsolvable(strips);
 
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
@@ -121,18 +118,6 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
     dual->has_cond_eff = strips->has_cond_eff;
 
     return dual;
-}
-
-
-void pddlStripsPrune(pddl_strips_t *strips,
-                     const pddl_strips_prune_config_t *cfg)
-{
-    if (cfg->irrelevance)
-        _pddlStripsPruneIrrelevant(strips);
-    if (strips->goal_is_unreachable)
-        stripsMakeUnsolvable(strips);
-    // TODO: remove identical/dominated operators
-    //       (don't forget to keep the one with the minimal cost)
 }
 
 pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)

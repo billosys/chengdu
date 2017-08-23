@@ -25,7 +25,7 @@
 static void setUnsolvable(pddl_fdr_t *fdr)
 {
     // Keep the variables and set a bogus initial state
-    for (int i = 0; fdr->var.size; ++i)
+    for (int i = 0; i < fdr->var.size; ++i)
         pddlFDRPartStateSet(&fdr->init, i, 0);
     // and a different goal
     pddlFDRPartStateSet(&fdr->goal, 0, 1);
@@ -51,7 +51,9 @@ pddl_fdr_t *pddlFDRFromStrips(const pddl_strips_t *strips,
     BOR_ISET_FOR_EACH(&strips->goal, fact_id){
         val = fdr->var.strips_fact_id_to_val[fact_id];
         if (pddlFDRPartStateSet(&fdr->goal, val->var_id, val->val_id) != 0){
-            // reset goal
+            // reset init and goal
+            pddlFDRPartStateFree(&fdr->init);
+            pddlFDRPartStateInit(&fdr->init, &fdr->var);
             pddlFDRPartStateFree(&fdr->goal);
             pddlFDRPartStateInit(&fdr->goal, &fdr->var);
 

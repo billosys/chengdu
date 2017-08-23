@@ -32,6 +32,8 @@ extern "C" {
  */
 struct pddl_mutex {
     bor_iset_t fact; /*!< Set of fact IDs */
+    int hm; /** If the mutex was obtained by h^m, the member contains m,
+                otherwise 0 */
 };
 typedef struct pddl_mutex pddl_mutex_t;
 
@@ -51,18 +53,34 @@ typedef struct pddl_mutexes pddl_mutexes_t;
 void pddlMutexInit(pddl_mutex_t *m);
 void pddlMutexFree(pddl_mutex_t *m);
 
+/**
+ * Initialize a new set of mutexes.
+ */
+void pddlMutexesInit(pddl_mutexes_t *ms);
 pddl_mutexes_t *pddlMutexesNew(void);
-void pddlMutexesDel(pddl_mutexes_t *ms);
-void pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m);
 
 /**
- * Finds h^1 (unreachable facts) and h^2 mutexes.
- * If unreachable_ops is non-NULL it is filled with IDs of operators that
- * were not reached.
- * (Implemented in h2_mutex.c.)
+ * Free allocated memory.
  */
-pddl_mutexes_t *pddlMutexFindH2(const pddl_strips_t *strips,
-                                bor_iset_t *unreachable_ops);
+void pddlMutexesFree(pddl_mutexes_t *ms);
+void pddlMutexesDel(pddl_mutexes_t *ms);
+
+/**
+ * Adds a new mutex consisting of the given facts.
+ */
+pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m);
+
+/**
+ * Finds h^m mutexes and store them in ms.
+ * In unreachable_ops is non-NULL it is used as in/out map of operators:
+ *   - only the operators with the false value are used
+ *   - all unused (i.e., unreachable) operators are marked with true value
+ * Does not work with conditional effects, but they can be compiled away.
+ */
+int pddlMutexesHm(int m, const pddl_strips_t *strips, pddl_mutexes_t *ms,
+                  int *unreachable_ops);
+pddl_mutexes_t *pddlMutexesHmNew(int m, const pddl_strips_t *strips,
+                                 int *unreachable_ops);
 
 
 void pddlMutexesPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
