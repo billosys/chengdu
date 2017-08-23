@@ -29,10 +29,6 @@
 extern "C" {
 #endif /* __cplusplus */
 
-/** Flags: **/
-#define PDDL_STRIPS_GROUND_FULL 0x1u
-#define PDDL_STRIPS_GROUND_NAIVE 0x2u
-
 struct pddl_strips_prune_config {
     /** Run pruning until fixpoint. If set to false, the pruning is run
      *  only once. Default: 1 */
@@ -99,7 +95,7 @@ typedef struct pddl_strips pddl_strips_t;
 /**
  * Grounds pddl into strips.
  */
-pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags);
+pddl_strips_t *pddlStripsGround(const pddl_t *pddl);
 
 /**
  * Deletes allocated memory.

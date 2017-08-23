@@ -64,7 +64,7 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     strips->fact.fact_size = 1;
 }
 
-pddl_strips_t *pddlStripsGround(const pddl_t *pddl, unsigned flags)
+pddl_strips_t *pddlStripsGround(const pddl_t *pddl)
 {
     pddl_strips_t *strips = stripsNew(pddl);
 
