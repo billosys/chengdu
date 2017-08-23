@@ -35,6 +35,11 @@ static int checkConfig(const pddl_config_t *cfg)
                     " normalization.");
     }
 
+    if (cfg->fdr && !cfg->strips){
+        ERR_RET2(0, "Config: cannot translate PDDL to FDR without first"
+                    " translating it into STRIPS.");
+    }
+
     return 1;
 }
 
@@ -129,6 +134,29 @@ static int parseGoal(pddl_t *pddl)
     return 0;
 }
 
+pddl_fdr_t *fdrNew(const pddl_strips_t *strips,
+                   const pddl_config_t *cfg)
+{
+    pddl_mgroups_t ms;
+    pddl_fdr_t *fdr;
+
+    pddlMGroupsInit(&ms);
+    if (pddlMGroupsFA(strips, &ms) != 0){
+        pddlMGroupsFree(&ms);
+        TRACE_RET(NULL);
+    }
+
+    fdr = pddlFDRFromStrips(strips, &ms, cfg->fdr_vars_flags);
+    if (fdr == NULL){
+        pddlMGroupsFree(&ms);
+        TRACE_RET(NULL);
+    }
+
+    pddlMGroupsFree(&ms);
+
+    return fdr;
+}
+
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
                 const pddl_config_t *cfg)
 {
@@ -195,7 +223,11 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
             if (pddlStripsPrune(pddl->strips, &pddl->cfg.strips_prune_cfg) != 0)
                 goto pddl_fail;
         }
+    }
 
+    if (pddl->cfg.fdr){
+        if ((pddl->fdr = fdrNew(pddl->strips, &pddl->cfg)) == NULL)
+            goto pddl_fail;
     }
 
     return pddl;

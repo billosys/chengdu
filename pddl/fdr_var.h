@@ -52,7 +52,7 @@ struct pddl_fdr_vars {
 };
 typedef struct pddl_fdr_vars pddl_fdr_vars_t;
 
-#define PDDL_FDR_VARS_LARGEST_FIRST
+#define PDDL_FDR_VARS_LARGEST_FIRST 0
 // TODO: Minimazion of bits required for storing the whole state
 #define PDDL_FDR_VARS_MIN_BITS
 // TODO: SymbA* uses different strategy then *LARGEST_FIRST

@@ -49,6 +49,9 @@ struct pddl_config {
                      Requires normalization turned on. */
     int strips_prune; /*!< True if the STRIPS should be pruned */
     pddl_strips_prune_config_t strips_prune_cfg;
+
+    int fdr; /*!< True if the STRIPS should be translated into FDR */
+    unsigned fdr_vars_flags; /*!< See PDDL_FR_VARS_* */
 };
 typedef struct pddl_config pddl_config_t;
 
@@ -58,9 +61,12 @@ typedef struct pddl_config pddl_config_t;
       1, /* normalize */ \
       0, /* compile_away_cond_eff */ \
       \
-      1, /* strips */ \
+      0, /* strips */ \
       1, /* strips_prune */ \
       PDDL_STRIPS_PRUNE_CONFIG_INIT, /* strips_prune_cfg */ \
+      \
+      0, /* fdr */ \
+      PDDL_FDR_VARS_LARGEST_FIRST, /* fdr_vars_flags */ \
     }
 
 struct pddl {
@@ -81,6 +87,7 @@ struct pddl {
     int metric;
 
     pddl_strips_t *strips;
+    pddl_fdr_t *fdr;
 };
 typedef struct pddl pddl_t;
 
