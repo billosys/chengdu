@@ -1,7 +1,4 @@
-#include "pddl/pddl.h"
-#include "pddl/strips.h"
-#include "pddl/fdr.h"
-#include "pddl/err.h"
+#include <pddl/pddl.h>
 
 int main(int argc, char *argv[])
 {
