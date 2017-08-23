@@ -28,6 +28,11 @@
 #include <pddl/pred.h>
 #include <pddl/fact.h>
 #include <pddl/action.h>
+#include <pddl/strips.h>
+#include <pddl/fdr.h>
+#include <pddl/mutex.h>
+#include <pddl/mgroup.h>
+#include <pddl/err.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,13 +44,23 @@ struct pddl_config {
                         effects CNF */
     int compile_away_cond_eff; /*!< Compile away conditional effects --
                                     requires .normalize set to true*/
+
+    int strips; /*!< True if the problem should be grounded to STRIPS.
+                     Requires normalization turned on. */
+    int strips_prune; /*!< True if the STRIPS should be pruned */
+    pddl_strips_prune_config_t strips_prune_cfg;
 };
 typedef struct pddl_config pddl_config_t;
 
+#define PDDL_CONFIG_INIT_EMPTY { 0 }
 #define PDDL_CONFIG_INIT \
-    { 0 /* force_adl */, \
-      1 /* normalize */, \
-      0 /* compile_away_cond_eff */, \
+    { 0, /* force_adl */ \
+      1, /* normalize */ \
+      0, /* compile_away_cond_eff */ \
+      \
+      1, /* strips */ \
+      1, /* strips_prune */ \
+      PDDL_STRIPS_PRUNE_CONFIG_INIT, /* strips_prune_cfg */ \
     }
 
 struct pddl {
@@ -64,6 +79,8 @@ struct pddl {
     pddl_cond_t *goal;
     pddl_actions_t action;
     int metric;
+
+    pddl_strips_t *strips;
 };
 typedef struct pddl pddl_t;
 

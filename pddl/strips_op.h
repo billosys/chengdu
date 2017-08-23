@@ -20,6 +20,8 @@
 #ifndef __PDDL_STRIPS_OP_H__
 #define __PDDL_STRIPS_OP_H__
 
+#include <pddl/fact.h>
+
 #include <boruvka/htable.h>
 #include <boruvka/iset.h>
 

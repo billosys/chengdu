@@ -22,6 +22,8 @@
 #include <boruvka/htable.h>
 #include <boruvka/hfunc.h>
 #include <boruvka/sort.h>
+
+#include "pddl/pddl.h"
 #include "pddl/strips.h"
 #include "pddl/prep_action.h"
 #include "pddl/err.h"

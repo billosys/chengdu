@@ -29,6 +29,12 @@ static int checkConfig(const pddl_config_t *cfg)
         ERR_RET2(0, "Config: compile_away_conf_eff requires setting"
                     " normalize to true.");
     }
+
+    if (cfg->strips && !cfg->normalize){
+        ERR_RET2(0, "Config: cannot translate PDDL to STRIPS without"
+                    " normalization.");
+    }
+
     return 1;
 }
 
@@ -180,6 +186,18 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
         pddlNormalize(pddl);
     }
 
+    if (pddl->cfg.strips){
+        pddl->strips = pddlStripsGround(pddl);
+        if (pddl->strips == NULL)
+            goto pddl_fail;
+
+        if (pddl->cfg.strips_prune){
+            if (pddlStripsPrune(pddl->strips, &pddl->cfg.strips_prune_cfg) != 0)
+                goto pddl_fail;
+        }
+
+    }
+
     return pddl;
 
 pddl_fail:
@@ -203,6 +221,9 @@ void pddlDel(pddl_t *pddl)
     if (pddl->goal)
         pddlCondDel(pddl->goal);
     pddlActionsFree(&pddl->action);
+
+    if (pddl->strips != NULL)
+        pddlStripsDel(pddl->strips);
 
     BOR_FREE(pddl);
 }

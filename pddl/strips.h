@@ -21,13 +21,15 @@
 #define __PDDL_STRIPS_H__
 
 #include <boruvka/htable.h>
-#include <pddl/pddl.h>
-#include <pddl/strips_op.h>
 #include <boruvka/iset.h>
+
+#include <pddl/strips_op.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+
+struct pddl;
 
 struct pddl_strips_prune_config {
     /** Run pruning until fixpoint. If set to false, the pruning is run
@@ -81,7 +83,7 @@ typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
     }
 
 struct pddl_strips {
-    const pddl_t *pddl;
+    const struct pddl *pddl;
     pddl_facts_t fact; /*!< Set of facts */
     pddl_strips_ops_t op; /*!< Set of operators */
     bor_iset_t init; /*!< Initial state */
@@ -95,7 +97,7 @@ typedef struct pddl_strips pddl_strips_t;
 /**
  * Grounds pddl into strips.
  */
-pddl_strips_t *pddlStripsGround(const pddl_t *pddl);
+pddl_strips_t *pddlStripsGround(const struct pddl *pddl);
 
 /**
  * Deletes allocated memory.

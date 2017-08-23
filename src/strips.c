@@ -18,6 +18,7 @@
  */
 
 #include <boruvka/alloc.h>
+#include "pddl/pddl.h"
 #include "pddl/strips.h"
 #include "err.h"
 #include "assert.h"
