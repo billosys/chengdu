@@ -38,7 +38,7 @@ _bor_inline int mgroupOpIsDeadEnd(const pddl_strips_op_t *op,
                                   const pddl_mgroup_t *mg,
                                   const pddl_strips_prune_config_t *cfg)
 {
-    if (!cfg->fa_mgroup_dead_end || !mg->is_fa)
+    if (!cfg->fa_mgroup_dead_end || !mg->is_fa || !mg->is_goal)
         return 0;
     return !borISetIntersectionSizeAtLeast(&op->add_eff, &mg->fact, 1)
             && borISetIntersectionSizeAtLeast3(&op->pre, &op->del_eff,

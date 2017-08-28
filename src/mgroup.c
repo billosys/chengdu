@@ -79,6 +79,20 @@ pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg)
 }
 
 
+static int faIsExactly1(const pddl_strips_t *strips,
+                        const pddl_mgroup_t *mg)
+{
+    for (int oi = 0; oi < strips->op.op_size; ++oi){
+        const pddl_strips_op_t *op = strips->op.op[oi];
+        int del_size = borISetIntersectionSize(&mg->fact, &op->del_eff);
+        if (del_size > 0
+                && del_size > borISetIntersectionSize(&mg->fact, &op->add_eff))
+            return 0;
+    }
+
+    return 1;
+}
+
 int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs)
 {
     pddl_mgroup_t *mg;
@@ -148,6 +162,13 @@ int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs)
         }
         mg = pddlMGroupsAdd(mgs, &fa_mgroup);
         mg->is_fa = 1;
+        if (borISetIntersectionSizeAtLeast(&mg->fact, &strips->init, 1))
+            mg->is_init = 1;
+        if (borISetIntersectionSizeAtLeast(&mg->fact, &strips->goal, 1))
+            mg->is_goal = mg->is_exactly_1 = 1;
+        // TODO: parametrize
+        if (!mg->is_goal && faIsExactly1(strips, mg))
+            mg->is_exactly_1 = 1;
         ++rows;
     }
     BOR_FREE(obj);
