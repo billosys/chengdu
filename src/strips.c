@@ -173,3 +173,83 @@ void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
     if (strips->has_cond_eff)
         fprintf(fout, "Has conditional effects\n");
 }
+
+static void printPythonISet(const bor_iset_t *s, FILE *fout)
+{
+    int i;
+    fprintf(fout, "[");
+    BOR_ISET_FOR_EACH(s, i)
+        fprintf(fout, " %d,", i);
+    fprintf(fout, "]");
+}
+
+void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
+{
+    int f;
+
+    fprintf(fout, "domain_file = '%s'\n", strips->pddl->domain_lisp->filename);
+    fprintf(fout, "problem_file = '%s'\n",
+            strips->pddl->problem_lisp->filename);
+    fprintf(fout, "domain_name = '%s'\n", strips->pddl->domain_name);
+    fprintf(fout, "problem_name = '%s'\n", strips->pddl->problem_name);
+
+    fprintf(fout, "fact = [\n");
+    for (int i = 0; i < strips->fact.fact_size; ++i){
+        fprintf(fout, "    '%s',\n",
+                pddlFactToStr(strips->pddl, strips->fact.fact[i]));
+    }
+    fprintf(fout, "]\n");
+
+    fprintf(fout, "op = [\n");
+    for (int i = 0; i < strips->op.op_size; ++i){
+        const pddl_strips_op_t *op = strips->op.op[i];
+        fprintf(fout, "    {\n");
+        fprintf(fout, "        'name' : '%s',\n", op->name);
+        fprintf(fout, "        'cost' : '%d',\n", op->cost);
+
+        fprintf(fout, "        'pre' : ");
+        printPythonISet(&op->pre, fout);
+        fprintf(fout, ",\n");
+        fprintf(fout, "        'add' : ");
+        printPythonISet(&op->add_eff, fout);
+        fprintf(fout, ",\n");
+        fprintf(fout, "        'del' : ");
+        printPythonISet(&op->del_eff, fout);
+        fprintf(fout, ",\n");
+
+        fprintf(fout, "        'cond_eff' : [\n");
+        for (int j = 0; j < op->cond_eff_size; ++j){
+            const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
+            fprintf(fout, "            {\n");
+            fprintf(fout, "                'pre' : ");
+            printPythonISet(&ce->pre, fout);
+            fprintf(fout, ",\n");
+            fprintf(fout, "                'add' : ");
+            printPythonISet(&ce->add_eff, fout);
+            fprintf(fout, ",\n");
+            fprintf(fout, "                'del' : ");
+            printPythonISet(&ce->del_eff, fout);
+            fprintf(fout, ",\n");
+            fprintf(fout, "            },\n");
+        }
+        fprintf(fout, "        ]\n");
+
+        fprintf(fout, "    },\n");
+    }
+    fprintf(fout, "]\n");
+
+    fprintf(fout, "init_state = [");
+    BOR_ISET_FOR_EACH(&strips->init, f)
+        fprintf(fout, "%d, ", f);
+    fprintf(fout, "]\n");
+
+    fprintf(fout, "goal = [");
+    BOR_ISET_FOR_EACH(&strips->goal, f)
+        fprintf(fout, "%d, ", f);
+    fprintf(fout, "]\n");
+
+    fprintf(fout, "goal_is_unreachable = %s\n",
+            (strips->goal_is_unreachable ? "True" : "False" ));
+    fprintf(fout, "has_cond_eff = %s\n",
+            (strips->has_cond_eff ? "True" : "False" ));
+}

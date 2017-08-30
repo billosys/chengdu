@@ -128,6 +128,11 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips);
 //       files corresponding to the STRIPS problem
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
 
+/**
+ * Print STRIPS problem in a format easily usable from python.
+ */
+void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
