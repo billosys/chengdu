@@ -29,24 +29,25 @@ extern "C" {
 
 struct pddl_t;
 
-struct pddl_mgroup_dtg_edge {
-    int node;
-    bor_iset_t op;
-};
-typedef struct pddl_mgroup_dtg_edge pddl_mgroup_dtg_edge_t;
-
-struct pddl_mgroup_dtg_node {
-    int fact;
-    pddl_mgroup_dtg_edge_t *edge;
-    int edge_size;
-};
-typedef struct pddl_mgroup_dtg_node pddl_mgroup_dtg_node_t;
-
 struct pddl_mgroup_dtg {
-    pddl_mgroup_dtg_node_t *node;
     int node_size;
+    bor_iset_t *adj;
+    int *fact;
 };
 typedef struct pddl_mgroup_dtg pddl_mgroup_dtg_t;
+
+#define PDDL_MGROUP_DTG_FOR_EACH_NODE(DTG, NODE) \
+    for (int NODE = 0; NODE < (DTG)->node_size; ++NODE)
+
+#define PDDL_MGROUP_DTG_FOR_EACH_EDGE(DTG, FROM, TO, EDGE) \
+    for (int __off = (FROM) * (DTG)->node_size, TO = 0; \
+            TO < (DTG)->node_size && ((EDGE) = (DTG)->adj + __off + TO); ++TO) \
+        if (borISetSize(EDGE) > 0)
+
+#define PDDL_MGROUP_DTG_FOR_EACH_EDGE_REV(DTG, FROM, TO, EDGE) \
+    for (int TO = 0; TO < (DTG)->node_size \
+            && ((EDGE) = (DTG)->adj + (FROM) + (DTG)->node_size * TO); ++TO) \
+        if (borISetSize(EDGE) > 0)
 
 
 int pddlMGroupDTGInit(pddl_mgroup_dtg_t *dtg,

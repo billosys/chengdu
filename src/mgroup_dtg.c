@@ -23,63 +23,29 @@
 #include "pddl/mgroup_dtg.h"
 #include "err.h"
 
-static void nodeInit(pddl_mgroup_dtg_node_t *node, int fact_id, int node_size)
-{
-    node->fact = fact_id;
-    node->edge = BOR_ALLOC_ARR(pddl_mgroup_dtg_edge_t, node_size);
-    node->edge_size = 0;
-    for (int i = 0; i < node_size; ++i){
-        node->edge[i].node = i;
-        borISetInit(&node->edge[i].op);
-    }
-}
-
-static void nodeFree(pddl_mgroup_dtg_node_t *node)
-{
-    for (int i = 0; i < node->edge_size; ++i)
-        borISetFree(&node->edge[i].op);
-    if (node->edge != NULL)
-        BOR_FREE(node->edge);
-}
-
-static void finalizeNode(pddl_mgroup_dtg_node_t *node, int node_size)
-{
-    node->edge_size = 0;
-    for (int i = 0; i < node_size; ++i){
-        if (borISetSize(&node->edge[i].op) > 0)
-            node->edge[node->edge_size++] = node->edge[i];
-    }
-    node->edge = BOR_REALLOC_ARR(node->edge, pddl_mgroup_dtg_edge_t,
-                                 node->edge_size);
-}
-
-static void addEdge(pddl_mgroup_dtg_t *dtg, int from, int to, int op_id)
-{
-    pddl_mgroup_dtg_node_t *from_node = dtg->node + from;
-    pddl_mgroup_dtg_edge_t *edge = from_node->edge + to;
-    borISetAdd(&edge->op, op_id);
-}
-
 int pddlMGroupDTGInit(pddl_mgroup_dtg_t *dtg,
                       const pddl_mgroup_t *mg,
                       const pddl_strips_t *strips)
 {
     int *fact_to_node;
     bor_iset_t pre, add;
+    int idx;
 
     if (strips->has_cond_eff)
         ERR_RET2(-1, "Conditional effects are not supported for mutex"
                      " group DTGs.");
 
     dtg->node_size = mg->fact.size + 1;
-    dtg->node = BOR_CALLOC_ARR(pddl_mgroup_dtg_node_t, dtg->node_size);
+    dtg->adj = BOR_CALLOC_ARR(bor_iset_t, dtg->node_size * dtg->node_size);
 
-    fact_to_node = BOR_CALLOC_ARR(int, strips->fact.fact_size);
-    for (int i = 0; i < mg->fact.size; ++i){
-        nodeInit(dtg->node + i, mg->fact.s[i], dtg->node_size);
+    dtg->fact = BOR_ALLOC_ARR(int, dtg->node_size);
+    for (int i = 0; i < mg->fact.size; ++i)
+        dtg->fact[i] = mg->fact.s[i];
+    dtg->fact[dtg->node_size - 1] = -1;
+
+    fact_to_node = BOR_ALLOC_ARR(int, strips->fact.fact_size);
+    for (int i = 0; i < mg->fact.size; ++i)
         fact_to_node[mg->fact.s[i]] = i;
-    }
-    nodeInit(dtg->node + dtg->node_size - 1, -1, dtg->node_size);
 
     borISetInit(&pre);
     borISetInit(&add);
@@ -89,11 +55,13 @@ int pddlMGroupDTGInit(pddl_mgroup_dtg_t *dtg,
         borISetIntersect(&pre, &op->del_eff);
         if (borISetSize(&pre) > 0){
             borISetIntersect2(&add, &mg->fact, &op->add_eff);
+            idx = fact_to_node[pre.s[0]] * dtg->node_size;
             if (borISetSize(&add) > 0){
-                addEdge(dtg, fact_to_node[pre.s[0]], fact_to_node[add.s[0]], i);
+                idx += fact_to_node[add.s[0]];
             }else{
-                addEdge(dtg, fact_to_node[pre.s[0]], dtg->node_size - 1, i);
+                idx += dtg->node_size - 1;
             }
+            borISetAdd(&dtg->adj[idx], i);
         }
     }
 
@@ -101,18 +69,18 @@ int pddlMGroupDTGInit(pddl_mgroup_dtg_t *dtg,
     borISetFree(&add);
     BOR_FREE(fact_to_node);
 
-    for (int i = 0; i < dtg->node_size; ++i)
-        finalizeNode(dtg->node + i, dtg->node_size);
-
     return 0;
 }
 
 void pddlMGroupDTGFree(pddl_mgroup_dtg_t *dtg)
 {
-    for (int i = 0; i < dtg->node_size; ++i)
-        nodeFree(dtg->node + i);
-    if (dtg->node != NULL)
-        BOR_FREE(dtg->node);
+    int size = dtg->node_size * dtg->node_size;
+    for (int i = 0; i < size; ++i)
+        borISetFree(&dtg->adj[i]);
+    if (dtg->adj != NULL)
+        BOR_FREE(dtg->adj);
+    if (dtg->fact != NULL)
+        BOR_FREE(dtg->fact);
 }
 
 void pddlMGroupDTGPrintAsDot(const pddl_mgroup_dtg_t *dtg,
@@ -120,14 +88,14 @@ void pddlMGroupDTGPrintAsDot(const pddl_mgroup_dtg_t *dtg,
                              FILE *fout)
 {
     fprintf(fout, "digraph {\n");
-    for (int i = 0; i < dtg->node_size; ++i){
-        fprintf(fout, "N%d [", i);
-        if (dtg->node[i].fact >= 0){
-            const pddl_fact_t *f = pddl->strips->fact.fact[dtg->node[i].fact];
+    PDDL_MGROUP_DTG_FOR_EACH_NODE(dtg, n){
+        fprintf(fout, "N%d [", n);
+        if (dtg->fact[n] >= 0){
+            const pddl_fact_t *f = pddl->strips->fact.fact[dtg->fact[n]];
             fprintf(fout, "label=\"%s\"", pddlFactToStr(pddl, f));
-            if (borISetIn(dtg->node[i].fact, &pddl->strips->init))
+            if (borISetIn(dtg->fact[n], &pddl->strips->init))
                 fprintf(fout, ", color=\"#bb2222\"");
-            if (borISetIn(dtg->node[i].fact, &pddl->strips->goal))
+            if (borISetIn(dtg->fact[n], &pddl->strips->goal))
                 fprintf(fout, ", color=\"#2222bb\"");
         }else{
             fprintf(fout, "label=\"none-of-those\"");
@@ -135,13 +103,41 @@ void pddlMGroupDTGPrintAsDot(const pddl_mgroup_dtg_t *dtg,
         fprintf(fout, "];\n");
     }
 
-    for (int i = 0; i < dtg->node_size; ++i){
-        const pddl_mgroup_dtg_node_t *n = dtg->node + i;
-        for (int j = 0; j < n->edge_size; ++j){
-            fprintf(fout, "N%d -> N%d [", i, n->edge[j].node);
-            fprintf(fout, "label=\"|%d|\"", n->edge[j].op.size);
+    PDDL_MGROUP_DTG_FOR_EACH_NODE(dtg, from){
+        bor_iset_t *edge;
+        PDDL_MGROUP_DTG_FOR_EACH_EDGE(dtg, from, to, edge){
+            fprintf(fout, "N%d -> N%d [", from, to);
+            fprintf(fout, "label=\"%d\"", borISetSize(edge));
             fprintf(fout, "];\n");
         }
     }
     fprintf(fout, "}\n");
+
+    printf("====\n");
+    PDDL_MGROUP_DTG_FOR_EACH_NODE(dtg, from){
+        bor_iset_t *edge;
+        int a = 0;
+        PDDL_MGROUP_DTG_FOR_EACH_EDGE(dtg, from, to, edge){
+            if (a == 0)
+                printf("%d ->", from);
+            a = 1;
+            printf(" %d", to);
+        }
+        if (a)
+            printf("\n");
+    }
+
+    printf("---\n");
+    PDDL_MGROUP_DTG_FOR_EACH_NODE(dtg, from){
+        bor_iset_t *edge;
+        int a = 0;
+        PDDL_MGROUP_DTG_FOR_EACH_EDGE_REV(dtg, from, to, edge){
+            if (a == 0)
+                printf("%d ->", from);
+            a = 1;
+            printf(" %d", to);
+        }
+        if (a)
+            printf("\n");
+    }
 }
