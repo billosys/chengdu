@@ -103,6 +103,7 @@ void pddlCompileAwayCondEff(pddl_t *pddl);
  */
 int pddlPredFuncMaxParamSize(const pddl_t *pddl);
 
+// TODO: pddlPrintDomain/Problem() --> prints full PDDL domain/problem files
 void pddlDump(const pddl_t *pddl, FILE *fout);
 
 #ifdef __cplusplus

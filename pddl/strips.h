@@ -123,6 +123,9 @@ int pddlStripsPrune(pddl_strips_t *strips,
                     const pddl_strips_prune_config_t *cfg);
 
 void pddlStripsMakeUnsolvable(pddl_strips_t *strips);
+
+// TODO: pddlStripsPrintPDDLDomain/Problem() --> prints PDDL domain/problem
+//       files corresponding to the STRIPS problem
 void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
 
 #ifdef __cplusplus
