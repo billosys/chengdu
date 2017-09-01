@@ -27,24 +27,32 @@
 int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
                                const pddl_strips_prune_config_t *cfg);
 
-_bor_inline int mgroupOpIsUnreachable(const pddl_strips_op_t *op,
-                                      const bor_iset_t *mg)
-{
-    return borISetIntersectionSizeAtLeast(mg, &op->pre, 2)
-            || borISetIntersectionSizeAtLeast(mg, &op->add_eff, 2);
-}
 
-_bor_inline int mgroupOpIsDeadEnd(const pddl_strips_op_t *op,
-                                  const pddl_mgroup_t *mg,
-                                  const pddl_strips_prune_config_t *cfg)
+static int pruneOpWithMGroup(const pddl_mgroup_t *mg,
+                             const bor_iset_t *mpre,
+                             const bor_iset_t *mdel,
+                             const bor_iset_t *mpredel,
+                             const bor_iset_t *madd,
+                             const pddl_strips_prune_config_t *cfg)
 {
-    if (!cfg->fa_mgroup_dead_end || !mg->is_fa || !mg->is_goal)
-        return 0;
-    return !borISetIntersectionSizeAtLeast(&op->add_eff, &mg->fact, 1)
-            && borISetIntersectionSizeAtLeast3(&op->pre, &op->del_eff,
-                                               &mg->fact, 1);
-}
+    // If the precondition or add effect contains more one fact
+    // from the mutex group, it is clearly an unreachable operator
+    if (borISetSize(mpre) > 1 || borISetSize(madd) > 1)
+        return 1;
 
+    // The dead-end operators are those that delete all fact from
+    // the fact-alternating mutex group even though it is required
+    // that one of the facts is part of the goal.
+    if (cfg->fa_mgroup_dead_end
+            && mg->is_fa
+            && mg->is_goal
+            && borISetSize(madd) == 0
+            && borISetSize(mpredel) > 0){
+        return 1;
+    }
+
+    return 0;
+}
 
 static int pruneWithMGroups(pddl_strips_t *strips,
                             const pddl_mgroups_t *mgs,
@@ -52,17 +60,35 @@ static int pruneWithMGroups(pddl_strips_t *strips,
 {
     int *prune_op = BOR_CALLOC_ARR(int, strips->op.op_size);
     int change = 0;
+    bor_iset_t mpre, mdel, mpredel, madd;
+
+    borISetInit(&mpre);
+    borISetInit(&mdel);
+    borISetInit(&mpredel);
+    borISetInit(&madd);
 
     for (int mgi = 0; mgi < mgs->size; ++mgi){
         const pddl_mgroup_t *mg = mgs->g + mgi;
         for (int opi = 0; opi < strips->op.op_size; ++opi){
-            const pddl_strips_op_t *op = strips->op.op[opi];
+            pddl_strips_op_t *op = strips->op.op[opi];
             if (op == NULL || prune_op[opi])
                 continue;
-            if (mgroupOpIsUnreachable(op, &mg->fact)
-                    || mgroupOpIsDeadEnd(op, mg, cfg)){
-                prune_op[opi] = 1;
-                change = 1;
+
+            borISetIntersect2(&mpre, &mg->fact, &op->pre);
+            borISetIntersect2(&mdel, &mg->fact, &op->del_eff);
+            borISetIntersect2(&mpredel, &mpre, &mdel);
+            borISetIntersect2(&madd, &mg->fact, &op->add_eff);
+
+            prune_op[opi] = pruneOpWithMGroup(mg, &mpre, &mdel, &mpredel,
+                                              &madd, cfg);
+            change |= prune_op[opi];
+
+            // Disambiguate delete effect
+            if (cfg->disambiguation
+                    && borISetSize(&mpredel) >= 1
+                    && borISetSize(&mdel) > borISetSize(&mpredel)){
+                borISetMinus(&mdel, &mpredel);
+                borISetMinus(&op->del_eff, &mdel);
             }
         }
     }
@@ -70,6 +96,11 @@ static int pruneWithMGroups(pddl_strips_t *strips,
     pddlStripsOpsDel(&strips->op, prune_op);
 
     BOR_FREE(prune_op);
+
+    borISetFree(&mpre);
+    borISetFree(&mdel);
+    borISetFree(&mpredel);
+    borISetFree(&madd);
 
     return change;
 }

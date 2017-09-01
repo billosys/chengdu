@@ -87,6 +87,10 @@ static int isApplicable2(const pddl_strips_op_t *op, int fact_id, h2_t *h2)
         return 0;
     if (!h2->op_applied[op->id])
         return 0;
+    if (!FACT(h2, fact_id, fact_id))
+        return 0;
+    if (borISetHas(&op->add_eff, fact_id) || borISetHas(&op->del_eff, fact_id))
+        return 0;
 
     BOR_ISET_FOR_EACH(&op->pre, f1){
         if (!FACT(h2, f1, fact_id))
@@ -105,10 +109,10 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
     if (!isApplicable(op, h2))
         return 0;
 
-    BOR_ISET_FOR_EACH(&op->add_eff, f1){
-        if (!h2->op_applied[op->id]){
-            // This needs to be run only the first time the operator is
-            // applied.
+    if (!h2->op_applied[op->id]){
+        // This needs to be run only the first time the operator is
+        // applied.
+        BOR_ISET_FOR_EACH(&op->add_eff, f1){
             BOR_ISET_FOR_EACH(&op->add_eff, f2){
                 if (!FACT(h2, f1, f2)){
                     FACT(h2, f1, f2) = FACT(h2, f2, f1) = 1;
@@ -116,21 +120,21 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
                 }
             }
         }
+    }
+    // This needs to be set here because isApplicable2 depends on it
+    h2->op_applied[op->id] = 1;
 
-        for (int fact_id = 0; fact_id < h2->fact_size; ++fact_id){
-            if (!FACT(h2, fact_id, fact_id) || FACT(h2, f1, fact_id))
-                continue;
-            if (borISetHas(&op->add_eff, fact_id)
-                    || borISetHas(&op->del_eff, fact_id))
-                continue;
-            if (isApplicable2(op, fact_id, h2)){
-                FACT(h2, f1, fact_id) = FACT(h2, fact_id, f1) = 1;
-                updated = 1;
+    for (int fact_id = 0; fact_id < h2->fact_size; ++fact_id){
+        if (isApplicable2(op, fact_id, h2)){
+            BOR_ISET_FOR_EACH(&op->add_eff, f1){
+                if (!FACT(h2, f1, fact_id)){
+                    FACT(h2, f1, fact_id) = FACT(h2, fact_id, f1) = 1;
+                    updated = 1;
+                }
             }
         }
     }
 
-    h2->op_applied[op->id] = 1;
     return updated;
 }
 

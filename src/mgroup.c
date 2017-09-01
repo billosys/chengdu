@@ -85,10 +85,10 @@ static int faIsExactly1(const pddl_strips_t *strips,
 {
     for (int oi = 0; oi < strips->op.op_size; ++oi){
         const pddl_strips_op_t *op = strips->op.op[oi];
-        int del_size = borISetIntersectionSize(&mg->fact, &op->del_eff);
-        if (del_size > 0
-                && del_size > borISetIntersectionSize(&mg->fact, &op->add_eff))
+        if (!borISetIntersectionSizeAtLeast(&mg->fact, &op->add_eff, 1)
+                && borISetIntersectionSizeAtLeast(&mg->fact, &op->del_eff, 1)){
             return 0;
+        }
     }
 
     return 1;
@@ -251,6 +251,8 @@ void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
             fprintf(fout, "g:");
         if (ms->g[i].is_fa)
             fprintf(fout, "fa:");
+        if (ms->g[i].is_exactly_1)
+            fprintf(fout, "e1:");
         fprintf(fout, "%d :: ", p.m[i][0]);
         for (int j = 0; j < p.m[i][0]; ++j){
             if (j > 0)
