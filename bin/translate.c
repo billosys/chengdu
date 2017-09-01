@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
         return -1;
 
     cfg = o->cfg;
+    cfg.force_adl = 1;
     cfg.strips = 1;
     cfg.strips_cfg.prune.enable = 1;
     cfg.strips_cfg.fa_mgroup = 1;
