@@ -1,21 +1,22 @@
 #include <pddl/pddl.h>
 
+#include "options.h"
+
 int main(int argc, char *argv[])
 {
-    pddl_config_t cfg = PDDL_CONFIG_INIT;
+    options_t *o;
+    pddl_config_t cfg;
     pddl_t *pddl;
 
-    if (argc != 3){
-        fprintf(stderr, "Usage: %s domain.pddl problem.pddl\n", argv[0]);
+    if ((o = options(argc, argv)) == NULL)
         return -1;
-    }
 
-    cfg.force_adl = 1;
-    cfg.normalize = 1;
-    cfg.compile_away_cond_eff = 0;
+    cfg = o->cfg;
     cfg.strips = 1;
+    cfg.strips_cfg.prune.enable = 1;
+    cfg.strips_cfg.fa_mgroup = 1;
     cfg.fdr = 1;
-    pddl = pddlNew(argv[1], argv[2], &cfg);
+    pddl = pddlNew(o->domain_pddl, o->problem_pddl, &cfg);
     if (pddl == NULL){
         pddlErrPrintWithTraceback();
         return -1;

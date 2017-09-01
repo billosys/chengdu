@@ -1,0 +1,76 @@
+/***
+ * maplan
+ * -------
+ * Copyright (c)2015 Daniel Fiser <danfis@danfis.cz>,
+ * Agent Technology Center, Department of Computer Science,
+ * Faculty of Electrical Engineering, Czech Technical University in Prague.
+ * All rights reserved.
+ *
+ * This file is part of maplan.
+ *
+ * Distributed under the OSI-approved BSD License (the "License");
+ * see accompanying file BDS-LICENSE for details or see
+ * <http://www.opensource.org/licenses/bsd-license.php>.
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License for more information.
+ */
+
+#include <strings.h>
+#include <string.h>
+#include <boruvka/alloc.h>
+#include <opts.h>
+
+#include "options.h"
+
+static options_t _opts = {
+    0,
+    NULL,
+    NULL,
+    PDDL_CONFIG_INIT,
+};
+
+static int readOpts(int argc, char *argv[])
+{
+    options_t *o = &_opts;
+
+    optsAddDesc("help", 'h', OPTS_NONE, &o->help, NULL,
+                "Print this help.");
+
+    if (opts(&argc, argv) != 0){
+        return -1;
+    }
+    if (argc != 3)
+        return -1;
+
+    o->domain_pddl = argv[1];
+    o->problem_pddl = argv[2];
+
+    return 0;
+}
+
+static void usage(const char *progname)
+{
+    fprintf(stderr, "Usage: %s [OPTIONS]\n", progname);
+    fprintf(stderr, "  OPTIONS:\n");
+    optsPrint(stderr, "    ");
+    fprintf(stderr, "\n");
+}
+
+options_t *options(int argc, char *argv[])
+{
+    options_t *o = &_opts;
+
+    if (readOpts(argc, argv) != 0 || o->help){
+        usage(argv[0]);
+        return NULL;
+    }
+
+    return o;
+}
+
+void optionsFree(void)
+{
+    optsClear();
+}
