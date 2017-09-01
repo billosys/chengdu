@@ -264,3 +264,30 @@ void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
         BOR_FREE(p.m[i]);
     BOR_FREE(p.m);
 }
+
+void pddlMGroupsPrintPython(const pddl_mgroups_t *mg, FILE *fout)
+{
+    fprintf(fout, "[\n");
+    for (int i = 0; i < mg->size; ++i){
+        const pddl_mgroup_t *g = mg->g + i;
+        int fact_id;
+
+        fprintf(fout, "    {\n");
+
+        fprintf(fout, "        'fact' : [");
+        BOR_ISET_FOR_EACH(&g->fact, fact_id)
+            fprintf(fout, " %d,", fact_id);
+        fprintf(fout, "],\n");
+        fprintf(fout, "        'is_init' : %s,\n",
+                (g->is_init ? "True" : "False"));
+        fprintf(fout, "        'is_goal' : %s,\n",
+                (g->is_goal ? "True" : "False"));
+        fprintf(fout, "        'is_fa' : %s,\n",
+                (g->is_fa ? "True" : "False"));
+        fprintf(fout, "        'is_exactly_1' : %s,\n",
+                (g->is_exactly_1 ? "True" : "False"));
+
+        fprintf(fout, "    },\n");
+    }
+    fprintf(fout, "]\n");
+}

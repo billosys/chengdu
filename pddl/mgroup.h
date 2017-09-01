@@ -82,6 +82,7 @@ pddl_mgroups_t *pddlMGroupsFANew(const pddl_strips_t *strips);
 
 void pddlMGroupsPrettyPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                             const pddl_mgroups_t *ms, FILE *fout);
+void pddlMGroupsPrintPython(const pddl_mgroups_t *mg, FILE *fout);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
