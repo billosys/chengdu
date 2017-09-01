@@ -94,7 +94,7 @@ struct pddl_strips_config {
 typedef struct pddl_strips_config pddl_strips_config_t;
 
 #define PDDL_STRIPS_CONFIG_INIT { \
-        1, /* fa_mgroup */ \
+        0, /* fa_mgroup */ \
         PDDL_STRIPS_PRUNE_CONFIG_INIT, /* prune */ \
     }
 

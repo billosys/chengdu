@@ -134,29 +134,6 @@ static int parseGoal(pddl_t *pddl)
     return 0;
 }
 
-pddl_fdr_t *fdrNew(const pddl_strips_t *strips,
-                   const pddl_config_t *cfg)
-{
-    pddl_mgroups_t ms;
-    pddl_fdr_t *fdr;
-
-    pddlMGroupsInit(&ms);
-    if (pddlMGroupsFA(strips, &ms) != 0){
-        pddlMGroupsFree(&ms);
-        TRACE_RET(NULL);
-    }
-
-    fdr = pddlFDRFromStrips(strips, &ms, cfg->fdr_vars_flags);
-    if (fdr == NULL){
-        pddlMGroupsFree(&ms);
-        TRACE_RET(NULL);
-    }
-
-    pddlMGroupsFree(&ms);
-
-    return fdr;
-}
-
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
                 const pddl_config_t *cfg)
 {
@@ -181,7 +158,12 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
     bzero(pddl, sizeof(*pddl));
     pddlFactsInit(&pddl->init_fact);
     pddlFactsInit(&pddl->init_func);
+
     pddl->cfg = *cfg;
+    // FDR requires mutex groups so enable it if not already enabled
+    if (pddl->cfg.fdr)
+        pddl->cfg.strips_cfg.fa_mgroup = 1;
+
     pddl->domain_lisp = domain_lisp;
     pddl->problem_lisp = problem_lisp;
     pddl->domain_name = parseDomainName(domain_lisp);
@@ -221,7 +203,9 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
     }
 
     if (pddl->cfg.fdr){
-        if ((pddl->fdr = fdrNew(pddl->strips, &pddl->cfg)) == NULL)
+        pddl->fdr = pddlFDRFromStrips(pddl->strips, &pddl->strips->mgroup,
+                                      pddl->cfg.fdr_vars_flags);
+        if (pddl->fdr == NULL)
             goto pddl_fail;
     }
 

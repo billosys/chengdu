@@ -90,6 +90,13 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
         }
     }
 
+    if (strips->cfg.fa_mgroup){
+        if (pddlMGroupsFA(strips, &strips->mgroup) != 0){
+            pddlStripsDel(strips);
+            TRACE_RET(NULL);
+        }
+    }
+
     return strips;
 }
 
@@ -99,6 +106,7 @@ void pddlStripsDel(pddl_strips_t *strips)
     pddlStripsOpsFree(&strips->op);
     borISetFree(&strips->init);
     borISetFree(&strips->goal);
+    pddlMGroupsFree(&strips->mgroup);
     BOR_FREE(strips);
 }
 
