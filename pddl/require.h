@@ -20,13 +20,12 @@
 #ifndef __PDDL_REQUIRE_H__
 #define __PDDL_REQUIRE_H__
 
+#include <pddl/common.h>
 #include <pddl/lisp.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-struct pddl;
 
 /**
  * Requirements
@@ -56,7 +55,7 @@ struct pddl;
 /**
  * Parses :requirements from domain pddl.
  */
-int pddlRequireParse(struct pddl *pddl);
+int pddlRequireParse(pddl_t *pddl);
 
 #ifdef __cplusplus
 } /* extern "C" */

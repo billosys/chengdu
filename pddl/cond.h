@@ -22,6 +22,7 @@
 
 #include <boruvka/list.h>
 
+#include <pddl/common.h>
 #include <pddl/lisp.h>
 #include <pddl/require.h>
 #include <pddl/type.h>
@@ -33,8 +34,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-struct pddl;
 
 /**
  * Types of conditions
@@ -149,7 +148,7 @@ pddl_cond_t *pddlCondClone(const pddl_cond_t *cond);
  * flattened (CNF) or atom.
  */
 pddl_cond_t *pddlCondNegatePre(const pddl_cond_t *cond,
-                               const struct pddl *pddl);
+                               const pddl_t *pddl);
 
 /**
  * Traverse all conditionals in a tree and call in pre/post order callbacks
@@ -181,7 +180,7 @@ void pddlCondRebuild(pddl_cond_t **c,
  * The function requires that c is the (and ...) node.
  */
 pddl_cond_when_t *pddlCondRemoveFirstNonStaticWhen(pddl_cond_t *c,
-                                                   const struct pddl *pddl);
+                                                   const pddl_t *pddl);
 
 /**
  * Creates a new (and a b) node.
@@ -198,7 +197,7 @@ int pddlCondHasAtom(const pddl_cond_t *c);
  * Parse condition from PDDL lisp.
  */
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
-                           struct pddl *pddl,
+                           pddl_t *pddl,
                            const pddl_params_t *params,
                            const char *errname);
 
@@ -248,12 +247,12 @@ void pddlCondSetPredReadWriteEff(const pddl_cond_t *cond, pddl_preds_t *preds);
  * Normalize conditionals by instantiation qunatifiers and transformation to
  * DNF so that the actions can be split.
  */
-pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const struct pddl *pddl);
+pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl);
 
 /**
  * Remove atom node duplicates.
  */
-pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const struct pddl *pddl);
+pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const pddl_t *pddl);
 
 /**
  * If conflicting literals are found
@@ -261,7 +260,7 @@ pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const struct pddl *pddl);
  *   2) in the or node, the literals are removed (as if they were replaced
  *      by true are or simplified).
  */
-pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const struct pddl *pddl);
+pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl);
 
 /**
  * If conflicting literals are found
@@ -269,7 +268,7 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const struct pddl *pddl);
  *      rule "first delete then add".
  *   2) in the or node, the error is reported.
  */
-pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const struct pddl *pddl);
+pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl);
 
 /**
  * Ground atom to a fact using arguments, {fact} has to have allocated
@@ -281,7 +280,7 @@ int pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
                            const int *args,
                            pddl_fact_t *fact);
 
-void pddlCondPrint(const struct pddl *pddl,
+void pddlCondPrint(const pddl_t *pddl,
                    const pddl_cond_t *cond,
                    const pddl_params_t *params,
                    FILE *fout);

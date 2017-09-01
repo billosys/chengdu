@@ -215,14 +215,9 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
     }
 
     if (pddl->cfg.strips){
-        pddl->strips = pddlStripsGround(pddl);
+        pddl->strips = pddlStripsNew(pddl, &pddl->cfg.strips_cfg);
         if (pddl->strips == NULL)
             goto pddl_fail;
-
-        if (pddl->cfg.strips_prune){
-            if (pddlStripsPrune(pddl->strips, &pddl->cfg.strips_prune_cfg) != 0)
-                goto pddl_fail;
-        }
     }
 
     if (pddl->cfg.fdr){

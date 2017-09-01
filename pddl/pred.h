@@ -20,14 +20,13 @@
 #ifndef __PDDL_PRED_H__
 #define __PDDL_PRED_H__
 
+#include <pddl/common.h>
 #include <pddl/require.h>
 #include <pddl/type.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-struct pddl;
 
 struct pddl_pred {
     const char *name; /*!< Name of the predicate */
@@ -60,12 +59,12 @@ typedef struct pddl_preds pddl_preds_t;
 /**
  * Parse :predicates from domain PDDL.
  */
-int pddlPredsParse(struct pddl *pddl);
+int pddlPredsParse(pddl_t *pddl);
 
 /**
  * Parse :functions from domain PDDL.
  */
-int pddlFuncsParse(struct pddl *pddl);
+int pddlFuncsParse(pddl_t *pddl);
 
 /**
  * Frees allocated resources.

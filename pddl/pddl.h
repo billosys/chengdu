@@ -21,6 +21,7 @@
 #define __PDDL_H__
 
 #include <pddl/config.h>
+#include <pddl/common.h>
 #include <pddl/lisp.h>
 #include <pddl/require.h>
 #include <pddl/type.h>
@@ -47,8 +48,7 @@ struct pddl_config {
 
     int strips; /*!< True if the problem should be grounded to STRIPS.
                      Requires normalization turned on. */
-    int strips_prune; /*!< True if the STRIPS should be pruned */
-    pddl_strips_prune_config_t strips_prune_cfg;
+    pddl_strips_config_t strips_cfg;
 
     int fdr; /*!< True if the STRIPS should be translated into FDR */
     unsigned fdr_vars_flags; /*!< See PDDL_FR_VARS_* */
@@ -62,8 +62,7 @@ typedef struct pddl_config pddl_config_t;
       0, /* compile_away_cond_eff */ \
       \
       0, /* strips */ \
-      1, /* strips_prune */ \
-      PDDL_STRIPS_PRUNE_CONFIG_INIT, /* strips_prune_cfg */ \
+      PDDL_STRIPS_CONFIG_INIT, /* strips_cfg */ \
       \
       0, /* fdr */ \
       PDDL_FDR_VARS_LARGEST_FIRST, /* fdr_vars_flags */ \
@@ -89,7 +88,6 @@ struct pddl {
     pddl_strips_t *strips;
     pddl_fdr_t *fdr;
 };
-typedef struct pddl pddl_t;
 
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
                 const pddl_config_t *cfg);

@@ -20,16 +20,15 @@
 #ifndef __PDDL_STRIPS_OP_H__
 #define __PDDL_STRIPS_OP_H__
 
-#include <pddl/fact.h>
-
 #include <boruvka/htable.h>
 #include <boruvka/iset.h>
+
+#include <pddl/common.h>
+#include <pddl/fact.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-struct pddl;
 
 struct pddl_strips_op_cond_eff {
     bor_iset_t pre;
@@ -149,9 +148,9 @@ void pddlStripsOpsDel(pddl_strips_ops_t *ops, const int *m);
  */
 void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap);
 
-void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+void pddlStripsOpPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                        const pddl_strips_op_t *op, FILE *fout);
-void pddlStripsOpsPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+void pddlStripsOpsPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                         const pddl_strips_ops_t *ops, FILE *fout);
 
 #ifdef __cplusplus

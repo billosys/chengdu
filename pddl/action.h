@@ -29,9 +29,6 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct pddl;
-
-
 /**
  * Lifted action
  */
@@ -68,12 +65,12 @@ void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src);
 /**
  * Normalize .pre and .eff (see pddlCondNormalize()).
  */
-void pddlActionNormalize(pddl_action_t *a, const struct pddl *pddl);
+void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl);
 
 /**
  * Parses actions from domain PDDL.
  */
-int pddlActionsParse(struct pddl *pddl);
+int pddlActionsParse(pddl_t *pddl);
 
 /**
  * Free allocated memory.
@@ -95,9 +92,8 @@ void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as);
  */
 void pddlActionAssertPreConjuction(pddl_action_t *a);
 
-void pddlActionPrint(const struct pddl *pddl,
-                     const pddl_action_t *a, FILE *fout);
-void pddlActionsPrint(const struct pddl *pddl,
+void pddlActionPrint(const pddl_t *pddl, const pddl_action_t *a, FILE *fout);
+void pddlActionsPrint(const pddl_t *pddl,
                       const pddl_actions_t *actions,
                       FILE *fout);
 

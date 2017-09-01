@@ -20,13 +20,12 @@
 #ifndef __PDDL_TYPE_H__
 #define __PDDL_TYPE_H__
 
+#include <pddl/common.h>
 #include <pddl/lisp.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-struct pddl;
 
 struct pddl_type {
     const char *name; /*!< Name of the type */
@@ -56,7 +55,7 @@ typedef struct pddl_types pddl_types_t;
 /**
  * Parses :types into type array.
  */
-int pddlTypesParse(struct pddl *pddl);
+int pddlTypesParse(pddl_t *pddl);
 
 /**
  * Frees allocated resources.

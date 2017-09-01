@@ -21,7 +21,9 @@
 #define __PDDL_MGROUP_H__
 
 #include <boruvka/iset.h>
-#include <pddl/strips.h>
+
+#include <pddl/common.h>
+#include <pddl/fact.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,7 +80,7 @@ pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg);
 int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs);
 pddl_mgroups_t *pddlMGroupsFANew(const pddl_strips_t *strips);
 
-void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+void pddlMGroupsPrettyPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                             const pddl_mgroups_t *ms, FILE *fout);
 #ifdef __cplusplus
 } /* extern "C" */

@@ -27,8 +27,6 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct pddl_t;
-
 struct pddl_mgroup_dtg {
     int node_size;
     bor_iset_t *adj;
@@ -56,7 +54,7 @@ int pddlMGroupDTGInit(pddl_mgroup_dtg_t *dtg,
 void pddlMGroupDTGFree(pddl_mgroup_dtg_t *dtg);
 
 void pddlMGroupDTGPrintAsDot(const pddl_mgroup_dtg_t *dtg,
-                             const struct pddl *pddl,
+                             const pddl_t *pddl,
                              FILE *fout);
 
 #ifdef __cplusplus

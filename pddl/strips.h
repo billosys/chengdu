@@ -23,15 +23,18 @@
 #include <boruvka/htable.h>
 #include <boruvka/iset.h>
 
+#include <pddl/common.h>
 #include <pddl/strips_op.h>
+#include <pddl/mgroup.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-struct pddl;
-
 struct pddl_strips_prune_config {
+    /** Set to true if pruning should be enabled */
+    int enable;
+
     /** Run pruning until fixpoint. If set to false, the pruning is run
      *  only once. Default: 1 */
     int fixpoint;
@@ -71,6 +74,7 @@ struct pddl_strips_prune_config {
 typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
 
 #define PDDL_STRIPS_PRUNE_CONFIG_INIT { \
+        0, /* enable */ \
         1, /* fixpoint */ \
         1, /* static_facts */ \
         1, /* irrelevance */ \
@@ -82,22 +86,36 @@ typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
         1, /* disambiguation */ \
     }
 
+struct pddl_strips_config {
+    /** Compute fact-alternating mutex groups */
+    int fa_mgroup;
+    pddl_strips_prune_config_t prune;
+};
+typedef struct pddl_strips_config pddl_strips_config_t;
+
+#define PDDL_STRIPS_CONFIG_INIT { \
+        1, /* fa_mgroup */ \
+        PDDL_STRIPS_PRUNE_CONFIG_INIT, /* prune */ \
+    }
+
 struct pddl_strips {
-    const struct pddl *pddl;
+    pddl_strips_config_t cfg;
+    const pddl_t *pddl;
     pddl_facts_t fact; /*!< Set of facts */
     pddl_strips_ops_t op; /*!< Set of operators */
     bor_iset_t init; /*!< Initial state */
     bor_iset_t goal; /*!< Goal specification */
+    pddl_mgroups_t mgroup; /*!< List of mutex groups */
     int goal_is_unreachable; /*!< True if the goal is not reachable */
     int has_cond_eff; /*!< True if the problem contains operators with
                            conditinal effects. */
 };
-typedef struct pddl_strips pddl_strips_t;
 
 /**
  * Grounds pddl into strips.
  */
-pddl_strips_t *pddlStripsGround(const struct pddl *pddl);
+pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
+                             const pddl_strips_config_t *cfg);
 
 /**
  * Deletes allocated memory.

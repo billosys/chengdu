@@ -21,6 +21,7 @@
 #include <boruvka/sort.h>
 #include <boruvka/lp.h>
 #include "pddl/mgroup.h"
+#include "pddl/strips.h"
 #include "err.h"
 
 void pddlMGroupInit(pddl_mgroup_t *mg)

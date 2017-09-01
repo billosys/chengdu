@@ -83,7 +83,7 @@ pddl_mutexes_t *pddlMutexesHmNew(int m, const pddl_strips_t *strips,
                                  int *unreachable_ops);
 
 
-void pddlMutexesPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+void pddlMutexesPrettyPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                             const pddl_mutexes_t *ms, FILE *fout);
 #ifdef __cplusplus
 } /* extern "C" */

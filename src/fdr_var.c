@@ -20,6 +20,7 @@
 #include <boruvka/alloc.h>
 #include <boruvka/sort.h>
 
+#include "pddl/strips.h"
 #include "pddl/fdr_var.h"
 #include "assert.h"
 

@@ -22,6 +22,8 @@
 
 #include <boruvka/alloc.h>
 #include <boruvka/htable.h>
+
+#include <pddl/common.h>
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
@@ -30,8 +32,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-struct pddl;
 
 struct pddl_fact {
     int *arg;       /*!< Object IDs are arguments */
@@ -96,25 +96,25 @@ int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
  * Returns 0 if fact remained non-private, 1 if privateness was set and -1
  * if there is conflict in owners of the fact (thus this is invalid fact).
  */
-int pddlFactSetPrivate(const struct pddl *pddl, pddl_fact_t *fact);
+int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact);
 
 /**
  * Returns formatted name of the fact.
  * The returned value is a static variable managed inside this module -- do
  * not free it!
  */
-const char *pddlFactToStr(const struct pddl *pddl, const pddl_fact_t *f);
+const char *pddlFactToStr(const pddl_t *pddl, const pddl_fact_t *f);
 
 /**
  * Print formatted fact/func.
  */
-void pddlFactPrint(const struct pddl *p, const pddl_fact_t *f, FILE *fout);
-void pddlFuncPrint(const struct pddl *p, const pddl_fact_t *f, FILE *fout);
+void pddlFactPrint(const pddl_t *p, const pddl_fact_t *f, FILE *fout);
+void pddlFuncPrint(const pddl_t *p, const pddl_fact_t *f, FILE *fout);
 
 /**
  * Returns true if the fact is static.
  */
-int pddlFactIsStatic(const struct pddl *pddl, const pddl_fact_t *f);
+int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f);
 
 
 
@@ -136,7 +136,7 @@ typedef struct pddl_facts pddl_facts_t;
  * Parses :init into list of instantiated predicates and instantiated
  * functions.
  */
-int pddlFactsParseInit(struct pddl *pddl);
+int pddlFactsParseInit(pddl_t *pddl);
 
 /**
  * Initialize set of facts.
@@ -183,24 +183,24 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
  */
 int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *f);
 
-void pddlFactsPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+void pddlFactsPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                     FILE *fout);
-void pddlFuncsPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+void pddlFuncsPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                     FILE *fout);
-void pddlFactsPrintSorted(const struct pddl *pddl,
+void pddlFactsPrintSorted(const pddl_t *pddl,
                           const pddl_facts_t *fs,
                           FILE *fout);
-void pddlFuncsPrintSorted(const struct pddl *pddl,
+void pddlFuncsPrintSorted(const pddl_t *pddl,
                           const pddl_facts_t *fs,
                           FILE *fout);
-void pddlFactsPrintInit(const struct pddl *pddl,
+void pddlFactsPrintInit(const pddl_t *pddl,
                         const pddl_facts_t *in,
                         FILE *fout);
-void pddlFactsPrintInitFunc(const struct pddl *pddl,
+void pddlFactsPrintInitFunc(const pddl_t *pddl,
                             const pddl_facts_t *in,
                             FILE *fout);
 
-void pddlFactIdSetPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
+void pddlFactIdSetPrettyPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                               const bor_iset_t *s, FILE *fout);
 
 #ifdef __cplusplus

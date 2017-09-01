@@ -21,14 +21,14 @@
 #define __PDDL_PREP_ACTION_H__
 
 #include <boruvka/htable.h>
+
+#include <pddl/common.h>
 #include <pddl/action.h>
 #include <pddl/cond_arr.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-struct pddl;
 
 struct pddl_prep_action {
     const pddl_action_t *action;
@@ -54,7 +54,7 @@ struct pddl_prep_actions {
 };
 typedef struct pddl_prep_actions pddl_prep_actions_t;
 
-int pddlPrepActionsInit(const struct pddl *pddl, pddl_prep_actions_t *as);
+int pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as);
 void pddlPrepActionsFree(pddl_prep_actions_t *as);
 
 /**

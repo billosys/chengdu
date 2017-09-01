@@ -37,6 +37,7 @@ static pddl_strips_t *stripsNew(const pddl_t *pddl)
     pddlStripsOpsInit(&strips->op);
     borISetInit(&strips->init);
     borISetInit(&strips->goal);
+    pddlMGroupsInit(&strips->mgroup);
     return strips;
 }
 
@@ -65,9 +66,12 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     strips->fact.fact_size = 1;
 }
 
-pddl_strips_t *pddlStripsGround(const pddl_t *pddl)
+pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
+                             const pddl_strips_config_t *cfg)
 {
     pddl_strips_t *strips = stripsNew(pddl);
+
+    strips->cfg = *cfg;
 
     if (_pddlStripsGround(strips, pddl) != 0){
         pddlStripsDel(strips);
@@ -78,6 +82,13 @@ pddl_strips_t *pddlStripsGround(const pddl_t *pddl)
 
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
+
+    if (strips->cfg.prune.enable){
+        if (pddlStripsPrune(strips, &strips->cfg.prune) != 0){
+            pddlStripsDel(strips);
+            TRACE_RET(NULL);
+        }
+    }
 
     return strips;
 }
