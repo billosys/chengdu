@@ -22,10 +22,16 @@
 
 #include <pddl/pddl.h>
 
+#define OUTPUT_FD 0
+#define OUTPUT_PY 1
+
 struct _options_t {
     int help;
     char *domain_pddl;
     char *problem_pddl;
+    char *output;
+    int output_type;
+
     pddl_config_t cfg;
 };
 typedef struct _options_t options_t;

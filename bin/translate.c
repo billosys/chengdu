@@ -23,7 +23,12 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    pddlFDRPrintAsFD(pddl->fdr, stdout);
+    if (o->output_type == OUTPUT_FD){
+        pddlFDRPrintAsFD(pddl->fdr, stdout);
+    }else{
+        pddlStripsPrintPython(pddl->strips, stdout);
+    }
+
     pddlDel(pddl);
     return 0;
 }

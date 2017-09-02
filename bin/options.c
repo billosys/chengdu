@@ -28,8 +28,20 @@ static options_t _opts = {
     0,
     NULL,
     NULL,
+    NULL,
+    OUTPUT_FD,
     PDDL_CONFIG_INIT,
 };
+
+static void outputFD(const char *l, char s)
+{
+    _opts.output_type = OUTPUT_FD;
+}
+
+static void outputPy(const char *l, char s)
+{
+    _opts.output_type = OUTPUT_PY;
+}
 
 static int readOpts(int argc, char *argv[])
 {
@@ -37,6 +49,12 @@ static int readOpts(int argc, char *argv[])
 
     optsAddDesc("help", 'h', OPTS_NONE, &o->help, NULL,
                 "Print this help.");
+    optsAddDesc("output", 'o', OPTS_STR, &o->output, NULL,
+                "Output file.");
+    optsAddDesc("fd", 0x0, OPTS_NONE, NULL, OPTS_CB(outputFD),
+                "Output fast-downward format.");
+    optsAddDesc("py", 0x0, OPTS_NONE, NULL, OPTS_CB(outputPy),
+                "Output python format.");
 
     if (opts(&argc, argv) != 0){
         return -1;
