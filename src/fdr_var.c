@@ -43,6 +43,53 @@ void pddlFDRVarFree(pddl_fdr_var_t *var)
         BOR_FREE(var->val);
 }
 
+/** If an operator contains a fact in its delete effect such that the fact
+ *  is not part of any mutex group that has intersection with its
+ *  precondition of add effect, then this fact must be encoded separately
+ *  (or this feature must be compiled away).
+ *  Consider the following example:
+ *      operator: pre: f_1, add: f_2, del: f_3
+ *      mutex group: { f_3, f_4 }
+ *  Now, how can we encode del: f_3 using the given mutex group?
+ *  If we encode it as "none-of-those", then the resulting state from the
+ *  application of the operator on the state {f_1, f_4} would be incorrect.
+ *  This is why f_3 must be encoded separately from all other mutex groups.
+ */
+static void factsRequiringBinaryEncoding(const pddl_strips_t *strips,
+                                         const pddl_mgroups_t *mgs,
+                                         bor_iset_t *binfs)
+{
+    bor_iset_t *fact_to_mgroup;
+    int fact_id, mgroup_id;
+
+    fact_to_mgroup = BOR_CALLOC_ARR(bor_iset_t, strips->fact.fact_size);
+    for (int mi = 0; mi < mgs->size; ++mi){
+        const pddl_mgroup_t *mg = mgs->g + mi;
+        BOR_ISET_FOR_EACH(&mg->fact, fact_id)
+            borISetAdd(fact_to_mgroup + fact_id, mi);
+    }
+
+    for (int oi = 0; oi < strips->op.op_size; ++oi){
+        const pddl_strips_op_t *op = strips->op.op[oi];
+        BOR_ISET_FOR_EACH(&op->del_eff, fact_id){
+            if (borISetIn(fact_id, &op->pre))
+                continue;
+            BOR_ISET_FOR_EACH(&fact_to_mgroup[fact_id], mgroup_id){
+                if (!borISetIntersectionSizeAtLeast(&mgs->g[mgroup_id].fact,
+                                                    &op->add_eff, 1)){
+                    fprintf(stderr, "X %d :: %s\n", oi, op->name);
+                    borISetAdd(binfs, fact_id);
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < strips->fact.fact_size; ++i)
+        borISetFree(fact_to_mgroup + i);
+    if (fact_to_mgroup != NULL)
+        BOR_FREE(fact_to_mgroup);
+}
+
 struct create {
     const pddl_strips_t *strips;
     int next_id; /*!< Next free ID for assignement */
@@ -69,6 +116,7 @@ static void createInit(create_t *c, const pddl_strips_t *strips,
                        const pddl_mgroups_t *mg)
 {
     bor_iset_t single_facts;
+    bor_iset_t bin_facts;
     int fact_id;
 
     // Remember strips problem
@@ -83,6 +131,8 @@ static void createInit(create_t *c, const pddl_strips_t *strips,
     for (int i = 0; i < c->strips->fact.fact_size; ++i)
         borISetAdd(&single_facts, i);
 
+    // Copy mutex groups into create_t structure and update single_facts in
+    // the process
     c->mgroup_size = mg->size;
     c->mgroup = BOR_ALLOC_ARR(bor_iset_t, c->mgroup_size);
     for (int i = 0; i < c->mgroup_size; ++i){
@@ -90,6 +140,15 @@ static void createInit(create_t *c, const pddl_strips_t *strips,
         borISetUnion(c->mgroup + i, &mg->g[i].fact);
         borISetMinus(&single_facts, &mg->g[i].fact);
     }
+
+    // Force binary encoding on facts that cannot be properly encoded with
+    // the current operators and mutex groups
+    borISetInit(&bin_facts);
+    factsRequiringBinaryEncoding(strips, mg, &bin_facts);
+    borISetUnion(&single_facts, &bin_facts);
+    for (int i = 0; i < c->mgroup_size; ++i)
+        borISetMinus(c->mgroup + i, &bin_facts);
+    borISetFree(&bin_facts);
 
     // Create one mutex group for each fact that is not covered by the
     // input mutex groups. This way we do not need to have separate
