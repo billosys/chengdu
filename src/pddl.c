@@ -235,6 +235,8 @@ void pddlDel(pddl_t *pddl)
 
     if (pddl->strips != NULL)
         pddlStripsDel(pddl->strips);
+    if (pddl->fdr != NULL)
+        pddlFDRDel(pddl->fdr);
 
     BOR_FREE(pddl);
 }
