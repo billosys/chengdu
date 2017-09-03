@@ -23,7 +23,8 @@
 #include <pddl/pddl.h>
 
 #define OUTPUT_FD 0
-#define OUTPUT_PY 1
+#define OUTPUT_STRIPS 1
+#define OUTPUT_PY 2
 
 struct _options_t {
     int help;

@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
 
     if (o->output_type == OUTPUT_FD){
         pddlFDRPrintAsFD(pddl->fdr, stdout);
+    }else if (o->output_type == OUTPUT_STRIPS){
+        pddlStripsDump(pddl->strips, stdout);
     }else{
         pddlStripsPrintPython(pddl->strips, stdout);
     }

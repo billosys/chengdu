@@ -38,6 +38,11 @@ static void outputFD(const char *l, char s)
     _opts.output_type = OUTPUT_FD;
 }
 
+static void outputStrips(const char *l, char s)
+{
+    _opts.output_type = OUTPUT_STRIPS;
+}
+
 static void outputPy(const char *l, char s)
 {
     _opts.output_type = OUTPUT_PY;
@@ -53,6 +58,8 @@ static int readOpts(int argc, char *argv[])
                 "Output file.");
     optsAddDesc("fd", 0x0, OPTS_NONE, NULL, OPTS_CB(outputFD),
                 "Output fast-downward format.");
+    optsAddDesc("strips", 0x0, OPTS_NONE, NULL, OPTS_CB(outputStrips),
+                "Output STRIPS text format.");
     optsAddDesc("py", 0x0, OPTS_NONE, NULL, OPTS_CB(outputPy),
                 "Output python format.");
 
