@@ -85,8 +85,10 @@ static int pruneWithMGroups(pddl_strips_t *strips,
 
             // Disambiguate delete effect
             if (cfg->disambiguation
-                    && borISetSize(&mpredel) >= 1
-                    && borISetSize(&mdel) > borISetSize(&mpredel)){
+                    && borISetSize(&mpre) > 0
+                    && borISetSize(&mdel) > 0
+                    && borISetSize(&mpredel) != borISetSize(&mdel)){
+                WARN("Disambiguation of delete effect of %s", op->name);
                 borISetMinus(&mdel, &mpredel);
                 borISetMinus(&op->del_eff, &mdel);
             }
@@ -154,9 +156,22 @@ int pddlStripsPrune(pddl_strips_t *strips,
             change |= pruneWithMutexes(strips, &mutex, cfg, prune_op);
         }
 
-        // TODO
+        // TODO: Disable this for now
+#if 0
         if (cfg->h_mutex_bw > 0){
+            pddl_strips_t *dual = pddlStripsDual(strips);
+            bzero(prune_op, sizeof(int) * strips->op.op_size);
+            if (pddlMutexesHm(cfg->h_mutex_bw, dual, NULL, prune_op) != 0){
+                pddlMutexesFree(&mutex);
+                pddlMGroupsFree(&mgroup);
+                BOR_FREE(prune_op);
+                TRACE_RET(-1);
+            }
+            pddlStripsDel(dual);
+
+            pddlStripsOpsDel(&strips->op, prune_op);
         }
+#endif
 
         if (cfg->fa_mgroup){
             if (pddlMGroupsFA(strips, &mgroup) != 0){
