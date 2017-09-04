@@ -141,7 +141,7 @@ int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add);
 /**
  * Deletes all operators for which m[op_id] is set to true.
  */
-void pddlStripsOpsDel(pddl_strips_ops_t *ops, const int *m);
+void pddlStripsOpsDelOps(pddl_strips_ops_t *ops, const int *m);
 
 /**
  * Calls pddlStripsOpRemapFacts for each operator.

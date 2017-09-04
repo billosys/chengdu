@@ -95,7 +95,7 @@ static int pruneWithMGroups(pddl_strips_t *strips,
         }
     }
 
-    pddlStripsOpsDel(&strips->op, prune_op);
+    pddlStripsOpsDelOps(&strips->op, prune_op);
 
     BOR_FREE(prune_op);
 
@@ -122,7 +122,7 @@ static int pruneWithMutexes(pddl_strips_t *strips,
     }
 
     if (change)
-        pddlStripsOpsDel(&strips->op, prune_op);
+        pddlStripsOpsDelOps(&strips->op, prune_op);
     return change;
 }
 
@@ -169,7 +169,7 @@ int pddlStripsPrune(pddl_strips_t *strips,
             }
             pddlStripsDel(dual);
 
-            pddlStripsOpsDel(&strips->op, prune_op);
+            pddlStripsOpsDelOps(&strips->op, prune_op);
         }
 #endif
 

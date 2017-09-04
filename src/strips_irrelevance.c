@@ -292,7 +292,7 @@ int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
     }
 
     if (pi.op_irrelevant_size > 0)
-        pddlStripsOpsDel(&strips->op, pi.op_irrelevant);
+        pddlStripsOpsDelOps(&strips->op, pi.op_irrelevant);
 
     if (pi.fact_irrelevant_size > 0){
         int *fact_remap = BOR_ALLOC_ARR(int, pi.fact_size);

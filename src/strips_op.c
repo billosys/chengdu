@@ -288,7 +288,7 @@ int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add)
     return op->id;
 }
 
-void pddlStripsOpsDel(pddl_strips_ops_t *ops, const int *m)
+void pddlStripsOpsDelOps(pddl_strips_ops_t *ops, const int *m)
 {
     int ins = 0;
     for (int op_id = 0; op_id < ops->op_size; ++op_id){
