@@ -21,7 +21,9 @@
 #define __PDDL_MUTEX_H__
 
 #include <boruvka/iset.h>
-#include <pddl/strips.h>
+
+#include <pddl/common.h>
+#include <pddl/fact.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,6 +84,11 @@ int pddlMutexesHm(int m, const pddl_strips_t *strips, pddl_mutexes_t *ms,
 pddl_mutexes_t *pddlMutexesHmNew(int m, const pddl_strips_t *strips,
                                  int *unreachable_ops);
 
+
+/**
+ * Remove h^m mutexes larger than max_m.
+ */
+void pddlMutexesHmLimit(pddl_mutexes_t *ms, int max_m);
 
 void pddlMutexesPrettyPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                             const pddl_mutexes_t *ms, FILE *fout);

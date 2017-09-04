@@ -46,3 +46,18 @@ pddl_mutexes_t *pddlMutexesHmNew(int m, const pddl_strips_t *strips,
     }
     return ms;
 }
+
+void pddlMutexesHmLimit(pddl_mutexes_t *ms, int max_m)
+{
+    int ins;
+
+    ins = 0;
+    for (int i = 0; i < ms->size; ++i){
+        if (ms->m[i].hm && borISetSize(&ms->m[i].fact) > max_m){
+            pddlMutexFree(&ms->m[i]);
+        }else{
+            ms->m[ins++] = ms->m[i];
+        }
+    }
+    ms->size = ins;
+}

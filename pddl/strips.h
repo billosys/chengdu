@@ -25,6 +25,7 @@
 
 #include <pddl/common.h>
 #include <pddl/strips_op.h>
+#include <pddl/mutex.h>
 #include <pddl/mgroup.h>
 
 #ifdef __cplusplus
@@ -87,6 +88,8 @@ typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
     }
 
 struct pddl_strips_config {
+    /** Compute h^m mutexes. 0 means no h^m mutexes */
+    int h_mutex;
     /** Compute fact-alternating mutex groups */
     int fa_mgroup;
     pddl_strips_prune_config_t prune;
@@ -94,6 +97,7 @@ struct pddl_strips_config {
 typedef struct pddl_strips_config pddl_strips_config_t;
 
 #define PDDL_STRIPS_CONFIG_INIT { \
+        0, /* h_mutex */ \
         0, /* fa_mgroup */ \
         PDDL_STRIPS_PRUNE_CONFIG_INIT, /* prune */ \
     }
@@ -105,6 +109,7 @@ struct pddl_strips {
     pddl_strips_ops_t op; /*!< Set of operators */
     bor_iset_t init; /*!< Initial state */
     bor_iset_t goal; /*!< Goal specification */
+    pddl_mutexes_t mutex; /*!< List of mutexes */
     pddl_mgroups_t mgroup; /*!< List of mutex groups */
     int goal_is_unreachable; /*!< True if the goal is not reachable */
     int has_cond_eff; /*!< True if the problem contains operators with

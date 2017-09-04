@@ -37,6 +37,7 @@ static pddl_strips_t *stripsNew(const pddl_t *pddl)
     pddlStripsOpsInit(&strips->op);
     borISetInit(&strips->init);
     borISetInit(&strips->goal);
+    pddlMutexesInit(&strips->mutex);
     pddlMGroupsInit(&strips->mgroup);
     return strips;
 }
@@ -90,10 +91,24 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
         }
     }
 
-    if (strips->cfg.fa_mgroup){
+    // Infer fa mutex groups only if they were not already infered during
+    // pruning.
+    if (strips->cfg.fa_mgroup && !strips->cfg.prune.fa_mgroup){
         if (pddlMGroupsFA(strips, &strips->mgroup) != 0){
             pddlStripsDel(strips);
             TRACE_RET(NULL);
+        }
+    }
+
+    if (strips->cfg.h_mutex > 0){
+        if (strips->cfg.prune.h_mutex < strips->cfg.h_mutex){
+            if (pddlMutexesHm(strips->cfg.h_mutex, strips,
+                              &strips->mutex, NULL) != 0){
+                pddlStripsDel(strips);
+                TRACE_RET(NULL);
+            }
+        }else{
+            pddlMutexesHmLimit(&strips->mutex, strips->cfg.h_mutex);
         }
     }
 
@@ -106,6 +121,7 @@ void pddlStripsDel(pddl_strips_t *strips)
     pddlStripsOpsFree(&strips->op);
     borISetFree(&strips->init);
     borISetFree(&strips->goal);
+    pddlMutexesFree(&strips->mutex);
     pddlMGroupsFree(&strips->mgroup);
     BOR_FREE(strips);
 }

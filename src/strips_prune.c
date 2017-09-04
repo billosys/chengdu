@@ -110,17 +110,17 @@ static int pruneFAMGroup(pddl_strips_t *strips,
                          int *prune_op,
                          int *change)
 {
-    pddl_mgroups_t mgroup;
+    pddl_mgroups_t *mgroup = &strips->mgroup;
     int ret;
 
     // Reuse array for operators
     bzero(prune_op, sizeof(int) * strips->op.op_size);
 
-    pddlMGroupsInit(&mgroup);
-    if ((ret = pddlMGroupsFA(strips, &mgroup)) == 0)
-        *change |= pruneWithMGroups(strips, &mgroup, cfg, prune_op);
+    pddlMGroupsFree(mgroup);
+    pddlMGroupsInit(mgroup);
+    if ((ret = pddlMGroupsFA(strips, mgroup)) == 0)
+        *change |= pruneWithMGroups(strips, mgroup, cfg, prune_op);
 
-    pddlMGroupsFree(&mgroup);
     return ret;
 }
 
@@ -146,17 +146,17 @@ static int pruneHMutex(pddl_strips_t *strips,
                        int *prune_op,
                        int *change)
 {
-    pddl_mutexes_t mutex;
+    pddl_mutexes_t *mutex = &strips->mutex;
     int ret;
 
     // Reuse array for operators
     bzero(prune_op, sizeof(int) * strips->op.op_size);
 
-    pddlMutexesInit(&mutex);
-    if ((ret = pddlMutexesHm(cfg->h_mutex, strips, &mutex, prune_op)) == 0)
+    pddlMutexesFree(mutex);
+    pddlMutexesInit(mutex);
+    if ((ret = pddlMutexesHm(cfg->h_mutex, strips, mutex, prune_op)) == 0)
         *change |= pruneOpArr(strips, prune_op);
 
-    pddlMutexesFree(&mutex);
     return ret;
 }
 
