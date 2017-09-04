@@ -56,9 +56,9 @@ static int pruneOpWithMGroup(const pddl_mgroup_t *mg,
 
 static int pruneWithMGroups(pddl_strips_t *strips,
                             const pddl_mgroups_t *mgs,
-                            const pddl_strips_prune_config_t *cfg)
+                            const pddl_strips_prune_config_t *cfg,
+                            int *prune_op)
 {
-    int *prune_op = BOR_CALLOC_ARR(int, strips->op.op_size);
     int change = 0;
     bor_iset_t mpre, mdel, mpredel, madd;
 
@@ -97,8 +97,6 @@ static int pruneWithMGroups(pddl_strips_t *strips,
 
     pddlStripsOpsDelOps(&strips->op, prune_op);
 
-    BOR_FREE(prune_op);
-
     borISetFree(&mpre);
     borISetFree(&mdel);
     borISetFree(&mpredel);
@@ -107,10 +105,27 @@ static int pruneWithMGroups(pddl_strips_t *strips,
     return change;
 }
 
-static int pruneWithMutexes(pddl_strips_t *strips,
-                            const pddl_mutexes_t *ms,
-                            const pddl_strips_prune_config_t *cfg,
-                            int *prune_op)
+static int pruneFAMGroup(pddl_strips_t *strips,
+                         const pddl_strips_prune_config_t *cfg,
+                         int *prune_op,
+                         int *change)
+{
+    pddl_mgroups_t mgroup;
+    int ret;
+
+    // Reuse array for operators
+    bzero(prune_op, sizeof(int) * strips->op.op_size);
+
+    pddlMGroupsInit(&mgroup);
+    if ((ret = pddlMGroupsFA(strips, &mgroup)) == 0)
+        *change |= pruneWithMGroups(strips, &mgroup, cfg, prune_op);
+
+    pddlMGroupsFree(&mgroup);
+    return ret;
+}
+
+static int pruneOpArr(pddl_strips_t *strips,
+                      const int *prune_op)
 {
     int change = 0;
 
@@ -126,34 +141,45 @@ static int pruneWithMutexes(pddl_strips_t *strips,
     return change;
 }
 
+static int pruneHMutex(pddl_strips_t *strips,
+                       const pddl_strips_prune_config_t *cfg,
+                       int *prune_op,
+                       int *change)
+{
+    pddl_mutexes_t mutex;
+    int ret;
+
+    // Reuse array for operators
+    bzero(prune_op, sizeof(int) * strips->op.op_size);
+
+    pddlMutexesInit(&mutex);
+    if ((ret = pddlMutexesHm(cfg->h_mutex, strips, &mutex, prune_op)) == 0)
+        *change |= pruneOpArr(strips, prune_op);
+
+    pddlMutexesFree(&mutex);
+    return ret;
+}
+
+
+
 int pddlStripsPrune(pddl_strips_t *strips,
                     const pddl_strips_prune_config_t *cfg)
 {
-    pddl_mgroups_t mgroup;
-    pddl_mutexes_t mutex;
     int change;
     int *prune_op;
 
     prune_op = BOR_ALLOC_ARR(int, strips->op.op_size);
 
     do {
-        pddlMGroupsInit(&mgroup);
-        pddlMutexesInit(&mutex);
         change = 0;
 
         if (cfg->irrelevance || cfg->static_facts)
             change |= _pddlStripsPruneIrrelevant(strips, cfg);
 
-        if (cfg->h_mutex > 0){
-            bzero(prune_op, sizeof(int) * strips->op.op_size);
-            if (pddlMutexesHm(cfg->h_mutex, strips, &mutex, prune_op) != 0){
-                pddlMutexesFree(&mutex);
-                pddlMGroupsFree(&mgroup);
-                BOR_FREE(prune_op);
-                TRACE_RET(-1);
-            }
-
-            change |= pruneWithMutexes(strips, &mutex, cfg, prune_op);
+        if (cfg->h_mutex > 0
+                && pruneHMutex(strips, cfg, prune_op, &change) != 0){
+            BOR_FREE(prune_op);
+            TRACE_RET(-1);
         }
 
         // TODO: Disable this for now
@@ -173,23 +199,15 @@ int pddlStripsPrune(pddl_strips_t *strips,
         }
 #endif
 
-        if (cfg->fa_mgroup){
-            if (pddlMGroupsFA(strips, &mgroup) != 0){
-                pddlMutexesFree(&mutex);
-                pddlMGroupsFree(&mgroup);
-                BOR_FREE(prune_op);
-                TRACE_RET(-1);
-            }
-
-            change |= pruneWithMGroups(strips, &mgroup, cfg);
+        if (cfg->fa_mgroup
+                && pruneFAMGroup(strips, cfg, prune_op, &change) != 0){
+            BOR_FREE(prune_op);
+            TRACE_RET(-1);
         }
 
         // TODO
         if (cfg->disambiguation){
         }
-
-        pddlMutexesFree(&mutex);
-        pddlMGroupsFree(&mgroup);
     } while (cfg->fixpoint && change);
 
     BOR_FREE(prune_op);
