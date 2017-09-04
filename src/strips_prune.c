@@ -21,6 +21,7 @@
 #include "pddl/mgroup.h"
 #include "pddl/mutex.h"
 #include "err.h"
+#include "assert.h"
 
 /** Prunes irrelevant facts and operators.
  *  Implemented in strips_irrelevance.c */
@@ -161,6 +162,98 @@ static int pruneHMutex(pddl_strips_t *strips,
 }
 
 
+static bor_iset_t *mutexTableNew(const pddl_strips_t *strips)
+{
+    bor_iset_t *table;
+    const pddl_mutex_t *m;
+    const pddl_mgroup_t *mg;
+
+    table = BOR_CALLOC_ARR(bor_iset_t, strips->fact.fact_size);
+    PDDL_MUTEXES_FOR_EACH(&strips->mutex, m){
+        const bor_iset_t *f = &m->fact;
+        if (borISetSize(f) == 2){
+            borISetAdd(&table[borISetGet(f, 0)], borISetGet(f, 1));
+            borISetAdd(&table[borISetGet(f, 1)], borISetGet(f, 0));
+        }
+    }
+
+    PDDL_MGROUPS_FOR_EACH(&strips->mgroup, mg){
+        const bor_iset_t *f = &mg->fact;
+        for (int i = 0; i < f->size; ++i){
+            for (int j = i + 1; j < f->size; ++j){
+                borISetAdd(&table[borISetGet(f, i)], borISetGet(f, j));
+                borISetAdd(&table[borISetGet(f, j)], borISetGet(f, i));
+            }
+        }
+    }
+
+    return table;
+}
+
+static void mutexTableDel(bor_iset_t *t, const pddl_strips_t *strips)
+{
+    for (int i = 0; i < strips->fact.fact_size; ++i)
+        borISetFree(t + i);
+    if (t != NULL)
+        BOR_FREE(t);
+}
+
+static int disambiguatePre(bor_iset_t *pre,
+                           const bor_iset_t *mutex,
+                           const pddl_mgroups_t *mgroups)
+{
+    bor_iset_t mutex_facts;
+    bor_iset_t remain;
+    int fact_id;
+    int change = 0, local_change;
+    const pddl_mgroup_t *mg;
+
+    borISetInit(&mutex_facts);
+    BOR_ISET_FOR_EACH(pre, fact_id)
+        borISetUnion(&mutex_facts, &mutex[fact_id]);
+
+    borISetInit(&remain);
+    do {
+        local_change = 0;
+        PDDL_MGROUPS_FOR_EACH(mgroups, mg){
+            if (!mg->is_exactly_1)
+                continue;
+            borISetMinus2(&remain, &mg->fact, &mutex_facts);
+            ASSERT(borISetSize(&remain) > 0);
+            if (borISetSize(&remain) == 1
+                    && !borISetIn(borISetGet(&remain, 0), pre)){
+                borISetAdd(pre, borISetGet(&remain, 0));
+                borISetUnion(&mutex_facts, &mutex[borISetGet(&remain, 0)]);
+                change = local_change = 1;
+            }
+        }
+    } while (local_change);
+
+
+    borISetFree(&remain);
+    borISetFree(&mutex_facts);
+
+    return change;
+}
+
+static int disambiguate(pddl_strips_t *strips,
+                        const pddl_strips_prune_config_t *cfg,
+                        int *change)
+{
+    bor_iset_t *mutex;
+
+    if (strips->mgroup.size == 0)
+        return 0;
+
+    mutex = mutexTableNew(strips);
+    for (int oi = 0; oi < strips->op.op_size; ++oi){
+        pddl_strips_op_t *op = strips->op.op[oi];
+        *change |= disambiguatePre(&op->pre, mutex, &strips->mgroup);
+    }
+
+    mutexTableDel(mutex, strips);
+    return 0;
+}
 
 int pddlStripsPrune(pddl_strips_t *strips,
                     const pddl_strips_prune_config_t *cfg)
@@ -205,8 +298,9 @@ int pddlStripsPrune(pddl_strips_t *strips,
             TRACE_RET(-1);
         }
 
-        // TODO
-        if (cfg->disambiguation){
+        if (cfg->disambiguation && disambiguate(strips, cfg, &change) != 0){
+            BOR_FREE(prune_op);
+            TRACE_RET(-1);
         }
     } while (cfg->fixpoint && change);
 

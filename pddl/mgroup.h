@@ -50,6 +50,9 @@ struct pddl_mgroups {
 };
 typedef struct pddl_mgroups pddl_mgroups_t;
 
+#define PDDL_MGROUPS_FOR_EACH(MS, M) \
+    for (int __i = 0; __i < (MS)->size && ((M) = (MS)->g + __i); ++__i)
+
 void pddlMGroupInit(pddl_mgroup_t *mg);
 void pddlMGroupFree(pddl_mgroup_t *mg);
 
