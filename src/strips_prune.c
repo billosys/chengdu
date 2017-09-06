@@ -198,10 +198,11 @@ static void mutexTableDel(bor_iset_t *t, const pddl_strips_t *strips)
         BOR_FREE(t);
 }
 
-static int disambiguatePre(bor_iset_t *pre,
+static int disambiguatePre(pddl_strips_op_t *op,
                            const bor_iset_t *mutex,
                            const pddl_mgroups_t *mgroups)
 {
+    bor_iset_t *pre = &op->pre;
     bor_iset_t mutex_facts;
     bor_iset_t remain;
     int fact_id;
@@ -233,6 +234,9 @@ static int disambiguatePre(bor_iset_t *pre,
     borISetFree(&remain);
     borISetFree(&mutex_facts);
 
+    if (change)
+        pddlStripsOpNormalize(op);
+
     return change;
 }
 
@@ -248,7 +252,7 @@ static int disambiguate(pddl_strips_t *strips,
     mutex = mutexTableNew(strips);
     for (int oi = 0; oi < strips->op.op_size; ++oi){
         pddl_strips_op_t *op = strips->op.op[oi];
-        *change |= disambiguatePre(&op->pre, mutex, &strips->mgroup);
+        *change |= disambiguatePre(op, mutex, &strips->mgroup);
     }
 
     mutexTableDel(mutex, strips);
