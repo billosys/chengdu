@@ -65,17 +65,17 @@ clean:
 	rm -f pddl/config.h
 	rm -f src/*.pb.{cc,h}
 	if [ -d bin ]; then $(MAKE) -C bin clean; fi;
-	if [ -d testsuites ]; then $(MAKE) -C testsuites clean; fi;
+	if [ -d test ]; then $(MAKE) -C test clean; fi;
 	if [ -d doc ]; then $(MAKE) -C doc clean; fi;
 
 mrproper: clean boruvka-clean opts-clean
 
 check:
-	$(MAKE) -C testsuites check
+	$(MAKE) -C test check
 check-valgrind:
-	$(MAKE) -C testsuites check-valgrind
+	$(MAKE) -C test check-valgrind
 check-segfault:
-	$(MAKE) -C testsuites check-segfault
+	$(MAKE) -C test check-segfault
 static-check:
 	$(CPPCHECK) $(CPPCHECK_FLAGS) pddl/ src/
 
