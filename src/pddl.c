@@ -576,6 +576,49 @@ int pddlPredFuncMaxParamSize(const pddl_t *pddl)
     return max;
 }
 
+void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout)
+{
+    fprintf(fout, "(define (domain %s)\n", pddl->domain_name);
+    pddlRequirePrintPDDL(pddl->require, fout);
+    pddlTypesPrintPDDL(&pddl->type, fout);
+    pddlObjsPrintPDDLConstants(&pddl->obj, &pddl->type, fout);
+    pddlPredsPrintPDDL(&pddl->pred, &pddl->type, fout);
+    pddlFuncsPrintPDDL(&pddl->func, &pddl->type, fout);
+    pddlActionsPrintPDDL(&pddl->action, pddl, fout);
+    fprintf(fout, ")\n");
+}
+
+void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout)
+{
+    fprintf(fout, "(define (problem %s) (:domain %s)\n",
+            pddl->problem_name, pddl->domain_name);
+
+    fprintf(fout, "(:init\n");
+    for (int i = 0; i < pddl->init_fact.fact_size; ++i){
+        const pddl_fact_t *f = pddl->init_fact.fact[i];
+        fprintf(fout, "    ");
+        pddlFactPrintPDDL(f, pddl, fout);
+        fprintf(fout, "\n");
+    }
+
+    for (int i = 0; i < pddl->init_func.fact_size; ++i){
+        const pddl_fact_t *f = pddl->init_func.fact[i];
+        fprintf(fout, "    ");
+        pddlFuncPrintPDDL(f, pddl, fout);
+        fprintf(fout, "\n");
+    }
+    fprintf(fout, ")\n");
+
+    fprintf(fout, "(:goal ");
+    pddlCondPrintPDDL(pddl->goal, pddl, NULL, fout);
+    fprintf(fout, ")\n");
+
+    if (pddl->metric)
+        fprintf(fout, "(:metric minimize (total-cost))\n");
+
+    fprintf(fout, ")\n");
+}
+
 void pddlDump(const pddl_t *pddl, FILE *fout)
 {
     fprintf(fout, "Domain: %s\n", pddl->domain_name);

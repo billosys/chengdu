@@ -320,3 +320,36 @@ void pddlPredsPrint(const pddl_preds_t *ps,
         fprintf(fout, "\n");
     }
 }
+
+static void printPDDL(const char *t,
+                      const pddl_preds_t *ps,
+                      const pddl_types_t *ts,
+                      FILE *fout)
+{
+    if (ps->size == 0)
+        return;
+    fprintf(fout, "(:%s\n", t);
+    for (int i = 0; i < ps->size; ++i){
+        const pddl_pred_t *p = ps->pred + i;
+        fprintf(fout, "    (%s", p->name);
+        for (int j = 0; j < p->param_size; ++j){
+            fprintf(fout, " ?x%d - %s", j, ts->type[p->param[j]].name);
+        }
+        fprintf(fout, ")\n");
+    }
+    fprintf(fout, ")\n");
+}
+
+void pddlPredsPrintPDDL(const pddl_preds_t *ps,
+                        const pddl_types_t *ts,
+                        FILE *fout)
+{
+    printPDDL("predicates", ps, ts, fout);
+}
+
+void pddlFuncsPrintPDDL(const pddl_preds_t *ps,
+                        const pddl_types_t *ts,
+                        FILE *fout)
+{
+    printPDDL("functions", ps, ts, fout);
+}

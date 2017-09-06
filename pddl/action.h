@@ -97,6 +97,13 @@ void pddlActionsPrint(const pddl_t *pddl,
                       const pddl_actions_t *actions,
                       FILE *fout);
 
+/**
+ * Print actions in PDDL format.
+ */
+void pddlActionsPrintPDDL(const pddl_actions_t *actions,
+                          const pddl_t *pddl,
+                          FILE *fout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

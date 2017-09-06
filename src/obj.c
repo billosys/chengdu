@@ -285,3 +285,15 @@ void pddlObjsPrint(const pddl_objs_t *objs, FILE *fout)
                 objs->obj[i].owner, objs->obj[i].is_agent);
     }
 }
+
+void pddlObjsPrintPDDLConstants(const pddl_objs_t *objs,
+                                const pddl_types_t *ts,
+                                FILE *fout)
+{
+    fprintf(fout, "(:constants\n");
+    for (int i = 0; i < objs->size; ++i){
+        const pddl_obj_t *o = objs->obj + i;
+        fprintf(fout, "    %s - %s\n", o->name, ts->type[o->type].name);
+    }
+    fprintf(fout, ")\n");
+}

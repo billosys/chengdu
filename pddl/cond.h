@@ -285,6 +285,11 @@ void pddlCondPrint(const pddl_t *pddl,
                    const pddl_params_t *params,
                    FILE *fout);
 
+void pddlCondPrintPDDL(const pddl_cond_t *cond,
+                       const pddl_t *pddl,
+                       const pddl_params_t *params,
+                       FILE *fout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

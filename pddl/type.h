@@ -93,6 +93,12 @@ int pddlTypesObjHasType(const pddl_types_t *ts, int type, int obj);
  */
 int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node);
 
+
+/**
+ * Print requirements in PDDL format.
+ */
+void pddlTypesPrintPDDL(const pddl_types_t *ts, FILE *fout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

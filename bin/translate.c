@@ -2,6 +2,38 @@
 
 #include "options.h"
 
+static int outputPDDLDomain(const options_t *o, const pddl_t *pddl)
+{
+    FILE *fout;
+
+    fout = fopen(o->output_pddl_domain, "w");
+    if (fout == NULL){
+        fprintf(stderr, "Error: Could not open file %s.\n",
+                o->output_pddl_domain);
+        return -1;
+    }
+    pddlPrintPDDLDomain(pddl, fout);
+
+    fclose(fout);
+    return 0;
+}
+
+static int outputPDDLProblem(const options_t *o, const pddl_t *pddl)
+{
+    FILE *fout;
+
+    fout = fopen(o->output_pddl_problem, "w");
+    if (fout == NULL){
+        fprintf(stderr, "Error: Could not open file %s.\n",
+                o->output_pddl_problem);
+        return -1;
+    }
+    pddlPrintPDDLProblem(pddl, fout);
+
+    fclose(fout);
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     options_t *o;
@@ -37,6 +69,15 @@ int main(int argc, char *argv[])
         pddlStripsDump(pddl->strips, stdout);
     }else{
         pddlStripsPrintPython(pddl->strips, stdout);
+    }
+
+    if (o->output_pddl_domain != NULL){
+        if (outputPDDLDomain(o, pddl) != 0)
+            return -1;
+    }
+    if (o->output_pddl_problem != NULL){
+        if (outputPDDLProblem(o, pddl) != 0)
+            return -1;
     }
 
     pddlDel(pddl);

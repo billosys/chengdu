@@ -35,6 +35,11 @@ typedef int (*pddl_cond_method_rebuild_fn)(
                             int (*pre)(pddl_cond_t **, void *),
                             int (*post)(pddl_cond_t **, void *),
                             void *userdata);
+typedef void (*pddl_cond_method_print_pddl_fn)(
+                            const pddl_cond_t *c,
+                            const pddl_t *pddl,
+                            const pddl_params_t *params,
+                            FILE *fout);
 
 static int condTraverse(pddl_cond_t *c,
                         int (*pre)(pddl_cond_t *, void *),
@@ -50,6 +55,7 @@ struct pddl_cond_cls {
     pddl_cond_method_clone_fn clone;
     pddl_cond_method_traverse_fn traverse;
     pddl_cond_method_rebuild_fn rebuild;
+    pddl_cond_method_print_pddl_fn print_pddl;
 };
 typedef struct pddl_cond_cls pddl_cond_cls_t;
 
@@ -59,6 +65,7 @@ typedef struct pddl_cond_cls pddl_cond_cls_t;
       .clone = METHOD(cond##NAME##Clone, clone), \
       .traverse = METHOD(cond##NAME##Traverse, traverse), \
       .rebuild = METHOD(cond##NAME##Rebuild, rebuild), \
+      .print_pddl = METHOD(cond##NAME##PrintPDDL, print_pddl), \
     }
 
 
@@ -85,6 +92,10 @@ static int condPartRebuild(pddl_cond_part_t **p,
                            int (*pre)(pddl_cond_t **, void *),
                            int (*post)(pddl_cond_t **, void *),
                            void *userdata);
+static void condPartPrintPDDL(const pddl_cond_part_t *p,
+                              const pddl_t *pddl,
+                              const pddl_params_t *params,
+                              FILE *fout);
 
 static void condQuantDel(pddl_cond_quant_t *);
 static pddl_cond_quant_t *condQuantClone(const pddl_cond_quant_t *q);
@@ -96,6 +107,10 @@ static int condQuantRebuild(pddl_cond_quant_t **q,
                             int (*pre)(pddl_cond_t **, void *),
                             int (*post)(pddl_cond_t **, void *),
                             void *userdata);
+static void condQuantPrintPDDL(const pddl_cond_quant_t *q,
+                               const pddl_t *pddl,
+                               const pddl_params_t *params,
+                               FILE *fout);
 
 static void condWhenDel(pddl_cond_when_t *);
 static pddl_cond_when_t *condWhenClone(const pddl_cond_when_t *w);
@@ -107,6 +122,10 @@ static int condWhenRebuild(pddl_cond_when_t **w,
                             int (*pre)(pddl_cond_t **, void *),
                             int (*post)(pddl_cond_t **, void *),
                             void *userdata);
+static void condWhenPrintPDDL(const pddl_cond_when_t *w,
+                              const pddl_t *pddl,
+                              const pddl_params_t *params,
+                              FILE *fout);
 
 static void condAtomDel(pddl_cond_atom_t *);
 static pddl_cond_atom_t *condAtomClone(const pddl_cond_atom_t *a);
@@ -118,6 +137,10 @@ static int condAtomRebuild(pddl_cond_atom_t **a,
                             int (*pre)(pddl_cond_t **, void *),
                             int (*post)(pddl_cond_t **, void *),
                             void *userdata);
+static void condAtomPrintPDDL(const pddl_cond_atom_t *a,
+                              const pddl_t *pddl,
+                              const pddl_params_t *params,
+                              FILE *fout);
 
 static void condAssignDel(pddl_cond_assign_t *);
 static pddl_cond_assign_t *condAssignClone(const pddl_cond_assign_t *a);
@@ -129,6 +152,10 @@ static int condAssignRebuild(pddl_cond_assign_t **a,
                             int (*pre)(pddl_cond_t **, void *),
                             int (*post)(pddl_cond_t **, void *),
                             void *userdata);
+static void condAssignPrintPDDL(const pddl_cond_assign_t *a,
+                                const pddl_t *pddl,
+                                const pddl_params_t *params,
+                                FILE *fout);
 
 static void condBoolDel(pddl_cond_bool_t *);
 static pddl_cond_bool_t *condBoolClone(const pddl_cond_bool_t *a);
@@ -140,6 +167,10 @@ static int condBoolRebuild(pddl_cond_bool_t **a,
                             int (*pre)(pddl_cond_t **, void *),
                             int (*post)(pddl_cond_t **, void *),
                             void *userdata);
+static void condBoolPrintPDDL(const pddl_cond_bool_t *b,
+                              const pddl_t *pddl,
+                              const pddl_params_t *params,
+                              FILE *fout);
 
 
 static pddl_cond_cls_t cond_cls[8] = {
@@ -308,6 +339,30 @@ static void condPartStealPart(pddl_cond_part_t *dst,
     }
 }
 
+static void condPartPrintPDDL(const pddl_cond_part_t *p,
+                              const pddl_t *pddl,
+                              const pddl_params_t *params,
+                              FILE *fout)
+{
+    bor_list_t *item;
+    const pddl_cond_t *child;
+
+
+    fprintf(fout, "(");
+    if (p->cls.type == PDDL_COND_AND){
+        fprintf(fout, "and");
+    }else if (p->cls.type == PDDL_COND_OR){
+        fprintf(fout, "or");
+    }
+    BOR_LIST_FOR_EACH(&p->part, item){
+        child = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        //fprintf(fout, "\n        ");
+        fprintf(fout, " ");
+        pddlCondPrintPDDL(child, pddl, params, fout);
+    }
+    fprintf(fout, ")");
+}
+
 
 /*** QUANT ***/
 static pddl_cond_quant_t *condQuantNew(int type)
@@ -351,6 +406,27 @@ static int condQuantRebuild(pddl_cond_quant_t **q,
     if ((*q)->cond)
         return condRebuild(&(*q)->cond, pre, post, userdata);
     return 0;
+}
+
+static void condQuantPrintPDDL(const pddl_cond_quant_t *q,
+                               const pddl_t *pddl,
+                               const pddl_params_t *params,
+                               FILE *fout)
+{
+    fprintf(fout, "(");
+    if (q->cls.type == PDDL_COND_FORALL){
+        fprintf(fout, "forall");
+    }else if (q->cls.type == PDDL_COND_EXIST){
+        fprintf(fout, "exists");
+    }
+
+    fprintf(fout, " (");
+    pddlParamsPrintPDDL(&q->param, &pddl->type, fout);
+    fprintf(fout, ") ");
+
+    pddlCondPrintPDDL(q->cond, pddl, &q->param, fout);
+
+    fprintf(fout, ")");
 }
 
 
@@ -411,6 +487,18 @@ static int condWhenRebuild(pddl_cond_when_t **w,
     return 0;
 }
 
+static void condWhenPrintPDDL(const pddl_cond_when_t *w,
+                              const pddl_t *pddl,
+                              const pddl_params_t *params,
+                              FILE *fout)
+{
+    fprintf(fout, "(when ");
+    pddlCondPrintPDDL(w->pre, pddl, params, fout);
+    fprintf(fout, " ");
+    pddlCondPrintPDDL(w->eff, pddl, params, fout);
+    fprintf(fout, ")");
+}
+
 
 
 /*** ATOM ***/
@@ -456,6 +544,40 @@ static int condAtomRebuild(pddl_cond_atom_t **a,
     return 0;
 }
 
+static void atomPrintPDDL(const pddl_cond_atom_t *a,
+                          const pddl_t *pddl,
+                          const pddl_params_t *params,
+                          int is_func,
+                          FILE *fout)
+{
+    if (a->neg)
+        fprintf(fout, "(not ");
+    if (is_func){
+        fprintf(fout, "(%s", pddl->func.pred[a->pred].name);
+    }else{
+        fprintf(fout, "(%s", pddl->pred.pred[a->pred].name);
+    }
+    for (int i = 0; i < a->arg_size; ++i){
+        pddl_cond_atom_arg_t *arg = a->arg + i;
+        if (arg->param >= 0){
+            fprintf(fout, " %s", params->param[arg->param].name);
+        }else{
+            fprintf(fout, " %s", pddl->obj.obj[arg->obj].name);
+        }
+    }
+    fprintf(fout, ")");
+    if (a->neg)
+        fprintf(fout, ")");
+}
+
+static void condAtomPrintPDDL(const pddl_cond_atom_t *a,
+                              const pddl_t *pddl,
+                              const pddl_params_t *params,
+                              FILE *fout)
+{
+    atomPrintPDDL(a, pddl, params, 0, fout);
+}
+
 
 
 /*** ASSIGN ***/
@@ -497,6 +619,20 @@ static int condAssignRebuild(pddl_cond_assign_t **a,
     return 0;
 }
 
+static void condAssignPrintPDDL(const pddl_cond_assign_t *a,
+                                const pddl_t *pddl,
+                                const pddl_params_t *params,
+                                FILE *fout)
+{
+    fprintf(fout, "(increase (total-cost) ");
+    if (a->fvalue == NULL){
+        fprintf(fout, "%d", a->value);
+    }else{
+        atomPrintPDDL(a->fvalue, pddl, params, 1, fout);
+    }
+    fprintf(fout, ")");
+}
+
 
 /*** BOOL ***/
 static pddl_cond_bool_t *condBoolNew(int val)
@@ -533,6 +669,17 @@ static int condBoolRebuild(pddl_cond_bool_t **a,
     return 0;
 }
 
+static void condBoolPrintPDDL(const pddl_cond_bool_t *b,
+                              const pddl_t *pddl,
+                              const pddl_params_t *params,
+                              FILE *fout)
+{
+    if (b->val){
+        fprintf(fout, "(TRUE)");
+    }else{
+        fprintf(fout, "(FALSE)");
+    }
+}
 
 
 
@@ -2119,4 +2266,12 @@ void pddlCondPrint(const struct pddl *pddl,
         fprintf(stderr, "Fatal Error: Unknown type!\n");
         exit(-1);
     }
+}
+
+void pddlCondPrintPDDL(const pddl_cond_t *cond,
+                       const pddl_t *pddl,
+                       const pddl_params_t *params,
+                       FILE *fout)
+{
+    cond_cls[cond->type].print_pddl(cond, pddl, params, fout);
 }

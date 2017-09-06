@@ -302,3 +302,27 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node)
 
     return pddlTypesEither(ts, either, either_size);
 }
+
+void pddlTypesPrintPDDL(const pddl_types_t *ts, FILE *fout)
+{
+    int q[ts->size];
+    int qi = 0, qsize = 0;
+
+    fprintf(fout, "(:types\n");
+    for (int i = 0; i < ts->size; ++i){
+        if (ts->type[i].parent == 0)
+            q[qsize++] = i;
+    }
+
+    for (qi = 0; qi < qsize; ++qi){
+        fprintf(fout, "    %s - %s\n",
+                ts->type[q[qi]].name,
+                ts->type[ts->type[q[qi]].parent].name);
+        for (int i = 0; i < ts->size; ++i){
+            if (ts->type[i].parent == q[qi] && ts->type[i].either == NULL)
+                q[qsize++] = i;
+        }
+    }
+
+    fprintf(fout, ")\n");
+}

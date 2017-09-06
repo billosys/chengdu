@@ -89,6 +89,16 @@ void pddlPredsRemoveLast(pddl_preds_t *ps);
 void pddlPredsPrint(const pddl_preds_t *ps,
                     const char *title, FILE *fout);
 
+/**
+ * Print predicates in PDDL format.
+ */
+void pddlPredsPrintPDDL(const pddl_preds_t *ps,
+                        const pddl_types_t *ts,
+                        FILE *fout);
+void pddlFuncsPrintPDDL(const pddl_preds_t *ps,
+                        const pddl_types_t *ts,
+                        FILE *fout);
+
 
 /**** INLINES: ****/
 _bor_inline int pddlPredIsStatic(const pddl_pred_t *pred)

@@ -100,6 +100,14 @@ int pddlParamsParseAgent(pddl_params_t *params,
 
 void pddlParamsPrint(const pddl_params_t *params, FILE *fout);
 
+/**
+ * Print parameters in PDDL format (without parenthesis), the inherited
+ * parameters are not printed.
+ */
+void pddlParamsPrintPDDL(const pddl_params_t *params,
+                         const pddl_types_t *ts,
+                         FILE *fout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

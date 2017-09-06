@@ -33,6 +33,8 @@ struct _options_t {
     char *problem_pddl;
     char *output;
     int output_type;
+    char *output_pddl_domain;
+    char *output_pddl_problem;
 
     pddl_config_t cfg;
 };

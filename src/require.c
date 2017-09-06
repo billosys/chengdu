@@ -117,3 +117,51 @@ int pddlRequireParse(pddl_t *pddl)
 
     return 0;
 }
+
+void pddlRequirePrintPDDL(unsigned require, FILE *fout)
+{
+    fprintf(fout, "(:requirements\n");
+    if (require & PDDL_REQUIRE_STRIPS)
+        fprintf(fout, "    :strips\n");
+    if (require & PDDL_REQUIRE_TYPING)
+        fprintf(fout, "    :typing\n");
+    if (require & PDDL_REQUIRE_NEGATIVE_PRE)
+        fprintf(fout, "    :negative-preconditions\n");
+    if (require & PDDL_REQUIRE_DISJUNCTIVE_PRE)
+        fprintf(fout, "    :disjunctive-preconditions\n");
+    if (require & PDDL_REQUIRE_EQUALITY)
+        fprintf(fout, "    :equality\n");
+    if (require & PDDL_REQUIRE_EXISTENTIAL_PRE)
+        fprintf(fout, "    :existential-preconditions\n");
+    if (require & PDDL_REQUIRE_UNIVERSAL_PRE)
+        fprintf(fout, "    :universal-preconditions\n");
+    if (require & PDDL_REQUIRE_CONDITIONAL_EFF)
+        fprintf(fout, "    :conditional-effects\n");
+    if (require & PDDL_REQUIRE_NUMERIC_FLUENT)
+        fprintf(fout, "    :numeric-fluents\n");
+    if (require & PDDL_REQUIRE_OBJECT_FLUENT)
+        fprintf(fout, "    :object-fluents\n");
+    if (require & PDDL_REQUIRE_DURATIVE_ACTION)
+        fprintf(fout, "    :durative-actions\n");
+    if (require & PDDL_REQUIRE_DURATION_INEQUALITY)
+        fprintf(fout, "    :duration-inequalities\n");
+    if (require & PDDL_REQUIRE_CONTINUOUS_EFF)
+        fprintf(fout, "    :continuous-effects\n");
+    if (require & PDDL_REQUIRE_DERIVED_PRED)
+        fprintf(fout, "    :derived-predicates\n");
+    if (require & PDDL_REQUIRE_TIMED_INITIAL_LITERAL)
+        fprintf(fout, "    :timed-initial-literals\n");
+    if (require & PDDL_REQUIRE_PREFERENCE)
+        fprintf(fout, "    :preferences\n");
+    if (require & PDDL_REQUIRE_CONSTRAINT)
+        fprintf(fout, "    :constraints\n");
+    if (require & PDDL_REQUIRE_ACTION_COST)
+        fprintf(fout, "    :action-costs\n");
+    if (require & PDDL_REQUIRE_MULTI_AGENT)
+        fprintf(fout, "    :multi-agent\n");
+    if (require & PDDL_REQUIRE_UNFACTORED_PRIVACY)
+        fprintf(fout, "    :unfactored-privacy\n");
+    if (require & PDDL_REQUIRE_FACTORED_PRIVACY)
+        fprintf(fout, "    :factored-privacy\n");
+    fprintf(fout, ")\n");
+}

@@ -175,3 +175,19 @@ void pddlParamsPrint(const pddl_params_t *params, FILE *fout)
         fprintf(fout, "%s:%d", params->param[i].name, params->param[i].type);
     }
 }
+
+void pddlParamsPrintPDDL(const pddl_params_t *params,
+                         const pddl_types_t *ts,
+                         FILE *fout)
+{
+    int printed = 0;
+    for (int i = 0; i < params->size; ++i){
+        const pddl_param_t *p = params->param + i;
+        if (p->inherit == -1){
+            if (printed)
+                fprintf(fout, " ");
+            fprintf(fout, "%s - %s", p->name, ts->type[p->type].name);
+            printed = 1;
+        }
+    }
+}

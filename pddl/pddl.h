@@ -101,6 +101,16 @@ void pddlCompileAwayCondEff(pddl_t *pddl);
  */
 int pddlPredFuncMaxParamSize(const pddl_t *pddl);
 
+/**
+ * Prints PDDL domain file.
+ */
+void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout);
+
+/**
+ * Prints PDDL problem file.
+ */
+void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout);
+
 // TODO: pddlPrintDomain/Problem() --> prints full PDDL domain/problem files
 void pddlDump(const pddl_t *pddl, FILE *fout);
 

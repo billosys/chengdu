@@ -116,6 +116,12 @@ void pddlFuncPrint(const pddl_t *p, const pddl_fact_t *f, FILE *fout);
  */
 int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f);
 
+/**
+ * Prints fact in PDDL format.
+ */
+void pddlFactPrintPDDL(const pddl_fact_t *f, const pddl_t *pddl, FILE *fout);
+void pddlFuncPrintPDDL(const pddl_fact_t *f, const pddl_t *pddl, FILE *fout);
+
 
 
 struct pddl_facts {

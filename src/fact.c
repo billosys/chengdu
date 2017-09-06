@@ -190,6 +190,22 @@ int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f)
     return 0;
 }
 
+void pddlFactPrintPDDL(const pddl_fact_t *f, const pddl_t *pddl, FILE *fout)
+{
+    fprintf(fout, "(%s", pddl->pred.pred[f->pred].name);
+    for (int i = 0; i < f->arg_size; ++i)
+        fprintf(fout, " %s", pddl->obj.obj[f->arg[i]].name);
+    fprintf(fout, ")");
+}
+
+void pddlFuncPrintPDDL(const pddl_fact_t *f, const pddl_t *pddl, FILE *fout)
+{
+    fprintf(fout, "(= ");
+    fprintf(fout, "(%s", pddl->func.pred[f->pred].name);
+    for (int i = 0; i < f->arg_size; ++i)
+        fprintf(fout, " %s", pddl->obj.obj[f->arg[i]].name);
+    fprintf(fout, ") %d)", f->func_val);
+}
 
 static int factSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
 {

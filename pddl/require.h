@@ -57,6 +57,11 @@ extern "C" {
  */
 int pddlRequireParse(pddl_t *pddl);
 
+/**
+ * Print requirements in PDDL format.
+ */
+void pddlRequirePrintPDDL(unsigned require, FILE *fout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

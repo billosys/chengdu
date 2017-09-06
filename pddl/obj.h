@@ -74,6 +74,13 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name);
  */
 void pddlObjsPrint(const pddl_objs_t *objs, FILE *fout);
 
+/**
+ * Print objects in PDDL (:constants ) format.
+ */
+void pddlObjsPrintPDDLConstants(const pddl_objs_t *objs,
+                                const pddl_types_t *ts,
+                                FILE *fout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

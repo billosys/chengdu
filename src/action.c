@@ -271,3 +271,40 @@ void pddlActionsPrint(const pddl_t *pddl,
     for (i = 0; i < actions->size; ++i)
         pddlActionPrint(pddl, actions->action + i, fout);
 }
+
+static void pddlActionPrintPDDL(const pddl_action_t *a,
+                                const pddl_t *pddl,
+                                FILE *fout)
+{
+    fprintf(fout, "(:action %s\n", a->name);
+    if (a->param.size > 0){
+        fprintf(fout, "    :parameters (");
+        pddlParamsPrintPDDL(&a->param, &pddl->type, fout);
+        fprintf(fout, ")\n");
+    }
+
+    if (a->pre != NULL){
+        fprintf(fout, "    :precondition ");
+        pddlCondPrintPDDL(a->pre, pddl, &a->param, fout);
+        fprintf(fout, "\n");
+    }
+
+    if (a->eff != NULL){
+        fprintf(fout, "    :effect ");
+        pddlCondPrintPDDL(a->eff, pddl, &a->param, fout);
+        fprintf(fout, "\n");
+    }
+
+    fprintf(fout, ")\n");
+
+}
+
+void pddlActionsPrintPDDL(const pddl_actions_t *actions,
+                          const pddl_t *pddl,
+                          FILE *fout)
+{
+    for (int i = 0; i < actions->size; ++i){
+        pddlActionPrintPDDL(&actions->action[i], pddl, fout);
+        fprintf(fout, "\n");
+    }
+}

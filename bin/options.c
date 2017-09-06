@@ -31,6 +31,8 @@ static options_t _opts = {
     NULL,
     NULL,
     OUTPUT_FD,
+    NULL,
+    NULL,
     PDDL_CONFIG_INIT,
 };
 
@@ -65,6 +67,10 @@ static int readOpts(int argc, char *argv[])
                 "Output STRIPS text format.");
     optsAddDesc("py", 0x0, OPTS_NONE, NULL, OPTS_CB(outputPy),
                 "Output python format.");
+    optsAddDesc("output-pddl-domain", 0x0, OPTS_STR, &o->output_pddl_domain,
+                NULL, "Output file for PDDL domain.");
+    optsAddDesc("output-pddl-problem", 0x0, OPTS_STR, &o->output_pddl_problem,
+                NULL, "Output file for PDDL problem.");
 
     if (opts(&argc, argv) != 0){
         return -1;
