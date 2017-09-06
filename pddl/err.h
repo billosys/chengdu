@@ -36,12 +36,14 @@ void pddlErrSetOutput(FILE *out);
  * Default ouput stream in stderr.
  */
 void pddlErrSetWarnOutput(FILE *out);
+void pddlErrSetInfoOutput(FILE *out);
 
 /**
  * Enables/disables printing out warnings.
  * Warning are disabled by default.
  */
 void pddlErrEnableWarn(int enable);
+void pddlErrEnableInfo(int enable);
 
 /**
  * Prints error message.

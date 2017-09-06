@@ -11,6 +11,14 @@ int main(int argc, char *argv[])
     if ((o = options(argc, argv)) == NULL)
         return -1;
 
+    if (o->quiet){
+        pddlErrEnableWarn(0);
+        pddlErrEnableInfo(0);
+    }else{
+        pddlErrSetWarnOutput(stderr);
+        pddlErrSetInfoOutput(stderr);
+    }
+
     cfg = o->cfg;
     cfg.force_adl = 1;
     cfg.strips = 1;

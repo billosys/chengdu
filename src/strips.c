@@ -47,6 +47,7 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     // Remove all operators, empty the initial state and make sure that the
     // goal is non-empty.
 
+    INFO2("The problem is not solvable -- generating a dummy problem.");
     pddlStripsOpsFree(&strips->op);
     pddlStripsOpsInit(&strips->op);
     borISetEmpty(&strips->init);
@@ -78,8 +79,10 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
         pddlStripsDel(strips);
         TRACE_RET(NULL);
     }
-    if (strips->goal_is_unreachable)
+    if (strips->goal_is_unreachable){
         pddlStripsMakeUnsolvable(strips);
+        return strips;
+    }
 
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
@@ -98,6 +101,7 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
             pddlStripsDel(strips);
             TRACE_RET(NULL);
         }
+        INFO2("Fact-alternating mutex groups are infered.");
     }
 
     if (strips->cfg.h_mutex > 0){
@@ -107,6 +111,7 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
                 pddlStripsDel(strips);
                 TRACE_RET(NULL);
             }
+            INFO("h^%d mutexes are infered.", strips->cfg.h_mutex);
         }else{
             pddlMutexesHmLimit(&strips->mutex, strips->cfg.h_mutex);
         }

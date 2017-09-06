@@ -1042,6 +1042,9 @@ int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
     }
 
     groundFree(&g);
+    INFO("PDDL grounded to STRIPS.",
+         pddl->domain_lisp->filename,
+         pddl->problem_lisp->filename);
     return 0;
 }
 

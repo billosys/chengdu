@@ -21,6 +21,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include <boruvka/timer.h>
+
 #include "err.h"
 
 #ifndef PDDL_ERR_MSG_MAXLEN
@@ -48,6 +50,10 @@ struct pddl_err {
 
     int print_warn;
     FILE *warn_out;
+    int print_info;
+    FILE *info_out;
+    bor_timer_t info_timer;
+    int info_timer_init;
 };
 typedef struct pddl_err pddl_err_t;
 
@@ -78,6 +84,17 @@ void pddlErrSetWarnOutput(FILE *out)
 void pddlErrEnableWarn(int enable)
 {
     err.print_warn = enable;
+}
+
+void pddlErrSetInfoOutput(FILE *out)
+{
+    err.info_out = out;
+    err.print_info = 1;
+}
+
+void pddlErrEnableInfo(int enable)
+{
+    err.print_info = enable;
 }
 
 void pddlErrPrintTraceback(void)
@@ -177,4 +194,28 @@ void _pddlWarn(const char *filename, int line, const char *func,
     va_end(ap);
     fprintf(err.warn_out, "\n");
     fflush(err.warn_out);
+}
+
+void _pddlInfo(const char *filename, int line, const char *func,
+               const char *format, ...)
+{
+    va_list ap;
+
+    if (err.print_info == 0)
+        return;
+    if (err.info_out == NULL)
+        err.info_out = stderr;
+    if (!err.info_timer_init){
+        borTimerStart(&err.info_timer);
+        err.info_timer_init = 1;
+    }
+
+    va_start(ap, format);
+    borTimerStop(&err.info_timer);
+    fprintf(err.info_out, "[%.3fs] ",
+            borTimerElapsedInSF(&err.info_timer));
+    vfprintf(err.info_out, format, ap);
+    va_end(ap);
+    fprintf(err.info_out, "\n");
+    fflush(err.info_out);
 }

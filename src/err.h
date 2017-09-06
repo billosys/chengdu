@@ -31,6 +31,8 @@ void _pddlErrPrepend(const char *format, ...);
 void _pddlTrace(const char *filename, int line, const char *func);
 void _pddlWarn(const char *filename, int line, const char *func,
                const char *format, ...);
+void _pddlInfo(const char *filename, int line, const char *func,
+               const char *format, ...);
 
 #define TRACE _pddlTrace(__FILE__, __LINE__, __func__)
 #define TRACE_RET(V) do { \
@@ -94,6 +96,13 @@ void _pddlWarn(const char *filename, int line, const char *func,
     } while (0)
 #define WARN2(msg) do { \
         _pddlWarn(__FILE__, __LINE__, __func__, msg); \
+    } while (0)
+
+#define INFO(format, ...) do { \
+        _pddlInfo(__FILE__, __LINE__, __func__, format, __VA_ARGS__); \
+    } while (0)
+#define INFO2(msg) do { \
+        _pddlInfo(__FILE__, __LINE__, __func__, msg); \
     } while (0)
 
 #ifdef __cplusplus

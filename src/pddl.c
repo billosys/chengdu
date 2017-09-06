@@ -140,13 +140,17 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
     pddl_t *pddl;
     pddl_lisp_t *domain_lisp, *problem_lisp;
 
+    INFO("Translation of %s and %s.", domain_fn, problem_fn);
+
     if (!checkConfig(cfg))
         TRACE_RET(NULL);
 
+    INFO2("Parsing domain lisp file...");
     domain_lisp = pddlLispParse(domain_fn);
     if (domain_lisp == NULL)
         TRACE_RET(NULL);
 
+    INFO2("Parsing problem lisp file...");
     problem_lisp = pddlLispParse(problem_fn);
     if (problem_lisp == NULL){
         if (domain_lisp)
@@ -164,6 +168,7 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
     if (pddl->cfg.fdr)
         pddl->cfg.strips_cfg.fa_mgroup = 1;
 
+    INFO2("Parsing entire contents of domain/problem PDDL...");
     pddl->domain_lisp = domain_lisp;
     pddl->problem_lisp = problem_lisp;
     pddl->domain_name = parseDomainName(domain_lisp);
@@ -187,13 +192,16 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
             || parseMetric(pddl, problem_lisp) != 0){
         goto pddl_fail;
     }
+    INFO2("PDDL content parsed.");
 
     if (pddl->cfg.compile_away_cond_eff){
         // It does normalization so we can skip pddlNormalize().
         pddlCompileAwayCondEff(pddl);
+        INFO2("Conditional effects compiled away.");
 
     }else if (pddl->cfg.normalize){
         pddlNormalize(pddl);
+        INFO2("PDDL problem is normalized.");
     }
 
     if (pddl->cfg.strips){

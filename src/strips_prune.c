@@ -261,6 +261,8 @@ int pddlStripsPrune(pddl_strips_t *strips,
     int change;
     int *prune_op;
 
+    INFO("Start pruning of the STRIPS problem (num-ops: %d).",
+         strips->op.op_size);
     prune_op = BOR_ALLOC_ARR(int, strips->op.op_size);
 
     do {
@@ -269,10 +271,14 @@ int pddlStripsPrune(pddl_strips_t *strips,
         if (cfg->irrelevance || cfg->static_facts)
             change |= _pddlStripsPruneIrrelevant(strips, cfg);
 
-        if (cfg->h_mutex > 0
-                && pruneHMutex(strips, cfg, prune_op, &change) != 0){
-            BOR_FREE(prune_op);
-            TRACE_RET(-1);
+        if (cfg->h_mutex > 0){
+            if (pruneHMutex(strips, cfg, prune_op, &change) != 0){
+                BOR_FREE(prune_op);
+                TRACE_RET(-1);
+            }
+            INFO("Pruning using h^%d mutexes done"
+                 " (num-ops: %d, num-mutexes: %d).",
+                 cfg->h_mutex, strips->op.op_size, strips->mutex.size);
         }
 
         // TODO: Disable this for now
@@ -292,16 +298,26 @@ int pddlStripsPrune(pddl_strips_t *strips,
         }
 #endif
 
-        if (cfg->fa_mgroup
-                && pruneFAMGroup(strips, cfg, prune_op, &change) != 0){
-            BOR_FREE(prune_op);
-            TRACE_RET(-1);
+        if (cfg->fa_mgroup){
+            if (pruneFAMGroup(strips, cfg, prune_op, &change) != 0){
+                BOR_FREE(prune_op);
+                TRACE_RET(-1);
+            }
+            INFO("Pruning using fam-groups done"
+                 " (num-ops: %d, num-mgroups: %d).",
+                 strips->op.op_size, strips->mgroup.size);
         }
 
-        if (cfg->disambiguation && disambiguate(strips, cfg, &change) != 0){
-            BOR_FREE(prune_op);
-            TRACE_RET(-1);
+        if (cfg->disambiguation){
+            if (disambiguate(strips, cfg, &change) != 0){
+                BOR_FREE(prune_op);
+                TRACE_RET(-1);
+            }
+            INFO("Disambiguation of operators done (num-ops: %d).",
+                 strips->op.op_size);
         }
+        if (cfg->fixpoint && change)
+            INFO2("  == Fixpoint not reached, continuing to prune... ==");
     } while (cfg->fixpoint && change);
 
     BOR_FREE(prune_op);
@@ -311,5 +327,6 @@ int pddlStripsPrune(pddl_strips_t *strips,
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
 
+    INFO2("The STRIPS problem is pruned.");
     return 0;
 }

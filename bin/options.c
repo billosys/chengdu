@@ -26,6 +26,7 @@
 
 static options_t _opts = {
     0,
+    0,
     NULL,
     NULL,
     NULL,
@@ -54,6 +55,8 @@ static int readOpts(int argc, char *argv[])
 
     optsAddDesc("help", 'h', OPTS_NONE, &o->help, NULL,
                 "Print this help.");
+    optsAddDesc("quiet", 'q', OPTS_NONE, &o->quiet, NULL,
+                "Disable logging output.");
     optsAddDesc("output", 'o', OPTS_STR, &o->output, NULL,
                 "Output file.");
     optsAddDesc("fd", 0x0, OPTS_NONE, NULL, OPTS_CB(outputFD),

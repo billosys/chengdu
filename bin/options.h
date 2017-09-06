@@ -28,6 +28,7 @@
 
 struct _options_t {
     int help;
+    int quiet;
     char *domain_pddl;
     char *problem_pddl;
     char *output;
