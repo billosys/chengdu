@@ -96,7 +96,8 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
 
     // Infer fa mutex groups only if they were not already infered during
     // pruning.
-    if (strips->cfg.fa_mgroup && !strips->cfg.prune.fa_mgroup){
+    if (strips->cfg.fa_mgroup &&
+            (!strips->cfg.prune.enable || !strips->cfg.prune.fa_mgroup)){
         if (pddlMGroupsFA(strips, &strips->mgroup) != 0){
             pddlStripsDel(strips);
             TRACE_RET(NULL);
@@ -105,7 +106,8 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
     }
 
     if (strips->cfg.h_mutex > 0){
-        if (strips->cfg.prune.h_mutex < strips->cfg.h_mutex){
+        if (!strips->cfg.prune.enable
+                || strips->cfg.prune.h_mutex < strips->cfg.h_mutex){
             if (pddlMutexesHm(strips->cfg.h_mutex, strips,
                               &strips->mutex, NULL) != 0){
                 pddlStripsDel(strips);
