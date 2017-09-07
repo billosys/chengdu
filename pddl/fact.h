@@ -33,6 +33,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define PDDL_FACT_MAX_NAME_SIZE 256
+
 struct pddl_fact {
     int *arg;       /*!< Object IDs are arguments */
     int arg_size;   /*!< Number of arguments */
@@ -49,10 +51,10 @@ typedef struct pddl_fact pddl_fact_t;
 
 /**
  * Allocates fact struct on stack with enough space in .arg[] for ARG_SIZE
- * arguments. Note that name of the fact is initialized to NULL.
+ * arguments.
  */
 #define PDDL_FACT_STACK(F_NAME, ARG_SIZE) \
-    pddl_fact_t F_NAME = { 0 }; \
+    pddl_fact_t F_NAME; \
     int F_NAME ## __args__[ARG_SIZE]; \
     pddlFactInit(&F_NAME); \
     F_NAME.arg = F_NAME ## __args__
@@ -70,19 +72,9 @@ void pddlFactFree(pddl_fact_t *f);
 void pddlFactDel(pddl_fact_t *f);
 
 /**
- * Deep copy of the fact.
- */
-void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src);
-
-/**
  * Compares two facts.
  */
 int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2);
-
-/**
- * Returns true if facts are equal.
- */
-int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
 
 /**
  * Determines whether the fact should be private and which object should be
@@ -93,28 +85,19 @@ int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
 int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact);
 
 /**
- * Returns formatted name of the fact.
- * The returned value is a static variable managed inside this module -- do
- * not free it!
- */
-const char *pddlFactToStr(const pddl_t *pddl, const pddl_fact_t *f);
-
-/**
- * Print formatted fact/func.
- */
-void pddlFactPrint(const pddl_t *p, const pddl_fact_t *f, FILE *fout);
-void pddlFuncPrint(const pddl_t *p, const pddl_fact_t *f, FILE *fout);
-
-/**
  * Returns true if the fact is static.
  */
 int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f);
 
 /**
- * Prints fact in PDDL format.
+ * Returns formatted name of the fact.
  */
-void pddlFactPrintPDDL(const pddl_fact_t *f, const pddl_t *pddl, FILE *fout);
-void pddlFuncPrintPDDL(const pddl_fact_t *f, const pddl_t *pddl, FILE *fout);
+const char *pddlFactName(const pddl_fact_t *f, const pddl_t *pddl);
+const char *pddlFactNamePDDL(const pddl_fact_t *f, const pddl_t *pddl);
+const char *pddlFactNameDebug(const pddl_fact_t *f, const pddl_t *pddl);
+const char *pddlFuncName(const pddl_fact_t *f, const pddl_t *pddl);
+const char *pddlFuncNamePDDL(const pddl_fact_t *f, const pddl_t *pddl);
+const char *pddlFuncNameDebug(const pddl_fact_t *f, const pddl_t *pddl);
 
 
 
@@ -183,25 +166,20 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
  */
 int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *f);
 
-void pddlFactsPrint(const pddl_t *pddl, const pddl_facts_t *fs,
-                    FILE *fout);
-void pddlFuncsPrint(const pddl_t *pddl, const pddl_facts_t *fs,
-                    FILE *fout);
-void pddlFactsPrintSorted(const pddl_t *pddl,
-                          const pddl_facts_t *fs,
-                          FILE *fout);
-void pddlFuncsPrintSorted(const pddl_t *pddl,
-                          const pddl_facts_t *fs,
-                          FILE *fout);
-void pddlFactsPrintInit(const pddl_t *pddl,
-                        const pddl_facts_t *in,
-                        FILE *fout);
-void pddlFactsPrintInitFunc(const pddl_t *pddl,
-                            const pddl_facts_t *in,
-                            FILE *fout);
 
-void pddlFactIdSetPrettyPrint(const pddl_t *pddl, const pddl_facts_t *fs,
-                              const bor_iset_t *s, FILE *fout);
+void pddlFactsPrint(const pddl_facts_t *fs, const pddl_t *pddl,
+                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
+                    const char *prefix, const char *suffix,
+                    FILE *fout);
+void pddlFactsPrintSorted(const pddl_facts_t *fs, const pddl_t *pddl,
+                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
+                    const char *prefix, const char *suffix,
+                    FILE *fout);
+void pddlFactsIdSetPrintSorted(const bor_iset_t *set,
+                    const pddl_facts_t *fs, const pddl_t *pddl,
+                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
+                    const char *prefix, const char *suffix,
+                    FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -197,25 +197,6 @@ pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)
     return s;
 }
 
-void pddlStripsDump(const pddl_strips_t *strips, FILE *fout)
-{
-    fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);
-    pddlFactsPrintSorted(strips->pddl, &strips->fact, fout);
-
-    fprintf(fout, "Op[%d]:\n", strips->op.op_size);
-    pddlStripsOpsPrint(strips->pddl, &strips->fact, &strips->op, fout);
-
-    fprintf(fout, "Init State: ");
-    pddlFactIdSetPrettyPrint(strips->pddl, &strips->fact, &strips->init, fout);
-
-    fprintf(fout, "Goal: ");
-    pddlFactIdSetPrettyPrint(strips->pddl, &strips->fact, &strips->goal, fout);
-    if (strips->goal_is_unreachable)
-        fprintf(fout, "Goal is unreachable\n");
-    if (strips->has_cond_eff)
-        fprintf(fout, "Has conditional effects\n");
-}
-
 static void printPythonISet(const bor_iset_t *s, FILE *fout)
 {
     int i;
@@ -238,7 +219,7 @@ void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
     fprintf(fout, "fact = [\n");
     for (int i = 0; i < strips->fact.fact_size; ++i){
         fprintf(fout, "    '%s',\n",
-                pddlFactToStr(strips->pddl, strips->fact.fact[i]));
+                pddlFactNamePDDL(strips->fact.fact[i], strips->pddl));
     }
     fprintf(fout, "]\n");
 
@@ -307,7 +288,7 @@ void pddlStripsPrintPDDLDomain(const pddl_strips_t *strips, FILE *fout)
 
     fprintf(fout, "(:predicates\n");
     for (int i = 0; i < strips->fact.fact_size; ++i){
-        const char *name = pddlFactToStr(strips->pddl, strips->fact.fact[i]);
+        const char *name = pddlFactNamePDDL(strips->fact.fact[i], strips->pddl);
         fprintf(fout, "    (F%d) ;; %s\n", i, name);
     }
     fprintf(fout, ")\n");
@@ -372,4 +353,28 @@ void pddlStripsPrintPDDLProblem(const pddl_strips_t *strips, FILE *fout)
     fprintf(fout, "))\n");
     fprintf(fout, "(:metric minimize (total-cost))\n");
     fprintf(fout, ")\n");
+}
+
+void pddlStripsPrintDebug(const pddl_strips_t *strips, FILE *fout)
+{
+    fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);
+    pddlFactsPrintSorted(&strips->fact, strips->pddl,
+                         pddlFactNamePDDL, "  ", "\n", fout);
+
+    fprintf(fout, "Op[%d]:\n", strips->op.op_size);
+    pddlStripsOpsPrintDebug(strips->pddl, &strips->fact, &strips->op, fout);
+
+    fprintf(fout, "Init State:");
+    pddlFactsIdSetPrintSorted(&strips->init, &strips->fact, strips->pddl,
+                              pddlFactNamePDDL, " ", "", fout);
+    fprintf(fout, "\n");
+
+    fprintf(fout, "Goal:");
+    pddlFactsIdSetPrintSorted(&strips->goal, &strips->fact, strips->pddl,
+                              pddlFactNamePDDL, " ", "", fout);
+    fprintf(fout, "\n");
+    if (strips->goal_is_unreachable)
+        fprintf(fout, "Goal is unreachable\n");
+    if (strips->has_cond_eff)
+        fprintf(fout, "Has conditional effects\n");
 }

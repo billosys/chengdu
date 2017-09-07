@@ -311,17 +311,23 @@ void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap)
         pddlStripsOpRemapFacts(ops->op[i], remap);
 }
 
-void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
-                       const pddl_strips_op_t *op, FILE *fout)
+void pddlStripsOpPrintDebug(const struct pddl *pddl, const pddl_facts_t *fs,
+                            const pddl_strips_op_t *op, FILE *fout)
 {
     fprintf(fout, "  %s, cost: %d\n", op->name, op->cost);
 
-    fprintf(fout, "    pre: ");
-    pddlFactIdSetPrettyPrint(pddl, fs, &op->pre, fout);
-    fprintf(fout, "    add: ");
-    pddlFactIdSetPrettyPrint(pddl, fs, &op->add_eff, fout);
-    fprintf(fout, "    del: ");
-    pddlFactIdSetPrettyPrint(pddl, fs, &op->del_eff, fout);
+    fprintf(fout, "    pre:");
+    pddlFactsIdSetPrintSorted(&op->pre, fs, pddl,
+                              pddlFactNamePDDL, " ", "", fout);
+    fprintf(fout, "\n");
+    fprintf(fout, "    add:");
+    pddlFactsIdSetPrintSorted(&op->add_eff, fs, pddl,
+                              pddlFactNamePDDL, " ", "", fout);
+    fprintf(fout, "\n");
+    fprintf(fout, "    del:");
+    pddlFactsIdSetPrintSorted(&op->del_eff, fs, pddl,
+                              pddlFactNamePDDL, " ", "", fout);
+    fprintf(fout, "\n");
 
     if (op->cond_eff_size > 0)
         fprintf(fout, "    cond-eff[%d]:\n", op->cond_eff_size);
@@ -329,18 +335,24 @@ void pddlStripsOpPrint(const struct pddl *pddl, const pddl_facts_t *fs,
     for (int j = 0; j < op->cond_eff_size; ++j){
         const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
 
-        fprintf(fout, "      pre: ");
-        pddlFactIdSetPrettyPrint(pddl, fs, &ce->pre, fout);
-        fprintf(fout, "      add: ");
-        pddlFactIdSetPrettyPrint(pddl, fs, &ce->add_eff, fout);
-        fprintf(fout, "      del: ");
-        pddlFactIdSetPrettyPrint(pddl, fs, &ce->del_eff, fout);
+        fprintf(fout, "      pre:");
+        pddlFactsIdSetPrintSorted(&ce->pre, fs, pddl,
+                                  pddlFactNamePDDL, " ", "", fout);
+        fprintf(fout, "\n");
+        fprintf(fout, "      add:");
+        pddlFactsIdSetPrintSorted(&ce->add_eff, fs, pddl,
+                                  pddlFactNamePDDL, " ", "", fout);
+        fprintf(fout, "\n");
+        fprintf(fout, "      del:");
+        pddlFactsIdSetPrintSorted(&ce->del_eff, fs, pddl,
+                                  pddlFactNamePDDL, " ", "", fout);
+        fprintf(fout, "\n");
     }
 }
 
-void pddlStripsOpsPrint(const struct pddl *pddl, const pddl_facts_t *fs,
-                        const pddl_strips_ops_t *ops, FILE *fout)
+void pddlStripsOpsPrintDebug(const struct pddl *pddl, const pddl_facts_t *fs,
+                             const pddl_strips_ops_t *ops, FILE *fout)
 {
     for (int i = 0; i < ops->op_size; ++i)
-        pddlStripsOpPrint(pddl, fs, ops->op[i], fout);
+        pddlStripsOpPrintDebug(pddl, fs, ops->op[i], fout);
 }

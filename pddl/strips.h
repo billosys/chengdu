@@ -147,10 +147,6 @@ int pddlStripsPrune(pddl_strips_t *strips,
 
 void pddlStripsMakeUnsolvable(pddl_strips_t *strips);
 
-// TODO: pddlStripsPrintPDDLDomain/Problem() --> prints PDDL domain/problem
-//       files corresponding to the STRIPS problem
-void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
-
 /**
  * Print STRIPS problem in a format easily usable from python.
  */
@@ -165,6 +161,9 @@ void pddlStripsPrintPDDLDomain(const pddl_strips_t *strips, FILE *fout);
  * Prints STRIPS problem as PDDL problem.
  */
 void pddlStripsPrintPDDLProblem(const pddl_strips_t *strips, FILE *fout);
+
+
+void pddlStripsPrintDebug(const pddl_strips_t *strips, FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */

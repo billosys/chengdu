@@ -111,8 +111,7 @@ void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout);
  */
 void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout);
 
-// TODO: pddlPrintDomain/Problem() --> prints full PDDL domain/problem files
-void pddlDump(const pddl_t *pddl, FILE *fout);
+void pddlPrintDebug(const pddl_t *pddl, FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */

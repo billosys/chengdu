@@ -230,8 +230,8 @@ static void createVarFromMGroup(pddl_fdr_vars_t *vars, create_t *c,
     // Initialize each value
     for (int i = 0; i < group->size; ++i){
         val = var->val + i;
-        name = pddlFactToStr(c->strips->pddl,
-                             c->strips->fact.fact[group->s[i]]);
+        name = pddlFactNamePDDL(c->strips->fact.fact[group->s[i]],
+                                c->strips->pddl);
         val->name = BOR_STRDUP(name);
         val->var_id = vars->size - 1;
         val->val_id = i;

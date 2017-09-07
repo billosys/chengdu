@@ -402,9 +402,9 @@ static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
 
     if (argi == fact->arg_size){
         if (pddlFactSetPrivate(pddl, fact) != 0){
-            fprintf(stderr, "Error PDDL: Could not determine privateness of ");
-            pddlFactPrint(pddl, fact, stderr);
-            fprintf(stderr, ".\n");
+            fprintf(stderr, "Error PDDL: Could not determine"
+                            " privateness of %s.\n",
+                            pddlFactNamePDDL(fact, pddl));
             ERR2("The fact is defined so it should be private for two"
                  " different agents.");
         }
@@ -596,16 +596,13 @@ void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout)
     fprintf(fout, "(:init\n");
     for (int i = 0; i < pddl->init_fact.fact_size; ++i){
         const pddl_fact_t *f = pddl->init_fact.fact[i];
-        fprintf(fout, "    ");
-        pddlFactPrintPDDL(f, pddl, fout);
-        fprintf(fout, "\n");
+        fprintf(fout, "    %s\n", pddlFactNamePDDL(f, pddl));
     }
 
     for (int i = 0; i < pddl->init_func.fact_size; ++i){
         const pddl_fact_t *f = pddl->init_func.fact[i];
-        fprintf(fout, "    ");
-        pddlFuncPrintPDDL(f, pddl, fout);
-        fprintf(fout, "\n");
+        fprintf(fout, "    (= %s %d)\n",
+                pddlFuncNamePDDL(f, pddl), f->func_val);
     }
     fprintf(fout, ")\n");
 
@@ -619,7 +616,8 @@ void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout)
     fprintf(fout, ")\n");
 }
 
-void pddlDump(const pddl_t *pddl, FILE *fout)
+// TODO: Rename to pddlPrintDebug
+void pddlPrintDebug(const pddl_t *pddl, FILE *fout)
 {
     fprintf(fout, "Domain: %s\n", pddl->domain_name);
     fprintf(fout, "Problem: %s\n", pddl->problem_name);
@@ -630,8 +628,13 @@ void pddlDump(const pddl_t *pddl, FILE *fout)
     pddlPredsPrint(&pddl->func, "Function", fout);
     pddlActionsPrint(pddl, &pddl->action, fout);
 
-    pddlFactsPrintInit(pddl, &pddl->init_fact, fout);
-    pddlFactsPrintInitFunc(pddl, &pddl->init_func, fout);
+    fprintf(fout, "Init[%d]:\n", pddl->init_fact.fact_size);
+    pddlFactsPrint(&pddl->init_fact, pddl,
+                   pddlFactNameDebug, "  ", "\n", fout);
+
+    fprintf(fout, "Init[%d]:\n", pddl->init_func.fact_size);
+    pddlFactsPrint(&pddl->init_func, pddl,
+                   pddlFuncNameDebug, "  ", "\n", fout);
 
     fprintf(fout, "Goal: ");
     pddlCondPrint(pddl, pddl->goal, NULL, fout);

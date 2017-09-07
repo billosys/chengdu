@@ -26,6 +26,13 @@
 #include "err.h"
 #include "assert.h"
 
+/** Deep copy of the fact.  */
+static void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src);
+/** Set the name of the fact */
+static void pddlFactSetName(pddl_fact_t *dst, const pddl_t *pddl);
+/** Returns true if facts are equal.  */
+static int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
+
 static bor_htable_key_t htableKey(const bor_list_t *key, void *_)
 {
     pddl_fact_t *f = BOR_LIST_ENTRY(key, pddl_fact_t, htable);
@@ -75,7 +82,7 @@ void pddlFactDel(pddl_fact_t *f)
     BOR_FREE(f);
 }
 
-void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)
+static void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)
 {
     dst->pred = src->pred;
     dst->arg_size = src->arg_size;
@@ -95,11 +102,9 @@ int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
     return memcmp(f1->arg, f2->arg, sizeof(int) * f1->arg_size);
 }
 
-int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2)
+static int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2)
 {
-    return f1->pred == f2->pred
-            && f1->arg_size == f2->arg_size
-            && memcmp(f1->arg, f2->arg, sizeof(int) * f1->arg_size) == 0;
+    return pddlFactCmp(f1, f2) == 0;
 }
 
 int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
@@ -133,54 +138,6 @@ int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
     return fact->is_private;
 }
 
-
-#define FACT_STR_SIZE 256
-const char *pddlFactToStr(const pddl_t *pddl, const pddl_fact_t *f)
-{
-    int offset = 0;
-    static char s[FACT_STR_SIZE];
-
-    if (pddlFactIsStatic(pddl, f))
-        offset += snprintf(s + offset, FACT_STR_SIZE - offset, "S:");
-    if (f->is_private){
-        offset += snprintf(s + offset, FACT_STR_SIZE - offset, "P");
-        if (f->owner >= 0){
-            offset += snprintf(s + offset, FACT_STR_SIZE - offset,
-                              "[%d]", f->owner);
-        }
-        offset += snprintf(s + offset, FACT_STR_SIZE - offset, ":");
-    }
-    offset += snprintf(s + offset, FACT_STR_SIZE - offset,
-                       "%s:", pddl->pred.pred[f->pred].name);
-    for (int i = 0; i < f->arg_size; ++i){
-        offset += snprintf(s + offset, FACT_STR_SIZE - offset,
-                           " %s", pddl->obj.obj[f->arg[i]].name);
-    }
-    s[FACT_STR_SIZE - 1] = 0x0;
-
-    return s;
-}
-
-void pddlFactPrint(const pddl_t *pddl, const pddl_fact_t *f, FILE *fout)
-{
-    fprintf(fout, pddlFactToStr(pddl, f));
-}
-
-void pddlFuncPrint(const pddl_t *pddl, const pddl_fact_t *f, FILE *fout)
-{
-    if (f->is_private){
-        fprintf(fout, "P");
-        if (f->owner >= 0)
-            fprintf(fout, "[%d]", f->owner);
-        fprintf(fout, ":");
-    }
-    fprintf(fout, "%s:", pddl->func.pred[f->pred].name);
-    for (int i = 0; i < f->arg_size; ++i){
-        fprintf(fout, " %s", pddl->obj.obj[f->arg[i]].name);
-    }
-    fprintf(fout, " --> %d", f->func_val);
-}
-
 int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f)
 {
     const pddl_pred_t *pred = pddl->pred.pred + f->pred;
@@ -190,22 +147,112 @@ int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f)
     return 0;
 }
 
-void pddlFactPrintPDDL(const pddl_fact_t *f, const pddl_t *pddl, FILE *fout)
+static char name[PDDL_FACT_MAX_NAME_SIZE];
+static int factFuncName(const pddl_fact_t *f, const pddl_t *pddl,
+                        const pddl_preds_t *pred, int offset)
 {
-    fprintf(fout, "(%s", pddl->pred.pred[f->pred].name);
-    for (int i = 0; i < f->arg_size; ++i)
-        fprintf(fout, " %s", pddl->obj.obj[f->arg[i]].name);
-    fprintf(fout, ")");
+    offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset, "%s",
+                       pred->pred[f->pred].name);
+    for (int i = 0; i < f->arg_size; ++i){
+        offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+                           " %s", pddl->obj.obj[f->arg[i]].name);
+    }
+    name[PDDL_FACT_MAX_NAME_SIZE - 1] = 0x0;
+    return offset;
+}
+static int factName(const pddl_fact_t *f, const pddl_t *pddl, int offset)
+{
+    return factFuncName(f, pddl, &pddl->pred, offset);
 }
 
-void pddlFuncPrintPDDL(const pddl_fact_t *f, const pddl_t *pddl, FILE *fout)
+const char *pddlFactName(const pddl_fact_t *f, const pddl_t *pddl)
 {
-    fprintf(fout, "(= ");
-    fprintf(fout, "(%s", pddl->func.pred[f->pred].name);
-    for (int i = 0; i < f->arg_size; ++i)
-        fprintf(fout, " %s", pddl->obj.obj[f->arg[i]].name);
-    fprintf(fout, ") %d)", f->func_val);
+    factName(f, pddl, 0);
+    return name;
 }
+
+const char *pddlFactNamePDDL(const pddl_fact_t *f, const pddl_t *pddl)
+{
+    int offset;
+    name[0] = '(';
+    offset = factName(f, pddl, 1);
+    snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset, ")");
+    name[PDDL_FACT_MAX_NAME_SIZE - 1] = 0;
+    return name;
+}
+
+const char *pddlFactNameDebug(const pddl_fact_t *f, const pddl_t *pddl)
+{
+    int offset = 0;
+
+    if (pddlFactIsStatic(pddl, f)){
+        offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+                           "S:");
+    }
+    if (f->is_private){
+        offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+                           "P");
+        if (f->owner >= 0){
+            offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+                              "[%d]", f->owner);
+        }
+        offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+                           ":");
+    }
+    offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset, "(");
+    offset = factName(f, pddl, offset);
+    snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset, ")");
+    name[PDDL_FACT_MAX_NAME_SIZE - 1] = 0x0;
+
+    return name;
+}
+
+static int funcName(const pddl_fact_t *f, const pddl_t *pddl, int offset)
+{
+    return factFuncName(f, pddl, &pddl->func, offset);
+}
+
+const char *pddlFuncName(const pddl_fact_t *f, const pddl_t *pddl)
+{
+    funcName(f, pddl, 0);
+    return name;
+}
+
+const char *pddlFuncNamePDDL(const pddl_fact_t *f, const pddl_t *pddl)
+{
+    int offset;
+    name[0] = '(';
+    offset = funcName(f, pddl, 1);
+    snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset, ")");
+    name[PDDL_FACT_MAX_NAME_SIZE - 1] = 0;
+    return name;
+}
+
+const char *pddlFuncNameDebug(const pddl_fact_t *f, const pddl_t *pddl)
+{
+    int offset = 0;
+
+    if (f->is_private){
+        offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+                           "P");
+        if (f->owner >= 0){
+            offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+                              "[%d]", f->owner);
+        }
+        offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+                           ":");
+    }
+    offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset, "(");
+    offset = funcName(f, pddl, offset);
+    offset += snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset, ")");
+    snprintf(name + offset, PDDL_FACT_MAX_NAME_SIZE - offset,
+             " --> %d", f->func_val);
+    name[PDDL_FACT_MAX_NAME_SIZE - 1] = 0x0;
+    return name;
+}
+
+
+
 
 static int factSetPrivate(const pddl_t *pddl, pddl_fact_t *fact)
 {
@@ -473,113 +520,72 @@ int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *ff)
     return -1;
 }
 
-static int factCmp(const void *a, const void *b, void *_fs)
+
+void pddlFactsPrint(const pddl_facts_t *fs, const pddl_t *pddl,
+                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
+                    const char *prefix, const char *suffix,
+                    FILE *fout)
 {
-    const pddl_facts_t *fs = _fs;
-    int fid1 = *(int *)a;
-    int fid2 = *(int *)b;
-    const pddl_fact_t *f1 = fs->fact[fid1];
-    const pddl_fact_t *f2 = fs->fact[fid2];
-    return pddlFactCmp(f1, f2);
-}
-
-static void _pddlFactsPrint(const pddl_t *pddl, const pddl_facts_t *fs,
-                            int func, FILE *fout)
-{
-    const pddl_fact_t *f;
-
-    PDDL_FACTS_FOR_EACH(fs, f){
-        fprintf(fout, "% 4d: ", f->id);
-        if (func){
-            pddlFuncPrint(pddl, f, fout);
-        }else{
-            pddlFactPrint(pddl, f, fout);
-        }
-        fprintf(fout, "\n");
-    }
-}
-
-static void _pddlFactsPrintSorted(const pddl_t *pddl,
-                                  const pddl_facts_t *fs,
-                                  int func, FILE *fout)
-{
-    int *sorted;
-
-    sorted = BOR_ALLOC_ARR(int, fs->fact_size);
     for (int i = 0; i < fs->fact_size; ++i)
-        sorted[i] = i;
-    borSort(sorted, fs->fact_size, sizeof(int), factCmp, (void *)fs);
+        fprintf(fout, "%s%s%s", prefix, name(fs->fact[i], pddl), suffix);
+}
+
+
+struct name_sort {
+    const pddl_fact_t *fact;
+    char *name;
+};
+
+static int factNameCmp(const void *_a, const void *_b, void *_)
+{
+    const struct name_sort *a = _a;
+    const struct name_sort *b = _b;
+    return strcmp(a->name, b->name);
+}
+
+void pddlFactsPrintSorted(const pddl_facts_t *fs, const pddl_t *pddl,
+                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
+                    const char *prefix, const char *suffix,
+                    FILE *fout)
+{
+    struct name_sort *sorted;
+
+    sorted = BOR_ALLOC_ARR(struct name_sort, fs->fact_size);
     for (int i = 0; i < fs->fact_size; ++i){
-        fprintf(fout, "  ");
-        if (func){
-            pddlFuncPrint(pddl, fs->fact[sorted[i]], fout);
-        }else{
-            pddlFactPrint(pddl, fs->fact[sorted[i]], fout);
-        }
-        fprintf(fout, "\n");
+        sorted[i].fact = fs->fact[i];
+        sorted[i].name = BOR_STRDUP(pddlFactName(fs->fact[i], pddl));
     }
+    borSort(sorted, fs->fact_size, sizeof(struct name_sort),
+            factNameCmp, NULL);
+
+    for (int i = 0; i < fs->fact_size; ++i)
+        fprintf(fout, "%s%s%s", prefix, name(sorted[i].fact, pddl), suffix);
+
+    for (int i = 0; i < fs->fact_size; ++i)
+        BOR_FREE(sorted[i].name);
     BOR_FREE(sorted);
 }
 
-void pddlFactsPrint(const pddl_t *pddl, const pddl_facts_t *fs, FILE *fout)
+void pddlFactsIdSetPrintSorted(const bor_iset_t *set,
+                    const pddl_facts_t *fs, const pddl_t *pddl,
+                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
+                    const char *prefix, const char *suffix,
+                    FILE *fout)
 {
-    _pddlFactsPrint(pddl, fs, 0, fout);
-}
+    struct name_sort *sorted;
+    int size = borISetSize(set);
 
-void pddlFuncsPrint(const pddl_t *pddl, const pddl_facts_t *fs, FILE *fout)
-{
-    _pddlFactsPrint(pddl, fs, 1, fout);
-}
-
-void pddlFactsPrintSorted(const pddl_t *pddl, const pddl_facts_t *fs,
-                          FILE *fout)
-{
-    _pddlFactsPrintSorted(pddl, fs, 0, fout);
-}
-
-void pddlFuncsPrintSorted(const pddl_t *pddl, const pddl_facts_t *fs,
-                          FILE *fout)
-{
-    _pddlFactsPrintSorted(pddl, fs, 1, fout);
-}
-
-void pddlFactsPrintInit(const pddl_t *pddl, const pddl_facts_t *in, FILE *fout)
-{
-    fprintf(fout, "Init[%d]:\n", in->fact_size);
-    pddlFactsPrint(pddl, in, fout);
-}
-
-void pddlFactsPrintInitFunc(const pddl_t *pddl,
-                            const pddl_facts_t *in,
-                            FILE *fout)
-{
-    fprintf(fout, "Init Func[%d]:\n", in->fact_size);
-    pddlFuncsPrint(pddl, in, fout);
-}
-
-
-static int factArrCmp(const void *a, const void *b, void *_fs)
-{
-    const pddl_facts_t *fs = _fs;
-    int fid1 = *(int *)a;
-    int fid2 = *(int *)b;
-    const pddl_fact_t *f1 = fs->fact[fid1];
-    const pddl_fact_t *f2 = fs->fact[fid2];
-    return pddlFactCmp(f1, f2);
-}
-
-void pddlFactIdSetPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
-                              const bor_iset_t *s, FILE *fout)
-{
-    int sorted[s->size];
-    memcpy(sorted, s->s, sizeof(int) * s->size);
-    borSort(sorted, s->size, sizeof(int), factArrCmp, (void *)fs);
-
-    for (int i = 0; i < s->size; ++i){
-        if (i > 0)
-            fprintf(fout, ", ");
-        pddlFactPrint(pddl, fs->fact[sorted[i]], fout);
+    sorted = BOR_ALLOC_ARR(struct name_sort, fs->fact_size);
+    for (int i = 0; i < size; ++i){
+        sorted[i].fact = fs->fact[borISetGet(set, i)];
+        sorted[i].name = BOR_STRDUP(pddlFactName(sorted[i].fact, pddl));
     }
-    fprintf(fout, "\n");
-}
+    borSort(sorted, size, sizeof(struct name_sort), factNameCmp, NULL);
 
+    for (int i = 0; i < size; ++i)
+        fprintf(fout, "%s%s%s", prefix, name(sorted[i].fact, pddl), suffix);
+
+    for (int i = 0; i < size; ++i)
+        BOR_FREE(sorted[i].name);
+    BOR_FREE(sorted);
+}

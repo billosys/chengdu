@@ -148,10 +148,10 @@ void pddlStripsOpsDelOps(pddl_strips_ops_t *ops, const int *m);
  */
 void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap);
 
-void pddlStripsOpPrint(const pddl_t *pddl, const pddl_facts_t *fs,
-                       const pddl_strips_op_t *op, FILE *fout);
-void pddlStripsOpsPrint(const pddl_t *pddl, const pddl_facts_t *fs,
-                        const pddl_strips_ops_t *ops, FILE *fout);
+void pddlStripsOpPrintDebug(const pddl_t *pddl, const pddl_facts_t *fs,
+                            const pddl_strips_op_t *op, FILE *fout);
+void pddlStripsOpsPrintDebug(const pddl_t *pddl, const pddl_facts_t *fs,
+                             const pddl_strips_ops_t *ops, FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */
