@@ -282,7 +282,7 @@ void pddlLispDel(pddl_lisp_t *lisp)
     BOR_FREE(lisp);
 }
 
-static void nodeDump(const pddl_lisp_node_t *node, FILE *fout, int prefix)
+static void nodeDebug(const pddl_lisp_node_t *node, FILE *fout, int prefix)
 {
     int i;
 
@@ -296,7 +296,7 @@ static void nodeDump(const pddl_lisp_node_t *node, FILE *fout, int prefix)
         fprintf(fout, "( :: %d\n", node->lineno);
 
         for (i = 0; i < node->child_size; ++i){
-            nodeDump(node->child + i, fout, prefix + 4);
+            nodeDebug(node->child + i, fout, prefix + 4);
         }
 
         for (i = 0; i < prefix; ++i)
@@ -305,9 +305,9 @@ static void nodeDump(const pddl_lisp_node_t *node, FILE *fout, int prefix)
     }
 }
 
-void pddlLispDump(const pddl_lisp_t *lisp, FILE *fout)
+void pddlLispPrintDebug(const pddl_lisp_t *lisp, FILE *fout)
 {
-    nodeDump(&lisp->root, fout, 0);
+    nodeDebug(&lisp->root, fout, 0);
 }
 
 void pddlLispNodeCopy(pddl_lisp_node_t *dst,

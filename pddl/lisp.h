@@ -120,7 +120,7 @@ void pddlLispDel(pddl_lisp_t *lisp);
 /**
  * Prints pddl-lisp object to the specified output.
  */
-void pddlLispDump(const pddl_lisp_t *lisp, FILE *fout);
+void pddlLispPrintDebug(const pddl_lisp_t *lisp, FILE *fout);
 
 /**
  * Returns root's child with the specified head keyword.
