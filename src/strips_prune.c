@@ -312,7 +312,7 @@ int pddlStripsPrune(pddl_strips_t *strips,
                  strips->op.op_size, strips->mgroup.size);
         }
 
-        if (cfg->disambiguation){
+        if (cfg->disambiguation && cfg->fa_mgroup){
             if (disambiguate(strips, cfg, &change) != 0){
                 BOR_FREE(prune_op);
                 TRACE_RET(-1);
