@@ -34,6 +34,38 @@ static int outputPDDLProblem(const options_t *o, const pddl_t *pddl)
     return 0;
 }
 
+static int outputStripsPDDLDomain(const options_t *o, const pddl_t *pddl)
+{
+    FILE *fout;
+
+    fout = fopen(o->output_strips_pddl_domain, "w");
+    if (fout == NULL){
+        fprintf(stderr, "Error: Could not open file %s.\n",
+                o->output_strips_pddl_domain);
+        return -1;
+    }
+    pddlStripsPrintPDDLDomain(pddl->strips, fout);
+
+    fclose(fout);
+    return 0;
+}
+
+static int outputStripsPDDLProblem(const options_t *o, const pddl_t *pddl)
+{
+    FILE *fout;
+
+    fout = fopen(o->output_strips_pddl_problem, "w");
+    if (fout == NULL){
+        fprintf(stderr, "Error: Could not open file %s.\n",
+                o->output_strips_pddl_problem);
+        return -1;
+    }
+    pddlStripsPrintPDDLProblem(pddl->strips, fout);
+
+    fclose(fout);
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     options_t *o;
@@ -77,6 +109,14 @@ int main(int argc, char *argv[])
     }
     if (o->output_pddl_problem != NULL){
         if (outputPDDLProblem(o, pddl) != 0)
+            return -1;
+    }
+    if (o->output_strips_pddl_domain != NULL){
+        if (outputStripsPDDLDomain(o, pddl) != 0)
+            return -1;
+    }
+    if (o->output_strips_pddl_problem != NULL){
+        if (outputStripsPDDLProblem(o, pddl) != 0)
             return -1;
     }
 

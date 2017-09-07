@@ -33,6 +33,8 @@ static options_t _opts = {
     OUTPUT_FD,
     NULL,
     NULL,
+    NULL,
+    NULL,
     PDDL_CONFIG_INIT,
 };
 
@@ -71,6 +73,12 @@ static int readOpts(int argc, char *argv[])
                 NULL, "Output file for PDDL domain.");
     optsAddDesc("output-pddl-problem", 0x0, OPTS_STR, &o->output_pddl_problem,
                 NULL, "Output file for PDDL problem.");
+    optsAddDesc("output-strips-pddl-domain", 0x0, OPTS_STR,
+                &o->output_strips_pddl_domain, NULL,
+                "Output file for PDDL domain.");
+    optsAddDesc("output-strips-pddl-problem", 0x0, OPTS_STR,
+                &o->output_strips_pddl_problem, NULL,
+                "Output file for PDDL problem.");
 
     if (opts(&argc, argv) != 0){
         return -1;

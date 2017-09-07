@@ -35,6 +35,8 @@ struct _options_t {
     int output_type;
     char *output_pddl_domain;
     char *output_pddl_problem;
+    char *output_strips_pddl_domain;
+    char *output_strips_pddl_problem;
 
     pddl_config_t cfg;
 };

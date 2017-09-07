@@ -156,6 +156,16 @@ void pddlStripsDump(const pddl_strips_t *strips, FILE *fout);
  */
 void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout);
 
+/**
+ * Prints STRIPS problem as PDDL domain.
+ */
+void pddlStripsPrintPDDLDomain(const pddl_strips_t *strips, FILE *fout);
+
+/**
+ * Prints STRIPS problem as PDDL problem.
+ */
+void pddlStripsPrintPDDLProblem(const pddl_strips_t *strips, FILE *fout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

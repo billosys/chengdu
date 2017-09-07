@@ -298,3 +298,78 @@ void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
     fprintf(fout, "has_cond_eff = %s\n",
             (strips->has_cond_eff ? "True" : "False" ));
 }
+
+void pddlStripsPrintPDDLDomain(const pddl_strips_t *strips, FILE *fout)
+{
+    int fact_id;
+
+    fprintf(fout, "(define (domain %s)\n", strips->pddl->domain_name);
+
+    fprintf(fout, "(:predicates\n");
+    for (int i = 0; i < strips->fact.fact_size; ++i){
+        const char *name = pddlFactToStr(strips->pddl, strips->fact.fact[i]);
+        fprintf(fout, "    (F%d) ;; %s\n", i, name);
+    }
+    fprintf(fout, ")\n");
+    fprintf(fout, "(:functions (total-cost))\n");
+
+    for (int i = 0; i < strips->op.op_size; ++i){
+        const pddl_strips_op_t *op = strips->op.op[i];
+        char *name = BOR_STRDUP(op->name);
+        for (char *c = name; *c != 0x0; ++c){
+            if (*c == ' ' || *c == '(' || *c == ')')
+                *c = '_';
+        }
+        fprintf(fout, "(:action %s\n", name);
+        fprintf(fout, "    :precondition (and");
+        BOR_ISET_FOR_EACH(&op->pre, fact_id)
+            fprintf(fout, " (F%d)", fact_id);
+        fprintf(fout, ")\n");
+
+        fprintf(fout, "    :effect (and");
+        BOR_ISET_FOR_EACH(&op->add_eff, fact_id)
+            fprintf(fout, " (F%d)", fact_id);
+        BOR_ISET_FOR_EACH(&op->del_eff, fact_id)
+            fprintf(fout, " (not (F%d))", fact_id);
+        for (int cei = 0; cei < op->cond_eff_size; ++cei){
+            const pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+            fprintf(fout, " (when (and");
+            BOR_ISET_FOR_EACH(&ce->pre, fact_id)
+                fprintf(fout, " (F%d)", fact_id);
+            fprintf(fout, ") (and");
+            BOR_ISET_FOR_EACH(&ce->add_eff, fact_id)
+                fprintf(fout, " (F%d)", fact_id);
+            BOR_ISET_FOR_EACH(&ce->del_eff, fact_id)
+                fprintf(fout, " (not (F%d))", fact_id);
+            fprintf(fout, ")");
+        }
+
+        fprintf(fout, " (increase (total-cost) %d)", op->cost);
+        fprintf(fout, ")\n");
+
+        fprintf(fout, ")\n");
+        BOR_FREE(name);
+    }
+
+    fprintf(fout, ")\n");
+}
+
+void pddlStripsPrintPDDLProblem(const pddl_strips_t *strips, FILE *fout)
+{
+    int fact_id;
+
+    fprintf(fout, "(define (problem %s) (:domain %s)\n",
+            strips->pddl->problem_name, strips->pddl->domain_name);
+
+    fprintf(fout, "(:init\n");
+    BOR_ISET_FOR_EACH(&strips->init, fact_id)
+        fprintf(fout, "    (F%d)\n", fact_id);
+    fprintf(fout, ")\n");
+
+    fprintf(fout, "(:goal (and");
+    BOR_ISET_FOR_EACH(&strips->goal, fact_id)
+        fprintf(fout, " (F%d)", fact_id);
+    fprintf(fout, "))\n");
+    fprintf(fout, "(:metric minimize (total-cost))\n");
+    fprintf(fout, ")\n");
+}
