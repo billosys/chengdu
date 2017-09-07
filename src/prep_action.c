@@ -363,7 +363,7 @@ static int checkPreNegStatic(const pddl_prep_action_t *a,
     if (a->pre_neg_static.size == 0)
         return 1;
 
-    PDDL_FACT_FOR_GROUND2(fact, a->max_arg_size);
+    PDDL_FACT_STACK(fact, a->max_arg_size);
     const pddl_cond_atom_t *atom;
 
     for (int i = 0; i < a->pre_neg_static.size; ++i){

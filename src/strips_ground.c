@@ -691,7 +691,7 @@ static void _groundActionAddEff(ground_t *g,
         return;
 
     const pddl_cond_atom_t *atom;
-    PDDL_FACT_FOR_GROUND2(fact, a->max_arg_size);
+    PDDL_FACT_STACK(fact, a->max_arg_size);
     for (int i = 0; i < a->add_eff.size; ++i){
         atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
         if (pddlCondAtomGroundFact(atom, arg, &fact) != 0){
@@ -752,7 +752,7 @@ static int groundAssign(int atom_max_arg_size,
                         const pddl_facts_t *funcs)
 {
     const pddl_cond_assign_t *atom;
-    PDDL_FACT_FOR_GROUND2(func, atom_max_arg_size);
+    PDDL_FACT_STACK(func, atom_max_arg_size);
     const pddl_fact_t *fvalue;
     int func_id;
     int cost = 0;
@@ -781,7 +781,7 @@ static void groundAtoms(int atom_max_arg_size,
                         bor_iset_t *out)
 {
     const pddl_cond_atom_t *atom;
-    PDDL_FACT_FOR_GROUND2(fact, atom_max_arg_size);
+    PDDL_FACT_STACK(fact, atom_max_arg_size);
     int fact_id;
 
     for (int i = 0; i < atoms->size; ++i){
@@ -936,7 +936,7 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
 
     if (c->type == PDDL_COND_ATOM){
         const pddl_cond_atom_t *atom = PDDL_COND_CAST(c, atom);
-        PDDL_FACT_FOR_GROUND2(fact, atom->arg_size);
+        PDDL_FACT_STACK(fact, atom->arg_size);
 
         // Transform atom to a fact
         fact.pred = atom->pred;
