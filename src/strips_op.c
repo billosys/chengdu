@@ -314,7 +314,7 @@ void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap)
 void pddlStripsOpPrintDebug(const struct pddl *pddl, const pddl_facts_t *fs,
                             const pddl_strips_op_t *op, FILE *fout)
 {
-    fprintf(fout, "  %s, cost: %d\n", op->name, op->cost);
+    fprintf(fout, "  (%s), cost: %d\n", op->name, op->cost);
 
     fprintf(fout, "    pre:");
     pddlFactsIdSetPrintSorted(&op->pre, fs, pddl,

@@ -135,7 +135,7 @@ void pddlFDROpPrettyPrint(const pddl_fdr_op_t *op,
                           const pddl_fdr_vars_t *vars,
                           FILE *fout)
 {
-    fprintf(fout, "  %s, cost: %d\n", op->name, op->cost);
+    fprintf(fout, "  (%s), cost: %d\n", op->name, op->cost);
     fprintf(fout, "    pre:");
     pddlFDRPartStatePrettyPrint(&op->pre, vars, fout);
     fprintf(fout, "    eff:");
