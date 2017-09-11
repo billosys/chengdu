@@ -200,10 +200,10 @@ pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)
 static void printPythonISet(const bor_iset_t *s, FILE *fout)
 {
     int i;
-    fprintf(fout, "[");
+    fprintf(fout, "set([");
     BOR_ISET_FOR_EACH(s, i)
         fprintf(fout, " %d,", i);
-    fprintf(fout, "]");
+    fprintf(fout, "])");
 }
 
 void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)

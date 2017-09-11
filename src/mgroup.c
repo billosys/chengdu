@@ -276,10 +276,10 @@ void pddlMGroupsPrintPython(const pddl_mgroups_t *mg, FILE *fout)
 
         fprintf(fout, "    {\n");
 
-        fprintf(fout, "        'fact' : [");
+        fprintf(fout, "        'fact' : set([");
         BOR_ISET_FOR_EACH(&g->fact, fact_id)
             fprintf(fout, " %d,", fact_id);
-        fprintf(fout, "],\n");
+        fprintf(fout, "]),\n");
         fprintf(fout, "        'is_init' : %s,\n",
                 (g->is_init ? "True" : "False"));
         fprintf(fout, "        'is_goal' : %s,\n",
