@@ -51,16 +51,14 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     pddlStripsOpsFree(&strips->op);
     pddlStripsOpsInit(&strips->op);
     borISetEmpty(&strips->init);
-    if (borISetSize(&strips->goal) == 0){
-        if (strips->fact.fact_size == 0){
-            // TODO
-            FATAL2("STRIPS problem does not contain any fact."
-                   " Making unsolvable problem for this case is not yet"
-                   " implemented.");
-        }else{
-            borISetAdd(&strips->goal, 0);
-        }
+    if (strips->fact.fact_size == 0){
+        // TODO
+        FATAL2("STRIPS problem does not contain any fact."
+                " Making unsolvable problem for this case is not yet"
+                " implemented.");
     }
+    borISetEmpty(&strips->goal);
+    borISetAdd(&strips->goal, 0);
 
     ASSERT_RUNTIME(strips->fact.fact_size > 0);
     for (int i = strips->fact.fact_size - 1; i >= 1; --i)
@@ -79,10 +77,6 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
         pddlStripsDel(strips);
         TRACE_RET(NULL);
     }
-    if (strips->goal_is_unreachable){
-        pddlStripsMakeUnsolvable(strips);
-        return strips;
-    }
 
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
@@ -92,6 +86,11 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
             pddlStripsDel(strips);
             TRACE_RET(NULL);
         }
+    }
+
+    if (strips->goal_is_unreachable){
+        pddlStripsMakeUnsolvable(strips);
+        return strips;
     }
 
     // Infer fa mutex groups only if they were not already infered during

@@ -198,11 +198,10 @@ static void mutexTableDel(bor_iset_t *t, const pddl_strips_t *strips)
         BOR_FREE(t);
 }
 
-static int disambiguatePre(pddl_strips_op_t *op,
+static int disambiguateSet(bor_iset_t *set,
                            const bor_iset_t *mutex,
                            const pddl_mgroups_t *mgroups)
 {
-    bor_iset_t *pre = &op->pre;
     bor_iset_t mutex_facts;
     bor_iset_t remain;
     int fact_id;
@@ -210,7 +209,7 @@ static int disambiguatePre(pddl_strips_op_t *op,
     const pddl_mgroup_t *mg;
 
     borISetInit(&mutex_facts);
-    BOR_ISET_FOR_EACH(pre, fact_id)
+    BOR_ISET_FOR_EACH(set, fact_id)
         borISetUnion(&mutex_facts, &mutex[fact_id]);
 
     borISetInit(&remain);
@@ -220,10 +219,11 @@ static int disambiguatePre(pddl_strips_op_t *op,
             if (!mg->is_exactly_1)
                 continue;
             borISetMinus2(&remain, &mg->fact, &mutex_facts);
-            ASSERT(borISetSize(&remain) > 0);
+            if (borISetSize(&remain) == 0)
+                return -1;
             if (borISetSize(&remain) == 1
-                    && !borISetIn(borISetGet(&remain, 0), pre)){
-                borISetAdd(pre, borISetGet(&remain, 0));
+                    && !borISetIn(borISetGet(&remain, 0), set)){
+                borISetAdd(set, borISetGet(&remain, 0));
                 borISetUnion(&mutex_facts, &mutex[borISetGet(&remain, 0)]);
                 change = local_change = 1;
             }
@@ -234,6 +234,17 @@ static int disambiguatePre(pddl_strips_op_t *op,
     borISetFree(&remain);
     borISetFree(&mutex_facts);
 
+    return change;
+}
+
+static int disambiguatePre(pddl_strips_op_t *op,
+                           const bor_iset_t *mutex,
+                           const pddl_mgroups_t *mgroups)
+{
+    int change;
+
+    change = disambiguateSet(&op->pre, mutex, mgroups);
+    ASSERT(change >= 0);
     if (change)
         pddlStripsOpNormalize(op);
 
@@ -245,6 +256,7 @@ static int disambiguate(pddl_strips_t *strips,
                         int *change)
 {
     bor_iset_t *mutex;
+    int ret;
 
     if (strips->mgroup.size == 0)
         return 0;
@@ -253,6 +265,14 @@ static int disambiguate(pddl_strips_t *strips,
     for (int oi = 0; oi < strips->op.op_size; ++oi){
         pddl_strips_op_t *op = strips->op.op[oi];
         *change |= disambiguatePre(op, mutex, &strips->mgroup);
+    }
+
+    ret = disambiguateSet(&strips->goal, mutex, &strips->mgroup);
+    if (ret < 0){
+        strips->goal_is_unreachable = 1;
+        *change = 1;
+    }else{
+        *change |= ret;
     }
 
     mutexTableDel(mutex, strips);
@@ -264,6 +284,9 @@ int pddlStripsPrune(pddl_strips_t *strips,
 {
     int change;
     int *prune_op;
+
+    if (strips->goal_is_unreachable)
+        return 0;
 
     INFO("Start pruning of the STRIPS problem (num-ops: %d).",
          strips->op.op_size);
@@ -322,12 +345,10 @@ int pddlStripsPrune(pddl_strips_t *strips,
         }
         if (cfg->fixpoint && change)
             INFO2("  == Fixpoint not reached, continuing to prune... ==");
-    } while (cfg->fixpoint && change);
+    } while (cfg->fixpoint && change && !strips->goal_is_unreachable);
 
     BOR_FREE(prune_op);
 
-    if (strips->goal_is_unreachable)
-        pddlStripsMakeUnsolvable(strips);
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
 
