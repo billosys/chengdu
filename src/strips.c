@@ -209,18 +209,19 @@ void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
 {
     int f;
 
-    fprintf(fout, "domain_file = '%s'\n", strips->pddl->domain_lisp->filename);
-    fprintf(fout, "problem_file = '%s'\n",
+    fprintf(fout, "{\n");
+    fprintf(fout, "'domain_file' : '%s',\n", strips->pddl->domain_lisp->filename);
+    fprintf(fout, "'problem_file' : '%s',\n",
             strips->pddl->problem_lisp->filename);
-    fprintf(fout, "domain_name = '%s'\n", strips->pddl->domain_name);
-    fprintf(fout, "problem_name = '%s'\n", strips->pddl->problem_name);
+    fprintf(fout, "'domain_name' : '%s',\n", strips->pddl->domain_name);
+    fprintf(fout, "'problem_name' : '%s',\n", strips->pddl->problem_name);
 
-    fprintf(fout, "fact = [\n");
+    fprintf(fout, "'fact' : [\n");
     for (int i = 0; i < strips->fact.fact_size; ++i)
         fprintf(fout, "    '(%s)',\n", strips->fact.fact[i]->name);
-    fprintf(fout, "]\n");
+    fprintf(fout, "],\n");
 
-    fprintf(fout, "op = [\n");
+    fprintf(fout, "'op' : [\n");
     for (int i = 0; i < strips->op.op_size; ++i){
         const pddl_strips_op_t *op = strips->op.op[i];
         fprintf(fout, "    {\n");
@@ -256,25 +257,27 @@ void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
 
         fprintf(fout, "    },\n");
     }
-    fprintf(fout, "]\n");
+    fprintf(fout, "],\n");
 
-    fprintf(fout, "init_state = [");
+    fprintf(fout, "'init' : [");
     BOR_ISET_FOR_EACH(&strips->init, f)
         fprintf(fout, "%d, ", f);
-    fprintf(fout, "]\n");
+    fprintf(fout, "],\n");
 
-    fprintf(fout, "goal = [");
+    fprintf(fout, "'goal' : [");
     BOR_ISET_FOR_EACH(&strips->goal, f)
         fprintf(fout, "%d, ", f);
-    fprintf(fout, "]\n");
+    fprintf(fout, "],\n");
 
-    fprintf(fout, "mgroup = ");
+    fprintf(fout, "'mgroup' : ");
     pddlMGroupsPrintPython(&strips->mgroup, fout);
+    fprintf(fout, ",\n");
 
-    fprintf(fout, "goal_is_unreachable = %s\n",
+    fprintf(fout, "'goal_is_unreachable' : %s,\n",
             (strips->goal_is_unreachable ? "True" : "False" ));
-    fprintf(fout, "has_cond_eff = %s\n",
+    fprintf(fout, "'has_cond_eff' : %s,\n",
             (strips->has_cond_eff ? "True" : "False" ));
+    fprintf(fout, "}\n");
 }
 
 void pddlStripsPrintPDDLDomain(const pddl_strips_t *strips, FILE *fout)
