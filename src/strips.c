@@ -64,6 +64,12 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     for (int i = strips->fact.fact_size - 1; i >= 1; --i)
         pddlFactsDelFact(&strips->fact, i);
     strips->fact.fact_size = 1;
+
+    pddlMutexesFree(&strips->mutex);
+    pddlMutexesInit(&strips->mutex);
+
+    pddlMGroupsFree(&strips->mgroup);
+    pddlMGroupsInit(&strips->mgroup);
 }
 
 pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
@@ -271,6 +277,10 @@ void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
 
     fprintf(fout, "'mgroup' : ");
     pddlMGroupsPrintPython(&strips->mgroup, fout);
+    fprintf(fout, ",\n");
+
+    fprintf(fout, "'mutex' : ");
+    pddlMutexesPrintPython(&strips->mutex, fout);
     fprintf(fout, ",\n");
 
     fprintf(fout, "'goal_is_unreachable' : %s,\n",

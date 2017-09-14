@@ -75,6 +75,24 @@ pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
     return ms->m + ms->size - 1;
 }
 
+void pddlMutexesPrintPython(const pddl_mutexes_t *ms, FILE *fout)
+{
+    int fact_id;
+
+    fprintf(fout, "[\n");
+    for (int i = 0; i < ms->size; ++i){
+        const pddl_mutex_t *m = ms->m + i;
+        fprintf(fout, "    {\n");
+        fprintf(fout, "        'fact' : set([");
+        BOR_ISET_FOR_EACH(&m->fact, fact_id)
+            fprintf(fout, " %d,", fact_id);
+        fprintf(fout, "]),\n");
+        fprintf(fout, "        'hm' : %d,\n", m->hm);
+        fprintf(fout, "    },\n");
+    }
+    fprintf(fout, "]\n");
+}
+
 static int prettyMutexCmp(const void *a, const void *b, void *_fs)
 {
     const pddl_facts_t *fs = _fs;

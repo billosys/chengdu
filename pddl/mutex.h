@@ -90,6 +90,7 @@ pddl_mutexes_t *pddlMutexesHmNew(int m, const pddl_strips_t *strips,
  */
 void pddlMutexesHmLimit(pddl_mutexes_t *ms, int max_m);
 
+void pddlMutexesPrintPython(const pddl_mutexes_t *ms, FILE *fout);
 void pddlMutexesPrettyPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                             const pddl_mutexes_t *ms, FILE *fout);
 #ifdef __cplusplus
