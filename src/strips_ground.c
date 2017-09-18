@@ -745,26 +745,55 @@ static char *groundOpName(const pddl_t *pddl,
     return name;
 }
 
+static int initFuncValue(const pddl_cond_part_t *init,
+                         const pddl_cond_atom_t *func,
+                         const int *arg)
+{
+    bor_list_t *item;
+    const pddl_cond_t *c;
+    const pddl_cond_func_op_t *op;
+    int i;
+
+    BOR_LIST_FOR_EACH(&init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type != PDDL_COND_ASSIGN)
+            continue;
+        op = PDDL_COND_CAST(c, func_op);
+        if (op->lvalue && op->lvalue->pred == func->pred){
+            ASSERT(op->lvalue->arg_size == func->arg_size);
+            for (i = 0; i < func->arg_size; ++i){
+                if (func->arg[i].obj >= 0){
+                    if (op->lvalue->arg[i].obj != func->arg[i].obj)
+                        break;
+                }else{
+                    if (op->lvalue->arg[i].obj != arg[func->arg[i].param])
+                        break;
+                }
+            }
+            if (i == func->arg_size){
+                ASSERT(op->fvalue == NULL);
+                return op->value;
+            }
+        }
+    }
+
+    ASSERT_RUNTIME(0);
+    return 0;
+}
+
 static int groundIncrease(int atom_max_arg_size,
                           const int *arg,
                           const pddl_cond_arr_t *atoms,
-                          const pddl_facts_t *funcs)
+                          const pddl_cond_part_t *init)
 {
     const pddl_cond_func_op_t *inc;
-    PDDL_FACT_STACK(func, atom_max_arg_size);
-    const pddl_fact_t *fvalue;
-    int func_id;
     int cost = 0;
 
     // Only (increase (total-cost) ...) is allowed.
     for (int i = 0; i < atoms->size; ++i){
         inc = PDDL_COND_CAST(atoms->cond[i], func_op);
         if (inc->fvalue != NULL){
-            pddlCondAtomGroundFact(inc->fvalue, arg, &func);
-            func_id = pddlFactsFind(funcs, &func);
-            ASSERT_RUNTIME(func_id >= 0);
-            fvalue = funcs->fact[func_id];
-            cost += fvalue->func_val;
+            cost += initFuncValue(init, inc->fvalue, arg);
         }else{
             cost += inc->value;
         }
@@ -813,7 +842,7 @@ static int setUpOp(ground_t *g, pddl_strips_op_t *op,
     op->cost = 1;
     if (g->pddl->metric){
         op->cost = groundIncrease(a->max_arg_size, ga->arg, &a->increase,
-                                  &g->pddl->init_func);
+                                  g->pddl->init);
     }
     name = groundOpName(g->pddl, a->action, ga->arg);
 

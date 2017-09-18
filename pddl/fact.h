@@ -116,12 +116,6 @@ typedef struct pddl_facts pddl_facts_t;
         if ((FACT) != NULL)
 
 /**
- * Parses :init into list of instantiated predicates and instantiated
- * functions.
- */
-int pddlFactsParseInit(pddl_t *pddl);
-
-/**
  * Initialize set of facts.
  */
 void pddlFactsInit(pddl_facts_t *fs);

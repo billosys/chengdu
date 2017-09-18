@@ -176,7 +176,6 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
 
     pddl = BOR_ALLOC(pddl_t);
     bzero(pddl, sizeof(*pddl));
-    pddlFactsInit(&pddl->init_func);
 
     pddl->cfg = *cfg;
     // FDR requires mutex groups so enable it if not already enabled
@@ -201,7 +200,6 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
             || pddlObjsParse(pddl) != 0
             || pddlPredsParse(pddl) != 0
             || pddlFuncsParse(pddl) != 0
-            || pddlFactsParseInit(pddl) != 0
             || parseInit(pddl) != 0
             || parseGoal(pddl) != 0
             || pddlActionsParse(pddl) != 0
@@ -251,7 +249,6 @@ void pddlDel(pddl_t *pddl)
     pddlObjsFree(&pddl->obj);
     pddlPredsFree(&pddl->pred);
     pddlPredsFree(&pddl->func);
-    pddlFactsFree(&pddl->init_func);
     if (pddl->init)
         pddlCondDel(&pddl->init->cls);
     if (pddl->goal)
