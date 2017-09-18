@@ -92,7 +92,7 @@ boruvka: third-party/boruvka/Makefile
 	$(MAKE) $(_BOR_MAKE_DEF) -C third-party/boruvka all
 boruvka-clean:
 	$(MAKE) -C third-party/boruvka clean
-third-part/boruvka/Makefile:
+third-party/boruvka/Makefile:
 	git submodule init -- third-party/boruvka
 	git submodule update -- third-party/boruvka
 
@@ -100,7 +100,7 @@ opts: third-party/opts/Makefile
 	$(MAKE) -C third-party/opts all
 opts-clean:
 	$(MAKE) -C third-party/opts clean
-third-part/opts/Makefile:
+third-party/opts/Makefile:
 	git submodule init -- third-party/opts
 	git submodule update -- third-party/opts
 
