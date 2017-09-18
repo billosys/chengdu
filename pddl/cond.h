@@ -29,7 +29,6 @@
 #include <pddl/param.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
-#include <pddl/fact.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -285,14 +284,9 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl);
 pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl);
 
 /**
- * Ground atom to a fact using arguments, {fact} has to have allocated
- * enough space in .arg[].
- * If some argument could not be set because {args} is not bound on the
- * corresponding position, -1 is returned.
+ * Returns true if the atom is a grounded fact.
  */
-int pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
-                           const int *args,
-                           pddl_fact_t *fact);
+int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom);
 
 void pddlCondPrint(const pddl_t *pddl,
                    const pddl_cond_t *cond,

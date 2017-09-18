@@ -27,6 +27,7 @@
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
+#include <pddl/cond.h>
 #include <boruvka/iset.h>
 
 #ifdef __cplusplus
@@ -130,8 +131,7 @@ void pddlFactsFree(pddl_facts_t *fs);
  */
 int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *f);
 // TODO
-struct pddl_cond_atom;
-int pddlFactsAdd2(pddl_facts_t *fs, const struct pddl_cond_atom *f);
+int pddlFactsAdd2(pddl_facts_t *fs, const pddl_cond_atom_t *f, const int *arg);
 
 /**
  * Deletes fact (and frees all its memory).
@@ -162,6 +162,10 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
  * Returns ID of the fact.
  */
 int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *f);
+// TODO
+int pddlFactsFind2(const pddl_facts_t *fs,
+                   const pddl_cond_atom_t *f,
+                   const int *arg);
 
 
 void pddlFactsPrint(const pddl_facts_t *fs, const pddl_t *pddl,

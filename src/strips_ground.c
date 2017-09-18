@@ -691,16 +691,9 @@ static void _groundActionAddEff(ground_t *g,
         return;
 
     const pddl_cond_atom_t *atom;
-    PDDL_FACT_STACK(fact, a->max_arg_size);
     for (int i = 0; i < a->add_eff.size; ++i){
         atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
-        if (pddlCondAtomGroundFact(atom, arg, &fact) != 0){
-            FATAL("Cannot ground atom to a fact even though all parameters"
-                  " are bound to objects. This is definitely a bug."
-                  " The culprit action is %s.",
-                  groundOpName(g->pddl, a->action, arg));
-        }
-        pddlFactsAdd(&g->strips->fact, &fact);
+        pddlFactsAdd2(&g->strips->fact, atom, arg);
     }
 
     groundArgsAdd(&g->ground_args, a - g->action.action, a, arg);
@@ -809,13 +802,11 @@ static void groundAtoms(int atom_max_arg_size,
                         bor_iset_t *out)
 {
     const pddl_cond_atom_t *atom;
-    PDDL_FACT_STACK(fact, atom_max_arg_size);
     int fact_id;
 
     for (int i = 0; i < atoms->size; ++i){
         atom = PDDL_COND_CAST(atoms->cond[i], atom);
-        pddlCondAtomGroundFact(atom, arg, &fact);
-        fact_id = pddlFactsFind(facts, &fact);
+        fact_id = pddlFactsFind2(facts, atom, arg);
         // Filter out static facts
         if (fact_id >= 0)
             borISetAdd(out, fact_id);
@@ -948,22 +939,12 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
 
     if (c->type == PDDL_COND_ATOM){
         const pddl_cond_atom_t *atom = PDDL_COND_CAST(c, atom);
-        PDDL_FACT_STACK(fact, atom->arg_size);
-
-        // Transform atom to a fact
-        fact.pred = atom->pred;
-        fact.arg_size = atom->arg_size;
-        for (int i = 0; i < atom->arg_size; ++i){
-            if (atom->arg[i].param >= 0){
-                ERR_RET2(-1, "Goal specification cannot contain"
-                             " parametrized atoms.");
-            }else{
-                fact.arg[i] = atom->arg[i].obj;
-            }
-        }
+        if (!pddlCondAtomIsGrounded(atom))
+            ERR_RET2(-1, "Goal specification cannot contain"
+                         " parametrized atoms.");
 
         // Find fact in the set of reachable facts
-        int fact_id = pddlFactsFind(&g->strips->fact, &fact);
+        int fact_id = pddlFactsFind2(&g->strips->fact, atom, NULL);
         if (fact_id >= 0){
             // Add the fact to the goal specification
             borISetAdd(&g->strips->goal, fact_id);
@@ -1007,9 +988,11 @@ static void groundInitFact(ground_t *g, const pddl_t *pddl)
             continue;
         a = PDDL_COND_CAST(c, atom);
         if (pddlPredIsStatic(&pddl->pred.pred[a->pred])){
-            pddlFactsAdd2(&g->static_fact, a);
+            ASSERT(pddlCondAtomIsGrounded(a));
+            pddlFactsAdd2(&g->static_fact, a, NULL);
         }else{
-            fact_id = pddlFactsAdd2(&g->strips->fact, a);
+            ASSERT(pddlCondAtomIsGrounded(a));
+            fact_id = pddlFactsAdd2(&g->strips->fact, a, NULL);
             borISetAdd(&g->strips->init, fact_id);
         }
     }

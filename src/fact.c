@@ -323,7 +323,7 @@ int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *sf)
     return f->id;
 }
 
-int pddlFactsAdd2(pddl_facts_t *fs, const struct pddl_cond_atom *f)
+int pddlFactsAdd2(pddl_facts_t *fs, const pddl_cond_atom_t *f, const int *arg)
 {
     bor_list_t *hfound;
     pddl_fact_t *out;
@@ -332,8 +332,12 @@ int pddlFactsAdd2(pddl_facts_t *fs, const struct pddl_cond_atom *f)
     locf.pred = f->pred;
     locf.arg_size = f->arg_size;
     for (int i = 0; i < f->arg_size; ++i){
-        ASSERT_RUNTIME(f->arg[i].obj >= 0);
-        locf.arg[i] = f->arg[i].obj;
+        if (f->arg[i].obj >= 0){
+            locf.arg[i] = f->arg[i].obj;
+        }else{
+            ASSERT(arg != NULL);
+            locf.arg[i] = arg[f->arg[i].param];
+        }
     }
     locf.hash = pddlFactHash(&locf);
 
@@ -405,6 +409,32 @@ int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *ff)
     if ((hfound = borHTableFind(fs->htable, &find.htable)) != NULL){
         f = BOR_LIST_ENTRY(hfound, pddl_fact_t, htable);
         return f->id;
+    }
+    return -1;
+}
+
+int pddlFactsFind2(const pddl_facts_t *fs,
+                   const pddl_cond_atom_t *f,
+                   const int *arg)
+{
+    bor_list_t *hfound;
+    pddl_fact_t *out;
+    PDDL_FACT_STACK(locf, f->arg_size);
+
+    locf.pred = f->pred;
+    locf.arg_size = f->arg_size;
+    for (int i = 0; i < f->arg_size; ++i){
+        if (f->arg[i].obj >= 0){
+            locf.arg[i] = f->arg[i].obj;
+        }else{
+            locf.arg[i] = arg[f->arg[i].param];
+        }
+    }
+    locf.hash = pddlFactHash(&locf);
+
+    if ((hfound = borHTableFind(fs->htable, &locf.htable)) != NULL){
+        out = BOR_LIST_ENTRY(hfound, pddl_fact_t, htable);
+        return out->id;
     }
     return -1;
 }

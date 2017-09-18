@@ -2269,25 +2269,13 @@ pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl)
     return c;
 }
 
-int pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
-                           const int *args,
-                           pddl_fact_t *fact)
+int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom)
 {
-    int i;
-
-    fact->pred = atom->pred;
-    fact->arg_size = atom->arg_size;
-    for (i = 0; i < atom->arg_size; ++i){
-        if (atom->arg[i].obj >= 0){
-            fact->arg[i] = atom->arg[i].obj;
-        }else{
-            fact->arg[i] = args[atom->arg[i].param];
-            if (fact->arg[i] < 0)
-                return -1;
-        }
+    for (int i = 0; i < atom->arg_size; ++i){
+        if (atom->arg[i].param >= 0)
+            return 0;
     }
-
-    return 0;
+    return 1;
 }
 
 
