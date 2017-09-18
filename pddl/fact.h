@@ -131,7 +131,7 @@ void pddlFactsFree(pddl_facts_t *fs);
  */
 int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *f);
 // TODO
-int pddlFactsAdd2(pddl_facts_t *fs, const pddl_cond_atom_t *f, const int *arg);
+int pddlFactsAdd3(pddl_facts_t *fs, int pred, int arg_size, const int *arg);
 
 /**
  * Deletes fact (and frees all its memory).
@@ -162,10 +162,6 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
  * Returns ID of the fact.
  */
 int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *f);
-// TODO
-int pddlFactsFind2(const pddl_facts_t *fs,
-                   const pddl_cond_atom_t *f,
-                   const int *arg);
 
 
 void pddlFactsPrint(const pddl_facts_t *fs, const pddl_t *pddl,

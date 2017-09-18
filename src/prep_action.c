@@ -280,7 +280,7 @@ void pddlPrepActionsFree(pddl_prep_actions_t *as)
 
 static int checkPreAtomFact(const pddl_prep_action_t *a,
                             const pddl_cond_atom_t *atom,
-                            const pddl_fact_t *fact)
+                            const int *arg)
 {
     int param, type;
 
@@ -288,10 +288,10 @@ static int checkPreAtomFact(const pddl_prep_action_t *a,
         param = atom->arg[i].param;
         if (param >= 0){
             type = a->param_type[param];
-            if (!pddlTypesObjHasType(a->type, type, fact->arg[i]))
+            if (!pddlTypesObjHasType(a->type, type, arg[i]))
                 return 0;
         }else{
-            if (atom->arg[i].obj != fact->arg[i])
+            if (atom->arg[i].obj != arg[i])
                 return 0;
         }
     }
@@ -362,7 +362,7 @@ static int checkEq(const pddl_prep_action_t *a, const int *arg, int soft)
 }
 
 static int checkPreNegStatic(const pddl_prep_action_t *a,
-                             const pddl_facts_t *static_facts,
+                             const pddl_ground_atoms_t *static_facts,
                              const int *arg)
 {
     if (a->pre_neg_static.size == 0)
@@ -372,7 +372,7 @@ static int checkPreNegStatic(const pddl_prep_action_t *a,
 
     for (int i = 0; i < a->pre_neg_static.size; ++i){
         atom = PDDL_COND_CAST(a->pre_neg_static.cond[i], atom);
-        if (pddlFactsFind2(static_facts, atom, arg) >= 0)
+        if (pddlGroundAtomsFindAtom(static_facts, atom, arg) != NULL)
             return 0;
     }
 
@@ -380,7 +380,7 @@ static int checkPreNegStatic(const pddl_prep_action_t *a,
 }
 
 int pddlPrepActionCheck(const pddl_prep_action_t *a,
-                        const pddl_facts_t *static_facts,
+                        const pddl_ground_atoms_t *static_facts,
                         const int *arg)
 {
     return checkPre(a, &a->pre, arg)
@@ -388,15 +388,14 @@ int pddlPrepActionCheck(const pddl_prep_action_t *a,
             && checkPreNegStatic(a, static_facts, arg);
 }
 
-int pddlPrepActionCheckFact(const pddl_prep_action_t *a,
-                            int pre_i,
-                            const pddl_fact_t *fact)
+int pddlPrepActionCheckFact(const pddl_prep_action_t *a, int pre_i,
+                            const int *fact_args)
 {
     const pddl_cond_atom_t *atom = PDDL_COND_CAST(a->pre.cond[pre_i], atom);
     int arg[a->param_size];
     int param;
 
-    if (!checkPreAtomFact(a, atom, fact))
+    if (!checkPreAtomFact(a, atom, fact_args))
         return 0;
 
     for (int i = 0; i < a->param_size; ++i)
@@ -404,9 +403,9 @@ int pddlPrepActionCheckFact(const pddl_prep_action_t *a,
     for (int i = 0; i < atom->arg_size; ++i){
         param = atom->arg[i].param;
         if (param >= 0){
-            if (arg[param] != -1 && arg[param] != fact->arg[i])
+            if (arg[param] != -1 && arg[param] != fact_args[i])
                 return 0;
-            arg[param] = fact->arg[i];
+            arg[param] = fact_args[i];
         }
     }
 
