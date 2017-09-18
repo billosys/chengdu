@@ -745,12 +745,12 @@ static char *groundOpName(const pddl_t *pddl,
     return name;
 }
 
-static int groundAssign(int atom_max_arg_size,
-                        const int *arg,
-                        const pddl_cond_arr_t *atoms,
-                        const pddl_facts_t *funcs)
+static int groundIncrease(int atom_max_arg_size,
+                          const int *arg,
+                          const pddl_cond_arr_t *atoms,
+                          const pddl_facts_t *funcs)
 {
-    const pddl_cond_assign_t *atom;
+    const pddl_cond_func_op_t *inc;
     PDDL_FACT_STACK(func, atom_max_arg_size);
     const pddl_fact_t *fvalue;
     int func_id;
@@ -758,15 +758,15 @@ static int groundAssign(int atom_max_arg_size,
 
     // Only (increase (total-cost) ...) is allowed.
     for (int i = 0; i < atoms->size; ++i){
-        atom = PDDL_COND_CAST(atoms->cond[i], assign);
-        if (atom->fvalue != NULL){
-            pddlCondAtomGroundFact(atom->fvalue, arg, &func);
+        inc = PDDL_COND_CAST(atoms->cond[i], func_op);
+        if (inc->fvalue != NULL){
+            pddlCondAtomGroundFact(inc->fvalue, arg, &func);
             func_id = pddlFactsFind(funcs, &func);
             ASSERT_RUNTIME(func_id >= 0);
             fvalue = funcs->fact[func_id];
             cost += fvalue->func_val;
         }else{
-            cost += atom->value;
+            cost += inc->value;
         }
     }
 
@@ -800,7 +800,7 @@ static int setUpOp(ground_t *g, pddl_strips_op_t *op,
     char *name;
 
     // Different operator cost for the conditional effects is not allowed
-    if (a->parent_action >= 0 && a->assign.size > 0)
+    if (a->parent_action >= 0 && a->increase.size > 0)
         ERR_RET2(-1, "Costs in conditional effects are not supported.");
 
     // Ground precontions, add and delete effects and set cost
@@ -812,8 +812,8 @@ static int setUpOp(ground_t *g, pddl_strips_op_t *op,
                 &g->strips->fact, &op->del_eff);
     op->cost = 1;
     if (g->pddl->metric){
-        op->cost = groundAssign(a->max_arg_size, ga->arg, &a->assign,
-                                &g->pddl->init_func);
+        op->cost = groundIncrease(a->max_arg_size, ga->arg, &a->increase,
+                                  &g->pddl->init_func);
     }
     name = groundOpName(g->pddl, a->action, ga->arg);
 

@@ -83,7 +83,12 @@ static int actionInitEff(pddl_cond_t *c, void *ud)
         return 0;
 
     }else if (c->type == PDDL_COND_ASSIGN){
-        pddlCondArrAdd(&ctx->a->assign, c);
+        ERR2("(= ...) is not supported in operators' effects.");
+        ctx->failed = 1;
+        return -2;
+
+    }else if (c->type == PDDL_COND_INCREASE){
+        pddlCondArrAdd(&ctx->a->increase, c);
         return 0;
 
     }else if (c->type == PDDL_COND_WHEN){
@@ -156,7 +161,7 @@ static void actionFree(pddl_prep_action_t *a)
     pddlCondArrFree(&a->pre);
     pddlCondArrFree(&a->add_eff);
     pddlCondArrFree(&a->del_eff);
-    pddlCondArrFree(&a->assign);
+    pddlCondArrFree(&a->increase);
     if (a->param_type != NULL)
         BOR_FREE(a->param_type);
 }

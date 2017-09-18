@@ -154,6 +154,7 @@ void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl)
         a->pre = pddlCondAtomToAnd(a->pre);
     if (a->eff->type == PDDL_COND_ATOM
             || a->eff->type == PDDL_COND_ASSIGN
+            || a->eff->type == PDDL_COND_INCREASE
             || a->eff->type == PDDL_COND_WHEN){
         a->eff = pddlCondAtomToAnd(a->eff);
     }

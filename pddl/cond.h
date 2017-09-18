@@ -45,7 +45,9 @@ extern "C" {
 #define PDDL_COND_WHEN   4u /*!< Conditional effect */
 #define PDDL_COND_ATOM   5u
 #define PDDL_COND_ASSIGN 6u
-#define PDDL_COND_BOOL   7u
+#define PDDL_COND_INCREASE 7u
+#define PDDL_COND_BOOL   8u
+#define PDDL_COND_NUM_TYPES 9
 
 #define PDDL_COND_CAST(C, T) \
     (bor_container_of((C), pddl_cond_##T##_t, cls))
@@ -115,12 +117,12 @@ typedef struct pddl_cond_atom pddl_cond_atom_t;
  * Assign
  * TODO: For now only (increase (total-cost) (...)) is supported
  */
-struct pddl_cond_assign {
+struct pddl_cond_func_op {
     pddl_cond_t cls;
     int value;                /*!< Assigned immediate value */
     pddl_cond_atom_t *fvalue; /*!< Assigned value through function symbol */
 };
-typedef struct pddl_cond_assign pddl_cond_assign_t;
+typedef struct pddl_cond_func_op pddl_cond_func_op_t;
 
 /**
  * Boolean value

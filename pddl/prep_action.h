@@ -41,7 +41,7 @@ struct pddl_prep_action {
     pddl_cond_arr_t pre;
     pddl_cond_arr_t add_eff;
     pddl_cond_arr_t del_eff;
-    pddl_cond_arr_t assign;
+    pddl_cond_arr_t increase;
     int max_arg_size;
     int cond_eff_size;
 };
