@@ -589,6 +589,8 @@ static pddl_cond_func_op_t *condFuncOpNew(int type)
 
 static void condFuncOpDel(pddl_cond_func_op_t *op)
 {
+    if (op->lvalue)
+        condAtomDel(op->lvalue);
     if (op->fvalue)
         condAtomDel(op->fvalue);
     BOR_FREE(op);
@@ -599,6 +601,8 @@ static pddl_cond_func_op_t *condFuncOpClone(const pddl_cond_func_op_t *op)
     pddl_cond_func_op_t *n;
     n = condFuncOpNew(op->cls.type);
     n->value = op->value;
+    if (op->lvalue)
+        n->lvalue = condAtomClone(op->lvalue);
     if (op->fvalue)
         n->fvalue = condAtomClone(op->fvalue);
     return n;
@@ -625,19 +629,24 @@ static void condFuncOpPrintPDDL(const pddl_cond_func_op_t *op,
                                 const pddl_params_t *params,
                                 FILE *fout)
 {
-    if (op->cls.type == PDDL_COND_INCREASE){
-        fprintf(fout, "(increase (total-cost) ");
-        if (op->fvalue == NULL){
-            fprintf(fout, "%d", op->value);
-        }else{
-            atomPrintPDDL(op->fvalue, pddl, params, 1, fout);
-        }
-        fprintf(fout, ")");
-    }else{
-        // TODO
-        fprintf(stderr, "ERR\n");
-        exit(-1);
+    if (op->cls.type == PDDL_COND_ASSIGN){
+        fprintf(fout, "(= ");
+    }else if (op->cls.type == PDDL_COND_INCREASE){
+        fprintf(fout, "(increase ");
     }
+
+    if (op->lvalue == NULL){
+        fprintf(fout, "(total-cost)");
+    }else{
+        atomPrintPDDL(op->lvalue, pddl, params, 1, fout);
+    }
+    fprintf(fout, " ");
+    if (op->fvalue == NULL){
+        fprintf(fout, "%d", op->value);
+    }else{
+        atomPrintPDDL(op->fvalue, pddl, params, 1, fout);
+    }
+    fprintf(fout, ")");
 }
 
 
@@ -927,6 +936,45 @@ static pddl_cond_t *parseAtom(const pddl_lisp_node_t *root,
     atom->neg = negated;
 
     return &atom->cls;
+}
+
+static pddl_cond_t *parseAssign(const pddl_lisp_node_t *root,
+                                const parse_ctx_t *ctx,
+                                int negated)
+{
+    const char *head;
+    const pddl_lisp_node_t *nfunc, *nval;
+    pddl_cond_t *lvalue;
+    pddl_cond_func_op_t *assign;
+    parse_ctx_t sub_ctx;
+
+    head = pddlLispNodeHead(root);
+    if (head == NULL
+            || strcmp(head, "=") != 0
+            || root->child_size != 3){
+        ERR_LISP_RET2(NULL, root, "Invalid (= ...) expression.");
+    }
+
+    nfunc = root->child + 1;
+    nval = root->child + 2;
+
+    if (nfunc->child_size < 1 || nfunc->child[0].value == NULL)
+        ERR_LISP_RET2(NULL, root, "Invalid function in (= ...).");
+    if (nval->value == NULL){
+        ERR_LISP_RET2(NULL, root, "Only (= ... N) expressions where N is a"
+                                  " number are supported.");
+    }
+
+    sub_ctx = *ctx;
+    sub_ctx.preds = sub_ctx.funcs;
+    lvalue = parseAtom(nfunc, &sub_ctx, negated);
+    if (lvalue == NULL)
+        TRACE_RET(NULL);
+
+    assign = condFuncOpNew(PDDL_COND_ASSIGN);
+    assign->value = atoi(nval->value);
+    assign->lvalue = OBJ(lvalue, atom);
+    return &assign->cls;
 }
 
 static pddl_cond_t *parseIncrease(const pddl_lisp_node_t *root,
@@ -1231,6 +1279,90 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
     return c;
 }
 
+static pddl_cond_t *parseInitFunc(const pddl_lisp_node_t *n, pddl_t *pddl)
+{
+    parse_ctx_t ctx;
+    pddl_params_t params;
+    pddl_cond_t *c;
+
+    pddlParamsInit(&params);
+    ctx.types = &pddl->type;
+    ctx.objs = &pddl->obj;
+    ctx.preds = &pddl->pred;
+    ctx.funcs = &pddl->func;
+    ctx.params = &params;
+    ctx.err = "";
+
+    c = parseAssign(n, &ctx, 0);
+    pddlParamsFree(&params);
+
+    if (c == NULL)
+        TRACE_RET(NULL);
+    return c;
+}
+
+static pddl_cond_t *parseInitFact(const pddl_lisp_node_t *n, pddl_t *pddl)
+{
+    parse_ctx_t ctx;
+    pddl_params_t params;
+    pddl_cond_t *c;
+
+    pddlParamsInit(&params);
+    ctx.types = &pddl->type;
+    ctx.objs = &pddl->obj;
+    ctx.preds = &pddl->pred;
+    ctx.funcs = &pddl->func;
+    ctx.params = &params;
+    ctx.err = "";
+
+    c = parseAtom(n, &ctx, 0);
+    pddlParamsFree(&params);
+
+    if (c == NULL)
+        TRACE_RET(NULL);
+    return c;
+}
+
+static pddl_cond_t *parseInitFactFunc(const pddl_lisp_node_t *n, pddl_t *pddl)
+{
+    const char *head;
+
+    if (n->child_size < 1)
+        ERR_LISP_RET2(NULL, n, "Invalid expression in :init.");
+
+    head = pddlLispNodeHead(n);
+    if (head == NULL)
+        ERR_LISP_RET2(NULL, n, "Invalid expression in :init.");
+    if (strcmp(head, "=") == 0
+            && n->child_size == 3
+            && n->child[1].value == NULL){
+        return parseInitFunc(n, pddl);
+    }else{
+        return parseInitFact(n, pddl);
+    }
+}
+
+pddl_cond_part_t *pddlCondParseInit(const pddl_lisp_node_t *root, pddl_t *pddl)
+{
+    const pddl_lisp_node_t *n;
+    pddl_cond_part_t *and;
+    pddl_cond_t *c;
+
+    and = condPartNew(PDDL_COND_AND);
+
+    for (int i = 1; i < root->child_size; ++i){
+        n = root->child + i;
+        if ((c = parseInitFactFunc(n, pddl)) == NULL){
+            condPartDel(and);
+            TRACE_UPDATE_RET(NULL, "While parsing :init in %s: ",
+                             pddl->problem_lisp->filename);
+        }
+        condPartAdd(and, c);
+    }
+
+    return and;
+}
+
 pddl_cond_t *pddlCondEmptyPre(void)
 {
     return &condPartNew(PDDL_COND_AND)->cls;
@@ -1511,7 +1643,8 @@ static int instantiateParentParam(pddl_cond_t *c, void *data)
 
     }else if (c->type == PDDL_COND_ASSIGN
                 || c->type == PDDL_COND_INCREASE){
-        // TODO
+        if (OBJ(c, func_op)->lvalue)
+            return instantiateParentParam(&OBJ(c, func_op)->lvalue->cls, data);
         if (OBJ(c, func_op)->fvalue)
             return instantiateParentParam(&OBJ(c, func_op)->fvalue->cls, data);
     }
@@ -1536,7 +1669,8 @@ static int instantiateCond(pddl_cond_t *c, void *data)
 
     }else if (c->type == PDDL_COND_ASSIGN
                 || c->type == PDDL_COND_INCREASE){
-        // TODO
+        if (OBJ(c, func_op)->lvalue)
+            return instantiateParentParam(&OBJ(c, func_op)->lvalue->cls, data);
         if (OBJ(c, func_op)->fvalue)
             return instantiateCond(&OBJ(c, func_op)->fvalue->cls, data);
     }
@@ -2224,39 +2358,6 @@ static void condAtomPrint(const pddl_t *pddl,
     fprintf(fout, ")");
 }
 
-static void condAssignPrint(const pddl_t *pddl,
-                            const pddl_cond_func_op_t *op,
-                            const pddl_params_t *params,
-                            FILE *fout)
-{
-    // TODO
-    /*
-    fprintf(fout, "(increase (total-cost) ");
-    if (assign->fvalue != NULL){
-        condAtomPrint(pddl, assign->fvalue, params, fout, 1);
-    }else{
-        fprintf(fout, "%d", assign->value);
-    }
-    fprintf(fout, ")");
-    */
-    fprintf(stderr, "ERR\n");
-    exit(-1);
-}
-
-static void condIncreasePrint(const pddl_t *pddl,
-                              const pddl_cond_func_op_t *op,
-                              const pddl_params_t *params,
-                              FILE *fout)
-{
-    fprintf(fout, "(increase (total-cost) ");
-    if (op->fvalue != NULL){
-        condAtomPrint(pddl, op->fvalue, params, fout, 1);
-    }else{
-        fprintf(fout, "%d", op->value);
-    }
-    fprintf(fout, ")");
-}
-
 static void condBoolPrint(const pddl_cond_bool_t *b, FILE *fout)
 {
     if (b->val){
@@ -2290,10 +2391,10 @@ void pddlCondPrint(const struct pddl *pddl,
         condAtomPrint(pddl, OBJ(cond, atom), params, fout, 0);
 
     }else if (cond->type == PDDL_COND_ASSIGN){
-        condAssignPrint(pddl, OBJ(cond, func_op), params, fout);
+        condFuncOpPrintPDDL(OBJ(cond, func_op), pddl, params, fout);
 
     }else if (cond->type == PDDL_COND_INCREASE){
-        condIncreasePrint(pddl, OBJ(cond, func_op), params, fout);
+        condFuncOpPrintPDDL(OBJ(cond, func_op), pddl, params, fout);
 
     }else if (cond->type == PDDL_COND_BOOL){
         condBoolPrint(OBJ(cond, bool), fout);

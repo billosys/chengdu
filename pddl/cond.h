@@ -119,6 +119,7 @@ typedef struct pddl_cond_atom pddl_cond_atom_t;
  */
 struct pddl_cond_func_op {
     pddl_cond_t cls;
+    pddl_cond_atom_t *lvalue; /*!< lvalue for assignement */
     int value;                /*!< Assigned immediate value */
     pddl_cond_atom_t *fvalue; /*!< Assigned value through function symbol */
 };
@@ -202,6 +203,11 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
                            pddl_t *pddl,
                            const pddl_params_t *params,
                            const char *errname);
+
+/**
+ * Parse (:init ...) into a conjuction of atoms.
+ */
+pddl_cond_part_t *pddlCondParseInit(const pddl_lisp_node_t *root, pddl_t *pddl);
 
 /**
  * Creates a placeholder for an empty precondition.

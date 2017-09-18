@@ -113,6 +113,22 @@ static int parseMetric(pddl_t *pddl, const pddl_lisp_t *lisp)
     return 0;
 }
 
+static int parseInit(pddl_t *pddl)
+{
+    const pddl_lisp_node_t *ninit;
+
+    ninit = pddlLispFindNode(&pddl->problem_lisp->root, PDDL_KW_INIT);
+    if (ninit == NULL)
+        ERR_RET(-1, "Missing :init in %s.", pddl->problem_lisp->filename);
+
+    pddl->init = pddlCondParseInit(ninit, pddl);
+    if (pddl->init == NULL){
+        TRACE_UPDATE_RET(-1, "While parsing :init specification in %s: ",
+                         pddl->problem_lisp->filename);
+    }
+    return 0;
+}
+
 static int parseGoal(pddl_t *pddl)
 {
     const pddl_lisp_node_t *ngoal;
@@ -187,6 +203,7 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
             || pddlPredsParse(pddl) != 0
             || pddlFuncsParse(pddl) != 0
             || pddlFactsParseInit(pddl) != 0
+            || parseInit(pddl) != 0
             || parseGoal(pddl) != 0
             || pddlActionsParse(pddl) != 0
             || parseMetric(pddl, problem_lisp) != 0){
@@ -237,6 +254,8 @@ void pddlDel(pddl_t *pddl)
     pddlPredsFree(&pddl->func);
     pddlFactsFree(&pddl->init_fact);
     pddlFactsFree(&pddl->init_func);
+    if (pddl->init)
+        pddlCondDel(&pddl->init->cls);
     if (pddl->goal)
         pddlCondDel(pddl->goal);
     pddlActionsFree(&pddl->action);
@@ -588,23 +607,59 @@ void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout)
     fprintf(fout, ")\n");
 }
 
+struct print_init {
+    const pddl_t *pddl;
+    pddl_params_t params;
+    FILE *fout;
+};
+static int printPDDLInitFact(pddl_cond_t *c, void *d)
+{
+    struct print_init *ctx = d;
+    if (c->type == PDDL_COND_ATOM){
+        fprintf(ctx->fout, "    ");
+        pddlCondPrintPDDL(c, ctx->pddl, &ctx->params, ctx->fout);
+        fprintf(ctx->fout, "\n");
+    }
+    return -1;
+}
+
+static int printPDDLInitAssign(pddl_cond_t *c, void *d)
+{
+    struct print_init *ctx = d;
+    if (c->type == PDDL_COND_ASSIGN){
+        fprintf(ctx->fout, "    ");
+        pddlCondPrintPDDL(c, ctx->pddl, &ctx->params, ctx->fout);
+        fprintf(ctx->fout, "\n");
+    }
+    return -1;
+
+    /*
+    // TODO
+    pddl_params_t params;
+    pddlParamsInit(&params);
+    pddlCondPrintPDDL(pddl->init, pddl, &params, stdout);
+    pddlParamsFree(&params);
+    */
+}
+
 void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout)
 {
+    bor_list_t *item;
+    pddl_cond_t *c;
+    pddl_params_t params;
+
     fprintf(fout, "(define (problem %s) (:domain %s)\n",
             pddl->problem_name, pddl->domain_name);
 
+    pddlParamsInit(&params);
     fprintf(fout, "(:init\n");
-    for (int i = 0; i < pddl->init_fact.fact_size; ++i){
-        const pddl_fact_t *f = pddl->init_fact.fact[i];
-        fprintf(fout, "    %s\n", pddlFactNamePDDL(f, pddl));
-    }
-
-    for (int i = 0; i < pddl->init_func.fact_size; ++i){
-        const pddl_fact_t *f = pddl->init_func.fact[i];
-        fprintf(fout, "    (= %s %d)\n",
-                pddlFuncNamePDDL(f, pddl), f->func_val);
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        fprintf(fout, " ");
+        pddlCondPrintPDDL(c, pddl, &params, fout);
     }
     fprintf(fout, ")\n");
+    pddlParamsFree(&params);
 
     fprintf(fout, "(:goal ");
     pddlCondPrintPDDL(pddl->goal, pddl, NULL, fout);
@@ -619,6 +674,11 @@ void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout)
 // TODO: Rename to pddlPrintDebug
 void pddlPrintDebug(const pddl_t *pddl, FILE *fout)
 {
+    bor_list_t *item;
+    pddl_cond_t *c;
+    pddl_cond_atom_t *a;
+    pddl_params_t params;
+
     fprintf(fout, "Domain: %s\n", pddl->domain_name);
     fprintf(fout, "Problem: %s\n", pddl->problem_name);
     fprintf(fout, "Require: %x\n", pddl->require);
@@ -628,13 +688,30 @@ void pddlPrintDebug(const pddl_t *pddl, FILE *fout)
     pddlPredsPrint(&pddl->func, "Function", fout);
     pddlActionsPrint(pddl, &pddl->action, fout);
 
+    pddlParamsInit(&params);
     fprintf(fout, "Init[%d]:\n", pddl->init_fact.fact_size);
-    pddlFactsPrint(&pddl->init_fact, pddl,
-                   pddlFactNameDebug, "  ", "\n", fout);
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type != PDDL_COND_ATOM)
+            continue;
+        a = PDDL_COND_CAST(c, atom);
+        fprintf(fout, "  ");
+        if (pddlPredIsStatic(&pddl->pred.pred[a->pred]))
+            fprintf(fout, "S:");
+        pddlCondPrintPDDL(c, pddl, &params, fout);
+        fprintf(fout, "\n");
+    }
 
     fprintf(fout, "Init[%d]:\n", pddl->init_func.fact_size);
-    pddlFactsPrint(&pddl->init_func, pddl,
-                   pddlFuncNameDebug, "  ", "\n", fout);
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type != PDDL_COND_ASSIGN)
+            continue;
+        fprintf(fout, "  ");
+        pddlCondPrintPDDL(c, pddl, &params, fout);
+        fprintf(fout, "\n");
+    }
+    pddlParamsFree(&params);
 
     fprintf(fout, "Goal: ");
     pddlCondPrint(pddl, pddl->goal, NULL, fout);
