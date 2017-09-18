@@ -135,6 +135,9 @@ void pddlFactsFree(pddl_facts_t *fs);
  * Adds another fact to array.
  */
 int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *f);
+// TODO
+struct pddl_cond_atom;
+int pddlFactsAdd2(pddl_facts_t *fs, const struct pddl_cond_atom *f);
 
 /**
  * Deletes fact (and frees all its memory).

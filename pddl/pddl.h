@@ -79,7 +79,6 @@ struct pddl {
     pddl_objs_t obj;
     pddl_preds_t pred;
     pddl_preds_t func;
-    pddl_facts_t init_fact;
     pddl_facts_t init_func;
     pddl_cond_part_t *init;
     pddl_cond_t *goal;

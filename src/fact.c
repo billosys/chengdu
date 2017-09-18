@@ -332,40 +332,6 @@ static int parseFunc(const pddl_lisp_node_t *n,
     return 0;
 }
 
-static int parseFact(const pddl_lisp_node_t *n,
-                     const pddl_t *pddl,
-                     const char *head,
-                     pddl_facts_t *fs)
-{
-    pddl_fact_t fact;
-
-    pddlFactInit(&fact);
-    fact.pred = pddlPredsGet(&pddl->pred, head);
-    if (fact.pred < 0){
-        pddlFactFree(&fact);
-        ERR_LISP_RET(-1, n, "Unkwnown predicate `%s'.", head);
-    }
-
-    if (parseObjsIntoArr(n, &pddl->obj, 1, n->child_size,
-                         &fact.arg, &fact.arg_size) != 0){
-        pddlFactFree(&fact);
-        TRACE_RET(-1);
-    }
-
-    if (fact.arg_size != pddl->pred.pred[fact.pred].param_size){
-        ERR_LISP_RET(-1, n, "Invalid number of arguments for the predicate %s",
-                     head);
-    }
-
-    if (factSetPrivate(pddl, &fact) != 0){
-        pddlFactFree(&fact);
-        TRACE_RET(-1);
-    }
-
-    pddlFactsAdd(fs, &fact);
-    pddlFactFree(&fact);
-    return 0;
-}
 
 static int parseFactFunc(pddl_t *pddl, const pddl_lisp_node_t *n)
 {
@@ -380,7 +346,7 @@ static int parseFactFunc(pddl_t *pddl, const pddl_lisp_node_t *n)
             && n->child[1].value == NULL){
         return parseFunc(n, pddl, &pddl->init_func);
     }else{
-        return parseFact(n, pddl, head, &pddl->init_fact);
+        return 0;
     }
 }
 
@@ -458,6 +424,32 @@ int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *sf)
     f->hash = find.hash;
     borHTableInsert(fs->htable, &f->htable);
     return f->id;
+}
+
+int pddlFactsAdd2(pddl_facts_t *fs, const struct pddl_cond_atom *f)
+{
+    bor_list_t *hfound;
+    pddl_fact_t *out;
+    PDDL_FACT_STACK(locf, f->arg_size);
+
+    locf.pred = f->pred;
+    locf.arg_size = f->arg_size;
+    for (int i = 0; i < f->arg_size; ++i){
+        ASSERT_RUNTIME(f->arg[i].obj >= 0);
+        locf.arg[i] = f->arg[i].obj;
+    }
+    locf.hash = pddlFactHash(&locf);
+
+    if ((hfound = borHTableFind(fs->htable, &locf.htable)) != NULL){
+        out = BOR_LIST_ENTRY(hfound, pddl_fact_t, htable);
+        return out->id;
+    }
+
+    out = nextNewFact(fs);
+    pddlFactCopy(out, &locf);
+    out->hash = locf.hash;
+    borHTableInsert(fs->htable, &out->htable);
+    return out->id;
 }
 
 void pddlFactsDelFact(pddl_facts_t *fs, int fact_id)

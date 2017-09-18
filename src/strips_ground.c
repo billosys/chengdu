@@ -907,22 +907,6 @@ static int groundActions(ground_t *g)
     return 0;
 }
 
-static int groundInitState(ground_t *g)
-{
-    const pddl_fact_t *fact;
-    int fact_id;
-
-    for (int i = 0; i < g->pddl->init_fact.fact_size; ++i){
-        fact = g->pddl->init_fact.fact[i];
-        fact_id = pddlFactsFind(&g->strips->fact, fact);
-        // Skipping static facts
-        if (fact_id >= 0)
-            borISetAdd(&g->strips->init, fact_id);
-    }
-
-    return 0;
-}
-
 struct ground_goal {
     ground_t *g;
     int fail;
@@ -983,14 +967,21 @@ static int groundGoal(ground_t *g)
 
 static void groundInitFact(ground_t *g, const pddl_t *pddl)
 {
-    const pddl_fact_t *fact;
+    bor_list_t *item;
+    const pddl_cond_t *c;
+    const pddl_cond_atom_t *a;
+    int fact_id;
 
-    for (int i = 0; i < pddl->init_fact.fact_size; ++i){
-        fact = pddl->init_fact.fact[i];
-        if (pddlFactIsStatic(pddl, fact)){
-            pddlFactsAdd(&g->static_fact, fact);
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type != PDDL_COND_ATOM)
+            continue;
+        a = PDDL_COND_CAST(c, atom);
+        if (pddlPredIsStatic(&pddl->pred.pred[a->pred])){
+            pddlFactsAdd2(&g->static_fact, a);
         }else{
-            pddlFactsAdd(&g->strips->fact, fact);
+            fact_id = pddlFactsAdd2(&g->strips->fact, a);
+            borISetAdd(&g->strips->init, fact_id);
         }
     }
 }
@@ -1034,7 +1025,6 @@ int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
             || unifyStaticFacts(&g) != 0
             || unifyFacts(&g) != 0
             || groundActions(&g) != 0
-            || groundInitState(&g) != 0
             || groundGoal(&g) != 0){
         groundFree(&g);
         TRACE_RET(-1);

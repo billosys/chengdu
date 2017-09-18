@@ -176,7 +176,6 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
 
     pddl = BOR_ALLOC(pddl_t);
     bzero(pddl, sizeof(*pddl));
-    pddlFactsInit(&pddl->init_fact);
     pddlFactsInit(&pddl->init_func);
 
     pddl->cfg = *cfg;
@@ -252,7 +251,6 @@ void pddlDel(pddl_t *pddl)
     pddlObjsFree(&pddl->obj);
     pddlPredsFree(&pddl->pred);
     pddlPredsFree(&pddl->func);
-    pddlFactsFree(&pddl->init_fact);
     pddlFactsFree(&pddl->init_func);
     if (pddl->init)
         pddlCondDel(&pddl->init->cls);
@@ -439,29 +437,16 @@ static int initHasFact(const pddl_t *pddl, int pred,
 }
 
 static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
-                                 pddl_fact_t *fact,
+                                 int arg_size, int *arg,
                                  const pddl_pred_t *pred, int argi)
 {
     pddl_cond_atom_t *a;
     const int *obj;
     int i, obj_size;
 
-    if (argi == fact->arg_size){
-        if (pddlFactSetPrivate(pddl, fact) != 0){
-            fprintf(stderr, "Error PDDL: Could not determine"
-                            " privateness of %s.\n",
-                            pddlFactNamePDDL(fact, pddl));
-            ERR2("The fact is defined so it should be private for two"
-                 " different agents.");
-        }
-
-        fact->pred = pos;
-        if (pddlFactsFind(&pddl->init_fact, fact) < 0){
-            fact->pred = neg;
-            pddlFactsAdd(&pddl->init_fact, fact);
-        }
-        if (!initHasFact(pddl, pos, fact->arg_size, fact->arg)){
-            a = pddlCondCreateFactAtom(neg, fact->arg_size, fact->arg);
+    if (argi == arg_size){
+        if (!initHasFact(pddl, pos, arg_size, arg)){
+            a = pddlCondCreateFactAtom(neg, arg_size, arg);
             pddlCondPartAdd(pddl->init, &a->cls);
         }
 
@@ -470,24 +455,19 @@ static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
 
     obj = pddlTypesObjsByType(&pddl->type, pred->param[argi], &obj_size);
     for (i = 0; i < obj_size; ++i){
-        fact->arg[argi] = obj[i];
-        addNotPredsToInitRec(pddl, pos, neg, fact, pred, argi + 1);
+        arg[argi] = obj[i];
+        addNotPredsToInitRec(pddl, pos, neg, arg_size, arg, pred, argi + 1);
     }
 }
 
 static void addNotPredsToInit(pddl_t *pddl, int pos, int neg)
 {
     const pddl_pred_t *pos_pred = pddl->pred.pred + pos;
-    pddl_fact_t fact;
     int arg[pos_pred->param_size];
 
-    // Prepare fact object
-    pddlFactInit(&fact);
-    fact.arg = arg;
-    fact.arg_size = pos_pred->param_size;
-
     // Recursivelly try all possible objects for each argument
-    addNotPredsToInitRec(pddl, pos, neg, &fact, pos_pred, 0);
+    addNotPredsToInitRec(pddl, pos, neg,
+                         pos_pred->param_size, arg, pos_pred, 0);
 }
 
 /** Compile out negative preconditions if they are not static */
@@ -702,6 +682,20 @@ void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout)
     fprintf(fout, ")\n");
 }
 
+static int initCondSize(const pddl_t *pddl, int type)
+{
+    bor_list_t *item;
+    const pddl_cond_t *c;
+    int size = 0;
+
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type == type)
+            ++size;
+    }
+    return size;
+}
+
 // TODO: Rename to pddlPrintDebug
 void pddlPrintDebug(const pddl_t *pddl, FILE *fout)
 {
@@ -720,7 +714,7 @@ void pddlPrintDebug(const pddl_t *pddl, FILE *fout)
     pddlActionsPrint(pddl, &pddl->action, fout);
 
     pddlParamsInit(&params);
-    fprintf(fout, "Init[%d]:\n", pddl->init_fact.fact_size);
+    fprintf(fout, "Init[%d]:\n", initCondSize(pddl, PDDL_COND_ATOM));
     BOR_LIST_FOR_EACH(&pddl->init->part, item){
         c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
         if (c->type != PDDL_COND_ATOM)
@@ -733,7 +727,7 @@ void pddlPrintDebug(const pddl_t *pddl, FILE *fout)
         fprintf(fout, "\n");
     }
 
-    fprintf(fout, "Init[%d]:\n", pddl->init_func.fact_size);
+    fprintf(fout, "Init[%d]:\n", initCondSize(pddl, PDDL_COND_ASSIGN));
     BOR_LIST_FOR_EACH(&pddl->init->part, item){
         c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
         if (c->type != PDDL_COND_ASSIGN)
