@@ -220,6 +220,12 @@ pddl_cond_t *pddlCondEmptyPre(void);
 pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom);
 
 /**
+ * Creates a new atom that corresponds to a grounded fact.
+ */
+pddl_cond_atom_t *pddlCondCreateFactAtom(int pred, int arg_size, 
+                                         const int *arg);
+
+/**
  * Adds {c} to and/or condition.
  */
 void pddlCondPartAdd(pddl_cond_part_t *part, pddl_cond_t *c);

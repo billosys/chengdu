@@ -412,10 +412,37 @@ static void compileOutNegPre(pddl_t *pddl, int pos, int neg)
         compileOutNegPreInAction(pddl, pos, neg, pddl->action.action + i);
 }
 
+static int initHasFact(const pddl_t *pddl, int pred,
+                       int arg_size, const int *arg)
+{
+    bor_list_t *item;
+    const pddl_cond_t *c;
+    const pddl_cond_atom_t *a;
+    int i;
+
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, const pddl_cond_t, conn);
+        if (c->type != PDDL_COND_ATOM)
+            continue;
+        a = PDDL_COND_CAST(c, atom);
+        if (a->pred != pred || a->arg_size != arg_size)
+            continue;
+        for (i = 0; i < arg_size; ++i){
+            if (a->arg[i].obj != arg[i])
+                break;
+        }
+        if (i == arg_size)
+            return 1;
+    }
+
+    return 0;
+}
+
 static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
                                  pddl_fact_t *fact,
                                  const pddl_pred_t *pred, int argi)
 {
+    pddl_cond_atom_t *a;
     const int *obj;
     int i, obj_size;
 
@@ -432,6 +459,10 @@ static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
         if (pddlFactsFind(&pddl->init_fact, fact) < 0){
             fact->pred = neg;
             pddlFactsAdd(&pddl->init_fact, fact);
+        }
+        if (!initHasFact(pddl, pos, fact->arg_size, fact->arg)){
+            a = pddlCondCreateFactAtom(neg, fact->arg_size, fact->arg);
+            pddlCondPartAdd(pddl->init, &a->cls);
         }
 
         return;

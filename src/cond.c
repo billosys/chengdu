@@ -1377,6 +1377,22 @@ pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom)
     return &and->cls;
 }
 
+pddl_cond_atom_t *pddlCondCreateFactAtom(int pred, int arg_size, 
+                                         const int *arg)
+{
+    pddl_cond_atom_t *a;
+
+    a = condAtomNew();
+    a->pred = pred;
+    a->arg_size = arg_size;
+    a->arg = BOR_ALLOC_ARR(pddl_cond_atom_arg_t, arg_size);
+    for (int i = 0; i < arg_size; ++i){
+        a->arg[i].param = -1;
+        a->arg[i].obj = arg[i];
+    }
+    return a;
+}
+
 void pddlCondPartAdd(pddl_cond_part_t *part, pddl_cond_t *c)
 {
     condPartAdd(part, c);
