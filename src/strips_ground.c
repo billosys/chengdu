@@ -900,8 +900,7 @@ static int createStripsFacts(ground_t *g, pddl_strips_t *strips)
     for (int i = 0; i < g->facts.atom_size; ++i){
         ga = g->facts.atom[i];
         ASSERT(ga->id == i);
-        fact_id = pddlFactsAdd3(&strips->fact, ga->pred,
-                                ga->arg_size, ga->arg);
+        fact_id = pddlFactsAddGroundAtom(&strips->fact, ga, g->pddl);
         if (fact_id != ga->id){
             FATAL2("The fact and the corresponding grounded atom have"
                    " different IDs. This is definitelly a bug!");

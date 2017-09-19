@@ -323,15 +323,16 @@ int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *sf)
     return f->id;
 }
 
-int pddlFactsAdd3(pddl_facts_t *fs, int pred, int arg_size, const int *arg)
+int pddlFactsAddGroundAtom(pddl_facts_t *fs, const pddl_ground_atom_t *ga,
+                           const pddl_t *pddl)
 {
     bor_list_t *hfound;
     pddl_fact_t *out;
-    PDDL_FACT_STACK(locf, arg_size);
+    PDDL_FACT_STACK(locf, ga->arg_size);
 
-    locf.pred = pred;
-    locf.arg_size = arg_size;
-    memcpy(locf.arg, arg, sizeof(int) * arg_size);
+    locf.pred = ga->pred;
+    locf.arg_size = ga->arg_size;
+    memcpy(locf.arg, ga->arg, sizeof(int) * ga->arg_size);
     locf.hash = pddlFactHash(&locf);
 
     if ((hfound = borHTableFind(fs->htable, &locf.htable)) != NULL){

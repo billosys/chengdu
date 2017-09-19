@@ -27,7 +27,7 @@
 #include <pddl/lisp.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
-#include <pddl/cond.h>
+#include <pddl/ground_atom.h>
 #include <boruvka/iset.h>
 
 #ifdef __cplusplus
@@ -127,11 +127,10 @@ void pddlFactsInit(pddl_facts_t *fs);
 void pddlFactsFree(pddl_facts_t *fs);
 
 /**
- * Adds another fact to array.
+ * Adds a fact created from the grounded atom.
  */
-int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *f);
-// TODO
-int pddlFactsAdd3(pddl_facts_t *fs, int pred, int arg_size, const int *arg);
+int pddlFactsAddGroundAtom(pddl_facts_t *fs, const pddl_ground_atom_t *ga,
+                           const pddl_t *pddl);
 
 /**
  * Deletes fact (and frees all its memory).
@@ -139,14 +138,12 @@ int pddlFactsAdd3(pddl_facts_t *fs, int pred, int arg_size, const int *arg);
 void pddlFactsDelFact(pddl_facts_t *fs, int fact_id);
 
 /**
- * Deletes facts marked in irrelevant array.
+ * Deletes the facts marked in the m array.
  * Returns remap array containing remapping of fact IDs (old ID -> new ID)
  * that is monotonically increasing, except for the facts that were removed
  * where the new ID is set to -1.
  */
-void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs,
-                                 const int *irrelevant,
-                                 int *remap);
+void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs, const int *m, int *remap);
 
 /**
  * Reallocate array so that .alloc == .size.
