@@ -379,12 +379,6 @@ void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs,
     fs->fact_size = size;
 }
 
-void pddlFactsSqueeze(pddl_facts_t *fs)
-{
-    fs->fact_alloc = fs->fact_size;
-    fs->fact = BOR_REALLOC_ARR(fs->fact, pddl_fact_t *, fs->fact_alloc);
-}
-
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)
 {
     int i;

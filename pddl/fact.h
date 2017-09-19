@@ -146,11 +146,6 @@ void pddlFactsDelFact(pddl_facts_t *fs, int fact_id);
 void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs, const int *m, int *remap);
 
 /**
- * Reallocate array so that .alloc == .size.
- */
-void pddlFactsSqueeze(pddl_facts_t *fs);
-
-/**
  * Copies fact from src to dst.
  */
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
