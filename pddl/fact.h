@@ -37,28 +37,16 @@ extern "C" {
 #define PDDL_FACT_MAX_NAME_SIZE 256
 
 struct pddl_fact {
-    int *arg;       /*!< Object IDs are arguments */
-    int arg_size;   /*!< Number of arguments */
-    int pred;       /*!< Predicate ID */
-    int func_val;   /*!< Assigned value in case of function */
-    int is_private; /*!< True if the fact is private */
-    int owner;      /*!< Owner object ID in case the fact is private */
-
     int id;
-    uint64_t hash;
+    bor_htable_key_t hash;
     bor_list_t htable;
+
+    char *name; /*!< Name of the fact */
+    pddl_ground_atom_t *ground_atom; /*!< If the fact was created from a
+                                          grounded atom, its copy is stored
+                                          here (may be NULL). */
 };
 typedef struct pddl_fact pddl_fact_t;
-
-/**
- * Allocates fact struct on stack with enough space in .arg[] for ARG_SIZE
- * arguments.
- */
-#define PDDL_FACT_STACK(F_NAME, ARG_SIZE) \
-    pddl_fact_t F_NAME; \
-    int F_NAME ## __args__[ARG_SIZE]; \
-    pddlFactInit(&F_NAME); \
-    F_NAME.arg = F_NAME ## __args__
 
 /**
  * Initializes empty fact.
@@ -84,22 +72,6 @@ int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2);
  * if there is conflict in owners of the fact (thus this is invalid fact).
  */
 int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact);
-
-/**
- * Returns true if the fact is static.
- */
-int pddlFactIsStatic(const pddl_t *pddl, const pddl_fact_t *f);
-
-/**
- * Returns formatted name of the fact.
- */
-const char *pddlFactName(const pddl_fact_t *f, const pddl_t *pddl);
-const char *pddlFactNamePDDL(const pddl_fact_t *f, const pddl_t *pddl);
-const char *pddlFactNameDebug(const pddl_fact_t *f, const pddl_t *pddl);
-const char *pddlFuncName(const pddl_fact_t *f, const pddl_t *pddl);
-const char *pddlFuncNamePDDL(const pddl_fact_t *f, const pddl_t *pddl);
-const char *pddlFuncNameDebug(const pddl_fact_t *f, const pddl_t *pddl);
-
 
 
 struct pddl_facts {
@@ -127,6 +99,11 @@ void pddlFactsInit(pddl_facts_t *fs);
 void pddlFactsFree(pddl_facts_t *fs);
 
 /**
+ * Adds a new copy of the given fact.
+ */
+int pddlFactsAdd(pddl_facts_t *fs, const pddl_fact_t *f);
+
+/**
  * Adds a fact created from the grounded atom.
  */
 int pddlFactsAddGroundAtom(pddl_facts_t *fs, const pddl_ground_atom_t *ga,
@@ -150,25 +127,14 @@ void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs, const int *m, int *remap);
  */
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
 
-/**
- * Returns ID of the fact.
- */
-int pddlFactsFind(const pddl_facts_t *fs, const pddl_fact_t *f);
 
-
-void pddlFactsPrint(const pddl_facts_t *fs, const pddl_t *pddl,
-                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
-                    const char *prefix, const char *suffix,
-                    FILE *fout);
 void pddlFactsPrintSorted(const pddl_facts_t *fs, const pddl_t *pddl,
-                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
-                    const char *prefix, const char *suffix,
-                    FILE *fout);
+                          const char *prefix, const char *suffix,
+                          FILE *fout);
 void pddlFactsIdSetPrintSorted(const bor_iset_t *set,
-                    const pddl_facts_t *fs, const pddl_t *pddl,
-                    const char *(*name)(const pddl_fact_t *, const pddl_t *),
-                    const char *prefix, const char *suffix,
-                    FILE *fout);
+                               const pddl_facts_t *fs, const pddl_t *pddl,
+                               const char *prefix, const char *suffix,
+                               FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */

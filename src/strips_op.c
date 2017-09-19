@@ -317,16 +317,13 @@ void pddlStripsOpPrintDebug(const struct pddl *pddl, const pddl_facts_t *fs,
     fprintf(fout, "  (%s), cost: %d\n", op->name, op->cost);
 
     fprintf(fout, "    pre:");
-    pddlFactsIdSetPrintSorted(&op->pre, fs, pddl,
-                              pddlFactNamePDDL, " ", "", fout);
+    pddlFactsIdSetPrintSorted(&op->pre, fs, pddl, " (", ")", fout);
     fprintf(fout, "\n");
     fprintf(fout, "    add:");
-    pddlFactsIdSetPrintSorted(&op->add_eff, fs, pddl,
-                              pddlFactNamePDDL, " ", "", fout);
+    pddlFactsIdSetPrintSorted(&op->add_eff, fs, pddl, " (", ")", fout);
     fprintf(fout, "\n");
     fprintf(fout, "    del:");
-    pddlFactsIdSetPrintSorted(&op->del_eff, fs, pddl,
-                              pddlFactNamePDDL, " ", "", fout);
+    pddlFactsIdSetPrintSorted(&op->del_eff, fs, pddl, " (", ")", fout);
     fprintf(fout, "\n");
 
     if (op->cond_eff_size > 0)
@@ -336,16 +333,13 @@ void pddlStripsOpPrintDebug(const struct pddl *pddl, const pddl_facts_t *fs,
         const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
 
         fprintf(fout, "      pre:");
-        pddlFactsIdSetPrintSorted(&ce->pre, fs, pddl,
-                                  pddlFactNamePDDL, " ", "", fout);
+        pddlFactsIdSetPrintSorted(&ce->pre, fs, pddl, " (", ")", fout);
         fprintf(fout, "\n");
         fprintf(fout, "      add:");
-        pddlFactsIdSetPrintSorted(&ce->add_eff, fs, pddl,
-                                  pddlFactNamePDDL, " ", "", fout);
+        pddlFactsIdSetPrintSorted(&ce->add_eff, fs, pddl, " (", ")", fout);
         fprintf(fout, "\n");
         fprintf(fout, "      del:");
-        pddlFactsIdSetPrintSorted(&ce->del_eff, fs, pddl,
-                                  pddlFactNamePDDL, " ", "", fout);
+        pddlFactsIdSetPrintSorted(&ce->del_eff, fs, pddl, " (", ")", fout);
         fprintf(fout, "\n");
     }
 }

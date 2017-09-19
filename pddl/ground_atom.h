@@ -53,6 +53,11 @@ typedef struct pddl_ground_atom pddl_ground_atom_t;
  */
 void pddlGroundAtomDel(pddl_ground_atom_t *);
 
+/**
+ * Clones a ground atom.
+ */
+pddl_ground_atom_t *pddlGroundAtomClone(const pddl_ground_atom_t *);
+
 struct pddl_ground_atoms {
     pddl_ground_atom_t **atom;
     int atom_size;

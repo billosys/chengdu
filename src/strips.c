@@ -216,10 +216,8 @@ void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
     fprintf(fout, "problem_name = '%s'\n", strips->pddl->problem_name);
 
     fprintf(fout, "fact = [\n");
-    for (int i = 0; i < strips->fact.fact_size; ++i){
-        fprintf(fout, "    '%s',\n",
-                pddlFactNamePDDL(strips->fact.fact[i], strips->pddl));
-    }
+    for (int i = 0; i < strips->fact.fact_size; ++i)
+        fprintf(fout, "    '(%s)',\n", strips->fact.fact[i]->name);
     fprintf(fout, "]\n");
 
     fprintf(fout, "op = [\n");
@@ -286,10 +284,8 @@ void pddlStripsPrintPDDLDomain(const pddl_strips_t *strips, FILE *fout)
     fprintf(fout, "(define (domain %s)\n", strips->pddl->domain_name);
 
     fprintf(fout, "(:predicates\n");
-    for (int i = 0; i < strips->fact.fact_size; ++i){
-        const char *name = pddlFactNamePDDL(strips->fact.fact[i], strips->pddl);
-        fprintf(fout, "    (F%d) ;; %s\n", i, name);
-    }
+    for (int i = 0; i < strips->fact.fact_size; ++i)
+        fprintf(fout, "    (F%d) ;; %s\n", i, strips->fact.fact[i]->name);
     fprintf(fout, ")\n");
     fprintf(fout, "(:functions (total-cost))\n");
 
@@ -357,20 +353,19 @@ void pddlStripsPrintPDDLProblem(const pddl_strips_t *strips, FILE *fout)
 void pddlStripsPrintDebug(const pddl_strips_t *strips, FILE *fout)
 {
     fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);
-    pddlFactsPrintSorted(&strips->fact, strips->pddl,
-                         pddlFactNamePDDL, "  ", "\n", fout);
+    pddlFactsPrintSorted(&strips->fact, strips->pddl, "  (", ")\n", fout);
 
     fprintf(fout, "Op[%d]:\n", strips->op.op_size);
     pddlStripsOpsPrintDebug(strips->pddl, &strips->fact, &strips->op, fout);
 
     fprintf(fout, "Init State:");
     pddlFactsIdSetPrintSorted(&strips->init, &strips->fact, strips->pddl,
-                              pddlFactNamePDDL, " ", "", fout);
+                              " (", ")", fout);
     fprintf(fout, "\n");
 
     fprintf(fout, "Goal:");
     pddlFactsIdSetPrintSorted(&strips->goal, &strips->fact, strips->pddl,
-                              pddlFactNamePDDL, " ", "", fout);
+                              " (", ")", fout);
     fprintf(fout, "\n");
     if (strips->goal_is_unreachable)
         fprintf(fout, "Goal is unreachable\n");

@@ -31,8 +31,6 @@
     int __##NAME##__arg[ARG_SIZE]; \
     NAME.arg = __##NAME##__arg
 
-/** Clones a ground atom. */
-static pddl_ground_atom_t *pddlGroundAtomClone(const pddl_ground_atom_t *);
 
 /** Compares two ground atoms. */
 static int pddlGroundAtomCmp(const pddl_ground_atom_t *a1,
@@ -71,7 +69,7 @@ void pddlGroundAtomDel(pddl_ground_atom_t *a)
 }
 
 
-static pddl_ground_atom_t *pddlGroundAtomClone(const pddl_ground_atom_t *a)
+pddl_ground_atom_t *pddlGroundAtomClone(const pddl_ground_atom_t *a)
 {
     pddl_ground_atom_t *c = BOR_ALLOC(pddl_ground_atom_t);
     *c = *a;
