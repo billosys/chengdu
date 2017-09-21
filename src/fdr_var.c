@@ -77,7 +77,6 @@ static void factsRequiringBinaryEncoding(const pddl_strips_t *strips,
             BOR_ISET_FOR_EACH(&fact_to_mgroup[fact_id], mgroup_id){
                 if (!borISetIntersectionSizeAtLeast(&mgs->g[mgroup_id].fact,
                                                     &op->add_eff, 1)){
-                    fprintf(stderr, "X %d :: %s\n", oi, op->name);
                     borISetAdd(binfs, fact_id);
                 }
             }
