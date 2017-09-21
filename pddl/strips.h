@@ -104,7 +104,10 @@ typedef struct pddl_strips_config pddl_strips_config_t;
 
 struct pddl_strips {
     pddl_strips_config_t cfg;
-    const pddl_t *pddl;
+    char *domain_name;
+    char *problem_name;
+    char *domain_file;
+    char *problem_file;
     pddl_facts_t fact; /*!< Set of facts */
     pddl_strips_ops_t op; /*!< Set of operators */
     bor_iset_t init; /*!< Initial state */
