@@ -134,7 +134,6 @@ static void createInit(create_t *c, const pddl_strips_t *strips,
     // Copy mutex groups into create_t structure and update single_facts in
     // the process
     c->mgroup_size = mg->size;
-    fprintf(stderr, "MG: %d\n", c->mgroup_size);
     c->mgroup = BOR_ALLOC_ARR(bor_iset_t, c->mgroup_size);
     for (int i = 0; i < c->mgroup_size; ++i){
         borISetInit(c->mgroup + i);
