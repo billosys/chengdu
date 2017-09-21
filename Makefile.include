@@ -57,8 +57,7 @@ endif
 
 
 _BOR_MAKE_VARS := $(filter BOR_%, $(.VARIABLES))
-_BOR_MAKE_DEF := $(foreach V,$(_BOR_MAKE_VARS),$(V:BOR_%=%)="$($(V))") \
-    DEBUG=no
+_BOR_MAKE_DEF := $(foreach V,$(_BOR_MAKE_VARS),$(V:BOR_%=%)="$($(V))") DEBUG=no
 
 .DEFAULT_GOAL := all
 
@@ -98,3 +97,8 @@ help:
 	@echo "    BORUVKA_LDFLAGS   = $(BORUVKA_LDFLAGS)"
 	@echo
 	@echo "Boruvka make variables: $(_BOR_MAKE_DEF)"
+
+# These variables should not be passed to sub-makes
+unexport CFLAGS
+unexport CXXFLAGS
+unexport LDFLAGS

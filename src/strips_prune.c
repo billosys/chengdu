@@ -219,8 +219,11 @@ static int disambiguateSet(bor_iset_t *set,
             if (!mg->is_exactly_1)
                 continue;
             borISetMinus2(&remain, &mg->fact, &mutex_facts);
-            if (borISetSize(&remain) == 0)
+            if (borISetSize(&remain) == 0){
+                borISetFree(&remain);
+                borISetFree(&mutex_facts);
                 return -1;
+            }
             if (borISetSize(&remain) == 1
                     && !borISetIn(borISetGet(&remain, 0), set)){
                 borISetAdd(set, borISetGet(&remain, 0));

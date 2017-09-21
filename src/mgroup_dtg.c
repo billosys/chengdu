@@ -92,7 +92,7 @@ void pddlMGroupDTGPrintAsDot(const pddl_mgroup_dtg_t *dtg,
         fprintf(fout, "N%d [", n);
         if (dtg->fact[n] >= 0){
             const pddl_fact_t *f = pddl->strips->fact.fact[dtg->fact[n]];
-            fprintf(fout, "label=\"%s\"", pddlFactName(f, pddl));
+            fprintf(fout, "label=\"%s\"", f->name);
             if (borISetIn(dtg->fact[n], &pddl->strips->init))
                 fprintf(fout, ", color=\"#bb2222\"");
             if (borISetIn(dtg->fact[n], &pddl->strips->goal))

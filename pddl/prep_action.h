@@ -25,6 +25,7 @@
 #include <pddl/common.h>
 #include <pddl/action.h>
 #include <pddl/cond_arr.h>
+#include <pddl/ground_atom.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +42,7 @@ struct pddl_prep_action {
     pddl_cond_arr_t pre;
     pddl_cond_arr_t add_eff;
     pddl_cond_arr_t del_eff;
-    pddl_cond_arr_t assign;
+    pddl_cond_arr_t increase;
     int max_arg_size;
     int cond_eff_size;
 };
@@ -61,15 +62,14 @@ void pddlPrepActionsFree(pddl_prep_actions_t *as);
  * Returns true if the action can be grounded with the provided arguments.
  */
 int pddlPrepActionCheck(const pddl_prep_action_t *a,
-                        const pddl_facts_t *static_facts,
+                        const pddl_ground_atoms_t *static_facts,
                         const int *arg);
 
 /**
  * Checks the given fact against specified precondition.
  */
-int pddlPrepActionCheckFact(const pddl_prep_action_t *a,
-                            int pre_i,
-                            const pddl_fact_t *fact);
+int pddlPrepActionCheckFact(const pddl_prep_action_t *a, int pre_i,
+                            const int *fact_args);
 
 
 #ifdef __cplusplus

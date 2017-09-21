@@ -29,7 +29,6 @@
 #include <pddl/param.h>
 #include <pddl/obj.h>
 #include <pddl/pred.h>
-#include <pddl/fact.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +44,9 @@ extern "C" {
 #define PDDL_COND_WHEN   4u /*!< Conditional effect */
 #define PDDL_COND_ATOM   5u
 #define PDDL_COND_ASSIGN 6u
-#define PDDL_COND_BOOL   7u
+#define PDDL_COND_INCREASE 7u
+#define PDDL_COND_BOOL   8u
+#define PDDL_COND_NUM_TYPES 9
 
 #define PDDL_COND_CAST(C, T) \
     (bor_container_of((C), pddl_cond_##T##_t, cls))
@@ -115,12 +116,13 @@ typedef struct pddl_cond_atom pddl_cond_atom_t;
  * Assign
  * TODO: For now only (increase (total-cost) (...)) is supported
  */
-struct pddl_cond_assign {
+struct pddl_cond_func_op {
     pddl_cond_t cls;
+    pddl_cond_atom_t *lvalue; /*!< lvalue for assignement */
     int value;                /*!< Assigned immediate value */
     pddl_cond_atom_t *fvalue; /*!< Assigned value through function symbol */
 };
-typedef struct pddl_cond_assign pddl_cond_assign_t;
+typedef struct pddl_cond_func_op pddl_cond_func_op_t;
 
 /**
  * Boolean value
@@ -202,6 +204,11 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
                            const char *errname);
 
 /**
+ * Parse (:init ...) into a conjuction of atoms.
+ */
+pddl_cond_part_t *pddlCondParseInit(const pddl_lisp_node_t *root, pddl_t *pddl);
+
+/**
  * Creates a placeholder for an empty precondition.
  */
 pddl_cond_t *pddlCondEmptyPre(void);
@@ -210,6 +217,12 @@ pddl_cond_t *pddlCondEmptyPre(void);
  * Transforms atom into (and atom).
  */
 pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom);
+
+/**
+ * Creates a new atom that corresponds to a grounded fact.
+ */
+pddl_cond_atom_t *pddlCondCreateFactAtom(int pred, int arg_size, 
+                                         const int *arg);
 
 /**
  * Adds {c} to and/or condition.
@@ -271,14 +284,9 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl);
 pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl);
 
 /**
- * Ground atom to a fact using arguments, {fact} has to have allocated
- * enough space in .arg[].
- * If some argument could not be set because {args} is not bound on the
- * corresponding position, -1 is returned.
+ * Returns true if the atom is a grounded fact.
  */
-int pddlCondAtomGroundFact(const pddl_cond_atom_t *atom,
-                           const int *args,
-                           pddl_fact_t *fact);
+int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom);
 
 void pddlCondPrint(const pddl_t *pddl,
                    const pddl_cond_t *cond,

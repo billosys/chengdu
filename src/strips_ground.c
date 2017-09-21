@@ -26,6 +26,7 @@
 #include "pddl/pddl.h"
 #include "pddl/strips.h"
 #include "pddl/prep_action.h"
+#include "pddl/ground_atom.h"
 #include "pddl/err.h"
 #include "err.h"
 #include "assert.h"
@@ -108,10 +109,12 @@ struct ground_args_arr {
 typedef struct ground_args_arr ground_args_arr_t;
 
 struct ground {
-    pddl_strips_t *strips;
     const pddl_t *pddl;
     pddl_prep_actions_t action;
-    pddl_facts_t static_fact;
+
+    pddl_ground_atoms_t static_facts;
+    pddl_ground_atoms_t facts;
+    pddl_ground_atoms_t funcs;
     tree_t *tree;
     ground_args_arr_t ground_args;
 };
@@ -139,7 +142,7 @@ static void groundArgsSortAndUniq(ground_args_arr_t *ga);
 static int unifyStaticFacts(ground_t *g);
 static int unifyFacts(ground_t *g);
 
-static int groundActions(ground_t *g);
+static int groundActions(ground_t *g, pddl_strips_t *strips);
 static void groundActionAddEff(ground_t *g,
                                const pddl_prep_action_t *a,
                                const obj_id_t *oarg);
@@ -525,7 +528,7 @@ static void unify(tree_t *tr, tnode_t *tn, obj_id_t *arg, int remain,
         unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
 }
 
-static void unifyTree(tree_t *tr, const pddl_fact_t *fact, int pre_i,
+static void unifyTree(tree_t *tr, const pddl_ground_atom_t *fact, int pre_i,
                       int static_fact)
 {
     const pddl_cond_atom_t *atom;
@@ -540,7 +543,7 @@ static void unifyTree(tree_t *tr, const pddl_fact_t *fact, int pre_i,
     //       and lock the argument
     // Check whether the fact can be unified -- this test is not enough but
     // it can filter out some facts.
-    if (!pddlPrepActionCheckFact(tr->action, pre_i, fact))
+    if (!pddlPrepActionCheckFact(tr->action, pre_i, fact->arg))
         return;
 
     // Initialize arg[] to undef -- this array will be filled with unified
@@ -629,10 +632,10 @@ static void treeFixStatic(tree_t *tr)
         tr->root->flags.blocked = 1;
 }
 
-static void _unifyFacts(ground_t *g, pddl_facts_t *fs, int static_fact)
+static void _unifyFacts(ground_t *g, pddl_ground_atoms_t *ga, int static_fact)
 {
-    for (int i = 0; i < fs->fact_size; ++i){
-        const pddl_fact_t *fact = fs->fact[i];
+    for (int i = 0; i < ga->atom_size; ++i){
+        const pddl_ground_atom_t *fact = ga->atom[i];
 
         for (int j = 0; j < g->action.size; ++j){
             tree_t *tr = g->tree + j;
@@ -652,7 +655,7 @@ static int unifyStaticFacts(ground_t *g)
             groundActionAddEffEmptyPre(g, g->action.action + i);
     }
 
-    _unifyFacts(g, &g->static_fact, 1);
+    _unifyFacts(g, &g->static_facts, 1);
     for (int i = 0; i < g->action.size; ++i)
         treeFixStatic(g->tree + i);
 
@@ -661,7 +664,7 @@ static int unifyStaticFacts(ground_t *g)
 
 static int unifyFacts(ground_t *g)
 {
-    _unifyFacts(g, &g->strips->fact, 0);
+    _unifyFacts(g, &g->facts, 0);
     return 0;
 }
 /*** unify END ***/
@@ -687,20 +690,13 @@ static void _groundActionAddEff(ground_t *g,
         return;
     }
 
-    if (!pddlPrepActionCheck(a, &g->static_fact, arg))
+    if (!pddlPrepActionCheck(a, &g->static_facts, arg))
         return;
 
     const pddl_cond_atom_t *atom;
-    PDDL_FACT_STACK(fact, a->max_arg_size);
     for (int i = 0; i < a->add_eff.size; ++i){
         atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
-        if (pddlCondAtomGroundFact(atom, arg, &fact) != 0){
-            FATAL("Cannot ground atom to a fact even though all parameters"
-                  " are bound to objects. This is definitely a bug."
-                  " The culprit action is %s.",
-                  groundOpName(g->pddl, a->action, arg));
-        }
-        pddlFactsAdd(&g->strips->fact, &fact);
+        pddlGroundAtomsAddAtom(&g->facts, atom, arg);
     }
 
     groundArgsAdd(&g->ground_args, a - g->action.action, a, arg);
@@ -745,51 +741,43 @@ static char *groundOpName(const pddl_t *pddl,
     return name;
 }
 
-static int groundAssign(int atom_max_arg_size,
-                        const int *arg,
-                        const pddl_cond_arr_t *atoms,
-                        const pddl_facts_t *funcs)
+static int groundIncrease(ground_t *g,
+                          const int *arg,
+                          const pddl_cond_arr_t *atoms)
 {
-    const pddl_cond_assign_t *atom;
-    PDDL_FACT_STACK(func, atom_max_arg_size);
-    const pddl_fact_t *fvalue;
-    int func_id;
+    const pddl_cond_func_op_t *inc;
+    const pddl_ground_atom_t *ga;
     int cost = 0;
 
     // Only (increase (total-cost) ...) is allowed.
     for (int i = 0; i < atoms->size; ++i){
-        atom = PDDL_COND_CAST(atoms->cond[i], assign);
-        if (atom->fvalue != NULL){
-            pddlCondAtomGroundFact(atom->fvalue, arg, &func);
-            func_id = pddlFactsFind(funcs, &func);
-            ASSERT_RUNTIME(func_id >= 0);
-            fvalue = funcs->fact[func_id];
-            cost += fvalue->func_val;
+        inc = PDDL_COND_CAST(atoms->cond[i], func_op);
+        if (inc->fvalue != NULL){
+            ga = pddlGroundAtomsFindAtom(&g->funcs, inc->fvalue, arg);
+            ASSERT_RUNTIME(ga != NULL);
+            cost += ga->func_val;
         }else{
-            cost += atom->value;
+            cost += inc->value;
         }
     }
 
     return cost;
 }
 
-static void groundAtoms(int atom_max_arg_size,
+static void groundAtoms(ground_t *g,
+                        int atom_max_arg_size,
                         const int *arg,
                         const pddl_cond_arr_t *atoms,
-                        const pddl_facts_t *facts,
                         bor_iset_t *out)
 {
     const pddl_cond_atom_t *atom;
-    PDDL_FACT_STACK(fact, atom_max_arg_size);
-    int fact_id;
+    const pddl_ground_atom_t *ga;
 
     for (int i = 0; i < atoms->size; ++i){
         atom = PDDL_COND_CAST(atoms->cond[i], atom);
-        pddlCondAtomGroundFact(atom, arg, &fact);
-        fact_id = pddlFactsFind(facts, &fact);
-        // Filter out static facts
-        if (fact_id >= 0)
-            borISetAdd(out, fact_id);
+        ga = pddlGroundAtomsFindAtom(&g->facts, atom, arg);
+        if (ga != NULL)
+            borISetAdd(out, ga->id);
     }
 }
 
@@ -800,20 +788,16 @@ static int setUpOp(ground_t *g, pddl_strips_op_t *op,
     char *name;
 
     // Different operator cost for the conditional effects is not allowed
-    if (a->parent_action >= 0 && a->assign.size > 0)
+    if (a->parent_action >= 0 && a->increase.size > 0)
         ERR_RET2(-1, "Costs in conditional effects are not supported.");
 
     // Ground precontions, add and delete effects and set cost
-    groundAtoms(a->max_arg_size, ga->arg, &a->pre,
-                &g->strips->fact, &op->pre);
-    groundAtoms(a->max_arg_size, ga->arg, &a->add_eff,
-                &g->strips->fact, &op->add_eff);
-    groundAtoms(a->max_arg_size, ga->arg, &a->del_eff,
-                &g->strips->fact, &op->del_eff);
+    groundAtoms(g, a->max_arg_size, ga->arg, &a->pre, &op->pre);
+    groundAtoms(g, a->max_arg_size, ga->arg, &a->add_eff, &op->add_eff);
+    groundAtoms(g, a->max_arg_size, ga->arg, &a->del_eff, &op->del_eff);
     op->cost = 1;
     if (g->pddl->metric){
-        op->cost = groundAssign(a->max_arg_size, ga->arg, &a->assign,
-                                &g->pddl->init_func);
+        op->cost = groundIncrease(g, ga->arg, &a->increase);
     }
     name = groundOpName(g->pddl, a->action, ga->arg);
 
@@ -823,7 +807,8 @@ static int setUpOp(ground_t *g, pddl_strips_op_t *op,
     return 0;
 }
 
-static void groundCondEff(ground_t *g, pddl_strips_op_t *op,
+static void groundCondEff(ground_t *g, pddl_strips_t *strips,
+                          pddl_strips_op_t *op,
                           ground_args_t *ga, ground_args_t *parent_ga)
 {
     pddl_strips_op_t *parent;
@@ -839,10 +824,10 @@ static void groundCondEff(ground_t *g, pddl_strips_op_t *op,
         pddl_strips_op_t op2;
         pddlStripsOpInit(&op2);
         setUpOp(g, &op2, parent_ga);
-        parent_ga->op_id = pddlStripsOpsAdd(&g->strips->op, &op2);
+        parent_ga->op_id = pddlStripsOpsAdd(&strips->op, &op2);
         pddlStripsOpFree(&op2);
     }
-    parent = g->strips->op.op[parent_ga->op_id];
+    parent = strips->op.op[parent_ga->op_id];
 
     // Find out preconditions that belong only to the conditional
     // effect.
@@ -850,7 +835,7 @@ static void groundCondEff(ground_t *g, pddl_strips_op_t *op,
     if (op->pre.size > 0){
         // Create conditional effect if necessary
         pddlStripsOpAddCondEff(parent, op);
-        g->strips->has_cond_eff = 1;
+        strips->has_cond_eff = 1;
 
     }else{
         // If precondition of the conditional effect is empty, then
@@ -866,7 +851,7 @@ static void groundCondEff(ground_t *g, pddl_strips_op_t *op,
     }
 }
 
-static int groundActions(ground_t *g)
+static int groundActions(ground_t *g, pddl_strips_t *strips)
 {
     ground_args_t *ga, *parent_ga;
     const pddl_prep_action_t *a;
@@ -880,7 +865,7 @@ static int groundActions(ground_t *g)
     for (int i = 0; i < g->ground_args.size; ++i){
         ga = g->ground_args.arg + i;
         a = ga->action;
-        ASSERT(pddlPrepActionCheck(a, &g->static_fact, ga->arg));
+        ASSERT(pddlPrepActionCheck(a, &g->static_facts, ga->arg));
 
         pddlStripsOpInit(&op);
         if (setUpOp(g, &op, ga) != 0){
@@ -895,9 +880,9 @@ static int groundActions(ground_t *g)
         // Use only operators with effects
         if (op.add_eff.size > 0 || op.del_eff.size > 0){
             if (a->parent_action >= 0){
-                groundCondEff(g, &op, ga, parent_ga);
+                groundCondEff(g, strips, &op, ga, parent_ga);
             }else{
-                ga->op_id = pddlStripsOpsAdd(&g->strips->op, &op);
+                ga->op_id = pddlStripsOpsAdd(&strips->op, &op);
             }
         }
 
@@ -907,57 +892,70 @@ static int groundActions(ground_t *g)
     return 0;
 }
 
-static int groundInitState(ground_t *g)
+static int createStripsFacts(ground_t *g, pddl_strips_t *strips)
 {
-    const pddl_fact_t *fact;
+    const pddl_ground_atom_t *ga;
     int fact_id;
 
-    for (int i = 0; i < g->pddl->init_fact.fact_size; ++i){
-        fact = g->pddl->init_fact.fact[i];
-        fact_id = pddlFactsFind(&g->strips->fact, fact);
-        // Skipping static facts
-        if (fact_id >= 0)
-            borISetAdd(&g->strips->init, fact_id);
+    for (int i = 0; i < g->facts.atom_size; ++i){
+        ga = g->facts.atom[i];
+        ASSERT(ga->id == i);
+        fact_id = pddlFactsAddGroundAtom(&strips->fact, ga, g->pddl);
+        if (fact_id != ga->id){
+            FATAL2("The fact and the corresponding grounded atom have"
+                   " different IDs. This is definitelly a bug!");
+        }
     }
+    return 0;
+}
 
+static int groundInitState(ground_t *g, pddl_strips_t *strips)
+{
+    bor_list_t *item;
+    const pddl_cond_t *c;
+    const pddl_cond_atom_t *a;
+    const pddl_ground_atom_t *ga;
+
+    BOR_LIST_FOR_EACH(&g->pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type == PDDL_COND_ATOM){
+            a = PDDL_COND_CAST(c, atom);
+            ga = pddlGroundAtomsFindAtom(&g->facts, a, NULL);
+            if (ga != NULL)
+                borISetAdd(&strips->init, ga->id);
+        }
+    }
     return 0;
 }
 
 struct ground_goal {
     ground_t *g;
+    pddl_strips_t *strips;
     int fail;
 };
 
 static int _groundGoal(pddl_cond_t *c, void *_g)
 {
     struct ground_goal *ggoal = _g;
+    const pddl_ground_atom_t *ga;
     ground_t *g = ggoal->g;
+    pddl_strips_t *strips = ggoal->strips;
 
     if (c->type == PDDL_COND_ATOM){
         const pddl_cond_atom_t *atom = PDDL_COND_CAST(c, atom);
-        PDDL_FACT_STACK(fact, atom->arg_size);
-
-        // Transform atom to a fact
-        fact.pred = atom->pred;
-        fact.arg_size = atom->arg_size;
-        for (int i = 0; i < atom->arg_size; ++i){
-            if (atom->arg[i].param >= 0){
-                ERR_RET2(-1, "Goal specification cannot contain"
-                             " parametrized atoms.");
-            }else{
-                fact.arg[i] = atom->arg[i].obj;
-            }
-        }
+        if (!pddlCondAtomIsGrounded(atom))
+            ERR_RET2(-1, "Goal specification cannot contain"
+                         " parametrized atoms.");
 
         // Find fact in the set of reachable facts
-        int fact_id = pddlFactsFind(&g->strips->fact, &fact);
-        if (fact_id >= 0){
+        ga = pddlGroundAtomsFindAtom(&g->facts, atom, NULL);
+        if (ga != NULL){
             // Add the fact to the goal specification
-            borISetAdd(&g->strips->goal, fact_id);
+            borISetAdd(&strips->goal, ga->id);
         }else{
             // The problem is unsolvable, because a goal fact is not
             // reachable.
-            g->strips->goal_is_unreachable = 1;
+            strips->goal_is_unreachable = 1;
         }
         return 0;
 
@@ -969,9 +967,10 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
         return -2;
     }
 }
-static int groundGoal(ground_t *g)
+
+static int groundGoal(ground_t *g, pddl_strips_t *strips)
 {
-    struct ground_goal ggoal = { g, 0 };
+    struct ground_goal ggoal = { g, strips, 0 };
     if (g->pddl->goal->type == PDDL_COND_OR)
         ERR_RET2(-1, "Only conjuctive goal specifications are supported.");
 
@@ -983,28 +982,45 @@ static int groundGoal(ground_t *g)
 
 static void groundInitFact(ground_t *g, const pddl_t *pddl)
 {
-    const pddl_fact_t *fact;
+    bor_list_t *item;
+    const pddl_cond_t *c;
+    const pddl_cond_atom_t *a;
+    const pddl_cond_func_op_t *ass;
+    pddl_ground_atom_t *ga;
 
-    for (int i = 0; i < pddl->init_fact.fact_size; ++i){
-        fact = pddl->init_fact.fact[i];
-        if (pddlFactIsStatic(pddl, fact)){
-            pddlFactsAdd(&g->static_fact, fact);
-        }else{
-            pddlFactsAdd(&g->strips->fact, fact);
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type == PDDL_COND_ATOM){
+            a = PDDL_COND_CAST(c, atom);
+            if (pddlPredIsStatic(&pddl->pred.pred[a->pred])){
+                ASSERT(pddlCondAtomIsGrounded(a));
+                pddlGroundAtomsAddAtom(&g->static_facts, a, NULL);
+            }else{
+                ASSERT(pddlCondAtomIsGrounded(a));
+                pddlGroundAtomsAddAtom(&g->facts, a, NULL);
+            }
+        }else if (c->type == PDDL_COND_ASSIGN){
+            ass = PDDL_COND_CAST(c, func_op);
+            ASSERT(ass->fvalue == NULL);
+            ASSERT(ass->lvalue != NULL);
+            ASSERT(pddlCondAtomIsGrounded(ass->lvalue));
+            ga = pddlGroundAtomsAddAtom(&g->funcs, ass->lvalue, NULL);
+            ga->func_val = ass->value;
         }
     }
 }
 
-static int groundInit(ground_t *g, pddl_strips_t *strips, const pddl_t *pddl)
+static int groundInit(ground_t *g, const pddl_t *pddl)
 {
     bzero(g, sizeof(*g));
-    g->strips = strips;
     g->pddl = pddl;
 
     if (pddlPrepActionsInit(pddl, &g->action) != 0)
         TRACE_RET(-1);
 
-    pddlFactsInit(&g->static_fact);
+    pddlGroundAtomsInit(&g->static_facts);
+    pddlGroundAtomsInit(&g->facts);
+    pddlGroundAtomsInit(&g->funcs);
 
     groundInitFact(g, pddl);
 
@@ -1021,7 +1037,9 @@ static void groundFree(ground_t *g)
         treeFree(g->tree + i);
     if (g->tree != NULL)
         BOR_FREE(g->tree);
-    pddlFactsFree(&g->static_fact);
+    pddlGroundAtomsFree(&g->static_facts);
+    pddlGroundAtomsFree(&g->facts);
+    pddlGroundAtomsFree(&g->funcs);
     pddlPrepActionsFree(&g->action);
     groundArgsFree(&g->ground_args);
 }
@@ -1030,12 +1048,13 @@ int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl)
 {
     ground_t g;
 
-    if (groundInit(&g, strips, pddl) != 0
+    if (groundInit(&g, pddl) != 0
             || unifyStaticFacts(&g) != 0
             || unifyFacts(&g) != 0
-            || groundActions(&g) != 0
-            || groundInitState(&g) != 0
-            || groundGoal(&g) != 0){
+            || createStripsFacts(&g, strips) != 0
+            || groundActions(&g, strips) != 0
+            || groundInitState(&g, strips) != 0
+            || groundGoal(&g, strips) != 0){
         groundFree(&g);
         TRACE_RET(-1);
     }

@@ -133,7 +133,7 @@ void pddlMutexesPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
         for (int j = 0; j < p.m[i][0]; ++j){
             if (j > 0)
                 fprintf(fout, "; ");
-            fprintf(fout, "%s", pddlFactName(fs->fact[p.m[i][j + 1]], pddl));
+            fprintf(fout, "%s", fs->fact[p.m[i][j + 1]]->name);
         }
         fprintf(fout, "\n");
     }
