@@ -65,14 +65,6 @@ void pddlFactDel(pddl_fact_t *f);
  */
 int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2);
 
-/**
- * Determines whether the fact should be private and which object should be
- * owner.
- * Returns 0 if fact remained non-private, 1 if privateness was set and -1
- * if there is conflict in owners of the fact (thus this is invalid fact).
- */
-int pddlFactSetPrivate(const pddl_t *pddl, pddl_fact_t *fact);
-
 
 struct pddl_facts {
     pddl_fact_t **fact;
@@ -128,11 +120,11 @@ void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs, const int *m, int *remap);
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
 
 
-void pddlFactsPrintSorted(const pddl_facts_t *fs, const pddl_t *pddl,
+void pddlFactsPrintSorted(const pddl_facts_t *fs,
                           const char *prefix, const char *suffix,
                           FILE *fout);
 void pddlFactsIdSetPrintSorted(const bor_iset_t *set,
-                               const pddl_facts_t *fs, const pddl_t *pddl,
+                               const pddl_facts_t *fs,
                                const char *prefix, const char *suffix,
                                FILE *fout);
 

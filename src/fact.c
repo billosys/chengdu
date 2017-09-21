@@ -238,7 +238,7 @@ static int printCmp(const void *_a, const void *_b, void *_fs)
     return pddlFactCmp(fs->fact[a], fs->fact[b]);
 }
 
-void pddlFactsPrintSorted(const pddl_facts_t *fs, const pddl_t *pddl,
+void pddlFactsPrintSorted(const pddl_facts_t *fs,
                           const char *prefix, const char *suffix,
                           FILE *fout)
 {
@@ -254,7 +254,7 @@ void pddlFactsPrintSorted(const pddl_facts_t *fs, const pddl_t *pddl,
 }
 
 void pddlFactsIdSetPrintSorted(const bor_iset_t *set,
-                               const pddl_facts_t *fs, const pddl_t *pddl,
+                               const pddl_facts_t *fs,
                                const char *prefix, const char *suffix,
                                FILE *fout)
 {

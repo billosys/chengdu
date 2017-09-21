@@ -311,19 +311,20 @@ void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap)
         pddlStripsOpRemapFacts(ops->op[i], remap);
 }
 
-void pddlStripsOpPrintDebug(const struct pddl *pddl, const pddl_facts_t *fs,
-                            const pddl_strips_op_t *op, FILE *fout)
+void pddlStripsOpPrintDebug(const pddl_strips_op_t *op,
+                            const pddl_facts_t *fs,
+                            FILE *fout)
 {
     fprintf(fout, "  (%s), cost: %d\n", op->name, op->cost);
 
     fprintf(fout, "    pre:");
-    pddlFactsIdSetPrintSorted(&op->pre, fs, pddl, " (", ")", fout);
+    pddlFactsIdSetPrintSorted(&op->pre, fs, " (", ")", fout);
     fprintf(fout, "\n");
     fprintf(fout, "    add:");
-    pddlFactsIdSetPrintSorted(&op->add_eff, fs, pddl, " (", ")", fout);
+    pddlFactsIdSetPrintSorted(&op->add_eff, fs, " (", ")", fout);
     fprintf(fout, "\n");
     fprintf(fout, "    del:");
-    pddlFactsIdSetPrintSorted(&op->del_eff, fs, pddl, " (", ")", fout);
+    pddlFactsIdSetPrintSorted(&op->del_eff, fs, " (", ")", fout);
     fprintf(fout, "\n");
 
     if (op->cond_eff_size > 0)
@@ -333,20 +334,21 @@ void pddlStripsOpPrintDebug(const struct pddl *pddl, const pddl_facts_t *fs,
         const pddl_strips_op_cond_eff_t *ce = op->cond_eff + j;
 
         fprintf(fout, "      pre:");
-        pddlFactsIdSetPrintSorted(&ce->pre, fs, pddl, " (", ")", fout);
+        pddlFactsIdSetPrintSorted(&ce->pre, fs, " (", ")", fout);
         fprintf(fout, "\n");
         fprintf(fout, "      add:");
-        pddlFactsIdSetPrintSorted(&ce->add_eff, fs, pddl, " (", ")", fout);
+        pddlFactsIdSetPrintSorted(&ce->add_eff, fs, " (", ")", fout);
         fprintf(fout, "\n");
         fprintf(fout, "      del:");
-        pddlFactsIdSetPrintSorted(&ce->del_eff, fs, pddl, " (", ")", fout);
+        pddlFactsIdSetPrintSorted(&ce->del_eff, fs, " (", ")", fout);
         fprintf(fout, "\n");
     }
 }
 
-void pddlStripsOpsPrintDebug(const struct pddl *pddl, const pddl_facts_t *fs,
-                             const pddl_strips_ops_t *ops, FILE *fout)
+void pddlStripsOpsPrintDebug(const pddl_strips_ops_t *ops,
+                             const pddl_facts_t *fs,
+                             FILE *fout)
 {
     for (int i = 0; i < ops->op_size; ++i)
-        pddlStripsOpPrintDebug(pddl, fs, ops->op[i], fout);
+        pddlStripsOpPrintDebug(ops->op[i], fs, fout);
 }

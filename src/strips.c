@@ -26,13 +26,24 @@
 /** Implemented in strips_ground.c */
 int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
 
-static pddl_strips_t *stripsNew(const pddl_t *pddl)
+static void copyBasicInfo(pddl_strips_t *dst, const pddl_strips_t *src)
+{
+    if (src->domain_name)
+        dst->domain_name = BOR_STRDUP(src->domain_name);
+    if (src->problem_name)
+        dst->problem_name = BOR_STRDUP(src->problem_name);
+    if (src->domain_file)
+        dst->domain_file = BOR_STRDUP(src->domain_file);
+    if (src->problem_file)
+        dst->problem_file = BOR_STRDUP(src->problem_file);
+}
+
+static pddl_strips_t *stripsNew(void)
 {
     pddl_strips_t *strips;
 
     strips = BOR_ALLOC(pddl_strips_t);
     bzero(strips, sizeof(*strips));
-    strips->pddl = pddl;
     pddlFactsInit(&strips->fact);
     pddlStripsOpsInit(&strips->op);
     borISetInit(&strips->init);
@@ -69,9 +80,18 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
 pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
                              const pddl_strips_config_t *cfg)
 {
-    pddl_strips_t *strips = stripsNew(pddl);
+    pddl_strips_t *strips = stripsNew();
 
     strips->cfg = *cfg;
+
+    if (pddl->domain_name)
+        strips->domain_name = BOR_STRDUP(pddl->domain_name);
+    if (pddl->problem_name)
+        strips->problem_name = BOR_STRDUP(pddl->problem_name);
+    if (pddl->domain_lisp->filename)
+        strips->domain_file = BOR_STRDUP(pddl->domain_lisp->filename);
+    if (pddl->problem_lisp->filename)
+        strips->problem_file = BOR_STRDUP(pddl->problem_lisp->filename);
 
     if (_pddlStripsGround(strips, pddl) != 0){
         pddlStripsDel(strips);
@@ -123,6 +143,14 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
 
 void pddlStripsDel(pddl_strips_t *strips)
 {
+    if (strips->domain_name)
+        BOR_FREE(strips->domain_name);
+    if (strips->problem_name)
+        BOR_FREE(strips->problem_name);
+    if (strips->domain_file)
+        BOR_FREE(strips->domain_file);
+    if (strips->problem_file)
+        BOR_FREE(strips->problem_file);
     pddlFactsFree(&strips->fact);
     pddlStripsOpsFree(&strips->op);
     borISetFree(&strips->init);
@@ -134,9 +162,10 @@ void pddlStripsDel(pddl_strips_t *strips)
 
 pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
 {
-    pddl_strips_t *dual = stripsNew(strips->pddl);
+    pddl_strips_t *dual = stripsNew();
     pddl_strips_op_t op;
 
+    copyBasicInfo(dual, strips);
     pddlFactsCopy(&dual->fact, &strips->fact);
 
     // Construct initial state and goal specification
@@ -164,9 +193,10 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
 
 pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)
 {
-    pddl_strips_t *s = stripsNew(strips->pddl);
+    pddl_strips_t *s = stripsNew();
     pddl_strips_op_t op;
 
+    copyBasicInfo(s, strips);
     pddlFactsCopy(&s->fact, &strips->fact);
     borISetUnion(&s->init, &strips->init);
     borISetUnion(&s->goal, &strips->goal);
@@ -209,11 +239,10 @@ void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
 {
     int f;
 
-    fprintf(fout, "domain_file = '%s'\n", strips->pddl->domain_lisp->filename);
-    fprintf(fout, "problem_file = '%s'\n",
-            strips->pddl->problem_lisp->filename);
-    fprintf(fout, "domain_name = '%s'\n", strips->pddl->domain_name);
-    fprintf(fout, "problem_name = '%s'\n", strips->pddl->problem_name);
+    fprintf(fout, "domain_file = '%s'\n", strips->domain_file);
+    fprintf(fout, "problem_file = '%s'\n", strips->problem_file);
+    fprintf(fout, "domain_name = '%s'\n", strips->domain_name);
+    fprintf(fout, "problem_name = '%s'\n", strips->problem_name);
 
     fprintf(fout, "fact = [\n");
     for (int i = 0; i < strips->fact.fact_size; ++i)
@@ -281,7 +310,7 @@ void pddlStripsPrintPDDLDomain(const pddl_strips_t *strips, FILE *fout)
 {
     int fact_id;
 
-    fprintf(fout, "(define (domain %s)\n", strips->pddl->domain_name);
+    fprintf(fout, "(define (domain %s)\n", strips->domain_name);
 
     fprintf(fout, "(:predicates\n");
     for (int i = 0; i < strips->fact.fact_size; ++i)
@@ -335,7 +364,7 @@ void pddlStripsPrintPDDLProblem(const pddl_strips_t *strips, FILE *fout)
     int fact_id;
 
     fprintf(fout, "(define (problem %s) (:domain %s)\n",
-            strips->pddl->problem_name, strips->pddl->domain_name);
+            strips->problem_name, strips->domain_name);
 
     fprintf(fout, "(:init\n");
     BOR_ISET_FOR_EACH(&strips->init, fact_id)
@@ -353,19 +382,17 @@ void pddlStripsPrintPDDLProblem(const pddl_strips_t *strips, FILE *fout)
 void pddlStripsPrintDebug(const pddl_strips_t *strips, FILE *fout)
 {
     fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);
-    pddlFactsPrintSorted(&strips->fact, strips->pddl, "  (", ")\n", fout);
+    pddlFactsPrintSorted(&strips->fact, "  (", ")\n", fout);
 
     fprintf(fout, "Op[%d]:\n", strips->op.op_size);
-    pddlStripsOpsPrintDebug(strips->pddl, &strips->fact, &strips->op, fout);
+    pddlStripsOpsPrintDebug(&strips->op, &strips->fact, fout);
 
     fprintf(fout, "Init State:");
-    pddlFactsIdSetPrintSorted(&strips->init, &strips->fact, strips->pddl,
-                              " (", ")", fout);
+    pddlFactsIdSetPrintSorted(&strips->init, &strips->fact, " (", ")", fout);
     fprintf(fout, "\n");
 
     fprintf(fout, "Goal:");
-    pddlFactsIdSetPrintSorted(&strips->goal, &strips->fact, strips->pddl,
-                              " (", ")", fout);
+    pddlFactsIdSetPrintSorted(&strips->goal, &strips->fact, " (", ")", fout);
     fprintf(fout, "\n");
     if (strips->goal_is_unreachable)
         fprintf(fout, "Goal is unreachable\n");
