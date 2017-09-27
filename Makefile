@@ -15,6 +15,7 @@ OBJS += param
 OBJS += obj
 OBJS += pred
 OBJS += fact
+OBJS += fact_cross_ref
 OBJS += action
 OBJS += prep_action
 OBJS += pddl
@@ -38,6 +39,8 @@ OBJS += fdr_op
 OBJS += fdr
 OBJS += fdr_to_fd
 OBJS += err
+OBJS += lm_cut
+OBJS += landmark
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

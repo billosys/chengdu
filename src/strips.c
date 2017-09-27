@@ -232,6 +232,44 @@ pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)
     return s;
 }
 
+void pddlStripsCrossRefFactsOps(const pddl_strips_t *strips,
+                                void *_fact_arr,
+                                unsigned long el_size,
+                                long pre_offset,
+                                long add_offset,
+                                long del_offset)
+{
+    char *fact_arr = _fact_arr;
+    for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
+        const pddl_strips_op_t *op = strips->op.op[op_id];
+        int fact_id;
+
+        if (pre_offset >= 0){
+            BOR_ISET_FOR_EACH(&op->pre, fact_id){
+                char *el = fact_arr + (el_size * fact_id);
+                bor_iset_t *s = (bor_iset_t *)(el + pre_offset);
+                borISetAdd(s, op_id);
+            }
+        }
+
+        if (add_offset >= 0){
+            BOR_ISET_FOR_EACH(&op->add_eff, fact_id){
+                char *el = fact_arr + (el_size * fact_id);
+                bor_iset_t *s = (bor_iset_t *)(el + add_offset);
+                borISetAdd(s, op_id);
+            }
+        }
+
+        if (del_offset >= 0){
+            BOR_ISET_FOR_EACH(&op->del_eff, fact_id){
+                char *el = fact_arr + (el_size * fact_id);
+                bor_iset_t *s = (bor_iset_t *)(el + del_offset);
+                borISetAdd(s, op_id);
+            }
+        }
+    }
+}
+
 static void printPythonISet(const bor_iset_t *s, FILE *fout)
 {
     int i;
