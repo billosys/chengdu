@@ -100,7 +100,6 @@ void pddlLMCutInit(pddl_lm_cut_t *lmcut, const pddl_strips_t *strips)
     borISetInit(&lmcut->cut);
     pddlDisjunctiveLandmarksInit(&lmcut->ldms);
 
-    lmcut->fact_state = BOR_ALLOC_ARR(int, lmcut->fact_size);
     lmcut->queue = BOR_ALLOC_ARR(int, lmcut->fact_size);
     borAPQInit(&lmcut->pq);
 }
@@ -125,8 +124,6 @@ void pddlLMCutFree(pddl_lm_cut_t *lmcut)
     borISetFree(&lmcut->cut);
     pddlDisjunctiveLandmarksFree(&lmcut->ldms);
 
-    if (lmcut->fact_state != NULL)
-        BOR_FREE(lmcut->fact_state);
     if (lmcut->queue != NULL)
         BOR_FREE(lmcut->queue);
     borAPQFree(&lmcut->pq);
@@ -275,9 +272,6 @@ static void hMaxInc(pddl_lm_cut_t *lm, const bor_iset_t *cut)
 }
 
 
-#define CUT_UNDEF 0
-#define CUT_INIT 1
-#define CUT_GOAL 2
 
 /** Mark facts connected with the goal with zero cost paths */
 static void markGoalZone(pddl_lm_cut_t *lm)
@@ -288,16 +282,16 @@ static void markGoalZone(pddl_lm_cut_t *lm)
 
     lm->queue_size = 1;
     lm->queue[0] = lm->fact_goal;
-    lm->fact_state[lm->fact_goal] = CUT_GOAL;
+    lm->fact[lm->fact_goal].cut_state = CUT_GOAL;
     while (lm->queue_size > 0){
         fact_id = lm->queue[--lm->queue_size];
         fact = lm->fact + fact_id;
         BOR_ISET_FOR_EACH(&fact->eff_op, op_id){
             op = lm->op + op_id;
-            if (op->supp >= 0 && lm->fact_state[op->supp] == CUT_UNDEF){
+            if (op->supp >= 0 && lm->fact[op->supp].cut_state == CUT_UNDEF){
                 if (op->cost == 0){
                     lm->queue[lm->queue_size++] = op->supp;
-                    lm->fact_state[op->supp] = CUT_GOAL;
+                    lm->fact[op->supp].cut_state = CUT_GOAL;
                 }else{
                     op->cut_candidate = 1;
                 }
@@ -316,9 +310,9 @@ static int findCut(pddl_lm_cut_t *lm)
 
     lm->queue_size = 0;
     BOR_ISET_FOR_EACH(&lm->state, fact_id){
-        if (lm->fact_state[fact_id] == CUT_UNDEF){
+        if (lm->fact[fact_id].cut_state == CUT_UNDEF){
             lm->queue[lm->queue_size++] = fact_id;
-            lm->fact_state[fact_id] = CUT_INIT;
+            lm->fact[fact_id].cut_state = CUT_INIT;
         }
     }
 
@@ -336,9 +330,9 @@ static int findCut(pddl_lm_cut_t *lm)
             }
 
             BOR_ISET_FOR_EACH(&op->eff, next){
-                if (lm->fact_state[next] == CUT_UNDEF){
+                if (lm->fact[next].cut_state == CUT_UNDEF){
                     if (F_IS_SUPP(lm->fact + next)){
-                        lm->fact_state[next] = CUT_INIT;
+                        lm->fact[next].cut_state = CUT_INIT;
                         lm->queue[lm->queue_size++] = next;
                     }
                 }
@@ -369,7 +363,8 @@ static int cut(pddl_lm_cut_t *lm)
 {
     int cost;
 
-    bzero(lm->fact_state, sizeof(int) * lm->fact_size);
+    for (int i = 0; i < lm->fact_size; ++i)
+        lm->fact[i].cut_state = CUT_UNDEF;
     markGoalZone(lm);
     cost = findCut(lm);
     applyCutCost(lm, cost);

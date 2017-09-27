@@ -31,6 +31,10 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define CUT_UNDEF 0
+#define CUT_INIT 1
+#define CUT_GOAL 2
+
 struct pddl_lm_cut_op {
     bor_iset_t pre;
     bor_iset_t eff;
@@ -51,6 +55,7 @@ struct pddl_lm_cut_fact {
     bor_apq_el_t pq; /*!< Connection to priority queue */
     int supp_cnt;    /*!< Number of operators that have this fact as
                           a supporter. */
+    int cut_state; /*!< One of CUT_* */
 };
 typedef struct pddl_lm_cut_fact pddl_lm_cut_fact_t;
 
@@ -69,7 +74,6 @@ struct pddl_lm_cut {
     pddl_disjunctive_landmarks_t ldms;
 
     /** Auxiliary structures to avoid re-allocation */
-    int *fact_state;
     int *queue;
     int queue_size;
     bor_apq_t pq;
