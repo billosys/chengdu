@@ -151,6 +151,25 @@ int pddlStripsPrune(pddl_strips_t *strips,
 void pddlStripsMakeUnsolvable(pddl_strips_t *strips);
 
 /**
+ * Writes IDs of operators to the corresponding fact elements.
+ * fact_arr is a beggining of the array containing structures containing
+ * bor_iset_t elements where IDs are written.
+ * el_size is a size of a single element in fact_arr.
+ * pre_offset is an offset of the bor_iset_t element where operators of
+ * which the fact is a precondition should be written.
+ * add_offset and del_offset are the same as pre_offset instead for add and
+ * delete effects, respectivelly.
+ * pre_offset, add_offset and del_offset may be set to -1 in which case
+ * the cross referencing is disabled.
+ */
+void pddlStripsCrossRefFactsOps(const pddl_strips_t *strips,
+                                void *fact_arr,
+                                unsigned long el_size,
+                                long pre_offset,
+                                long add_offset,
+                                long del_offset);
+
+/**
  * Print STRIPS problem in a format easily usable from python.
  */
 void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout);
