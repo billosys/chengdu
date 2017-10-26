@@ -59,6 +59,16 @@ void pddlMutexesDel(pddl_mutexes_t *ms)
     BOR_FREE(ms);
 }
 
+int pddlMutexesIsMutex(const pddl_mutexes_t *ms, const bor_iset_t *facts)
+{
+    for (int i = 0; i < ms->size; ++i){
+        const pddl_mutex_t *mutex = ms->m + i;
+        if (borISetIsSubset(&mutex->fact, facts))
+            return 1;
+    }
+    return 0;
+}
+
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
 {
     if (ms->size >= ms->alloc){

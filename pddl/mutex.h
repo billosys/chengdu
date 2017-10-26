@@ -68,6 +68,11 @@ void pddlMutexesFree(pddl_mutexes_t *ms);
 void pddlMutexesDel(pddl_mutexes_t *ms);
 
 /**
+ * Returns true if the conjuction of the given facts is mutex.
+ */
+int pddlMutexesIsMutex(const pddl_mutexes_t *ms, const bor_iset_t *facts);
+
+/**
  * Adds a new mutex consisting of the given facts.
  */
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m);
