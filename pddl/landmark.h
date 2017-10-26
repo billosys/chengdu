@@ -21,11 +21,39 @@
 #define __PDDL_LANDMARK_H__
 
 #include <boruvka/iset.h>
+#include <boruvka/htable.h>
 #include <pddl/common.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+
+struct pddl_landmark {
+    bor_iset_t op; /*!< Set of operators */
+
+    int id;
+    bor_list_t htable;
+    bor_htable_key_t hash;
+};
+typedef struct pddl_landmark pddl_landmark_t;
+
+struct pddl_landmarks {
+    bor_htable_t *htable;
+    pddl_landmark_t **ldm;
+    int ldm_size;
+    int ldm_alloc;
+};
+typedef struct pddl_landmarks pddl_landmarks_t;
+
+void pddlLandmarksInit(pddl_landmarks_t *ldms);
+void pddlLandmarksFree(pddl_landmarks_t *ldms);
+
+/**
+ * Adds a new landmark consisting of the given set of operators if not
+ * already there.
+ */
+pddl_landmark_t *pddlLandmarksAdd(pddl_landmarks_t *ldms, const bor_iset_t *op);
+
 
 struct pddl_disjunctive_landmarks {
     bor_iset_t *ldm;
