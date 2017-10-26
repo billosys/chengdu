@@ -270,6 +270,18 @@ void pddlStripsCrossRefFactsOps(const pddl_strips_t *strips,
     }
 }
 
+void pddlStripsApplicableOps(const pddl_strips_t *strips,
+                             const bor_iset_t *state,
+                             bor_iset_t *app_ops)
+{
+    for (int i = 0; i < strips->op.op_size; ++i){
+        const pddl_strips_op_t *op = strips->op.op[i];
+        if (borISetIsSubset(&op->pre, state))
+            borISetAdd(app_ops, i);
+    }
+}
+
+
 static void printPythonISet(const bor_iset_t *s, FILE *fout)
 {
     int i;

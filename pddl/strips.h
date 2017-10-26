@@ -170,6 +170,13 @@ void pddlStripsCrossRefFactsOps(const pddl_strips_t *strips,
                                 long del_offset);
 
 /**
+ * Finds the set of the operators applicable in the given state.
+ */
+void pddlStripsApplicableOps(const pddl_strips_t *strips,
+                             const bor_iset_t *state,
+                             bor_iset_t *app_ops);
+
+/**
  * Print STRIPS problem in a format easily usable from python.
  */
 void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout);
