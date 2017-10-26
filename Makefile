@@ -31,7 +31,6 @@ OBJS += mutex
 OBJS += mutex_hm
 OBJS += mutex_h2
 OBJS += mgroup
-OBJS += mgroup_dtg
 OBJS += fdr_var
 OBJS += fdr_part_state
 OBJS += fdr_op
