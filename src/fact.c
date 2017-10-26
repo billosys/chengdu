@@ -28,8 +28,6 @@
 
 /** Deep copy of the fact.  */
 static void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src);
-/** Set the name of the fact */
-static void pddlFactSetName(pddl_fact_t *dst, const pddl_t *pddl);
 /** Returns true if facts are equal.  */
 static int pddlFactEq(const pddl_fact_t *f1, const pddl_fact_t *f2);
 

@@ -615,41 +615,6 @@ void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout)
     fprintf(fout, ")\n");
 }
 
-struct print_init {
-    const pddl_t *pddl;
-    pddl_params_t params;
-    FILE *fout;
-};
-static int printPDDLInitFact(pddl_cond_t *c, void *d)
-{
-    struct print_init *ctx = d;
-    if (c->type == PDDL_COND_ATOM){
-        fprintf(ctx->fout, "    ");
-        pddlCondPrintPDDL(c, ctx->pddl, &ctx->params, ctx->fout);
-        fprintf(ctx->fout, "\n");
-    }
-    return -1;
-}
-
-static int printPDDLInitAssign(pddl_cond_t *c, void *d)
-{
-    struct print_init *ctx = d;
-    if (c->type == PDDL_COND_ASSIGN){
-        fprintf(ctx->fout, "    ");
-        pddlCondPrintPDDL(c, ctx->pddl, &ctx->params, ctx->fout);
-        fprintf(ctx->fout, "\n");
-    }
-    return -1;
-
-    /*
-    // TODO
-    pddl_params_t params;
-    pddlParamsInit(&params);
-    pddlCondPrintPDDL(pddl->init, pddl, &params, stdout);
-    pddlParamsFree(&params);
-    */
-}
-
 void pddlPrintPDDLProblem(const pddl_t *pddl, FILE *fout)
 {
     bor_list_t *item;
