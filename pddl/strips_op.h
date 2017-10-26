@@ -115,6 +115,48 @@ void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap);
 void pddlStripsOpRemoveFact(pddl_strips_op_t *op, int fact_id);
 
 
+/**
+ * Returns true if o enables p, i.e., if add(o) \cap pre(p) \neq \emptyset.
+ */
+_bor_inline int pddlStripsOpEnable(const pddl_strips_op_t *o,
+                                   const pddl_strips_op_t *p)
+{
+    return borISetIntersectionSizeAtLeast(&o->add_eff, &p->pre, 1);
+}
+
+/**
+ * Returns true if o disables p, i.e., if del(o) \cap pre(p) \neq \emptyset.
+ */
+_bor_inline int pddlStripsOpDisable(const pddl_strips_op_t *o,
+                                    const pddl_strips_op_t *p)
+{
+    return borISetIntersectionSizeAtLeast(&o->del_eff, &p->pre, 1);
+}
+
+/**
+ * Returns true if o is in conflict with p, i.e., if add(o) \cap del(p)
+ * \neq \emptysetif or add(p) \cap del(o) \neq \emptyset.
+ */
+_bor_inline int pddlStripsOpInConflict(const pddl_strips_op_t *o,
+                                       const pddl_strips_op_t *p)
+
+{
+    return borISetIntersectionSizeAtLeast(&p->del_eff, &o->add_eff, 1)
+            || borISetIntersectionSizeAtLeast(&o->del_eff, &p->add_eff, 1);
+}
+
+/**
+ * Returns true if the operators interfere, i.e., if one disables the other
+ * or they are in conflict.
+ */
+_bor_inline int pddlStripsOpInterfere(const pddl_strips_op_t *o,
+                                      const pddl_strips_op_t *p)
+{
+    return pddlStripsOpDisable(o, p)
+            || pddlStripsOpDisable(p, o)
+            || pddlStripsOpInConflict(p, o);
+}
+
 
 struct pddl_strips_ops {
     pddl_strips_op_t **op;
