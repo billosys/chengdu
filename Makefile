@@ -38,6 +38,7 @@ OBJS += fdr_op
 OBJS += fdr
 OBJS += fdr_to_fd
 OBJS += err
+OBJS += profile
 OBJS += lm_cut
 OBJS += landmark
 OBJS += g
