@@ -40,6 +40,7 @@ OBJS += fdr_to_fd
 OBJS += err
 OBJS += lm_cut
 OBJS += landmark
+OBJS += g
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
