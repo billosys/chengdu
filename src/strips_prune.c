@@ -22,6 +22,7 @@
 #include "pddl/mutex.h"
 #include "err.h"
 #include "assert.h"
+#include "profile.h"
 
 /** Prunes irrelevant facts and operators.
  *  Implemented in strips_irrelevance.c */
@@ -166,7 +167,7 @@ static bor_iset_t *mutexTableNew(const pddl_strips_t *strips)
 {
     bor_iset_t *table;
     const pddl_mutex_t *m;
-    const pddl_mgroup_t *mg;
+    //const pddl_mgroup_t *mg;
 
     table = BOR_CALLOC_ARR(bor_iset_t, strips->fact.fact_size);
     PDDL_MUTEXES_FOR_EACH(&strips->mutex, m){
@@ -177,6 +178,10 @@ static bor_iset_t *mutexTableNew(const pddl_strips_t *strips)
         }
     }
 
+    /* TODO: This is useless (but time demanding) if h^2 mutexes are
+     *       inferred and strips->mgroup contains only fa-mgroups.
+     *       Parametrize this somehow to recongnize when this situation
+     *       happens. For now disabled.
     PDDL_MGROUPS_FOR_EACH(&strips->mgroup, mg){
         const bor_iset_t *f = &mg->fact;
         for (int i = 0; i < f->size; ++i){
@@ -186,6 +191,7 @@ static bor_iset_t *mutexTableNew(const pddl_strips_t *strips)
             }
         }
     }
+    */
 
     return table;
 }
