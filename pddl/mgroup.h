@@ -24,6 +24,7 @@
 
 #include <pddl/common.h>
 #include <pddl/fact.h>
+#include <pddl/g.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,6 +56,12 @@ typedef struct pddl_mgroups pddl_mgroups_t;
 
 void pddlMGroupInit(pddl_mgroup_t *mg);
 void pddlMGroupFree(pddl_mgroup_t *mg);
+
+/**
+ * Fills in tg a transition graph of the given mutex group.
+ */
+void pddlMGroupTG(const pddl_mgroup_t *mg, const pddl_strips_t *strips,
+                  pddl_g_t *tg);
 
 /**
  * Initialize a set of mutex groups.

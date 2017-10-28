@@ -23,6 +23,7 @@
 #include "pddl/mgroup.h"
 #include "pddl/strips.h"
 #include "err.h"
+#include "assert.h"
 
 void pddlMGroupInit(pddl_mgroup_t *mg)
 {
@@ -33,6 +34,59 @@ void pddlMGroupInit(pddl_mgroup_t *mg)
 void pddlMGroupFree(pddl_mgroup_t *mg)
 {
     borISetFree(&mg->fact);
+}
+
+void pddlMGroupTG(const pddl_mgroup_t *mg, const pddl_strips_t *strips,
+                  pddl_g_t *tg)
+{
+    int fact_id;
+    int empty_node = -1, from_node, to_node;
+    int *fact_to_node;
+    bor_iset_t predel, add;
+
+    fact_to_node = BOR_ALLOC_ARR(int, strips->fact.fact_size);
+    pddlGInit(tg);
+    BOR_ISET_FOR_EACH(&mg->fact, fact_id){
+        fact_to_node[fact_id] = pddlGAddNode(tg);
+        pddlGNodeAddLabel(tg, fact_to_node[fact_id], fact_id);
+    }
+
+    borISetInit(&predel);
+    borISetInit(&add);
+    for (int opi = 0; opi < strips->op.op_size; ++opi){
+        const pddl_strips_op_t *op = strips->op.op[opi];
+        borISetIntersect2(&predel, &mg->fact, &op->pre);
+        borISetIntersect(&predel, &op->del_eff);
+        ASSERT(borISetSize(&predel) <= 1);
+
+        borISetIntersect2(&add, &mg->fact, &op->add_eff);
+        ASSERT(borISetSize(&add) <= 1);
+        if (borISetSize(&predel) == 0 && borISetSize(&add) == 0)
+            continue;
+
+        if (borISetSize(&predel) > 0){
+            from_node = fact_to_node[borISetGet(&predel, 0)];
+        }else{
+            if (empty_node == -1)
+                empty_node = pddlGAddNode(tg);
+            from_node = empty_node;
+        }
+
+        if (borISetSize(&add) > 0){
+            to_node = fact_to_node[borISetGet(&add, 0)];
+        }else{
+            if (empty_node == -1)
+                empty_node = pddlGAddNode(tg);
+            to_node = empty_node;
+        }
+        ASSERT(from_node != to_node);
+
+        pddlGAddOrUpdateEdge(tg, from_node, to_node, opi);
+    }
+    borISetFree(&add);
+    borISetFree(&predel);
+
+    BOR_FREE(fact_to_node);
 }
 
 void pddlMGroupsInit(pddl_mgroups_t *mgs)
