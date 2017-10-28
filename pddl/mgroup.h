@@ -60,8 +60,17 @@ void pddlMGroupFree(pddl_mgroup_t *mg);
 /**
  * Fills in tg a transition graph of the given mutex group.
  */
-void pddlMGroupTG(const pddl_mgroup_t *mg, const pddl_strips_t *strips,
-                  pddl_g_t *tg);
+void pddlMGroupTGInit(pddl_g_t *tg,
+                      const pddl_mgroup_t *mg,
+                      const pddl_strips_t *strips);
+
+/**
+ * Computes synchronized product of two transition graphs.
+ */
+void pddlMGroupTGSyncProduct(pddl_g_t *prod,
+                             const pddl_g_t *tg1,
+                             const pddl_g_t *tg2,
+                             const pddl_strips_t *strips);
 
 /**
  * Initialize a set of mutex groups.

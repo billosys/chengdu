@@ -36,8 +36,9 @@ void pddlMGroupFree(pddl_mgroup_t *mg)
     borISetFree(&mg->fact);
 }
 
-void pddlMGroupTG(const pddl_mgroup_t *mg, const pddl_strips_t *strips,
-                  pddl_g_t *tg)
+void pddlMGroupTGInit(pddl_g_t *tg,
+                      const pddl_mgroup_t *mg,
+                      const pddl_strips_t *strips)
 {
     int fact_id;
     int empty_node = -1, from_node, to_node;
@@ -87,6 +88,160 @@ void pddlMGroupTG(const pddl_mgroup_t *mg, const pddl_strips_t *strips,
     borISetFree(&predel);
 
     BOR_FREE(fact_to_node);
+}
+
+static int tgSyncProductPreIsMutex(const pddl_strips_t *strips,
+                                   int op,
+                                   const pddl_g_t *tg2,
+                                   int n2,
+                                   bor_iset_t *set)
+{
+    borISetUnion2(set, &strips->op.op[op]->pre, &tg2->node[n2].label);
+    if (pddlMutexesIsMutex(&strips->mutex, set))
+        return 1;
+    return 0;
+}
+
+static int tgSyncProductEffIsMutex(const pddl_strips_t *strips,
+                                   int op,
+                                   const pddl_g_t *tg2,
+                                   int n2,
+                                   bor_iset_t *set)
+{
+    borISetMinus2(set, &strips->op.op[op]->pre, &strips->op.op[op]->del_eff);
+    borISetUnion(set, &strips->op.op[op]->add_eff);
+    borISetUnion(set, &tg2->node[n2].label);
+    if (pddlMutexesIsMutex(&strips->mutex, set))
+        return 1;
+    return 0;
+}
+
+static void tgSyncProductNode(pddl_g_t *prod,
+                              const pddl_g_t *tg1,
+                              const pddl_g_t *tg2,
+                              const pddl_strips_t *strips,
+                              const int *prod_node,
+                              int n1,
+                              int n2,
+                              int node)
+{
+    BOR_ISET(edge_op);
+    BOR_ISET(edge_remain);
+    BOR_ISET(facts);
+    BOR_ISET(n1_ops);
+    int edge1, edge2, pedge, pnode, op;
+
+    BOR_ISET_FOR_EACH(&tg1->node[n1].edge, edge1){
+        const pddl_g_edge_t *e1 = tg1->edge + edge1;
+        borISetSet(&edge_remain, &e1->label);
+        borISetUnion(&n1_ops, &e1->label);
+        BOR_ISET_FOR_EACH(&tg2->node[n2].edge, edge2){
+            const pddl_g_edge_t *e2 = tg2->edge + edge2;
+
+            // Consider only operators that emanating from both n1 in tg1
+            // and from n2 in tg2. Store those operators in edge_op.
+            borISetIntersect2(&edge_op, &e1->label, &e2->label);
+            if (borISetSize(&edge_op) == 0)
+                continue;
+
+            // Update the set of remaining operators
+            borISetMinus(&edge_remain, &edge_op);
+
+            // Determine whether the target node in prod is not mutex
+            pnode = prod_node[e1->to * tg2->node_size + e2->to];
+            if (pnode == -1)
+                continue;
+
+            // Add the actual edge
+            pedge = pddlGGetOrAddEdge(prod, node, pnode);
+            borISetUnion(&prod->edge[pedge].label, &edge_op);
+        }
+
+        // Find out the operators that were not used -- these operators
+        // should go from node (n1+n2) to all nodes in prod constructed
+        // from n1 (n1+x for all x in tg2). But only if:
+        //   1. the precondition of the operator is not mutex with n1+n2, and
+        //   2. the effect of the operator is not mutex with the node from tg2
+        BOR_ISET_FOR_EACH(&edge_remain, op){
+            pnode = prod_node[e1->to * tg2->node_size + n2];
+            if (pnode == -1)
+                continue;
+
+            // Determine whether the precondition is mutex with n2
+            if (tgSyncProductPreIsMutex(strips, op, tg2, n2, &facts))
+                continue;
+
+            // Add edge only if the effect is not mutex
+            if (!tgSyncProductEffIsMutex(strips, op, tg2, n2, &facts))
+                pddlGAddOrUpdateEdge(prod, node, pnode, op);
+        }
+    }
+
+    // Add edges corresponding to the operators incidenting with n2 but not
+    // with n1.
+    BOR_ISET_FOR_EACH(&tg2->node[n2].edge, edge2){
+        const pddl_g_edge_t *e2 = tg2->edge + edge2;
+        borISetMinus2(&edge_remain, &e2->label, &n1_ops);
+
+        BOR_ISET_FOR_EACH(&edge_remain, op){
+            pnode = prod_node[n1 * tg2->node_size + e2->to];
+            if (pnode == -1)
+                continue;
+
+            // Determine whether the precondition is mutex with n2
+            if (tgSyncProductPreIsMutex(strips, op, tg1, n1, &facts))
+                continue;
+
+            // Add edge only if the effect is not mutex
+            if (!tgSyncProductEffIsMutex(strips, op, tg1, n1, &facts))
+                pddlGAddOrUpdateEdge(prod, node, pnode, op);
+        }
+    }
+
+    borISetFree(&edge_op);
+    borISetFree(&edge_remain);
+    borISetFree(&facts);
+    borISetFree(&n1_ops);
+}
+
+void pddlMGroupTGSyncProduct(pddl_g_t *prod,
+                             const pddl_g_t *tg1, const pddl_g_t *tg2,
+                             const pddl_strips_t *strips)
+{
+    BOR_ISET(facts);
+    int node, *prod_node;
+
+    pddlGInit(prod);
+    prod_node = BOR_ALLOC_ARR(int, tg1->node_size * tg2->node_size);
+    for (int i = 0; i < tg1->node_size * tg2->node_size; ++i)
+        prod_node[i] = -1;
+
+    // Create nodes in the product transition graph
+    for (int n1 = 0; n1 < tg1->node_size; ++n1){
+        for (int n2 = 0; n2 < tg2->node_size; ++n2){
+            borISetUnion2(&facts, &tg1->node[n1].label,
+                                  &tg2->node[n2].label);
+            if (pddlMutexesIsMutex(&strips->mutex, &facts))
+                continue;
+            node = pddlGAddNode(prod);
+            borISetUnion(&prod->node[node].label, &tg1->node[n1].label);
+            borISetUnion(&prod->node[node].label, &tg2->node[n2].label);
+            prod_node[n1 * tg2->node_size + n2] = node;
+        }
+    }
+
+    // Create edges
+    for (int n1 = 0; n1 < tg1->node_size; ++n1){
+        for (int n2 = 0; n2 < tg2->node_size; ++n2){
+            node = prod_node[n1 * tg2->node_size + n2];
+            if (node == -1)
+                continue;
+            tgSyncProductNode(prod, tg1, tg2, strips, prod_node, n1, n2, node);
+        }
+    }
+
+    BOR_FREE(prod_node);
+    borISetFree(&facts);
 }
 
 void pddlMGroupsInit(pddl_mgroups_t *mgs)
