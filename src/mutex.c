@@ -20,6 +20,55 @@
 #include <boruvka/sort.h>
 #include <pddl/mutex.h>
 
+_bor_inline void resizeMutex2Map(pddl_mutexes_t *ms, int maxf)
+{
+    if (maxf < ms->mutex2_map_fact_size)
+        return;
+
+    char *old_map = ms->mutex2_map;
+    int old_fact_size = ms->mutex2_map_fact_size;
+    if (ms->mutex2_map_fact_size == 0)
+        ms->mutex2_map_fact_size = 128;
+    while (maxf >= ms->mutex2_map_fact_size)
+        ms->mutex2_map_fact_size *= 2;
+    ms->mutex2_map = BOR_CALLOC_ARR(char, ms->mutex2_map_fact_size
+                                            * ms->mutex2_map_fact_size);
+    if (old_map != NULL){
+        for (int i = 0; i < old_fact_size; ++i){
+            for (int j = i; j < old_fact_size; ++j){
+                ms->mutex2_map[i * ms->mutex2_map_fact_size + j]
+                    = ms->mutex2_map[j * ms->mutex2_map_fact_size + i]
+                    = old_map[i * old_fact_size + j];
+            }
+        }
+        BOR_FREE(old_map);
+    }
+}
+
+static void updateMutex2Map_1(pddl_mutexes_t *ms, int fact)
+{
+    resizeMutex2Map(ms, fact);
+    ms->mutex2_map[fact * ms->mutex2_map_fact_size + fact] = 1;
+
+}
+
+static void updateMutex2Map_2(pddl_mutexes_t *ms, int f1, int f2)
+{
+    resizeMutex2Map(ms, BOR_MAX(f1, f2));
+    ms->mutex2_map[f1 * ms->mutex2_map_fact_size + f2] = 1;
+    ms->mutex2_map[f2 * ms->mutex2_map_fact_size + f1] = 1;
+
+}
+
+static void updateMutex2Map(pddl_mutexes_t *ms, const bor_iset_t *m)
+{
+    if (borISetSize(m) == 1){
+        updateMutex2Map_1(ms, borISetGet(m, 0));
+    }else if (borISetSize(m) == 2){
+        updateMutex2Map_2(ms, borISetGet(m, 0), borISetGet(m, 1));
+    }
+}
+
 void pddlMutexInit(pddl_mutex_t *m)
 {
     borISetInit(&m->fact);
@@ -42,6 +91,8 @@ void pddlMutexesFree(pddl_mutexes_t *ms)
         pddlMutexFree(m);
     if (ms->m != NULL)
         BOR_FREE(ms->m);
+    if (ms->mutex2_map)
+        BOR_FREE(ms->mutex2_map);
 }
 
 pddl_mutexes_t *pddlMutexesNew(void)
@@ -61,11 +112,41 @@ void pddlMutexesDel(pddl_mutexes_t *ms)
 
 int pddlMutexesIsMutex(const pddl_mutexes_t *ms, const bor_iset_t *facts)
 {
-    for (int i = 0; i < ms->size; ++i){
-        const pddl_mutex_t *mutex = ms->m + i;
-        if (borISetIsSubset(&mutex->fact, facts))
-            return 1;
+    if (ms->mutex2_map != NULL){
+        int size = borISetSize(facts);
+
+        for (int i = 0; i < size; ++i){
+            int f1 = borISetGet(facts, i);
+            if (f1 >= ms->mutex2_map_fact_size)
+                continue;
+
+            for (int j = i; j < size; ++j){
+                int f2 = borISetGet(facts, j);
+                if (f2 >= ms->mutex2_map_fact_size)
+                    continue;
+
+                if (ms->mutex2_map[f1 * ms->mutex2_map_fact_size + f2])
+                    return 1;
+            }
+        }
+
+        if (ms->has_3){
+            for (int i = 0; i < ms->size; ++i){
+                const pddl_mutex_t *mutex = ms->m + i;
+                if (borISetSize(&mutex->fact) >= 3
+                        && borISetIsSubset(&mutex->fact, facts))
+                    return 1;
+            }
+        }
+
+    }else{
+        for (int i = 0; i < ms->size; ++i){
+            const pddl_mutex_t *mutex = ms->m + i;
+            if (borISetIsSubset(&mutex->fact, facts))
+                return 1;
+        }
     }
+
     return 0;
 }
 
@@ -80,6 +161,11 @@ pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
 
     pddlMutexInit(ms->m + ms->size);
     borISetUnion(&ms->m[ms->size].fact, m);
+    if (borISetSize(&ms->m[ms->size].fact) >= 3){
+        ms->has_3 = 1;
+    }else{
+        updateMutex2Map(ms, m);
+    }
     ++ms->size;
 
     return ms->m + ms->size - 1;

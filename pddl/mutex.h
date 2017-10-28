@@ -46,6 +46,11 @@ struct pddl_mutexes {
     pddl_mutex_t *m;
     int size;
     int alloc;
+
+    int has_3; /*!< True if there are mutexes of size 3 and more */
+    char *mutex2_map; /*!< Mapping from (fact x fact) to bool for mutexes
+                           of size 2 and 1 */
+    int mutex2_map_fact_size;
 };
 typedef struct pddl_mutexes pddl_mutexes_t;
 

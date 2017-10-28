@@ -54,6 +54,12 @@ struct pddl_g {
 };
 typedef struct pddl_g pddl_g_t;
 
+#define PDDL_G_FOR_EACH_NODE(G, N) \
+    for (int __i = 0; __i < (G)->node_size && ((N) = (G)->node + __i); ++__i)
+#define PDDL_G_FOR_EACH_EDGE(G, N, E) \
+    for (int __i = 0; __i < borISetSize(&(N)->edge) \
+                && ((E) = (G)->edge + borISetGet(&(N)->edge, __i)); ++__i)
+
 /**
  * Initializes transition graph.
  */
