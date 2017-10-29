@@ -17,6 +17,8 @@
  * See the License for more information.
  */
 
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -199,6 +201,8 @@ void _pddlWarn(const char *filename, int line, const char *func,
 void _pddlInfo(const char *filename, int line, const char *func,
                const char *format, ...)
 {
+    struct rusage usg;
+    long peak_mem = 0L;
     va_list ap;
 
     if (err.print_info == 0)
@@ -210,10 +214,12 @@ void _pddlInfo(const char *filename, int line, const char *func,
         err.info_timer_init = 1;
     }
 
+    if (getrusage(RUSAGE_SELF, &usg) == 0)
+        peak_mem = usg.ru_maxrss / 1024L;
     va_start(ap, format);
     borTimerStop(&err.info_timer);
-    fprintf(err.info_out, "[%.3fs] ",
-            borTimerElapsedInSF(&err.info_timer));
+    fprintf(err.info_out, "[%.3fs %ldMB] ",
+            borTimerElapsedInSF(&err.info_timer), peak_mem);
     vfprintf(err.info_out, format, ap);
     va_end(ap);
     fprintf(err.info_out, "\n");
