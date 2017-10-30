@@ -20,6 +20,7 @@
 #include "pddl/strips.h"
 #include "pddl/mgroup.h"
 #include "pddl/mutex.h"
+#include "pddl/mgroup_tg_ldm.h"
 #include "err.h"
 #include "assert.h"
 #include "profile.h"
@@ -355,6 +356,12 @@ int pddlStripsPrune(pddl_strips_t *strips,
         if (cfg->fixpoint && change)
             INFO2("  == Fixpoint not reached, continuing to prune... ==");
     } while (cfg->fixpoint && change && !strips->goal_is_unreachable);
+
+    // TODO
+    pddl_mgroup_tg_ldm_t mtg;
+    pddlMGroupTGLdmInit(&mtg, strips);
+    pddlMGroupTGLdmFree(&mtg);
+    INFO2("MGroup TG LDM");
 
     BOR_FREE(prune_op);
 

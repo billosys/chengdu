@@ -41,6 +41,7 @@ OBJS += profile
 OBJS += lm_cut
 OBJS += landmark
 OBJS += g
+OBJS += mgroup_tg_ldm
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
