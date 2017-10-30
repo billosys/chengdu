@@ -18,9 +18,166 @@
  */
 
 
+#include <limits.h>
 #include <boruvka/alloc.h>
 #include "pddl/mgroup_tg_ldm.h"
 #include "err.h"
+
+struct node {
+    int goal;
+    int init;
+    bor_iset_t in_edge;
+};
+typedef struct node node_t;
+
+struct edge {
+    int cost;
+    int cost_init;
+};
+typedef struct edge edge_t;
+
+struct graph {
+    const pddl_g_t *tg;
+    node_t *node;
+    edge_t *edge;
+};
+typedef struct graph graph_t;
+
+static void graphInit(graph_t *g, const pddl_g_t *tg,
+                      const pddl_strips_t *strips)
+{
+    g->tg = tg;
+    g->node = BOR_CALLOC_ARR(node_t, tg->node_size);
+    g->edge = BOR_CALLOC_ARR(edge_t, tg->edge_size);
+
+    for (int i = 0; i < tg->node_size; ++i){
+        const pddl_g_node_t *n = tg->node + i;
+        int edgei;
+        BOR_ISET_FOR_EACH(&n->edge, edgei){
+            const pddl_g_edge_t *e = tg->edge + edgei;
+            borISetAdd(&g->node[e->to].in_edge, edgei);
+
+            int opi, cost = INT_MAX;
+            BOR_ISET_FOR_EACH(&e->label, opi)
+                cost = BOR_MIN(cost, strips->op.op[opi]->cost);
+            g->edge[edgei].cost_init = cost;
+        }
+    }
+}
+
+static void graphFree(graph_t *g)
+{
+    for (int i = 0; i < g->tg->node_size; ++i){
+        borISetFree(&g->node[i].in_edge);
+    }
+    if (g->node != NULL)
+        BOR_FREE(g->node);
+    if (g->edge != NULL)
+        BOR_FREE(g->edge);
+}
+
+static void graphResetCost(graph_t *g)
+{
+    for (int i = 0; i < g->tg->edge_size; ++i)
+        g->edge[i].cost = g->edge[i].cost_init;
+}
+
+static void graphMarkGoalZoneNode(graph_t *g, int node)
+{
+    int edgei;
+
+    if (g->node[node].goal)
+        return;
+    g->node[node].goal = 1;
+    BOR_ISET_FOR_EACH(&g->node[node].in_edge, edgei){
+        if (g->edge[edgei].cost == 0)
+            graphMarkGoalZoneNode(g, g->tg->edge[edgei].from);
+    }
+
+}
+
+static void graphMarkGoalZone(graph_t *g, const bor_iset_t *goal)
+{
+    int node;
+    for (int i = 0; i < g->tg->node_size; ++i)
+        g->node[i].goal = 0;
+    BOR_ISET_FOR_EACH(goal, node)
+        graphMarkGoalZoneNode(g, node);
+}
+
+static void graphFindCutNode(graph_t *g, int node, bor_iset_t *cut)
+{
+    int edgei;
+
+    if (g->node[node].init)
+        return;
+    g->node[node].init = 1;
+
+    BOR_ISET_FOR_EACH(&g->tg->node[node].edge, edgei){
+        const pddl_g_edge_t *edge = g->tg->edge + edgei;
+        if (g->node[edge->to].goal){
+            borISetAdd(cut, edgei);
+        }else{
+            graphFindCutNode(g, edge->to, cut);
+        }
+    }
+}
+
+static void graphFindCut(graph_t *g, int init_node, bor_iset_t *cut)
+{
+    if (g->node[init_node].goal)
+        return;
+
+    for (int i = 0; i < g->tg->node_size; ++i)
+        g->node[i].init = 0;
+    graphFindCutNode(g, init_node, cut);
+}
+
+static void graphApplyCut(graph_t *g, const bor_iset_t *cut)
+{
+    int cut_cost, edge;
+
+    cut_cost = INT_MAX;
+    BOR_ISET_FOR_EACH(cut, edge)
+        cut_cost = BOR_MIN(cut_cost, g->edge[edge].cost);
+    BOR_ISET_FOR_EACH(cut, edge)
+        g->edge[edge].cost -= cut_cost;
+}
+
+static void graphLdmSeq(graph_t *g,
+                        int init_node,
+                        const bor_iset_t *goal_nodes,
+                        pddl_landmarks_t *ldms,
+                        bor_iarr_t *ldm_seq)
+{
+    BOR_ISET(cut);
+    BOR_ISET(ldm);
+    int edgei;
+
+    graphResetCost(g);
+    do {
+        graphMarkGoalZone(g, goal_nodes);
+        borISetEmpty(&cut);
+        graphFindCut(g, init_node, &cut);
+        if (borISetSize(&cut) > 0){
+            borISetEmpty(&ldm);
+            BOR_ISET_FOR_EACH(&cut, edgei)
+                borISetUnion(&ldm, &g->tg->edge[edgei].label);
+            borIArrPrepend(ldm_seq, pddlLandmarksAdd(ldms, &ldm)->id);
+
+            fprintf(stderr, "Cut:");
+            BOR_ISET_FOR_EACH(&cut, edgei)
+                fprintf(stderr, " %d[%d]", edgei, g->edge[edgei].cost);
+            fprintf(stderr, "\n");
+
+            graphApplyCut(g, &cut);
+        }
+    } while (borISetSize(&cut) > 0);
+
+    borISetFree(&ldm);
+    borISetFree(&cut);
+}
+
 
 static pddl_mgroup_tg_ldm_tg_t *tgNew(void)
 {
@@ -174,6 +331,44 @@ static void createTGs(pddl_mgroup_tg_ldm_t *m,
     pddl_mgroup_tg_ldm_tg_t *tg;
 
     for (int i = 0; i < strips->mgroup.size; ++i){
+        tg = nextTG(m);
+        pddlMGroupTGInit(&tg->tg, strips->mgroup.g + i, strips);
+        pddlGPrintDebug(&tg->tg, stderr);
+        borISetAdd(&tg->mgroup, i);
+        tgFinalize(tg, strips);
+        graph_t ldmg;
+        graphInit(&ldmg, &tg->tg, strips);
+        graphLdmSeq(&ldmg, borISetGet(&tg->init_node, 0),
+                &tg->goal_node, &m->ldm, &tg->core_ldm_seq);
+        graphFree(&ldmg);
+            int f;
+            fprintf(stderr, "InitF:");
+            BOR_ISET_FOR_EACH(&strips->init, f)
+                fprintf(stderr, " %d", f);
+            fprintf(stderr, "\n");
+            fprintf(stderr, "GoalF:");
+            BOR_ISET_FOR_EACH(&strips->goal, f)
+                fprintf(stderr, " %d", f);
+            fprintf(stderr, "\n");
+            fprintf(stderr, "I:");
+            BOR_ISET_FOR_EACH(&tg->init_node, f)
+                fprintf(stderr, " %d", f);
+            fprintf(stderr, "\n");
+            fprintf(stderr, "G:");
+            BOR_ISET_FOR_EACH(&tg->goal_node, f)
+                fprintf(stderr, " %d", f);
+            fprintf(stderr, "\n");
+
+            BOR_IARR_FOR_EACH(&tg->core_ldm_seq, f){
+                int o;
+                fprintf(stderr, "LDM %d:", f);
+                BOR_ISET_FOR_EACH(&m->ldm.ldm[f]->op, o)
+                    fprintf(stderr, " %d[%d]", o, strips->op.op[o]->cost);
+                fprintf(stderr, "\n");
+            }
+    }
+
+    for (int i = 0; i < strips->mgroup.size; ++i){
         for (int j = i + 1; j < strips->mgroup.size; ++j){
             if (!strips->mgroup.g[i].is_goal
                     && !strips->mgroup.g[i].is_goal)
@@ -186,8 +381,14 @@ static void createTGs(pddl_mgroup_tg_ldm_t *m,
             borISetAdd(&tg->mgroup, i);
             borISetAdd(&tg->mgroup, j);
             tgFinalize(tg, strips);
-            ldmSeq(&tg->tg, &tg->init_node, &tg->goal_node, 
-                   &tg->core_ldm_seq, &m->ldm);
+            //ldmSeq(&tg->tg, &tg->init_node, &tg->goal_node, 
+            //       &tg->core_ldm_seq, &m->ldm);
+
+            graph_t ldmg;
+            graphInit(&ldmg, &tg->tg, strips);
+            graphLdmSeq(&ldmg, borISetGet(&tg->init_node, 0),
+                        &tg->goal_node, &m->ldm, &tg->core_ldm_seq);
+            graphFree(&ldmg);
 
             int f;
             fprintf(stderr, "InitF:");
