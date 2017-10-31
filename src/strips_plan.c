@@ -45,8 +45,6 @@ static int findOp(const pddl_strips_t *strips, const char *op_name)
     ((D) == ' ' || (D) == '\t' || (D) == '\n')
 #define SKIP_WS(DATA, IT, SIZE) \
     for (; (IT) < (SIZE) && IS_WS((DATA)[(IT)]); ++(IT))
-#define SKIP_LINE(DATA, IT, SIZE) \
-    for (; (IT) < (SIZE) && (DATA)[(IT)] != '\n'; ++(IT))
 
 int pddlStripsPlanLoadFromFile(pddl_strips_plan_t *plan,
                                 const pddl_strips_t *strips,
