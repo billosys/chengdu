@@ -38,7 +38,8 @@ typedef struct pddl_g_edge pddl_g_edge_t;
 
 struct pddl_g_node {
     bor_iset_t label;
-    bor_iset_t edge;
+    bor_iset_t out;
+    bor_iset_t in;
     int color;
 };
 typedef struct pddl_g_node pddl_g_node_t;

@@ -33,7 +33,8 @@ void pddlGFree(pddl_g_t *g)
 {
     for (int i = 0; i < g->node_size; ++i){
         borISetFree(&g->node[i].label);
-        borISetFree(&g->node[i].edge);
+        borISetFree(&g->node[i].out);
+        borISetFree(&g->node[i].in);
     }
     for (int i = 0; i < g->edge_size; ++i)
         borISetFree(&g->edge[i].label);
@@ -77,7 +78,8 @@ int pddlGAddEdge(pddl_g_t *g, int from_node, int to_node)
     edge->to = to_node;
     borISetInit(&edge->label);
 
-    borISetAdd(&g->node[from_node].edge, g->edge_size - 1);
+    borISetAdd(&g->node[from_node].out, g->edge_size - 1);
+    borISetAdd(&g->node[to_node].in, g->edge_size - 1);
 
     return g->edge_size - 1;
 }
@@ -87,7 +89,7 @@ int pddlGGetEdge(const pddl_g_t *g, int from_node, int to_node)
     const pddl_g_node_t *node = g->node + from_node;
     int edge_id;
 
-    BOR_ISET_FOR_EACH(&node->edge, edge_id){
+    BOR_ISET_FOR_EACH(&node->out, edge_id){
         if (g->edge[edge_id].to == to_node)
             return edge_id;
     }
@@ -193,7 +195,7 @@ static void sccTarjanStrongconnect(pddl_g_t *scc, int *scc_node_map,
     dfs->stack[dfs->stack_size++] = nid;
     dfs->in_stack[nid] = 1;
 
-    BOR_ISET_FOR_EACH(&node->edge, edge_id){
+    BOR_ISET_FOR_EACH(&node->out, edge_id){
         w = g->edge[edge_id].to;
         if (dfs->index[w] == -1){
             sccTarjanStrongconnect(scc, scc_node_map, g, dfs, w);
@@ -269,7 +271,7 @@ static void dfs(const pddl_g_t *g, int from, const bor_iset_t *ignore,
     const pddl_g_node_t *node = g->node + from;
 
     visited[from] = 1;
-    BOR_ISET_FOR_EACH(&node->edge, edge_id){
+    BOR_ISET_FOR_EACH(&node->out, edge_id){
         const pddl_g_edge_t *edge = g->edge + edge_id;
         if (ignore != NULL && borISetIn(edge->to, ignore))
             continue;
@@ -301,7 +303,7 @@ void pddlGPrintDebug(const pddl_g_t *g, FILE *fout)
         BOR_ISET_FOR_EACH(&g->node[i].label, id)
             fprintf(fout, " %d", id);
         fprintf(fout, ":-");
-        BOR_ISET_FOR_EACH(&g->node[i].edge, edge){
+        BOR_ISET_FOR_EACH(&g->node[i].out, edge){
             fprintf(fout, " N%d", g->edge[edge].to);
             if (g->edge[edge].color != 0)
                 fprintf(fout, "+T%d", g->edge[edge].color);
