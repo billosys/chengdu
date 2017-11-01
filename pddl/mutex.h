@@ -78,6 +78,14 @@ void pddlMutexesDel(pddl_mutexes_t *ms);
 int pddlMutexesIsMutex(const pddl_mutexes_t *ms, const bor_iset_t *facts);
 
 /**
+ * Returns true if f1 \cup f2 is mutex while assuming f1 nor f2 are
+ * mutexes.
+ */
+int pddlMutexesIsMutex2(const pddl_mutexes_t *ms,
+                        const bor_iset_t *f1,
+                        const bor_iset_t *f2);
+
+/**
  * Adds a new mutex consisting of the given facts.
  */
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m);

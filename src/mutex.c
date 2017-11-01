@@ -150,6 +150,30 @@ int pddlMutexesIsMutex(const pddl_mutexes_t *ms, const bor_iset_t *facts)
     return 0;
 }
 
+int pddlMutexesIsMutex2(const pddl_mutexes_t *ms,
+                        const bor_iset_t *f1,
+                        const bor_iset_t *f2)
+{
+    if (ms->mutex2_map == NULL || ms->has_3){
+        BOR_ISET(fs);
+        borISetUnion2(&fs, f1, f2);
+        int ret = pddlMutexesIsMutex(ms, &fs);
+        borISetFree(&fs);
+        return ret;
+
+    }else{
+        int fact1, fact2;
+
+        BOR_ISET_FOR_EACH(f1, fact1){
+            BOR_ISET_FOR_EACH(f2, fact2){
+                if (ms->mutex2_map[fact1 * ms->mutex2_map_fact_size + fact2])
+                    return 1;
+            }
+        }
+        return 0;
+    }
+}
+
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
 {
     if (ms->size >= ms->alloc){
