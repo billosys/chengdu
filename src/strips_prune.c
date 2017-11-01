@@ -111,10 +111,11 @@ static int pruneWithMGroups(pddl_strips_t *strips,
 static int pruneFAMGroup(pddl_strips_t *strips,
                          const pddl_strips_prune_config_t *cfg,
                          int *prune_op,
-                         int *change)
+                         int *change_out)
 {
     pddl_mgroups_t *mgroup = &strips->mgroup;
     int ret;
+    int change = 0;
 
     // Reuse array for operators
     bzero(prune_op, sizeof(int) * strips->op.op_size);
@@ -122,8 +123,14 @@ static int pruneFAMGroup(pddl_strips_t *strips,
     pddlMGroupsFree(mgroup);
     pddlMGroupsInit(mgroup);
     if ((ret = pddlMGroupsFA(strips, mgroup)) == 0)
-        *change |= pruneWithMGroups(strips, mgroup, cfg, prune_op);
+        change |= pruneWithMGroups(strips, mgroup, cfg, prune_op);
 
+    // TODO: Count dead-end operators
+    INFO("O: %d, F: %d :: fam-groups (mgroups: %d, change: %d).",
+         strips->op.op_size, strips->fact.fact_size,
+         strips->mgroup.size, change);
+
+    *change_out |= change;
     return ret;
 }
 
@@ -147,10 +154,11 @@ static int pruneOpArr(pddl_strips_t *strips,
 static int pruneHMutex(pddl_strips_t *strips,
                        const pddl_strips_prune_config_t *cfg,
                        int *prune_op,
-                       int *change)
+                       int *change_out)
 {
     pddl_mutexes_t *mutex = &strips->mutex;
     int ret;
+    int change = 0;
 
     // Reuse array for operators
     bzero(prune_op, sizeof(int) * strips->op.op_size);
@@ -158,8 +166,13 @@ static int pruneHMutex(pddl_strips_t *strips,
     pddlMutexesFree(mutex);
     pddlMutexesInit(mutex);
     if ((ret = pddlMutexesHm(cfg->h_mutex, strips, mutex, prune_op)) == 0)
-        *change |= pruneOpArr(strips, prune_op);
+        change |= pruneOpArr(strips, prune_op);
 
+    INFO("O: %d, F: %d :: h^%d mutexes (mutexes: %d, change: %d).",
+         strips->op.op_size, strips->fact.fact_size, cfg->h_mutex,
+         strips->mutex.size, change);
+
+    *change_out |= change;
     return ret;
 }
 
@@ -263,10 +276,11 @@ static int disambiguatePre(pddl_strips_op_t *op,
 
 static int disambiguate(pddl_strips_t *strips,
                         const pddl_strips_prune_config_t *cfg,
-                        int *change)
+                        int *change_out)
 {
     bor_iset_t *mutex;
     int ret;
+    int change = 0;
 
     if (strips->mgroup.size == 0)
         return 0;
@@ -274,18 +288,22 @@ static int disambiguate(pddl_strips_t *strips,
     mutex = mutexTableNew(strips);
     for (int oi = 0; oi < strips->op.op_size; ++oi){
         pddl_strips_op_t *op = strips->op.op[oi];
-        *change |= disambiguatePre(op, mutex, &strips->mgroup);
+        change |= disambiguatePre(op, mutex, &strips->mgroup);
     }
 
     ret = disambiguateSet(&strips->goal, mutex, &strips->mgroup);
     if (ret < 0){
         strips->goal_is_unreachable = 1;
-        *change = 1;
+        change = 1;
     }else{
-        *change |= ret;
+        change |= ret;
     }
 
+    INFO("O: %d, F: %d :: Disambiguation done (change: %d).",
+         strips->op.op_size, strips->fact.fact_size, change);
+
     mutexTableDel(mutex, strips);
+    *change_out |= change;
     return 0;
 }
 
@@ -298,25 +316,23 @@ int pddlStripsPrune(pddl_strips_t *strips,
     if (strips->goal_is_unreachable)
         return 0;
 
-    INFO("Start pruning of the STRIPS problem (num-ops: %d).",
-         strips->op.op_size);
+    INFO("O: %d, F: %d :: Start pruning of the STRIPS problem.",
+         strips->op.op_size, strips->fact.fact_size);
     prune_op = BOR_ALLOC_ARR(int, strips->op.op_size);
 
     do {
-        change = 0;
+        do {
+            change = 0;
+            if (cfg->irrelevance || cfg->static_facts)
+                change |= _pddlStripsPruneIrrelevant(strips, cfg);
 
-        if (cfg->irrelevance || cfg->static_facts)
-            change |= _pddlStripsPruneIrrelevant(strips, cfg);
-
-        if (cfg->h_mutex > 0){
-            if (pruneHMutex(strips, cfg, prune_op, &change) != 0){
-                BOR_FREE(prune_op);
-                TRACE_RET(-1);
+            if (cfg->h_mutex > 0){
+                if (pruneHMutex(strips, cfg, prune_op, &change) != 0){
+                    BOR_FREE(prune_op);
+                    TRACE_RET(-1);
+                }
             }
-            INFO("Pruning using h^%d mutexes done"
-                 " (num-ops: %d, num-mutexes: %d).",
-                 cfg->h_mutex, strips->op.op_size, strips->mutex.size);
-        }
+        } while (change);
 
         // TODO: Disable this for now
 #if 0
@@ -340,9 +356,6 @@ int pddlStripsPrune(pddl_strips_t *strips,
                 BOR_FREE(prune_op);
                 TRACE_RET(-1);
             }
-            INFO("Pruning using fam-groups done"
-                 " (num-ops: %d, num-mgroups: %d).",
-                 strips->op.op_size, strips->mgroup.size);
         }
 
         if (cfg->disambiguation && cfg->fa_mgroup){
@@ -350,18 +363,10 @@ int pddlStripsPrune(pddl_strips_t *strips,
                 BOR_FREE(prune_op);
                 TRACE_RET(-1);
             }
-            INFO("Disambiguation of operators done (num-ops: %d).",
-                 strips->op.op_size);
         }
         if (cfg->fixpoint && change)
             INFO2("  == Fixpoint not reached, continuing to prune... ==");
     } while (cfg->fixpoint && change && !strips->goal_is_unreachable);
-
-    // TODO
-    pddl_mgroup_tg_ldm_t mtg;
-    pddlMGroupTGLdmInit(&mtg, strips);
-    pddlMGroupTGLdmFree(&mtg);
-    INFO2("MGroup TG LDM");
 
     BOR_FREE(prune_op);
 

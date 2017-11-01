@@ -20,6 +20,7 @@
 #include <boruvka/alloc.h>
 
 #include "pddl/strips.h"
+#include "err.h"
 #include "assert.h"
 
 struct fact_info {
@@ -280,7 +281,7 @@ int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
                                const pddl_strips_prune_config_t *cfg)
 {
     prob_info_t pi;
-    int ret;
+    int ret, static_facts = 0;
 
     probInfoInit(&pi, strips);
 
@@ -288,8 +289,11 @@ int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
         backwardIrrelevance(strips, &pi, cfg);
     if (cfg->static_facts){
         for (int fact_id = 0; fact_id < pi.fact_size; ++fact_id)
-            factStatic(strips, &pi, fact_id);
+            static_facts += factStatic(strips, &pi, fact_id);
     }
+
+    INFO("O: %d, F: %d :: static facts: %d.",
+         strips->op.op_size, strips->fact.fact_size, static_facts);
 
     if (pi.op_irrelevant_size > 0)
         pddlStripsOpsDelOps(&strips->op, pi.op_irrelevant);
@@ -304,6 +308,12 @@ int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
     }
 
     ret = pi.fact_irrelevant_size + pi.op_irrelevant_size;
+
+    INFO("O: %d, F: %d :: irrelevance analysis"
+         " (irrelevant facts: %d, ops: %d).",
+         strips->op.op_size, strips->fact.fact_size,
+         pi.fact_irrelevant_size, pi.op_irrelevant_size);
+
     probInfoFree(&pi);
     return ret;
 }
