@@ -57,6 +57,7 @@ static pddl_landmark_t *pddlLandmarkNew(const bor_iset_t *op)
     borISetUnion(&ldm->op, op);
     borListInit(&ldm->htable);
     ldm->hash = ldmHash(ldm);
+    ldm->cost = 0;
     return ldm;
 }
     

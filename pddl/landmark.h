@@ -30,6 +30,7 @@ extern "C" {
 
 struct pddl_landmark {
     bor_iset_t op; /*!< Set of operators */
+    int cost;
 
     int id;
     bor_list_t htable;

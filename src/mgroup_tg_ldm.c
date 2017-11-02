@@ -19,9 +19,11 @@
 
 
 #include <limits.h>
+#include <boruvka/lp.h>
 #include <boruvka/alloc.h>
 #include "pddl/mgroup_tg_ldm.h"
 #include "err.h"
+#include "assert.h"
 
 struct node {
     int goal;
@@ -53,7 +55,7 @@ static void graphInit(graph_t *g, const pddl_g_t *tg,
     for (int i = 0; i < tg->node_size; ++i){
         const pddl_g_node_t *n = tg->node + i;
         int edgei;
-        BOR_ISET_FOR_EACH(&n->edge, edgei){
+        BOR_ISET_FOR_EACH(&n->out, edgei){
             const pddl_g_edge_t *e = tg->edge + edgei;
             borISetAdd(&g->node[e->to].in_edge, edgei);
 
@@ -113,7 +115,7 @@ static void graphFindCutNode(graph_t *g, int node, bor_iset_t *cut)
         return;
     g->node[node].init = 1;
 
-    BOR_ISET_FOR_EACH(&g->tg->node[node].edge, edgei){
+    BOR_ISET_FOR_EACH(&g->tg->node[node].out, edgei){
         const pddl_g_edge_t *edge = g->tg->edge + edgei;
         if (g->node[edge->to].goal){
             borISetAdd(cut, edgei);
@@ -133,13 +135,19 @@ static void graphFindCut(graph_t *g, int init_node, bor_iset_t *cut)
     graphFindCutNode(g, init_node, cut);
 }
 
-static void graphApplyCut(graph_t *g, const bor_iset_t *cut)
+static int graphCutCost(graph_t *g, const bor_iset_t *cut)
 {
     int cut_cost, edge;
 
     cut_cost = INT_MAX;
     BOR_ISET_FOR_EACH(cut, edge)
         cut_cost = BOR_MIN(cut_cost, g->edge[edge].cost);
+    return cut_cost;
+}
+
+static void graphApplyCut(graph_t *g, const bor_iset_t *cut, int cut_cost)
+{
+    int edge;
     BOR_ISET_FOR_EACH(cut, edge)
         g->edge[edge].cost -= cut_cost;
 }
@@ -152,7 +160,8 @@ static void graphLdmSeq(graph_t *g,
 {
     BOR_ISET(cut);
     BOR_ISET(ldm);
-    int edgei;
+    int edgei, cost;
+    pddl_landmark_t *lldm;
 
     graphResetCost(g);
     do {
@@ -163,14 +172,17 @@ static void graphLdmSeq(graph_t *g,
             borISetEmpty(&ldm);
             BOR_ISET_FOR_EACH(&cut, edgei)
                 borISetUnion(&ldm, &g->tg->edge[edgei].label);
-            borIArrPrepend(ldm_seq, pddlLandmarksAdd(ldms, &ldm)->id);
+            cost = graphCutCost(g, &cut);
+            lldm = pddlLandmarksAdd(ldms, &ldm);
+            lldm->cost = BOR_MAX(lldm->cost, cost);
+            borIArrPrepend(ldm_seq, lldm->id);
 
             fprintf(stderr, "Cut:");
             BOR_ISET_FOR_EACH(&cut, edgei)
                 fprintf(stderr, " %d[%d]", edgei, g->edge[edgei].cost);
             fprintf(stderr, "\n");
 
-            graphApplyCut(g, &cut);
+            graphApplyCut(g, &cut, cost);
         }
     } while (borISetSize(&cut) > 0);
 
@@ -254,7 +266,7 @@ static void nextLdm(const pddl_g_t *tg,
             continue;
         if (borISetIn(i, goal))
             continue;
-        BOR_ISET_FOR_EACH(&tg->node[i].edge, edge){
+        BOR_ISET_FOR_EACH(&tg->node[i].out, edge){
             const pddl_g_edge_t *e = tg->edge + edge;
             if (borISetIn(e->to, goal)){
                 borISetUnion(ldm, &e->label);
@@ -317,6 +329,130 @@ static void ldmSeq(const pddl_g_t *tg,
     BOR_FREE(visited);
 }
 
+static void setCover(pddl_mgroup_tg_ldm_t *m,
+                     const pddl_strips_t *strips)
+{
+    BOR_ISET(U);
+    bor_lp_t *lp;
+    unsigned lp_flags;
+    int rows = 0;
+    double rhs;
+    char sense;
+
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        const pddl_landmark_t *ldm = m->ldm.ldm[i];
+        borISetUnion(&U, &ldm->op);
+    }
+
+    lp_flags  = BOR_LP_DEFAULT;
+    lp_flags |= BOR_LP_NUM_THREADS(1); // TODO: Parametrize
+    lp_flags |= BOR_LP_MIN;
+    lp = borLPNew(0, m->ldm.ldm_size, lp_flags);
+
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        borLPSetObj(lp, i, 1.);
+        borLPSetVarBinary(lp, i);
+    }
+
+    int fact;
+    BOR_ISET_FOR_EACH(&U, fact){
+        rhs = 1;
+        sense = 'G';
+        borLPAddRows(lp, 1, &rhs, &sense);
+        for (int i = 0; i < m->ldm.ldm_size; ++i){
+            const pddl_landmark_t *ldm = m->ldm.ldm[i];
+            if (borISetIn(fact, &ldm->op))
+                borLPSetCoef(lp, rows, i, 1.);
+
+        }
+        ++rows;
+    }
+    
+    double val;
+    double *obj = BOR_ALLOC_ARR(double, m->ldm.ldm_size);
+    ASSERT(borLPSolve(lp, &val, obj) == 0);
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        const pddl_landmark_t *ldm = m->ldm.ldm[i];
+        if (obj[i] > 0.5){
+            fprintf(stderr, "SC %d %d\n", i, ldm->cost);
+        }
+    }
+    fprintf(stderr, "SS: %f\n", val);
+
+    BOR_FREE(obj);
+    borLPDel(lp);
+    borISetFree(&U);
+}
+
+static void hittingSet(pddl_mgroup_tg_ldm_t *m, const pddl_strips_t *strips)
+{
+    BOR_ISET(ops);
+    int *U = BOR_CALLOC_ARR(int, strips->op.op_size);
+    bor_lp_t *lp;
+    unsigned lp_flags;
+    int rows = 0;
+    double rhs;
+    char sense;
+    int op;
+
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        const pddl_landmark_t *ldm = m->ldm.ldm[i];
+        borISetUnion(&ops, &ldm->op);
+    }
+    int idx = 0;
+    BOR_ISET_FOR_EACH(&ops, op)
+        U[op] = idx++;
+
+    lp_flags  = BOR_LP_DEFAULT;
+    lp_flags |= BOR_LP_NUM_THREADS(1); // TODO: Parametrize
+    lp_flags |= BOR_LP_MIN;
+    lp = borLPNew(0, idx, lp_flags);
+
+    BOR_ISET_FOR_EACH(&ops, op){
+        borLPSetObj(lp, U[op], strips->op.op[op]->cost);
+        borLPSetVarBinary(lp, U[op]);
+    }
+
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        const pddl_landmark_t *ldm = m->ldm.ldm[i];
+        rhs = 1.;
+        sense = 'G';
+        borLPAddRows(lp, 1, &rhs, &sense);
+        BOR_ISET_FOR_EACH(&ldm->op, op){
+            borLPSetCoef(lp, rows, U[op], 1.);
+        }
+
+        ++rows;
+    }
+    
+    double val;
+    double *obj = BOR_ALLOC_ARR(double, borISetSize(&ops));
+    ASSERT(borLPSolve(lp, &val, obj) == 0);
+    int cost = 0;
+    for (int i = 0; i < borISetSize(&ops); ++i){
+        if (obj[i] > .5){
+            cost += strips->op.op[borISetGet(&ops, i)]->cost;
+            fprintf(stderr, "%d:%d: %s\n",
+                    borISetGet(&ops, i),
+                    strips->op.op[borISetGet(&ops, i)]->cost,
+                    strips->op.op[borISetGet(&ops, i)]->name);
+        }
+    }
+    /*
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        const pddl_landmark_t *ldm = m->ldm.ldm[i];
+        if (obj[i] > 0.5){
+            fprintf(stderr, "SC %d %d\n", i, ldm->cost);
+        }
+    }
+    */
+    fprintf(stderr, "SS: %f, %d\n", val, cost);
+
+    BOR_FREE(obj);
+    borLPDel(lp);
+    BOR_FREE(U);
+}
+
 static void createMGroupTGs(pddl_mgroup_tg_ldm_t *m,
                             const pddl_strips_t *strips)
 {
@@ -371,12 +507,16 @@ static void createTGs(pddl_mgroup_tg_ldm_t *m,
     for (int i = 0; i < strips->mgroup.size; ++i){
         for (int j = i + 1; j < strips->mgroup.size; ++j){
             if (!strips->mgroup.g[i].is_goal
-                    && !strips->mgroup.g[i].is_goal)
+                    && !strips->mgroup.g[j].is_goal)
                 continue;
+            //if (borISetIsDisjunct(&strips->mgroup.g[i].fact,
+            //                      &strips->mgroup.g[j].fact))
+            //    continue;
             fprintf(stderr, "=====\n");
             tg = nextTG(m);
             pddlMGroupTGSyncProduct(&tg->tg, &m->mgroup_tg[i],
                                     &m->mgroup_tg[j], strips);
+            fprintf(stderr, "SIZE: %d\n", tg->tg.node_size);
             pddlGPrintDebug(&tg->tg, stderr);
             borISetAdd(&tg->mgroup, i);
             borISetAdd(&tg->mgroup, j);
@@ -388,6 +528,17 @@ static void createTGs(pddl_mgroup_tg_ldm_t *m,
             graphInit(&ldmg, &tg->tg, strips);
             graphLdmSeq(&ldmg, borISetGet(&tg->init_node, 0),
                         &tg->goal_node, &m->ldm, &tg->core_ldm_seq);
+            /*
+            BOR_ISET(g);
+            int gn;
+            BOR_ISET_FOR_EACH(&tg->goal_node, gn){
+                borISetEmpty(&g);
+                borISetAdd(&g, gn);
+                graphLdmSeq(&ldmg, borISetGet(&tg->init_node, 0),
+                            &g, &m->ldm, &tg->core_ldm_seq);
+            }
+            borISetFree(&g);
+            */
             graphFree(&ldmg);
 
             int f;
@@ -415,6 +566,91 @@ static void createTGs(pddl_mgroup_tg_ldm_t *m,
                     fprintf(stderr, " %d[%d]", o, strips->op.op[o]->cost);
                 fprintf(stderr, "\n");
             }
+        }
+    }
+
+    int *use_ldm = BOR_CALLOC_ARR(int, m->ldm.ldm_size);
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        const pddl_landmark_t *ldm = m->ldm.ldm[i];
+        for (int j = i + 1; j < m->ldm.ldm_size; ++j){
+            const pddl_landmark_t *ldm2 = m->ldm.ldm[j];
+            if (borISetIsSubset(&ldm->op, &ldm2->op)){
+                fprintf(stderr, "RM %d\n", ldm2->id);
+                use_ldm[ldm2->id] = 1;
+            }else if (borISetIsSubset(&ldm2->op, &ldm->op)){
+                fprintf(stderr, "RM %d\n", ldm->id);
+                use_ldm[ldm->id] = 1;
+            }
+        }
+    }
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        if (use_ldm[i] != 0)
+            continue;
+        fprintf(stderr, "Keep %d\n", i);
+        const pddl_landmark_t *ldm = m->ldm.ldm[i];
+        fprintf(stderr, "    %d ::", ldm->cost);
+        int op;
+        BOR_ISET_FOR_EACH(&ldm->op, op)
+            fprintf(stderr, " %d", op);
+        fprintf(stderr, "\n");
+    }
+    BOR_FREE(use_ldm);
+
+
+    BOR_ISET(all_ops);
+    for (int i = 0; i < strips->op.op_size; ++i)
+        borISetAdd(&all_ops, i);
+    BOR_ISET(ops);
+    int cost = 0;
+    for (int i = 0; i < m->ldm.ldm_size; ++i){
+        const pddl_landmark_t *ldm = m->ldm.ldm[i];
+        borISetUnion(&ops, &ldm->op);
+        cost += ldm->cost;
+    }
+    int op;
+    fprintf(stderr, "All cost: %d\n", cost);
+    BOR_ISET_FOR_EACH(&ops, op)
+        fprintf(stderr, " %d", op);
+    fprintf(stderr, "\n");
+    BOR_ISET(remain_op);
+    borISetMinus2(&remain_op, &all_ops, &ops);
+    fprintf(stderr, "remain:");
+    BOR_ISET_FOR_EACH(&remain_op, op)
+        fprintf(stderr, " %d", op);
+    fprintf(stderr, "\n");
+    borISetFree(&ops);
+
+    setCover(m, strips);
+    hittingSet(m, strips);
+
+    for (int i = 0; i < strips->mgroup.size; ++i){
+        if (!strips->mgroup.g[i].is_goal)
+            continue;
+        for (int j = i + 1; j < strips->mgroup.size; ++j){
+            if (!strips->mgroup.g[j].is_goal)
+                continue;
+            pddl_g_t tg1;
+            pddlMGroupTGSyncProduct(&tg1, &m->mgroup_tg[i],
+                                    &m->mgroup_tg[j], strips);
+            INFO("X %d %d", i, j);
+            for (int k = j + 1; k < strips->mgroup.size; ++k){
+                if (!strips->mgroup.g[k].is_goal)
+                    continue;
+                pddl_g_t tg2;
+                pddlMGroupTGSyncProduct(&tg2, &tg1, &m->mgroup_tg[k], strips);
+                INFO("X %d %d %d -- %d", i, j, k, tg2.node_size);
+                for (int l = k + 1; l < strips->mgroup.size; ++l){
+                    if (!strips->mgroup.g[l].is_goal)
+                        continue;
+                    pddl_g_t tg3;
+                    pddlMGroupTGSyncProduct(&tg3, &tg2, &m->mgroup_tg[l], strips);
+                    INFO("X %d %d %d %d -- %d, %d", i, j, k, l,
+                            tg3.node_size, tg3.edge_size);
+                    pddlGFree(&tg3);
+                }
+                pddlGFree(&tg2);
+            }
+            pddlGFree(&tg1);
         }
     }
 }
