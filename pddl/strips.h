@@ -151,6 +151,12 @@ int pddlStripsPrune(pddl_strips_t *strips,
 void pddlStripsMakeUnsolvable(pddl_strips_t *strips);
 
 /**
+ * Makes all mutex groups exactly-1, i.e., an artificial facts are added if
+ * necessary to make a mutex group exactly-1 type.
+ */
+int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips);
+
+/**
  * Writes IDs of operators to the corresponding fact elements.
  * fact_arr is a beggining of the array containing structures containing
  * bor_iset_t elements where IDs are written.

@@ -39,6 +39,7 @@ struct pddl_mgroup {
     int is_init; /*!< True if it has non-empty intersection with the init */
     int is_goal; /*!< True if it has non-empty intersection with the goal */
     int is_fa; /*!< True if it is fact-alternatig mutex group */
+
     int is_exactly_1; /*!< True if exactly one fact must be true in any
                            reachable state. */
 };
@@ -97,7 +98,13 @@ pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg);
  * LP solver to be built-in.
  */
 int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs);
-pddl_mgroups_t *pddlMGroupsFANew(const pddl_strips_t *strips);
+
+/**
+ * Finalize mutex groups structure.
+ * Call this function to fill in all the remaining members besides .fact,
+ * .is_fa, .is_init, .is_goal.
+ */
+void pddlMGroupsFinalize(pddl_mgroups_t *mgs, const pddl_strips_t *strips);
 
 void pddlMGroupsPrettyPrint(const pddl_t *pddl, const pddl_facts_t *fs,
                             const pddl_mgroups_t *ms, FILE *fout);

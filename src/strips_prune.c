@@ -356,6 +356,7 @@ int pddlStripsPrune(pddl_strips_t *strips,
                 BOR_FREE(prune_op);
                 TRACE_RET(-1);
             }
+            pddlMGroupsFinalize(&strips->mgroup, strips);
         }
 
         if (cfg->disambiguation && cfg->fa_mgroup){

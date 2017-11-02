@@ -108,9 +108,9 @@ static int tgSyncProductEffIsMutex(const pddl_strips_t *strips,
                                    int n2,
                                    bor_iset_t *set)
 {
-    borISetMinus2(set, &strips->op.op[op]->pre, &strips->op.op[op]->del_eff);
+    borISetUnion2(set, &tg2->node[n2].label, &strips->op.op[op]->pre);
+    borISetMinus(set, &strips->op.op[op]->del_eff);
     borISetUnion(set, &strips->op.op[op]->add_eff);
-    borISetUnion(set, &tg2->node[n2].label);
     if (pddlMutexesIsMutex(&strips->mutex, set))
         return 1;
     return 0;
@@ -131,11 +131,11 @@ static void tgSyncProductNode(pddl_g_t *prod,
     BOR_ISET(n1_ops);
     int edge1, edge2, pedge, pnode, op;
 
-    BOR_ISET_FOR_EACH(&tg1->node[n1].edge, edge1){
+    BOR_ISET_FOR_EACH(&tg1->node[n1].out, edge1){
         const pddl_g_edge_t *e1 = tg1->edge + edge1;
         borISetSet(&edge_remain, &e1->label);
         borISetUnion(&n1_ops, &e1->label);
-        BOR_ISET_FOR_EACH(&tg2->node[n2].edge, edge2){
+        BOR_ISET_FOR_EACH(&tg2->node[n2].out, edge2){
             const pddl_g_edge_t *e2 = tg2->edge + edge2;
 
             // Consider only operators that emanating from both n1 in tg1
@@ -179,7 +179,7 @@ static void tgSyncProductNode(pddl_g_t *prod,
 
     // Add edges corresponding to the operators incidenting with n2 but not
     // with n1.
-    BOR_ISET_FOR_EACH(&tg2->node[n2].edge, edge2){
+    BOR_ISET_FOR_EACH(&tg2->node[n2].out, edge2){
         const pddl_g_edge_t *e2 = tg2->edge + edge2;
         borISetMinus2(&edge_remain, &e2->label, &n1_ops);
 
@@ -289,20 +289,6 @@ pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg)
 }
 
 
-static int faIsExactly1(const pddl_strips_t *strips,
-                        const pddl_mgroup_t *mg)
-{
-    for (int oi = 0; oi < strips->op.op_size; ++oi){
-        const pddl_strips_op_t *op = strips->op.op[oi];
-        if (!borISetIntersectionSizeAtLeast(&mg->fact, &op->add_eff, 1)
-                && borISetIntersectionSizeAtLeast(&mg->fact, &op->del_eff, 1)){
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
 int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs)
 {
     pddl_mgroup_t *mg;
@@ -376,9 +362,6 @@ int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs)
             mg->is_init = 1;
         if (borISetIntersectionSizeAtLeast(&mg->fact, &strips->goal, 1))
             mg->is_goal = mg->is_exactly_1 = 1;
-        // TODO: parametrize
-        if (!mg->is_goal && faIsExactly1(strips, mg))
-            mg->is_exactly_1 = 1;
         ++rows;
     }
     BOR_FREE(obj);
@@ -389,91 +372,72 @@ int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs)
     return 0;
 }
 
-pddl_mgroups_t *pddlMGroupsFANew(const pddl_strips_t *strips)
+void pddlMGroupsFinalize(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
 {
-    pddl_mgroups_t *mgs = pddlMGroupsNew();
-    if (pddlMGroupsFA(strips, mgs) != 0){
-        pddlMGroupsDel(mgs);
-        TRACE_RET(NULL);
+    for (int mi = 0; mi < mgs->size; ++mi){
+        pddl_mgroup_t *mg = mgs->g + mi;
+        if (mg->is_fa && mg->is_goal){
+            mg->is_exactly_1 = 1;
+            continue;
+        }
+        mg->is_exactly_1 = 1;
+        for (int opi = 0; opi < strips->op.op_size; ++opi){
+            const pddl_strips_op_t *op = strips->op.op[opi];
+            if (borISetIsDisjunct(&op->add_eff, &mg->fact)
+                    && !borISetIsDisjunct(&op->del_eff, &mg->fact)){
+                mg->is_exactly_1 = 0;
+                break;
+            }
+        }
     }
-    return mgs;
 }
 
-
-static int prettyMutexCmp(const void *a, const void *b, void *_fs)
+static int mgCmp(const void *a, const void *b, void *_)
 {
-    const pddl_facts_t *fs = _fs;
-    int *m1 = *(int **)a;
-    int *m2 = *(int **)b;
-    if (m1[0] != m2[0])
-        return m1[0] - m2[0];
-    for (int i = 0; i < m1[0]; ++i){
-        const pddl_fact_t *f1 = fs->fact[m1[i + 1]];
-        const pddl_fact_t *f2 = fs->fact[m2[i + 1]];
-        int cmp = pddlFactCmp(f1, f2);
-        if (cmp != 0)
-            return cmp;
-    }
-    return 0;
+    const pddl_mgroup_t *m1 = *(pddl_mgroup_t **)a;
+    const pddl_mgroup_t *m2 = *(pddl_mgroup_t **)b;
+    int cmp = borISetSize(&m2->fact) - borISetSize(&m1->fact);
+    for (int i = 0; i < borISetSize(&m1->fact) && cmp == 0; ++i)
+        cmp = borISetGet(&m1->fact, i) - borISetGet(&m2->fact, i);
+    return cmp;
 }
 
-static int prettyFactCmp(const void *a, const void *b, void *_fs)
+static void sortMGs(pddl_mgroup_t **sorted, const pddl_mgroups_t *mgs)
 {
-    const pddl_facts_t *fs = _fs;
-    int fid1 = *(int *)a;
-    int fid2 = *(int *)b;
-    const pddl_fact_t *f1 = fs->fact[fid1];
-    const pddl_fact_t *f2 = fs->fact[fid2];
-    return pddlFactCmp(f1, f2);
+    for (int i = 0; i < mgs->size; ++i)
+        sorted[i] = mgs->g + i;
+    borSort(sorted, mgs->size, sizeof(pddl_mgroup_t *), mgCmp, NULL);
 }
-
-struct pretty {
-    int **m;
-    int size;
-};
-typedef struct pretty pretty_t;
 
 void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
                             const pddl_mgroups_t *ms, FILE *fout)
 {
-    pretty_t p;
+    pddl_mgroup_t **mgs;
+    int fact;
 
     if (ms->size == 0)
         return;
 
-    p.size = ms->size;
-    p.m = BOR_ALLOC_ARR(int *, ms->size);
-    for (int i = 0; i < ms->size; ++i){
-        p.m[i] = BOR_ALLOC_ARR(int, ms->g[i].fact.size + 1);
-        p.m[i][0] = ms->g[i].fact.size;
-        for (int j = 0; j < ms->g[i].fact.size; ++j)
-            p.m[i][j + 1] = borISetGet(&ms->g[i].fact, j);
-        borSort(p.m[i] + 1, ms->g[i].fact.size, sizeof(int),
-                prettyFactCmp, (void *)fs);
-    }
-    borSort(p.m, p.size, sizeof(int *), prettyMutexCmp, (void *)fs);
+    mgs = BOR_ALLOC_ARR(pddl_mgroup_t *, ms->size);
+    sortMGs(mgs, ms);
 
-    for (int i = 0; i < p.size; ++i){
-        if (ms->g[i].is_init)
+    for (int i = 0; i < ms->size; ++i){
+        const pddl_mgroup_t *m = mgs[i];
+        if (m->is_init)
             fprintf(fout, "i:");
-        if (ms->g[i].is_goal)
+        if (m->is_goal)
             fprintf(fout, "g:");
-        if (ms->g[i].is_fa)
+        if (m->is_fa)
             fprintf(fout, "fa:");
-        if (ms->g[i].is_exactly_1)
+        if (m->is_exactly_1)
             fprintf(fout, "e1:");
-        fprintf(fout, "%d :: ", p.m[i][0]);
-        for (int j = 0; j < p.m[i][0]; ++j){
-            if (j > 0)
-                fprintf(fout, "; ");
-            fprintf(fout, "%s", fs->fact[p.m[i][j + 1]]->name);
-        }
+        fprintf(fout, "%d ::", borISetSize(&m->fact));
+        BOR_ISET_FOR_EACH(&m->fact, fact)
+            fprintf(fout, " %s;", fs->fact[fact]->name);
         fprintf(fout, "\n");
     }
 
-    for (int i = 0; i < ms->size; ++i)
-        BOR_FREE(p.m[i]);
-    BOR_FREE(p.m);
+    BOR_FREE(mgs);
 }
 
 void pddlMGroupsPrintPython(const pddl_mgroups_t *mg, FILE *fout)
