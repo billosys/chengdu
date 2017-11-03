@@ -157,6 +157,12 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips);
 int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips);
 
 /**
+ * Complete the set of mutex groups by creating a single-fact mutex group
+ * for each uncovered fact.
+ */
+void pddlStripsCompleteMGroups(pddl_strips_t *strips);
+
+/**
  * Writes IDs of operators to the corresponding fact elements.
  * fact_arr is a beggining of the array containing structures containing
  * bor_iset_t elements where IDs are written.

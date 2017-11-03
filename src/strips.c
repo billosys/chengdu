@@ -105,6 +105,46 @@ static void makeExactlyOneMGroupFAUpdateOps(pddl_strips_t *strips,
     borISetFree(&predel);
 }
 
+static void makeExactlyOneMGroupSingleUpdateOps(pddl_strips_t *strips,
+                                                int fact,
+                                                int none_of_those)
+{
+    int op_size = strips->op.op_size;
+    pddl_strips_op_t new_op;
+
+    for (int opi = 0; opi < op_size; ++opi){
+        pddl_strips_op_t *op = strips->op.op[opi];
+
+        if (borISetIn(fact, &op->add_eff)){
+            if (borISetSize(&op->add_eff) > 1){
+                pddlStripsOpInit(&new_op);
+                pddlStripsOpCopy(&new_op, op);
+                borISetAdd(&new_op.pre, fact);
+                borISetRm(&new_op.add_eff, fact);
+                pddlStripsOpsAdd(&strips->op, &new_op);
+                pddlStripsOpFree(&new_op);
+            }
+            borISetAdd(&op->pre, none_of_those);
+            borISetAdd(&op->del_eff, none_of_those);
+
+        }else if (borISetIn(fact, &op->del_eff)){
+            if (borISetIn(fact, &op->pre)){
+                borISetAdd(&op->add_eff, none_of_those);
+            }else{
+                pddlStripsOpInit(&new_op);
+                pddlStripsOpCopy(&new_op, op);
+                borISetAdd(&new_op.pre, none_of_those);
+                borISetRm(&new_op.del_eff, fact);
+                pddlStripsOpsAdd(&strips->op, &new_op);
+                pddlStripsOpFree(&new_op);
+
+                borISetAdd(&op->pre, fact);
+                borISetAdd(&op->add_eff, none_of_those);
+            }
+        }
+    }
+}
+
 static int makeExactlyOneMGroup(pddl_strips_t *strips,
                                 int mgroup_id,
                                 pddl_mgroup_t *mg)
@@ -127,8 +167,12 @@ static int makeExactlyOneMGroup(pddl_strips_t *strips,
     // Update operators if necessary
     if (mg->is_fa){
         makeExactlyOneMGroupFAUpdateOps(strips, mg, none_of_those);
+    }else if (borISetSize(&mg->fact) == 1){
+        makeExactlyOneMGroupSingleUpdateOps(strips, borISetGet(&mg->fact, 0),
+                                            none_of_those);
     }else{
-        ERR_RET2(-1, "Only fam-groups are supported for now!");
+        ERR_RET2(-1, "Only fam-groups and single-fact mutex groups"
+                     " are supported for now!");
     }
 
     // Add none-of-those to the mutex group
@@ -205,6 +249,32 @@ int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips)
         compileAwayOpsWithDelOnlyOnExactlyOneMGroup(strips, mg);
     }
     return 0;
+}
+
+void pddlStripsCompleteMGroups(pddl_strips_t *strips)
+{
+    pddl_mgroup_t *mg;
+    BOR_ISET(all);
+    BOR_ISET(mgset);
+    int fact;
+
+    for (int i = 0; i < strips->fact.fact_size; ++i)
+        borISetAdd(&all, i);
+    for (int i = 0; i < strips->mgroup.size; ++i)
+        borISetMinus(&all, &strips->mgroup.g[i].fact);
+
+    BOR_ISET_FOR_EACH(&all, fact){
+        borISetEmpty(&mgset);
+        borISetAdd(&mgset, fact);
+        mg = pddlMGroupsAdd(&strips->mgroup, &mgset);
+        if (borISetIn(fact, &strips->init))
+            mg->is_init = 1;
+        if (borISetIn(fact, &strips->goal))
+            mg->is_goal = 1;
+    }
+
+    borISetFree(&mgset);
+    borISetFree(&all);
 }
 
 pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
