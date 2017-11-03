@@ -86,6 +86,19 @@ void pddlLMCutFree(pddl_lm_cut_t *lmcut);
 int pddlLMCut(pddl_lm_cut_t *lmcut,
               const bor_iset_t *init, const bor_iset_t *goal);
 
+_bor_inline int pddlLMCutInstant(const pddl_strips_t *strips,
+                                 const bor_iset_t *init,
+                                 const bor_iset_t *goal)
+{
+    pddl_lm_cut_t lmcut;
+    int hval;
+
+    pddlLMCutInit(&lmcut, strips);
+    hval = pddlLMCut(&lmcut, init, goal);
+    pddlLMCutFree(&lmcut);
+    return hval;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
