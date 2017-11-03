@@ -152,6 +152,8 @@ static int makeExactlyOneMGroup(pddl_strips_t *strips,
     pddl_fact_t fact;
     int none_of_those;
     char name[128];
+    BOR_ISET(mutex);
+    int fact_id;
 
     // Create an artificial fact "none-of-those"
     sprintf(name, "none-of-those-%d", mgroup_id);
@@ -175,9 +177,19 @@ static int makeExactlyOneMGroup(pddl_strips_t *strips,
                      " are supported for now!");
     }
 
+    // Add mutexes between none-of-those and all other facts
+    BOR_ISET_FOR_EACH(&mg->fact, fact_id){
+        borISetEmpty(&mutex);
+        borISetAdd(&mutex, fact_id);
+        borISetAdd(&mutex, none_of_those);
+        pddlMutexesAdd(&strips->mutex, &mutex);
+    }
+
     // Add none-of-those to the mutex group
     borISetAdd(&mg->fact, none_of_those);
     mg->is_exactly_1 = 1;
+
+    borISetFree(&mutex);
 
     return 0;
 }
