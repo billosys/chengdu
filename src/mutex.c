@@ -174,6 +174,18 @@ int pddlMutexesIsMutex2(const pddl_mutexes_t *ms,
     }
 }
 
+int pddlMutexesIsMutexWithFact(const pddl_mutexes_t *ms,
+                               int fact, const bor_iset_t *f)
+{
+    BOR_ISET(f1);
+    int ret;
+
+    borISetAdd(&f1, fact);
+    ret = pddlMutexesIsMutex2(ms, &f1, f);
+    borISetFree(&f1);
+    return ret;
+}
+
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
 {
     if (ms->size >= ms->alloc){

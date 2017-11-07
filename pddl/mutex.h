@@ -86,6 +86,12 @@ int pddlMutexesIsMutex2(const pddl_mutexes_t *ms,
                         const bor_iset_t *f2);
 
 /**
+ * Returns true if {fact} \cup f is a mutex.
+ */
+int pddlMutexesIsMutexWithFact(const pddl_mutexes_t *ms,
+                               int fact, const bor_iset_t *f);
+
+/**
  * Adds a new mutex consisting of the given facts.
  */
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m);
