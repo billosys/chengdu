@@ -39,10 +39,11 @@ OBJS += fdr
 OBJS += fdr_to_fd
 OBJS += err
 OBJS += profile
-OBJS += lm_cut
 OBJS += landmark
 OBJS += g
 OBJS += mgroup_tg_ldm
+OBJS += heur_lm_cut
+OBJS += heur_flow
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

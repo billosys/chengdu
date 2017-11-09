@@ -18,16 +18,20 @@
  * See the License for more information.
  */
 
-#ifndef __PDDL_HEUR_FLOW_H__
-#define __PDDL_HEUR_FLOW_H__
+#ifndef __PDDL_HEUR_H__
+#define __PDDL_HEUR_H__
 
-#include <pddl/common.h>
 #include <pddl/strips.h>
 #include <pddl/landmark.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+
+int pddlHeurLMCut(const pddl_strips_t *strips,
+                  const bor_iset_t *init,
+                  const bor_iset_t *goal,
+                  pddl_landmarks_t *ldms);
 
 int pddlHeurFlow(const pddl_strips_t *strips,
                  const bor_iset_t *init,
@@ -38,4 +42,4 @@ int pddlHeurFlow(const pddl_strips_t *strips,
 } /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* __PDDL_HEUR_FLOW_H__ */
+#endif /* __PDDL_HEUR_H__ */

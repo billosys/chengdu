@@ -19,11 +19,60 @@
 
 #include <limits.h>
 #include <boruvka/alloc.h>
+#include <boruvka/apq.h>
 
-#include "pddl/lm_cut.h"
+#include "pddl/heur.h"
 #include "err.h"
 #include "assert.h"
 
+
+#define CUT_UNDEF 0
+#define CUT_INIT 1
+#define CUT_GOAL 2
+
+struct pddl_lm_cut_op {
+    bor_iset_t pre;
+    bor_iset_t eff;
+    int op_cost;
+
+    int cost;          /*!< Current cost of the operator */
+    int unsat;         /*!< Number of unsatisfied preconditions */
+    int supp;          /*!< Supporter fact (that maximizes h^max) */
+    int supp_cost;     /*!< Cost of the supported -- needed for hMaxInc() */
+    int cut_candidate; /*!< True if the operator is candidate for a cut */
+};
+typedef struct pddl_lm_cut_op pddl_lm_cut_op_t;
+
+struct pddl_lm_cut_fact {
+    bor_iset_t pre_op; /*!< Operators having this fact as its precond */
+    bor_iset_t eff_op; /*!< Operators having this fact as its effect */
+    int value;
+    bor_apq_el_t pq; /*!< Connection to priority queue */
+    int supp_cnt;    /*!< Number of operators that have this fact as
+                          a supporter. */
+    int cut_state; /*!< One of CUT_* */
+};
+typedef struct pddl_lm_cut_fact pddl_lm_cut_fact_t;
+
+struct pddl_lm_cut {
+    pddl_lm_cut_fact_t *fact;
+    int fact_size;
+    int fact_goal; /*!< ID of the artificial goal fact */
+    int fact_nopre; /*!< ID of the artifical fact meaning "no precondition" */
+
+    pddl_lm_cut_op_t *op;
+    int op_size;
+    int op_goal; /*!< ID of the artificial goal operator */
+
+    bor_iset_t state; /*!< Current state from which heur is computed */
+    bor_iset_t cut; /*!< Current cut */
+
+    /** Auxiliary structures to avoid re-allocation */
+    int *queue;
+    int queue_size;
+    bor_apq_t pq;
+};
+typedef struct pddl_lm_cut pddl_lm_cut_t;
 
 #define FID(heur, f) ((f) - (heur)->fact)
 #define FVALUE(fact) ((fact)->value)
@@ -65,7 +114,7 @@ _bor_inline pddl_lm_cut_fact_t *FPOP(bor_apq_t *pq, int *key)
 #define F_UNSET_SUPP(fact) (--(fact)->supp_cnt)
 #define F_IS_SUPP(fact) ((fact)->supp_cnt)
 
-void pddlLMCutInit(pddl_lm_cut_t *lmcut, const pddl_strips_t *strips)
+static void lmCutInit(pddl_lm_cut_t *lmcut, const pddl_strips_t *strips)
 {
     bzero(lmcut, sizeof(*lmcut));
 
@@ -98,13 +147,12 @@ void pddlLMCutInit(pddl_lm_cut_t *lmcut, const pddl_strips_t *strips)
 
     borISetInit(&lmcut->state);
     borISetInit(&lmcut->cut);
-    pddlDisjunctiveLandmarksInit(&lmcut->ldms);
 
     lmcut->queue = BOR_ALLOC_ARR(int, lmcut->fact_size);
     borAPQInit(&lmcut->pq);
 }
 
-void pddlLMCutFree(pddl_lm_cut_t *lmcut)
+static void lmCutFree(pddl_lm_cut_t *lmcut)
 {
     for (int i = 0; i < lmcut->fact_size; ++i){
         borISetFree(&lmcut->fact[i].pre_op);
@@ -122,7 +170,6 @@ void pddlLMCutFree(pddl_lm_cut_t *lmcut)
 
     borISetFree(&lmcut->state);
     borISetFree(&lmcut->cut);
-    pddlDisjunctiveLandmarksFree(&lmcut->ldms);
 
     if (lmcut->queue != NULL)
         BOR_FREE(lmcut->queue);
@@ -388,13 +435,12 @@ static void setInitGoal(pddl_lm_cut_t *lmcut,
         borISetAdd(&lmcut->fact[fact_id].pre_op, lmcut->op_goal);
 }
 
-int pddlLMCut(pddl_lm_cut_t *lmcut,
-              const bor_iset_t *init, const bor_iset_t *goal)
+static int lmCut(pddl_lm_cut_t *lmcut,
+                 const bor_iset_t *init, const bor_iset_t *goal,
+                 pddl_landmarks_t *ldms)
 {
     int heur = 0;
 
-    pddlDisjunctiveLandmarksFree(&lmcut->ldms);
-    pddlDisjunctiveLandmarksInit(&lmcut->ldms);
     setInitGoal(lmcut, init, goal);
     hMaxFull(lmcut, 1);
     if (!FVALUE_IS_SET(lmcut->fact + lmcut->fact_goal))
@@ -402,11 +448,26 @@ int pddlLMCut(pddl_lm_cut_t *lmcut,
 
     while (FVALUE(lmcut->fact + lmcut->fact_goal) > 0){
         heur += cut(lmcut);
-        pddlDisjunctiveLandmarksAdd(&lmcut->ldms, &lmcut->cut);
+        if (ldms != NULL)
+            pddlLandmarksAdd(ldms, &lmcut->cut);
 
         //hMaxFull(lmcut, 0);
         hMaxInc(lmcut, &lmcut->cut);
     }
 
     return heur;
+}
+
+int pddlHeurLMCut(const pddl_strips_t *strips,
+                  const bor_iset_t *init,
+                  const bor_iset_t *goal,
+                  pddl_landmarks_t *ldms)
+{
+    pddl_lm_cut_t lmcut;
+    int hval;
+
+    lmCutInit(&lmcut, strips);
+    hval = lmCut(&lmcut, init, goal, ldms);
+    lmCutFree(&lmcut);
+    return hval;
 }

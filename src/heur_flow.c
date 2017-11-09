@@ -19,7 +19,8 @@
 
 #include <boruvka/alloc.h>
 #include <boruvka/lp.h>
-#include "pddl/heur_flow.h"
+
+#include "pddl/heur.h"
 #include "err.h"
 #include "assert.h"
 
