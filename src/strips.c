@@ -373,6 +373,33 @@ void pddlStripsDel(pddl_strips_t *strips)
     BOR_FREE(strips);
 }
 
+pddl_strips_t *pddlStripsClone(const pddl_strips_t *src)
+{
+    pddl_strips_t *dst;
+    dst = BOR_ALLOC(pddl_strips_t);
+
+    bzero(dst, sizeof(*dst));
+    dst->cfg = src->cfg;
+    if (src->domain_name != NULL)
+        dst->domain_name = BOR_STRDUP(src->domain_name);
+    if (src->problem_name != NULL)
+        dst->problem_name = BOR_STRDUP(src->problem_name);
+    if (src->domain_file != NULL)
+        dst->domain_file = BOR_STRDUP(src->domain_file);
+    if (src->problem_file != NULL)
+        dst->problem_file = BOR_STRDUP(src->problem_file);
+    pddlFactsCopy(&dst->fact, &src->fact);
+    pddlStripsOpsCopy(&dst->op, &src->op);
+    borISetUnion(&dst->init, &src->init);
+    borISetUnion(&dst->goal, &src->goal);
+    pddlMutexesCopy(&dst->mutex, &src->mutex);
+    pddlMGroupsCopy(&dst->mgroup, &src->mgroup);
+    dst->goal_is_unreachable = src->goal_is_unreachable;
+    dst->has_cond_eff = src->has_cond_eff;
+
+    return dst;
+}
+
 pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
 {
     pddl_strips_t *dual = stripsNew();

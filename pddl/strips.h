@@ -131,6 +131,11 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
 void pddlStripsDel(pddl_strips_t *strips);
 
 /**
+ * Clone the strips structure.
+ */
+pddl_strips_t *pddlStripsClone(const pddl_strips_t *src);
+
+/**
  * Construct a dual strips problem.
  */
 pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips);
