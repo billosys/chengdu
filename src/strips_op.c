@@ -253,6 +253,12 @@ void pddlStripsOpsFree(pddl_strips_ops_t *ops)
         BOR_FREE(ops->op);
 }
 
+void pddlStripsOpsCopy(pddl_strips_ops_t *dst, const pddl_strips_ops_t *src)
+{
+    for (int i = 0; i < src->op_size; ++i)
+        pddlStripsOpsAdd(dst, src->op[i]);
+}
+
 static pddl_strips_op_t *nextNewOp(pddl_strips_ops_t *ops)
 {
     pddl_strips_op_t *op;
