@@ -170,7 +170,7 @@ static int pruneHMutex(pddl_strips_t *strips,
 
     INFO("O: %d, F: %d :: h^%d mutexes (mutexes: %d, change: %d).",
          strips->op.op_size, strips->fact.fact_size, cfg->h_mutex,
-         strips->mutex.size, change);
+         strips->mutex.mutex_size, change);
 
     *change_out |= change;
     return ret;

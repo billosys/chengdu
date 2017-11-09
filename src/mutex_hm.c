@@ -52,12 +52,12 @@ void pddlMutexesHmLimit(pddl_mutexes_t *ms, int max_m)
     int ins;
 
     ins = 0;
-    for (int i = 0; i < ms->size; ++i){
-        if (ms->m[i].hm && borISetSize(&ms->m[i].fact) > max_m){
-            pddlMutexFree(&ms->m[i]);
+    for (int i = 0; i < ms->mutex_size; ++i){
+        if (ms->mutex[i].hm && borISetSize(&ms->mutex[i].fact) > max_m){
+            pddlMutexFree(&ms->mutex[i]);
         }else{
-            ms->m[ins++] = ms->m[i];
+            ms->mutex[ins++] = ms->mutex[i];
         }
     }
-    ms->size = ins;
+    ms->mutex_size = ins;
 }

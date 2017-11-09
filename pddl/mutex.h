@@ -43,9 +43,9 @@ typedef struct pddl_mutex pddl_mutex_t;
  * Set of mutexes.
  */
 struct pddl_mutexes {
-    pddl_mutex_t *m;
-    int size;
-    int alloc;
+    pddl_mutex_t *mutex;
+    int mutex_size;
+    int mutex_alloc;
 
     int has_3; /*!< True if there are mutexes of size 3 and more */
     char *mutex2_map; /*!< Mapping from (fact x fact) to bool for mutexes
@@ -55,7 +55,8 @@ struct pddl_mutexes {
 typedef struct pddl_mutexes pddl_mutexes_t;
 
 #define PDDL_MUTEXES_FOR_EACH(MS, M) \
-    for (int __i = 0; __i < (MS)->size && ((M) = (MS)->m + __i); ++__i)
+    for (int __i = 0; __i < (MS)->mutex_size \
+                        && ((M) = (MS)->mutex + __i); ++__i)
 
 void pddlMutexInit(pddl_mutex_t *m);
 void pddlMutexFree(pddl_mutex_t *m);

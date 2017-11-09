@@ -89,8 +89,8 @@ void pddlMutexesFree(pddl_mutexes_t *ms)
     pddl_mutex_t *m;
     PDDL_MUTEXES_FOR_EACH(ms, m)
         pddlMutexFree(m);
-    if (ms->m != NULL)
-        BOR_FREE(ms->m);
+    if (ms->mutex != NULL)
+        BOR_FREE(ms->mutex);
     if (ms->mutex2_map)
         BOR_FREE(ms->mutex2_map);
 }
@@ -118,8 +118,7 @@ void pddlMutexesCopy(pddl_mutexes_t *dst, const pddl_mutexes_t *src)
 
     pddlMutexesInit(dst);
 
-    for (int i = 0; i < src->size; ++i){
-        sm = src->m + i;
+    PDDL_MUTEXES_FOR_EACH(src, sm){
         dm = pddlMutexesAdd(dst, &sm->fact);
         dm->hm = sm->hm;
     }
@@ -134,8 +133,9 @@ void pddlMutexesCopy(pddl_mutexes_t *dst, const pddl_mutexes_t *src)
 
 static int isMutex3(const pddl_mutexes_t *ms, const bor_iset_t *facts)
 {
-    for (int i = 0; i < ms->size; ++i){
-        const pddl_mutex_t *mutex = ms->m + i;
+    const pddl_mutex_t *mutex;
+
+    PDDL_MUTEXES_FOR_EACH(ms, mutex){
         if (borISetSize(&mutex->fact) >= 3
                 && borISetIsSubset(&mutex->fact, facts))
             return 1;
@@ -214,32 +214,32 @@ int pddlMutexesIsMutexWithFact(const pddl_mutexes_t *ms,
 
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
 {
-    if (ms->size >= ms->alloc){
-        if (ms->alloc == 0)
-            ms->alloc = 1;
-        ms->alloc *= 2;
-        ms->m = BOR_REALLOC_ARR(ms->m, pddl_mutex_t, ms->alloc);
+    if (ms->mutex_size >= ms->mutex_alloc){
+        if (ms->mutex_alloc == 0)
+            ms->mutex_alloc = 1;
+        ms->mutex_alloc *= 2;
+        ms->mutex = BOR_REALLOC_ARR(ms->mutex, pddl_mutex_t, ms->mutex_alloc);
     }
 
-    pddlMutexInit(ms->m + ms->size);
-    borISetUnion(&ms->m[ms->size].fact, m);
-    if (borISetSize(&ms->m[ms->size].fact) >= 3){
+    pddlMutexInit(ms->mutex + ms->mutex_size);
+    borISetUnion(&ms->mutex[ms->mutex_size].fact, m);
+    if (borISetSize(&ms->mutex[ms->mutex_size].fact) >= 3){
         ms->has_3 = 1;
     }else{
         updateMutex2Map(ms, m);
     }
-    ++ms->size;
+    ++ms->mutex_size;
 
-    return ms->m + ms->size - 1;
+    return ms->mutex + ms->mutex_size - 1;
 }
 
 void pddlMutexesPrintPython(const pddl_mutexes_t *ms, FILE *fout)
 {
+    const pddl_mutex_t *m;
     int fact_id;
 
     fprintf(fout, "[\n");
-    for (int i = 0; i < ms->size; ++i){
-        const pddl_mutex_t *m = ms->m + i;
+    PDDL_MUTEXES_FOR_EACH(ms, m){
         fprintf(fout, "    {\n");
         fprintf(fout, "        'fact' : set([");
         BOR_ISET_FOR_EACH(&m->fact, fact_id)
@@ -289,17 +289,17 @@ void pddlMutexesPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
 {
     pretty_t p;
 
-    if (ms->size == 0)
+    if (ms->mutex_size == 0)
         return;
 
-    p.size = ms->size;
-    p.m = BOR_ALLOC_ARR(int *, ms->size);
-    for (int i = 0; i < ms->size; ++i){
-        p.m[i] = BOR_ALLOC_ARR(int, ms->m[i].fact.size + 1);
-        p.m[i][0] = ms->m[i].fact.size;
-        for (int j = 0; j < ms->m[i].fact.size; ++j)
-            p.m[i][j + 1] = borISetGet(&ms->m[i].fact, j);
-        borSort(p.m[i] + 1, ms->m[i].fact.size, sizeof(int),
+    p.size = ms->mutex_size;
+    p.m = BOR_ALLOC_ARR(int *, ms->mutex_size);
+    for (int i = 0; i < ms->mutex_size; ++i){
+        p.m[i] = BOR_ALLOC_ARR(int, ms->mutex[i].fact.size + 1);
+        p.m[i][0] = ms->mutex[i].fact.size;
+        for (int j = 0; j < ms->mutex[i].fact.size; ++j)
+            p.m[i][j + 1] = borISetGet(&ms->mutex[i].fact, j);
+        borSort(p.m[i] + 1, ms->mutex[i].fact.size, sizeof(int),
                 prettyFactCmp, (void *)fs);
     }
     borSort(p.m, p.size, sizeof(int *), prettyMutexCmp, (void *)fs);
@@ -314,7 +314,7 @@ void pddlMutexesPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
         fprintf(fout, "\n");
     }
 
-    for (int i = 0; i < ms->size; ++i)
+    for (int i = 0; i < ms->mutex_size; ++i)
         BOR_FREE(p.m[i]);
     BOR_FREE(p.m);
 }
