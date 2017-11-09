@@ -110,43 +110,55 @@ void pddlMutexesDel(pddl_mutexes_t *ms)
     BOR_FREE(ms);
 }
 
+static int isMutex3(const pddl_mutexes_t *ms, const bor_iset_t *facts)
+{
+    for (int i = 0; i < ms->size; ++i){
+        const pddl_mutex_t *mutex = ms->m + i;
+        if (borISetSize(&mutex->fact) >= 3
+                && borISetIsSubset(&mutex->fact, facts))
+            return 1;
+    }
+    return 0;
+}
+
+static int isMutex2WithFact(const pddl_mutexes_t *ms,
+                            int fact1, const bor_iset_t *f)
+{
+    int fact2;
+
+    if (fact1 >= ms->mutex2_map_fact_size)
+        return 0;
+
+    BOR_ISET_FOR_EACH(f, fact2){
+        if (fact2 >= ms->mutex2_map_fact_size)
+            return 0;
+        if (ms->mutex2_map[fact1 * ms->mutex2_map_fact_size + fact2])
+            return 1;
+    }
+    return 0;
+}
+
 int pddlMutexesIsMutex(const pddl_mutexes_t *ms, const bor_iset_t *facts)
 {
-    if (ms->mutex2_map != NULL){
-        int size = borISetSize(facts);
+    int size = borISetSize(facts);
 
-        for (int i = 0; i < size; ++i){
-            int f1 = borISetGet(facts, i);
-            if (f1 >= ms->mutex2_map_fact_size)
+    for (int i = 0; i < size; ++i){
+        int f1 = borISetGet(facts, i);
+        if (f1 >= ms->mutex2_map_fact_size)
+            continue;
+
+        for (int j = i; j < size; ++j){
+            int f2 = borISetGet(facts, j);
+            if (f2 >= ms->mutex2_map_fact_size)
                 continue;
 
-            for (int j = i; j < size; ++j){
-                int f2 = borISetGet(facts, j);
-                if (f2 >= ms->mutex2_map_fact_size)
-                    continue;
-
-                if (ms->mutex2_map[f1 * ms->mutex2_map_fact_size + f2])
-                    return 1;
-            }
-        }
-
-        if (ms->has_3){
-            for (int i = 0; i < ms->size; ++i){
-                const pddl_mutex_t *mutex = ms->m + i;
-                if (borISetSize(&mutex->fact) >= 3
-                        && borISetIsSubset(&mutex->fact, facts))
-                    return 1;
-            }
-        }
-
-    }else{
-        for (int i = 0; i < ms->size; ++i){
-            const pddl_mutex_t *mutex = ms->m + i;
-            if (borISetIsSubset(&mutex->fact, facts))
+            if (ms->mutex2_map[f1 * ms->mutex2_map_fact_size + f2])
                 return 1;
         }
     }
 
+    if (ms->has_3)
+        return isMutex3(ms, facts);
     return 0;
 }
 
@@ -154,36 +166,28 @@ int pddlMutexesIsMutex2(const pddl_mutexes_t *ms,
                         const bor_iset_t *f1,
                         const bor_iset_t *f2)
 {
-    if (ms->mutex2_map == NULL || ms->has_3){
+    int fact1;
+
+    BOR_ISET_FOR_EACH(f1, fact1){
+        if (isMutex2WithFact(ms, fact1, f2))
+            return 1;
+    }
+
+    if (ms->has_3){
         BOR_ISET(fs);
         borISetUnion2(&fs, f1, f2);
-        int ret = pddlMutexesIsMutex(ms, &fs);
+        int ret = isMutex3(ms, &fs);
         borISetFree(&fs);
         return ret;
-
-    }else{
-        int fact1, fact2;
-
-        BOR_ISET_FOR_EACH(f1, fact1){
-            BOR_ISET_FOR_EACH(f2, fact2){
-                if (ms->mutex2_map[fact1 * ms->mutex2_map_fact_size + fact2])
-                    return 1;
-            }
-        }
-        return 0;
     }
+
+    return 0;
 }
 
 int pddlMutexesIsMutexWithFact(const pddl_mutexes_t *ms,
                                int fact, const bor_iset_t *f)
 {
-    BOR_ISET(f1);
-    int ret;
-
-    borISetAdd(&f1, fact);
-    ret = pddlMutexesIsMutex2(ms, &f1, f);
-    borISetFree(&f1);
-    return ret;
+    return isMutex2WithFact(ms, fact, f);
 }
 
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
