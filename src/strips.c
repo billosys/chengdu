@@ -388,6 +388,9 @@ pddl_strips_t *pddlStripsClone(const pddl_strips_t *src)
         dst->domain_file = BOR_STRDUP(src->domain_file);
     if (src->problem_file != NULL)
         dst->problem_file = BOR_STRDUP(src->problem_file);
+    pddlFactsInit(&dst->fact);
+    pddlStripsOpsInit(&dst->op);
+
     pddlFactsCopy(&dst->fact, &src->fact);
     pddlStripsOpsCopy(&dst->op, &src->op);
     borISetUnion(&dst->init, &src->init);

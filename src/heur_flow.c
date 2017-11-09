@@ -30,8 +30,6 @@
 
 struct fact {
     int is_goal;            /*!< True if the fact is in goal */
-    int cause_incomplete_op;/*!< True if the fact causes incompleteness of
-                                 an operator */
     int is_init;            /*!< True if the fact from the initial state */
 
     bor_iset_t mgroup; /*!< Mutex groups that contain this fact */
@@ -94,10 +92,8 @@ static fact_t *loadFacts(const pddl_strips_t *strips,
         }
 
         // And now the upper bounds
-        if (fact[i].cause_incomplete_op){
-            fact[i].upper_bound = BOUND_INF;
-        }else if (!fact[i].is_goal
-                    && !pddlMutexesIsMutexWithFact(&strips->mutex, i, goal)){
+        if (!fact[i].is_goal
+                && !pddlMutexesIsMutexWithFact(&strips->mutex, i, goal)){
             fact[i].upper_bound = fact[i].lower_bound + 1;
         }else{
             fact[i].upper_bound = fact[i].lower_bound;
@@ -134,17 +130,25 @@ static int roundOff(double z)
     return v;
 }
 
-int pddlHeurFlow(const pddl_strips_t *strips,
+int pddlHeurFlow(const pddl_strips_t *strips_in,
                  const bor_iset_t *init,
                  const bor_iset_t *goal,
                  const pddl_landmarks_t *ldms)
 {
+    pddl_strips_t *strips;
     fact_t *fact;
     bor_lp_t *lp;
     unsigned lp_flags = 0;
     int num_rows, row, op_id, sret;
     double val, *obj;
     int hval;
+
+    strips = pddlStripsClone(strips_in);
+    pddlStripsCompleteMGroups(strips);
+    if (pddlStripsMakeExactlyOneMGroups(strips) != 0){
+        pddlStripsDel(strips);
+        TRACE_RET(-1);
+    }
 
     fact = loadFacts(strips, init, goal);
     num_rows = numEqConstr(fact, strips->fact.fact_size);
@@ -204,5 +208,6 @@ int pddlHeurFlow(const pddl_strips_t *strips,
     borLPDel(lp);
     freeFacts(fact, strips->fact.fact_size);
 
+    pddlStripsDel(strips);
     return hval;
 }
