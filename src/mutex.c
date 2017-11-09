@@ -110,6 +110,28 @@ void pddlMutexesDel(pddl_mutexes_t *ms)
     BOR_FREE(ms);
 }
 
+void pddlMutexesCopy(pddl_mutexes_t *dst, const pddl_mutexes_t *src)
+{
+    const pddl_mutex_t *sm;
+    pddl_mutex_t *dm;
+    int size;
+
+    pddlMutexesInit(dst);
+
+    for (int i = 0; i < src->size; ++i){
+        sm = src->m + i;
+        dm = pddlMutexesAdd(dst, &sm->fact);
+        dm->hm = sm->hm;
+    }
+
+    dst->has_3 = src->has_3;
+    dst->mutex2_map_fact_size = src->mutex2_map_fact_size;
+    size = dst->mutex2_map_fact_size * dst->mutex2_map_fact_size;
+    dst->mutex2_map = BOR_ALLOC_ARR(char, size);
+    for (int i = 0; i < size; ++i)
+        dst->mutex2_map[i] = src->mutex2_map[i];
+}
+
 static int isMutex3(const pddl_mutexes_t *ms, const bor_iset_t *facts)
 {
     for (int i = 0; i < ms->size; ++i){
