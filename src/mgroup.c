@@ -271,6 +271,22 @@ void pddlMGroupsDel(pddl_mgroups_t *mgs)
     BOR_FREE(mgs);
 }
 
+void pddlMGroupsCopy(pddl_mgroups_t *dst, const pddl_mgroups_t *src)
+{
+    const pddl_mgroup_t *sm;
+    pddl_mgroup_t *dm;
+
+    pddlMGroupsInit(dst);
+    for (int i = 0; i < src->size; ++i){
+        sm = src->g + i;
+        dm = pddlMGroupsAdd(dst, &sm->fact);
+        dm->is_init = sm->is_init;
+        dm->is_goal = sm->is_goal;
+        dm->is_fa = sm->is_fa;
+        dm->is_exactly_1 = sm->is_exactly_1;
+    }
+}
+
 pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg)
 {
     pddl_mgroup_t *g;

@@ -86,6 +86,11 @@ void pddlMGroupsFree(pddl_mgroups_t *mgs);
 void pddlMGroupsDel(pddl_mgroups_t *mgs);
 
 /**
+ * Copy the mgroups structure.
+ */
+void pddlMGroupsCopy(pddl_mgroups_t *dst, const pddl_mgroups_t *src);
+
+/**
  * Add a mutex group consisting of the given facts.
  */
 pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mgs, const bor_iset_t *mg);
