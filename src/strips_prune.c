@@ -63,6 +63,7 @@ static int pruneWithMGroups(pddl_strips_t *strips,
                             int *prune_op)
 {
     int change = 0;
+    const pddl_mgroup_t *mg;
     bor_iset_t mpre, mdel, mpredel, madd;
 
     borISetInit(&mpre);
@@ -70,8 +71,7 @@ static int pruneWithMGroups(pddl_strips_t *strips,
     borISetInit(&mpredel);
     borISetInit(&madd);
 
-    for (int mgi = 0; mgi < mgs->size; ++mgi){
-        const pddl_mgroup_t *mg = mgs->g + mgi;
+    PDDL_MGROUPS_FOR_EACH(mgs, mg){
         for (int opi = 0; opi < strips->op.op_size; ++opi){
             pddl_strips_op_t *op = strips->op.op[opi];
             if (op == NULL || prune_op[opi])
@@ -128,7 +128,7 @@ static int pruneFAMGroup(pddl_strips_t *strips,
     // TODO: Count dead-end operators
     INFO("O: %d, F: %d :: fam-groups (mgroups: %d, change: %d).",
          strips->op.op_size, strips->fact.fact_size,
-         strips->mgroup.size, change);
+         strips->mgroup.mgroup_size, change);
 
     *change_out |= change;
     return ret;
@@ -282,7 +282,7 @@ static int disambiguate(pddl_strips_t *strips,
     int ret;
     int change = 0;
 
-    if (strips->mgroup.size == 0)
+    if (strips->mgroup.mgroup_size == 0)
         return 0;
 
     mutex = mutexTableNew(strips);

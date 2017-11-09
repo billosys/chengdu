@@ -63,8 +63,8 @@ static void factsRequiringBinaryEncoding(const pddl_strips_t *strips,
     int fact_id, mgroup_id;
 
     fact_to_mgroup = BOR_CALLOC_ARR(bor_iset_t, strips->fact.fact_size);
-    for (int mi = 0; mi < mgs->size; ++mi){
-        const pddl_mgroup_t *mg = mgs->g + mi;
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        const pddl_mgroup_t *mg = mgs->mgroup + mi;
         BOR_ISET_FOR_EACH(&mg->fact, fact_id)
             borISetAdd(fact_to_mgroup + fact_id, mi);
     }
@@ -75,8 +75,8 @@ static void factsRequiringBinaryEncoding(const pddl_strips_t *strips,
             if (borISetIn(fact_id, &op->pre))
                 continue;
             BOR_ISET_FOR_EACH(&fact_to_mgroup[fact_id], mgroup_id){
-                if (!borISetIntersectionSizeAtLeast(&mgs->g[mgroup_id].fact,
-                                                    &op->add_eff, 1)){
+                if (borISetIsDisjunct(&mgs->mgroup[mgroup_id].fact,
+                                      &op->add_eff)){
                     borISetAdd(binfs, fact_id);
                 }
             }
@@ -132,12 +132,12 @@ static void createInit(create_t *c, const pddl_strips_t *strips,
 
     // Copy mutex groups into create_t structure and update single_facts in
     // the process
-    c->mgroup_size = mg->size;
+    c->mgroup_size = mg->mgroup_size;
     c->mgroup = BOR_ALLOC_ARR(bor_iset_t, c->mgroup_size);
     for (int i = 0; i < c->mgroup_size; ++i){
         borISetInit(c->mgroup + i);
-        borISetUnion(c->mgroup + i, &mg->g[i].fact);
-        borISetMinus(&single_facts, &mg->g[i].fact);
+        borISetUnion(c->mgroup + i, &mg->mgroup[i].fact);
+        borISetMinus(&single_facts, &mg->mgroup[i].fact);
     }
 
     // Force binary encoding on facts that cannot be properly encoded with

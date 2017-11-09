@@ -252,8 +252,8 @@ static void compileAwayOpsWithDelOnlyOnExactlyOneMGroup(pddl_strips_t *strips,
 
 int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips)
 {
-    for (int i = 0; i < strips->mgroup.size; ++i){
-        pddl_mgroup_t *mg = strips->mgroup.g + i;
+    for (int i = 0; i < strips->mgroup.mgroup_size; ++i){
+        pddl_mgroup_t *mg = strips->mgroup.mgroup + i;
         if (!mg->is_exactly_1){
             if (makeExactlyOneMGroup(strips, i, mg) != 0)
                 TRACE_RET(-1);
@@ -272,8 +272,8 @@ void pddlStripsCompleteMGroups(pddl_strips_t *strips)
 
     for (int i = 0; i < strips->fact.fact_size; ++i)
         borISetAdd(&all, i);
-    for (int i = 0; i < strips->mgroup.size; ++i)
-        borISetMinus(&all, &strips->mgroup.g[i].fact);
+    for (int i = 0; i < strips->mgroup.mgroup_size; ++i)
+        borISetMinus(&all, &strips->mgroup.mgroup[i].fact);
 
     BOR_ISET_FOR_EACH(&all, fact){
         borISetEmpty(&mgset);

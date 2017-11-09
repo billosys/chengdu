@@ -46,14 +46,15 @@ struct pddl_mgroup {
 typedef struct pddl_mgroup pddl_mgroup_t;
 
 struct pddl_mgroups {
-    pddl_mgroup_t *g;
-    int size;
-    int alloc;
+    pddl_mgroup_t *mgroup;
+    int mgroup_size;
+    int mgroup_alloc;
 };
 typedef struct pddl_mgroups pddl_mgroups_t;
 
 #define PDDL_MGROUPS_FOR_EACH(MS, M) \
-    for (int __i = 0; __i < (MS)->size && ((M) = (MS)->g + __i); ++__i)
+    for (int __i = 0; __i < (MS)->mgroup_size \
+                        && ((M) = (MS)->mgroup + __i); ++__i)
 
 void pddlMGroupInit(pddl_mgroup_t *mg);
 void pddlMGroupFree(pddl_mgroup_t *mg);

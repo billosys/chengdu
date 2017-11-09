@@ -55,8 +55,8 @@ static fact_t *loadFacts(const pddl_strips_t *strips,
     BOR_ISET_FOR_EACH(goal, fact_id)
         fact[fact_id].is_goal = 1;
 
-    for (int i = 0; i < strips->mgroup.size; ++i){
-        const pddl_mgroup_t *mg = strips->mgroup.g + i;
+    for (int i = 0; i < strips->mgroup.mgroup_size; ++i){
+        const pddl_mgroup_t *mg = strips->mgroup.mgroup + i;
         BOR_ISET_FOR_EACH(&mg->fact, fact_id)
             borISetAdd(&fact[fact_id].mgroup, i);
     }
