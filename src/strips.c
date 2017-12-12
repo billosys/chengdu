@@ -223,6 +223,10 @@ static void compileAwayOpsWithDelOnlyOnExactlyOneMGroup(pddl_strips_t *strips,
                 borISetMinus(&op->del_eff, &deleff);
 
             }else{
+                INFO("Compiling away delete-only effect '%s'"
+                     " in the operator '%s'",
+                     strips->fact.fact[borISetGet(&deleff, 0)]->name,
+                     op->name);
                 // If a fact from the mutex group is not mentioned in the
                 // precondition, we need to add mutex group facts to the
                 // preconditions -- all possibilities are required.
@@ -235,6 +239,9 @@ static void compileAwayOpsWithDelOnlyOnExactlyOneMGroup(pddl_strips_t *strips,
                     if (borISetIn(fact, &deleff))
                         borISetAdd(&new_op.del_eff, fact);
                     pddlStripsOpsAdd(&strips->op, &new_op);
+                    INFO("  Adding copy of the operator '%s'"
+                         " with added pre '%s'",
+                         new_op.name, strips->fact.fact[fact]->name);
                     pddlStripsOpFree(&new_op);
                 }
 
