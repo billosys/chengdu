@@ -258,7 +258,9 @@ int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips)
             if (makeExactlyOneMGroup(strips, i, mg) != 0)
                 TRACE_RET(-1);
         }
+        //INFO("X %d/%d", i, strips->mgroup.mgroup_size);
         compileAwayOpsWithDelOnlyOnExactlyOneMGroup(strips, mg);
+        //INFO("Y %d/%d", i, strips->mgroup.mgroup_size);
     }
     return 0;
 }
@@ -284,6 +286,7 @@ void pddlStripsCompleteMGroups(pddl_strips_t *strips)
         if (borISetIn(fact, &strips->goal))
             mg->is_goal = 1;
     }
+    INFO("Added %d single-fact mgroups.", borISetSize(&all));
 
     borISetFree(&mgset);
     borISetFree(&all);
