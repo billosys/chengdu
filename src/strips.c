@@ -258,9 +258,7 @@ int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips)
             if (makeExactlyOneMGroup(strips, i, mg) != 0)
                 TRACE_RET(-1);
         }
-        //INFO("X %d/%d", i, strips->mgroup.mgroup_size);
         compileAwayOpsWithDelOnlyOnExactlyOneMGroup(strips, mg);
-        //INFO("Y %d/%d", i, strips->mgroup.mgroup_size);
     }
     return 0;
 }
