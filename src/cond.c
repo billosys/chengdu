@@ -172,6 +172,21 @@ static void condBoolPrintPDDL(const pddl_cond_bool_t *b,
                               const pddl_params_t *params,
                               FILE *fout);
 
+static void condImplyDel(pddl_cond_imply_t *);
+static pddl_cond_imply_t *condImplyClone(const pddl_cond_imply_t *a);
+static int condImplyTraverse(pddl_cond_imply_t *,
+                             int (*pre)(pddl_cond_t *, void *),
+                             int (*post)(pddl_cond_t *, void *),
+                             void *userdata);
+static int condImplyRebuild(pddl_cond_imply_t **a,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
+                            void *userdata);
+static void condImplyPrintPDDL(const pddl_cond_imply_t *b,
+                               const pddl_t *pddl,
+                               const pddl_params_t *params,
+                               FILE *fout);
+
 
 static pddl_cond_cls_t cond_cls[PDDL_COND_NUM_TYPES] = {
     MCLS(Part),   // PDDL_COND_AND
@@ -183,6 +198,7 @@ static pddl_cond_cls_t cond_cls[PDDL_COND_NUM_TYPES] = {
     MCLS(FuncOp), // PDDL_COND_ASSIGN
     MCLS(FuncOp), // PDDL_COND_INCREASE
     MCLS(Bool),   // PDDL_COND_BOOL
+    MCLS(Imply),  // PDDL_COND_IMPLY
 };
 
 static pddl_cond_t *parse(const pddl_lisp_node_t *root,
@@ -261,6 +277,8 @@ static int _negate(pddl_cond_t *c, const pddl_t *pddl)
             if (_negate(ch, pddl) != 0)
                 TRACE_RET(-1);
         }
+
+        // TODO: IMPLY
 
     }else{
         ERR_RET2(-1, "pddlCondNegatePre() can be used only on normalized"
@@ -698,6 +716,84 @@ static void condBoolPrintPDDL(const pddl_cond_bool_t *b,
 }
 
 
+/*** IMPLY ***/
+static pddl_cond_imply_t *condImplyNew(void)
+{
+    return condNew(pddl_cond_imply_t, PDDL_COND_IMPLY);
+}
+
+static void condImplyDel(pddl_cond_imply_t *a)
+{
+    if (a->left != NULL)
+        pddlCondDel(a->left);
+    if (a->right != NULL)
+        pddlCondDel(a->right);
+    BOR_FREE(a);
+}
+
+static pddl_cond_imply_t *condImplyClone(const pddl_cond_imply_t *a)
+{
+    pddl_cond_imply_t *n = condImplyNew();
+    if (a->left != NULL)
+        n->left = pddlCondClone(a->left);
+    if (a->right != NULL)
+        n->right = pddlCondClone(a->right);
+    return n;
+}
+
+static int condImplyTraverse(pddl_cond_imply_t *imp,
+                            int (*pre)(pddl_cond_t *, void *),
+                            int (*post)(pddl_cond_t *, void *),
+                            void *u)
+{
+    if (imp->left != NULL){
+        if (condTraverse(imp->left, pre, post, u) != 0)
+            return -1;
+    }
+    if (imp->right != NULL){
+        if (condTraverse(imp->right, pre, post, u) != 0)
+            return -1;
+    }
+    return 0;
+}
+
+static int condImplyRebuild(pddl_cond_imply_t **imp,
+                           int (*pre)(pddl_cond_t **, void *),
+                           int (*post)(pddl_cond_t **, void *),
+                           void *u)
+{
+    if ((*imp)->left != NULL){
+        if (condRebuild(&(*imp)->left, pre, post, u) != 0)
+            return -1;
+    }
+    if ((*imp)->right != NULL){
+        if (condRebuild(&(*imp)->right, pre, post, u) != 0)
+            return -1;
+    }
+    return 0;
+}
+
+static void condImplyPrintPDDL(const pddl_cond_imply_t *imp,
+                               const pddl_t *pddl,
+                               const pddl_params_t *params,
+                               FILE *fout)
+{
+    fprintf(fout, "(imply ");
+    if (imp->left == NULL){
+        fprintf(fout, "()");
+    }else{
+        pddlCondPrintPDDL(imp->left, pddl, params, fout);
+    }
+    fprintf(fout, " ");
+    if (imp->right == NULL){
+        fprintf(fout, "()");
+    }else{
+        pddlCondPrintPDDL(imp->right, pddl, params, fout);
+    }
+    fprintf(fout, ")");
+}
+
+
 
 
 void pddlCondDel(pddl_cond_t *cond)
@@ -1044,6 +1140,7 @@ static pddl_cond_t *parseImply(const pddl_lisp_node_t *left,
                                const parse_ctx_t *ctx,
                                int negated)
 {
+    // TODO
     pddl_cond_part_t *part;
     pddl_cond_t *cleft = NULL, *cright = NULL;
 
@@ -1475,6 +1572,7 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
                 || cond->type == PDDL_COND_INCREASE){
         return 0;
     }
+    // TODO: IMPLY
 
     return -1;
 }
@@ -1690,6 +1788,7 @@ static int instantiateCond(pddl_cond_t *c, void *data)
         if (OBJ(c, func_op)->fvalue)
             return instantiateCond(&OBJ(c, func_op)->fvalue->cls, data);
     }
+    // TODO: IMPLY
 
     return 0;
 }
@@ -1787,6 +1886,7 @@ static int instantiateExist(pddl_cond_t **c, void *data)
     return 0;
 }
 
+// TODO: Remove this function
 static void pddlCondInstantiateQuant(pddl_cond_t **cond,
                                      const pddl_types_t *types)
 {
@@ -2035,6 +2135,7 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl)
     pddl_cond_t *c = cond;
 
     // TODO: Check return values
+    // TODO: IMPLY
     pddlCondInstantiateQuant(&c, &pddl->type);
     pddlCondRebuild(&c, NULL, removeBool, NULL);
     pddlCondRebuild(&c, NULL, flatten, NULL);
@@ -2181,6 +2282,7 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl)
     struct deconflict_pre dp;
     pddl_cond_t *c = cond;
 
+    // TODO: IMPLY
     dp.pddl = pddl;
     dp.change = 0;
     pddlCondRebuild(&c, NULL, deconflictPre, &dp);
@@ -2263,6 +2365,7 @@ pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl)
 {
     pddl_cond_t *c = cond;
     int change = 0;
+    // TODO: IMPLY
     pddlCondRebuild(&c, deconflictEffPre, deconflictEffPost, &change);
     if (change)
         c = pddlCondNormalize(c, pddl);
@@ -2371,6 +2474,21 @@ static void condBoolPrint(const pddl_cond_bool_t *b, FILE *fout)
     }
 }
 
+static void condImplyPrint(const pddl_cond_imply_t *imp,
+                           const pddl_t *pddl,
+                           const pddl_params_t *params,
+                           FILE *fout)
+
+{
+    fprintf(fout, "(imply ");
+    if (imp->left)
+        pddlCondPrint(pddl, imp->left, params, fout);
+    fprintf(fout, " ");
+    if (imp->right)
+        pddlCondPrint(pddl, imp->right, params, fout);
+    fprintf(fout, ")");
+}
+
 void pddlCondPrint(const struct pddl *pddl,
                    const pddl_cond_t *cond,
                    const pddl_params_t *params,
@@ -2402,6 +2520,9 @@ void pddlCondPrint(const struct pddl *pddl,
 
     }else if (cond->type == PDDL_COND_BOOL){
         condBoolPrint(OBJ(cond, bool), fout);
+
+    }else if (cond->type == PDDL_COND_IMPLY){
+        condImplyPrint(OBJ(cond, imply), pddl, params, fout);
 
     }else{
         fprintf(stderr, "Fatal Error: Unknown type!\n");

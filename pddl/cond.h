@@ -46,7 +46,8 @@ extern "C" {
 #define PDDL_COND_ASSIGN 6u
 #define PDDL_COND_INCREASE 7u
 #define PDDL_COND_BOOL   8u
-#define PDDL_COND_NUM_TYPES 9
+#define PDDL_COND_IMPLY  9u
+#define PDDL_COND_NUM_TYPES 10
 
 #define PDDL_COND_CAST(C, T) \
     (bor_container_of((C), pddl_cond_##T##_t, cls))
@@ -132,6 +133,16 @@ struct pddl_cond_bool {
     int val;
 };
 typedef struct pddl_cond_bool pddl_cond_bool_t;
+
+/**
+ * Imply: (imply (...) (...))
+ */
+struct pddl_cond_imply {
+    pddl_cond_t cls;
+    pddl_cond_t *left;
+    pddl_cond_t *right;
+};
+typedef struct pddl_cond_imply pddl_cond_imply_t;
 
 
 /**
@@ -271,7 +282,7 @@ pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const pddl_t *pddl);
  * If conflicting literals are found
  *   1) in the and node, then the and node is replaced by false
  *   2) in the or node, the literals are removed (as if they were replaced
- *      by true are or simplified).
+ *      by true are simplified).
  */
 pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl);
 
