@@ -238,10 +238,12 @@ void pddlActionAssertPreConjuction(pddl_action_t *a)
     pre = bor_container_of(a->pre, pddl_cond_part_t, cls);
     BOR_LIST_FOR_EACH(&pre->part, item){
         c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-        if (c->type != PDDL_COND_ATOM){
+        if (c->type != PDDL_COND_ATOM
+                && c->type != PDDL_COND_IMPLY){
             fprintf(stderr, "Fatal Error: Precondition of the action `%s' is"
                             " not a flatten conjuction (conjuction contains"
-                            " something else besides atoms).\n", a->name);
+                            " something else besides atoms"
+                            " and implications).\n", a->name);
             exit(-1);
         }
     }

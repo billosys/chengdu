@@ -156,6 +156,11 @@ void pddlCondDel(pddl_cond_t *cond);
 pddl_cond_t *pddlCondClone(const pddl_cond_t *cond);
 
 /**
+ * Returns a negated copy of the condition.
+ */
+pddl_cond_t *pddlCondNegate(const pddl_cond_t *cond);
+
+/**
  * Creates and returns a negated copy of cond.
  * Works only with normalized preconditions, i.e., cond can be either
  * flattened (CNF) or atom.
