@@ -278,7 +278,8 @@ void pddlCondSetPredReadWriteEff(const pddl_cond_t *cond, pddl_preds_t *preds);
  * Normalize conditionals by instantiation qunatifiers and transformation to
  * DNF so that the actions can be split.
  */
-pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl);
+pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl,
+                               const pddl_params_t *params);
 
 /**
  * Remove atom node duplicates.
@@ -291,7 +292,8 @@ pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const pddl_t *pddl);
  *   2) in the or node, the literals are removed (as if they were replaced
  *      by true are simplified).
  */
-pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl);
+pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl,
+                                   const pddl_params_t *params);
 
 /**
  * If conflicting literals are found
@@ -299,7 +301,8 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl);
  *      rule "first delete then add".
  *   2) in the or node, the error is reported.
  */
-pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl);
+pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl,
+                                   const pddl_params_t *params);
 
 /**
  * Returns true if the atom is a grounded fact.

@@ -51,7 +51,7 @@ struct pddl_preds {
     pddl_pred_t *pred;
     int size;
     int alloc;
-    int eq_pred; /*!< -1 or index of the predicate that corresponds to
+    int eq_pred; /*!< index of the predicate that corresponds to
                       (= .  .) predicate */
 };
 typedef struct pddl_preds pddl_preds_t;

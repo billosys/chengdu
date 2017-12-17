@@ -147,8 +147,8 @@ void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src)
 
 void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl)
 {
-    a->pre = pddlCondNormalize(a->pre, pddl);
-    a->eff = pddlCondNormalize(a->eff, pddl);
+    a->pre = pddlCondNormalize(a->pre, pddl, &a->param);
+    a->eff = pddlCondNormalize(a->eff, pddl, &a->param);
 
     if (a->pre->type == PDDL_COND_ATOM)
         a->pre = pddlCondAtomToAnd(a->pre);
@@ -238,12 +238,10 @@ void pddlActionAssertPreConjuction(pddl_action_t *a)
     pre = bor_container_of(a->pre, pddl_cond_part_t, cls);
     BOR_LIST_FOR_EACH(&pre->part, item){
         c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-        if (c->type != PDDL_COND_ATOM
-                && c->type != PDDL_COND_IMPLY){
+        if (c->type != PDDL_COND_ATOM){
             fprintf(stderr, "Fatal Error: Precondition of the action `%s' is"
                             " not a flatten conjuction (conjuction contains"
-                            " something else besides atoms"
-                            " and implications).\n", a->name);
+                            " something else besides atoms).\n", a->name);
             exit(-1);
         }
     }

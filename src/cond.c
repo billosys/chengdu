@@ -2386,13 +2386,158 @@ static int removeNonStaticImply(pddl_cond_t **c, void *data)
 }
 
 
-pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl)
+static void implyAtomParams(const pddl_cond_atom_t *atom, bor_iset_t *params)
+{
+    for (int i = 0; i < atom->arg_size; ++i){
+        if (atom->arg[i].param >= 0)
+            borISetAdd(params, atom->arg[i].param);
+    }
+}
+
+static int implyParams(pddl_cond_t *c, void *data)
+{
+    bor_iset_t *params = data;
+    pddl_cond_imply_t *imp;
+    bor_list_t *item;
+    pddl_cond_part_t *and;
+    pddl_cond_t *p;
+
+    if (c->type == PDDL_COND_IMPLY){
+        imp = OBJ(c, imply);
+        if (imp->left->type == PDDL_COND_ATOM){
+            implyAtomParams(OBJ(imp->left, atom), params);
+
+        }else if (imp->left->type == PDDL_COND_AND){
+            and = OBJ(imp->left, part);
+            BOR_LIST_FOR_EACH(&and->part, item){
+                p = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+                if (p->type == PDDL_COND_ATOM)
+                    implyAtomParams(OBJ(p, atom), params);
+            }
+        }
+    }
+
+    return 0;
+}
+
+struct instantiate_ctx {
+    const bor_iset_t *params;
+    const int *arg;
+};
+typedef struct instantiate_ctx instantiate_ctx_t;
+
+static int instantiateTraverse(pddl_cond_t *cond, void *ud)
+{
+    const instantiate_ctx_t *ctx = ud;
+    if (cond->type == PDDL_COND_ATOM){
+        pddl_cond_atom_t *atom = OBJ(cond, atom);
+        for (int i = 0; i < atom->arg_size; ++i){
+            for (int j = 0; j < borISetSize(ctx->params); ++j){
+                if (atom->arg[i].param == borISetGet(ctx->params, j)){
+                    atom->arg[i].param = -1;
+                    atom->arg[i].obj = ctx->arg[j];
+                    break;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+static pddl_cond_t *instantiate(pddl_cond_t *cond,
+                                const bor_iset_t *params,
+                                const int *arg,
+                                int eq_pred)
+{
+    pddl_cond_part_t *and;
+    pddl_cond_atom_t *eq;
+    pddl_cond_t *c = pddlCondClone(cond);
+    instantiate_ctx_t ctx;
+
+    and = condPartNew(PDDL_COND_AND);
+    for (int i = 0; i < borISetSize(params); ++i){
+        int param = borISetGet(params, i);
+        eq = condAtomNew();
+        eq->pred = eq_pred;
+        eq->arg_size = 2;
+        eq->arg = BOR_ALLOC_ARR(pddl_cond_atom_arg_t, 2);
+        eq->arg[0].param = param;
+        eq->arg[0].obj = -1;
+        eq->arg[1].param = -1;
+        eq->arg[1].obj = arg[i];
+        pddlCondPartAdd(and, &eq->cls);
+    }
+
+    ctx.params = params;
+    ctx.arg = arg;
+    pddlCondTraverse(c, NULL, instantiateTraverse, &ctx);
+
+    pddlCondPartAdd(and, c);
+    return &and->cls;
+}
+
+static void removeStaticImplyRec(pddl_cond_part_t *top,
+                                 pddl_cond_t *cond,
+                                 const pddl_t *pddl,
+                                 const pddl_params_t *params,
+                                 const bor_iset_t *imp_params,
+                                 int pidx,
+                                 int *arg)
+{
+    const int *obj;
+    int obj_size;
+
+    if (pidx == borISetSize(imp_params)){
+        pddl_cond_t *c = instantiate(cond, imp_params, arg,
+                                     pddl->pred.eq_pred);
+        pddlCondPartAdd(top, c);
+    }else{
+        int param = borISetGet(imp_params, pidx);
+        obj = pddlTypesObjsByType(&pddl->type, params->param[param].type,
+                                  &obj_size);
+        for (int i = 0; i < obj_size; ++i){
+            arg[pidx] = obj[i];
+            removeStaticImplyRec(top, cond, pddl, params,
+                                 imp_params, pidx + 1, arg);
+        }
+    }
+}
+                                 
+/** Implications are removed by instantiation of the left sides and putting
+ *  the instantiated objects to (= ...) predicate. */
+static int removeStaticImply(pddl_cond_t **cond, const pddl_t *pddl,
+                             const pddl_params_t *params)
+{
+    pddl_cond_part_t *or;
+    BOR_ISET(imply_params);
+    int *obj;
+
+    if (params == NULL)
+        return 0;
+
+    pddlCondTraverse(*cond, NULL, implyParams, &imply_params);
+    if (borISetSize(&imply_params) > 0){
+        obj = BOR_ALLOC_ARR(int, borISetSize(&imply_params));
+        or = condPartNew(PDDL_COND_OR);
+        removeStaticImplyRec(or, *cond, pddl, params, &imply_params, 0, obj);
+        BOR_FREE(obj);
+        pddlCondDel(*cond);
+        *cond = &or->cls;
+    }
+    borISetFree(&imply_params);
+    return 0;
+}
+
+pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl,
+                               const pddl_params_t *params)
 {
     pddl_cond_t *c = cond;
 
     // TODO: Check return values
     pddlCondInstantiateQuant(&c, &pddl->type);
     pddlCondRebuild(&c, NULL, removeNonStaticImply, (void *)pddl);
+    removeStaticImply(&c, pddl, params);
     pddlCondRebuild(&c, NULL, removeBool, (void *)pddl);
     pddlCondRebuild(&c, NULL, flatten, NULL);
     pddlCondRebuild(&c, NULL, moveDisjunctionsUp, NULL);
@@ -2533,7 +2678,8 @@ static int deconflictPre(pddl_cond_t **c, void *data)
     return 0;
 }
 
-pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl)
+pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl,
+                                   const pddl_params_t *params)
 {
     struct deconflict_pre dp;
     pddl_cond_t *c = cond;
@@ -2543,7 +2689,7 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl)
     dp.change = 0;
     pddlCondRebuild(&c, NULL, deconflictPre, &dp);
     if (dp.change)
-        c = pddlCondNormalize(c, pddl);
+        c = pddlCondNormalize(c, pddl, params);
     return c;
 }
 
@@ -2617,13 +2763,14 @@ static int deconflictEffPre(pddl_cond_t **c, void *data)
     return 0;
 }
 
-pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl)
+pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl,
+                                   const pddl_params_t *params)
 {
     pddl_cond_t *c = cond;
     int change = 0;
     pddlCondRebuild(&c, deconflictEffPre, deconflictEffPost, &change);
     if (change)
-        c = pddlCondNormalize(c, pddl);
+        c = pddlCondNormalize(c, pddl, params);
     return c;
 }
 

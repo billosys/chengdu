@@ -500,8 +500,8 @@ static void removeIrrelevantActions(pddl_t *pddl)
 {
     for (int ai = 0; ai < pddl->action.size;){
         pddl_action_t *a = pddl->action.action + ai;
-        a->pre = pddlCondDeconflictPre(a->pre, pddl);
-        a->eff = pddlCondDeconflictEff(a->eff, pddl);
+        a->pre = pddlCondDeconflictPre(a->pre, pddl, &a->param);
+        a->eff = pddlCondDeconflictEff(a->eff, pddl, &a->param);
 
         if (isFalsePre(a->pre) || !pddlCondHasAtom(a->eff)){
             pddlActionFree(a);
@@ -533,7 +533,7 @@ void pddlNormalize(pddl_t *pddl)
 #endif
 
     if (pddl->goal)
-        pddl->goal = pddlCondNormalize(pddl->goal, pddl);
+        pddl->goal = pddlCondNormalize(pddl->goal, pddl, NULL);
 
     compileOutNonStaticNegPre(pddl);
 }
