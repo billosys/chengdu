@@ -2683,7 +2683,6 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl,
 {
     struct deconflict_pre dp;
     pddl_cond_t *c = cond;
-    return c;
 
     dp.pddl = pddl;
     dp.change = 0;
