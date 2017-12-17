@@ -49,6 +49,8 @@ extern "C" {
 #define PDDL_COND_IMPLY  9u
 #define PDDL_COND_NUM_TYPES 10
 
+const char *pddlCondTypeName(int type);
+
 #define PDDL_COND_CAST(C, T) \
     (bor_container_of((C), pddl_cond_##T##_t, cls))
 
@@ -303,6 +305,13 @@ pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl);
  * Returns true if the atom is a grounded fact.
  */
 int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom);
+
+/**
+ * Returns true if a1 equals to a2 regardless of negation (i.e., .neg flag
+ * is ignored).
+ */
+int pddlCondAtomEq(const pddl_cond_atom_t *a1,
+                   const pddl_cond_atom_t *a2);
 
 void pddlCondPrint(const pddl_t *pddl,
                    const pddl_cond_t *cond,

@@ -25,6 +25,26 @@
 #include "err.h"
 #include "assert.h"
 
+static char *type_names[PDDL_COND_NUM_TYPES] = {
+    "and",      /* PDDL_COND_AND */
+    "or",       /* PDDL_COND_OR */
+    "forall",   /* PDDL_COND_FORALL */
+    "exist",    /* PDDL_COND_EXIST */
+    "when",     /* PDDL_COND_WHEN */
+    "atom",     /* PDDL_COND_ATOM */
+    "assign",   /* PDDL_COND_ASSIGN */
+    "increase", /* PDDL_COND_INCREASE */
+    "bool",     /* PDDL_COND_BOOL */
+    "imply",    /* PDDL_COND_IMPLY */
+};
+
+const char *pddlCondTypeName(int type)
+{
+    if (type >= 0 && type < PDDL_COND_NUM_TYPES)
+        return type_names[type];
+    return "unkown";
+}
+
 typedef void (*pddl_cond_method_del_fn)(pddl_cond_t *);
 typedef pddl_cond_t *(*pddl_cond_method_clone_fn)(const pddl_cond_t *);
 typedef pddl_cond_t *(*pddl_cond_method_negate_fn)(const pddl_cond_t *);
@@ -308,11 +328,9 @@ static int _negate(pddl_cond_t *c, const pddl_t *pddl)
                 TRACE_RET(-1);
         }
 
-        // TODO: IMPLY
-
     }else{
         ERR_RET2(-1, "pddlCondNegatePre() can be used only on normalized"
-                     " preconditions!");
+                     " preconditions (i.e., conjuctions of atoms)!");
     }
 
     return 0;
@@ -1895,7 +1913,6 @@ static int instantiateCond(pddl_cond_t *c, void *data)
         if (OBJ(c, func_op)->fvalue)
             return instantiateCond(&OBJ(c, func_op)->fvalue->cls, data);
     }
-    // TODO: IMPLY
 
     return 0;
 }
@@ -1993,7 +2010,6 @@ static int instantiateExist(pddl_cond_t **c, void *data)
     return 0;
 }
 
-// TODO: Remove this function
 static void pddlCondInstantiateQuant(pddl_cond_t **cond,
                                      const pddl_types_t *types)
 {
@@ -2060,15 +2076,74 @@ static pddl_cond_t *removeBoolWhen(pddl_cond_when_t *when)
     }
 }
 
+static int atomIsInInit(const pddl_t *pddl, const pddl_cond_atom_t *atom)
+{
+    bor_list_t *item;
+    const pddl_cond_t *c;
+
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type == PDDL_COND_ATOM
+                && pddlCondAtomEq(atom, OBJ(c, atom)))
+            return 1;
+    }
+    return 0;
+}
+
+static pddl_cond_t *removeBoolAtom(pddl_cond_atom_t *atom, const pddl_t *pddl)
+{
+    int bval;
+
+    if (pddlPredIsStatic(&pddl->pred.pred[atom->pred])
+            && pddlCondAtomIsGrounded(atom)){
+        if (atomIsInInit(pddl, atom)){
+            bval = !atom->neg;
+        }else{
+            bval = atom->neg;
+        }
+        pddlCondDel(&atom->cls);
+        return &condBoolNew(bval)->cls;
+    }
+
+    return &atom->cls;
+}
+
+static pddl_cond_t *removeBoolImply(pddl_cond_imply_t *imp)
+{
+    if (imp->left->type == PDDL_COND_BOOL){
+        pddl_cond_bool_t *b = OBJ(imp->left, bool);
+        if (b->val){
+            pddl_cond_t *ret = imp->right;
+            imp->right = NULL;
+            pddlCondDel(&imp->cls);
+            return ret;
+
+        }else{
+            pddlCondDel(&imp->cls);
+            //fprintf(stderr, "X\n");
+            return &condBoolNew(1)->cls;
+        }
+    }
+
+    return &imp->cls;
+}
+
 static int removeBool(pddl_cond_t **c, void *data)
 {
+    const pddl_t *pddl = data;
 
-    if ((*c)->type == PDDL_COND_AND
+    if ((*c)->type == PDDL_COND_ATOM){
+        *c = removeBoolAtom(OBJ(*c, atom), pddl);
+
+    }else if ((*c)->type == PDDL_COND_AND
             || (*c)->type == PDDL_COND_OR){
         *c = removeBoolPart(OBJ(*c, part));
 
     }else if ((*c)->type == PDDL_COND_WHEN){
         *c = removeBoolWhen(OBJ(*c, when));
+
+    }else if ((*c)->type == PDDL_COND_IMPLY){
+        *c = removeBoolImply(OBJ(*c, imply));
     }
 
     return 0;
@@ -2238,8 +2313,7 @@ static int moveDisjunctionsUp(pddl_cond_t **c, void *data)
 
 /** (imply ...) is considered static if it has a simple flattened left and
  *  right side and the left side consists solely of static predicates. */
-static int isStaticImply(const pddl_cond_imply_t *imp,
-                         const pddl_t *pddl)
+static int isStaticImply(const pddl_cond_imply_t *imp, const pddl_t *pddl)
 {
     ASSERT(imp->left != NULL && imp->right != NULL);
     pddl_cond_part_t *and;
@@ -2319,7 +2393,7 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl)
     // TODO: Check return values
     pddlCondInstantiateQuant(&c, &pddl->type);
     pddlCondRebuild(&c, NULL, removeNonStaticImply, (void *)pddl);
-    pddlCondRebuild(&c, NULL, removeBool, NULL);
+    pddlCondRebuild(&c, NULL, removeBool, (void *)pddl);
     pddlCondRebuild(&c, NULL, flatten, NULL);
     pddlCondRebuild(&c, NULL, moveDisjunctionsUp, NULL);
     pddlCondRebuild(&c, NULL, flatten, NULL);
@@ -2463,8 +2537,8 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl)
 {
     struct deconflict_pre dp;
     pddl_cond_t *c = cond;
+    return c;
 
-    // TODO: IMPLY
     dp.pddl = pddl;
     dp.change = 0;
     pddlCondRebuild(&c, NULL, deconflictPre, &dp);
@@ -2547,7 +2621,6 @@ pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl)
 {
     pddl_cond_t *c = cond;
     int change = 0;
-    // TODO: IMPLY
     pddlCondRebuild(&c, deconflictEffPre, deconflictEffPost, &change);
     if (change)
         c = pddlCondNormalize(c, pddl);
@@ -2560,6 +2633,21 @@ int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom)
         if (atom->arg[i].param >= 0)
             return 0;
     }
+    return 1;
+}
+
+int pddlCondAtomEq(const pddl_cond_atom_t *a1,
+                   const pddl_cond_atom_t *a2)
+{
+    if (a1->pred != a2->pred || a1->arg_size != a2->arg_size)
+        return 0;
+
+    for (int i = 0; i < a1->arg_size; ++i){
+        if (a1->arg[i].param != a2->arg[i].param
+                || a1->arg[i].obj != a2->arg[i].obj)
+            return 0;
+    }
+
     return 1;
 }
 
