@@ -118,7 +118,8 @@ void pddlGroundAtomsInit(pddl_ground_atoms_t *ga)
 
 void pddlGroundAtomsFree(pddl_ground_atoms_t *ga)
 {
-    borHTableDel(ga->htable);
+    if (ga->htable != NULL)
+        borHTableDel(ga->htable);
     for (int i = 0; i < ga->atom_size; ++i){
         if (ga->atom[i] != NULL)
             pddlGroundAtomDel(ga->atom[i]);
