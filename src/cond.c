@@ -23,9 +23,32 @@
 #include "pddl/pddl.h"
 #include "pddl/cond.h"
 #include "err.h"
+#include "assert.h"
+
+static char *type_names[PDDL_COND_NUM_TYPES] = {
+    "and",      /* PDDL_COND_AND */
+    "or",       /* PDDL_COND_OR */
+    "forall",   /* PDDL_COND_FORALL */
+    "exist",    /* PDDL_COND_EXIST */
+    "when",     /* PDDL_COND_WHEN */
+    "atom",     /* PDDL_COND_ATOM */
+    "assign",   /* PDDL_COND_ASSIGN */
+    "increase", /* PDDL_COND_INCREASE */
+    "bool",     /* PDDL_COND_BOOL */
+    "imply",    /* PDDL_COND_IMPLY */
+};
+
+const char *pddlCondTypeName(int type)
+{
+    if (type >= 0 && type < PDDL_COND_NUM_TYPES)
+        return type_names[type];
+    return "unkown";
+}
 
 typedef void (*pddl_cond_method_del_fn)(pddl_cond_t *);
 typedef pddl_cond_t *(*pddl_cond_method_clone_fn)(const pddl_cond_t *);
+typedef pddl_cond_t *(*pddl_cond_method_negate_fn)(const pddl_cond_t *,
+                                                   const pddl_t *);
 typedef int (*pddl_cond_method_traverse_fn)(pddl_cond_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -53,6 +76,7 @@ static int condRebuild(pddl_cond_t **c,
 struct pddl_cond_cls {
     pddl_cond_method_del_fn del;
     pddl_cond_method_clone_fn clone;
+    pddl_cond_method_negate_fn negate;
     pddl_cond_method_traverse_fn traverse;
     pddl_cond_method_rebuild_fn rebuild;
     pddl_cond_method_print_pddl_fn print_pddl;
@@ -63,6 +87,7 @@ typedef struct pddl_cond_cls pddl_cond_cls_t;
 #define MCLS(NAME) \
     { .del = METHOD(cond##NAME##Del, del), \
       .clone = METHOD(cond##NAME##Clone, clone), \
+      .negate = METHOD(cond##NAME##Negate, negate), \
       .traverse = METHOD(cond##NAME##Traverse, traverse), \
       .rebuild = METHOD(cond##NAME##Rebuild, rebuild), \
       .print_pddl = METHOD(cond##NAME##PrintPDDL, print_pddl), \
@@ -83,6 +108,8 @@ typedef struct parse_ctx parse_ctx_t;
 
 static void condPartDel(pddl_cond_part_t *);
 static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p);
+static pddl_cond_part_t *condPartNegate(const pddl_cond_part_t *p,
+                                        const pddl_t *pddl);
 static void condPartAdd(pddl_cond_part_t *p, pddl_cond_t *add);
 static int condPartTraverse(pddl_cond_part_t *,
                             int (*pre)(pddl_cond_t *, void *),
@@ -99,6 +126,8 @@ static void condPartPrintPDDL(const pddl_cond_part_t *p,
 
 static void condQuantDel(pddl_cond_quant_t *);
 static pddl_cond_quant_t *condQuantClone(const pddl_cond_quant_t *q);
+static pddl_cond_quant_t *condQuantNegate(const pddl_cond_quant_t *q,
+                                          const pddl_t *pddl);
 static int condQuantTraverse(pddl_cond_quant_t *,
                              int (*pre)(pddl_cond_t *, void *),
                              int (*post)(pddl_cond_t *, void *),
@@ -114,6 +143,8 @@ static void condQuantPrintPDDL(const pddl_cond_quant_t *q,
 
 static void condWhenDel(pddl_cond_when_t *);
 static pddl_cond_when_t *condWhenClone(const pddl_cond_when_t *w);
+static pddl_cond_when_t *condWhenNegate(const pddl_cond_when_t *w,
+                                        const pddl_t *pddl);
 static int condWhenTraverse(pddl_cond_when_t *w,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -129,6 +160,8 @@ static void condWhenPrintPDDL(const pddl_cond_when_t *w,
 
 static void condAtomDel(pddl_cond_atom_t *);
 static pddl_cond_atom_t *condAtomClone(const pddl_cond_atom_t *a);
+static pddl_cond_atom_t *condAtomNegate(const pddl_cond_atom_t *a,
+                                        const pddl_t *pddl);
 static int condAtomTraverse(pddl_cond_atom_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -144,6 +177,8 @@ static void condAtomPrintPDDL(const pddl_cond_atom_t *a,
 
 static void condFuncOpDel(pddl_cond_func_op_t *);
 static pddl_cond_func_op_t *condFuncOpClone(const pddl_cond_func_op_t *);
+static pddl_cond_func_op_t *condFuncOpNegate(const pddl_cond_func_op_t *,
+                                             const pddl_t *pddl);
 static int condFuncOpTraverse(pddl_cond_func_op_t *,
                               int (*pre)(pddl_cond_t *, void *),
                               int (*post)(pddl_cond_t *, void *),
@@ -159,6 +194,8 @@ static void condFuncOpPrintPDDL(const pddl_cond_func_op_t *,
 
 static void condBoolDel(pddl_cond_bool_t *);
 static pddl_cond_bool_t *condBoolClone(const pddl_cond_bool_t *a);
+static pddl_cond_bool_t *condBoolNegate(const pddl_cond_bool_t *a,
+                                        const pddl_t *pddl);
 static int condBoolTraverse(pddl_cond_bool_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -172,6 +209,23 @@ static void condBoolPrintPDDL(const pddl_cond_bool_t *b,
                               const pddl_params_t *params,
                               FILE *fout);
 
+static void condImplyDel(pddl_cond_imply_t *);
+static pddl_cond_imply_t *condImplyClone(const pddl_cond_imply_t *a);
+static pddl_cond_t *condImplyNegate(const pddl_cond_imply_t *a,
+                                    const pddl_t *pddl);
+static int condImplyTraverse(pddl_cond_imply_t *,
+                             int (*pre)(pddl_cond_t *, void *),
+                             int (*post)(pddl_cond_t *, void *),
+                             void *userdata);
+static int condImplyRebuild(pddl_cond_imply_t **a,
+                            int (*pre)(pddl_cond_t **, void *),
+                            int (*post)(pddl_cond_t **, void *),
+                            void *userdata);
+static void condImplyPrintPDDL(const pddl_cond_imply_t *b,
+                               const pddl_t *pddl,
+                               const pddl_params_t *params,
+                               FILE *fout);
+
 
 static pddl_cond_cls_t cond_cls[PDDL_COND_NUM_TYPES] = {
     MCLS(Part),   // PDDL_COND_AND
@@ -183,6 +237,7 @@ static pddl_cond_cls_t cond_cls[PDDL_COND_NUM_TYPES] = {
     MCLS(FuncOp), // PDDL_COND_ASSIGN
     MCLS(FuncOp), // PDDL_COND_INCREASE
     MCLS(Bool),   // PDDL_COND_BOOL
+    MCLS(Imply),  // PDDL_COND_IMPLY
 };
 
 static pddl_cond_t *parse(const pddl_lisp_node_t *root,
@@ -241,43 +296,24 @@ static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p)
     return n;
 }
 
-static int _negate(pddl_cond_t *c, const pddl_t *pddl)
+static pddl_cond_part_t *condPartNegate(const pddl_cond_part_t *p,
+                                        const pddl_t *pddl)
 {
-    if (c->type == PDDL_COND_ATOM){
-        pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
-        if (pddl->pred.pred[a->pred].neg_of >= 0){
-            a->pred = pddl->pred.pred[a->pred].neg_of;
-        }else{
-            a->neg = !a->neg;
-        }
+    pddl_cond_part_t *n;
+    pddl_cond_t *c, *nc;
+    bor_list_t *item;
 
-    }else if (c->type == PDDL_COND_AND){
-        pddl_cond_part_t *p = PDDL_COND_CAST(c, part);
-        p->cls.type = PDDL_COND_OR;
-        bor_list_t *item;
-        pddl_cond_t *ch;
-        BOR_LIST_FOR_EACH(&p->part, item){
-            ch = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            if (_negate(ch, pddl) != 0)
-                TRACE_RET(-1);
-        }
-
+    if (p->cls.type == PDDL_COND_AND){
+        n = condPartNew(PDDL_COND_OR);
     }else{
-        ERR_RET2(-1, "pddlCondNegatePre() can be used only on normalized"
-                     " preconditions!");
+        n = condPartNew(PDDL_COND_AND);
     }
-
-    return 0;
-}
-
-pddl_cond_t *pddlCondNegatePre(const pddl_cond_t *cond, const pddl_t *pddl)
-{
-    pddl_cond_t *c = pddlCondClone(cond);
-    if (_negate(c, pddl) != 0){
-        pddlCondDel(c);
-        TRACE_RET(NULL);
+    BOR_LIST_FOR_EACH(&p->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        nc = pddlCondNegate(c, pddl);
+        borListAppend(&n->part, &nc->conn);
     }
-    return c;
+    return n;
 }
 
 static void condPartAdd(pddl_cond_part_t *p, pddl_cond_t *add)
@@ -389,6 +425,21 @@ static pddl_cond_quant_t *condQuantClone(const pddl_cond_quant_t *q)
     return n;
 }
 
+static pddl_cond_quant_t *condQuantNegate(const pddl_cond_quant_t *q,
+                                          const pddl_t *pddl)
+{
+    pddl_cond_quant_t *n;
+
+    if (q->cls.type == PDDL_COND_FORALL){
+        n = condQuantNew(PDDL_COND_EXIST);
+    }else{
+        n = condQuantNew(PDDL_COND_FORALL);
+    }
+    pddlParamsCopy(&n->param, &q->param);
+    n->cond = pddlCondNegate(q->cond, pddl);
+    return n;
+}
+
 static int condQuantTraverse(pddl_cond_quant_t *q,
                              int (*pre)(pddl_cond_t *, void *),
                              int (*post)(pddl_cond_t *, void *),
@@ -460,6 +511,13 @@ static pddl_cond_when_t *condWhenClone(const pddl_cond_when_t *w)
     return n;
 }
 
+static pddl_cond_when_t *condWhenNegate(const pddl_cond_when_t *w,
+                                        const pddl_t *pddl)
+{
+    fprintf(stderr, "Fatal Error: Cannot negate (when ...)\n");
+    exit(-1);
+}
+
 static int condWhenTraverse(pddl_cond_when_t *w,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -526,6 +584,20 @@ static pddl_cond_atom_t *condAtomClone(const pddl_cond_atom_t *a)
     memcpy(n->arg, a->arg, sizeof(pddl_cond_atom_arg_t) * n->arg_size);
     n->neg = a->neg;
 
+    return n;
+}
+
+static pddl_cond_atom_t *condAtomNegate(const pddl_cond_atom_t *a,
+                                        const pddl_t *pddl)
+{
+    pddl_cond_atom_t *n;
+
+    n = condAtomClone(a);
+    if (pddl->pred.pred[a->pred].neg_of >= 0){
+        n->pred = pddl->pred.pred[a->pred].neg_of;
+    }else{
+        n->neg = !a->neg;
+    }
     return n;
 }
 
@@ -608,6 +680,13 @@ static pddl_cond_func_op_t *condFuncOpClone(const pddl_cond_func_op_t *op)
     return n;
 }
 
+static pddl_cond_func_op_t *condFuncOpNegate(const pddl_cond_func_op_t *op,
+                                             const pddl_t *pddl)
+{
+    fprintf(stderr, "Fatal Error: Cannot negate function!\n");
+    exit(-1);
+}
+
 static int condFuncOpTraverse(pddl_cond_func_op_t *op,
                               int (*pre)(pddl_cond_t *, void *),
                               int (*post)(pddl_cond_t *, void *),
@@ -669,6 +748,14 @@ static pddl_cond_bool_t *condBoolClone(const pddl_cond_bool_t *a)
     return condBoolNew(a->val);
 }
 
+static pddl_cond_bool_t *condBoolNegate(const pddl_cond_bool_t *a,
+                                        const pddl_t *pddl)
+{
+    pddl_cond_bool_t *b = condBoolClone(a);
+    b->val = !a->val;
+    return b;
+}
+
 static int condBoolTraverse(pddl_cond_bool_t *a,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -698,6 +785,98 @@ static void condBoolPrintPDDL(const pddl_cond_bool_t *b,
 }
 
 
+/*** IMPLY ***/
+static pddl_cond_imply_t *condImplyNew(void)
+{
+    return condNew(pddl_cond_imply_t, PDDL_COND_IMPLY);
+}
+
+static void condImplyDel(pddl_cond_imply_t *a)
+{
+    if (a->left != NULL)
+        pddlCondDel(a->left);
+    if (a->right != NULL)
+        pddlCondDel(a->right);
+    BOR_FREE(a);
+}
+
+static pddl_cond_imply_t *condImplyClone(const pddl_cond_imply_t *a)
+{
+    pddl_cond_imply_t *n = condImplyNew();
+    if (a->left != NULL)
+        n->left = pddlCondClone(a->left);
+    if (a->right != NULL)
+        n->right = pddlCondClone(a->right);
+    return n;
+}
+
+static pddl_cond_t *condImplyNegate(const pddl_cond_imply_t *a,
+                                    const pddl_t *pddl)
+{
+    pddl_cond_part_t *or;
+    pddl_cond_t *left, *right;
+
+    or = condPartNew(PDDL_COND_AND);
+    left = pddlCondClone(a->left);
+    right = pddlCondNegate(a->right, pddl);
+    pddlCondPartAdd(or, left);
+    pddlCondPartAdd(or, right);
+    return &or->cls;
+}
+
+static int condImplyTraverse(pddl_cond_imply_t *imp,
+                            int (*pre)(pddl_cond_t *, void *),
+                            int (*post)(pddl_cond_t *, void *),
+                            void *u)
+{
+    if (imp->left != NULL){
+        if (condTraverse(imp->left, pre, post, u) != 0)
+            return -1;
+    }
+    if (imp->right != NULL){
+        if (condTraverse(imp->right, pre, post, u) != 0)
+            return -1;
+    }
+    return 0;
+}
+
+static int condImplyRebuild(pddl_cond_imply_t **imp,
+                           int (*pre)(pddl_cond_t **, void *),
+                           int (*post)(pddl_cond_t **, void *),
+                           void *u)
+{
+    if ((*imp)->left != NULL){
+        if (condRebuild(&(*imp)->left, pre, post, u) != 0)
+            return -1;
+    }
+    if ((*imp)->right != NULL){
+        if (condRebuild(&(*imp)->right, pre, post, u) != 0)
+            return -1;
+    }
+    return 0;
+}
+
+static void condImplyPrintPDDL(const pddl_cond_imply_t *imp,
+                               const pddl_t *pddl,
+                               const pddl_params_t *params,
+                               FILE *fout)
+{
+    fprintf(fout, "(imply ");
+    if (imp->left == NULL){
+        fprintf(fout, "()");
+    }else{
+        pddlCondPrintPDDL(imp->left, pddl, params, fout);
+    }
+    fprintf(fout, " ");
+    if (imp->right == NULL){
+        fprintf(fout, "()");
+    }else{
+        pddlCondPrintPDDL(imp->right, pddl, params, fout);
+    }
+    fprintf(fout, ")");
+}
+
+
 
 
 void pddlCondDel(pddl_cond_t *cond)
@@ -708,6 +887,12 @@ void pddlCondDel(pddl_cond_t *cond)
 pddl_cond_t *pddlCondClone(const pddl_cond_t *cond)
 {
     return cond_cls[cond->type].clone(cond);
+}
+
+pddl_cond_t *pddlCondNegate(const pddl_cond_t *cond,
+                            const pddl_t *pddl)
+{
+    return cond_cls[cond->type].negate(cond, pddl);
 }
 
 static int condTraverse(pddl_cond_t *c,
@@ -1045,6 +1230,7 @@ static pddl_cond_t *parseImply(const pddl_lisp_node_t *left,
                                int negated)
 {
     pddl_cond_part_t *part;
+    pddl_cond_imply_t *imp;
     pddl_cond_t *cleft = NULL, *cright = NULL;
 
     if (negated){
@@ -1057,9 +1243,12 @@ static pddl_cond_t *parseImply(const pddl_lisp_node_t *left,
         }
 
         part = condPartNew(PDDL_COND_AND);
+        borListAppend(&part->part, &cleft->conn);
+        borListAppend(&part->part, &cright->conn);
+        return &part->cls;
 
     }else{
-        if ((cleft = parse(left, ctx, 1)) == NULL)
+        if ((cleft = parse(left, ctx, 0)) == NULL)
             TRACE_RET(NULL);
 
         if ((cright = parse(right, ctx, 0)) == NULL){
@@ -1067,13 +1256,11 @@ static pddl_cond_t *parseImply(const pddl_lisp_node_t *left,
             TRACE_RET(NULL);
         }
 
-        part = condPartNew(PDDL_COND_OR);
+        imp = condImplyNew();
+        imp->left = cleft;
+        imp->right = cright;
+        return &imp->cls;
     }
-
-    borListAppend(&part->part, &cleft->conn);
-    borListAppend(&part->part, &cright->conn);
-
-    return &part->cls;
 }
 
 static int parseQuantParams(pddl_params_t *params,
@@ -1407,6 +1594,7 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
     pddl_cond_part_t *p;
     pddl_cond_quant_t *q;
     pddl_cond_atom_t *atom;
+    pddl_cond_imply_t *imp;
     pddl_cond_t *c;
     bor_list_t *item;
 
@@ -1469,6 +1657,22 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
             return -1;
         }
 
+        return 0;
+
+    }else if (cond->type == PDDL_COND_IMPLY){
+        imp = OBJ(cond, imply);
+        if (!(require & PDDL_REQUIRE_DISJUNCTIVE_PRE)){
+            if (verbose){
+                ERR2("(imply ...) can be used only with"
+                     " :disjunctive-preconditions");
+            }
+            return -1;
+        }
+
+        if (pddlCondCheckPre(imp->left, require, verbose) != 0)
+            return -1;
+        if (pddlCondCheckPre(imp->right, require, verbose) != 0)
+            return -1;
         return 0;
 
     }else if (cond->type == PDDL_COND_ASSIGN
@@ -1853,15 +2057,74 @@ static pddl_cond_t *removeBoolWhen(pddl_cond_when_t *when)
     }
 }
 
+static int atomIsInInit(const pddl_t *pddl, const pddl_cond_atom_t *atom)
+{
+    bor_list_t *item;
+    const pddl_cond_t *c;
+
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type == PDDL_COND_ATOM
+                && pddlCondAtomCmpNoNeg(atom, OBJ(c, atom)) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+static pddl_cond_t *removeBoolAtom(pddl_cond_atom_t *atom, const pddl_t *pddl)
+{
+    int bval;
+
+    if (pddlPredIsStatic(&pddl->pred.pred[atom->pred])
+            && pddlCondAtomIsGrounded(atom)){
+        if (atomIsInInit(pddl, atom)){
+            bval = !atom->neg;
+        }else{
+            bval = atom->neg;
+        }
+        pddlCondDel(&atom->cls);
+        return &condBoolNew(bval)->cls;
+    }
+
+    return &atom->cls;
+}
+
+static pddl_cond_t *removeBoolImply(pddl_cond_imply_t *imp)
+{
+    if (imp->left->type == PDDL_COND_BOOL){
+        pddl_cond_bool_t *b = OBJ(imp->left, bool);
+        if (b->val){
+            pddl_cond_t *ret = imp->right;
+            imp->right = NULL;
+            pddlCondDel(&imp->cls);
+            return ret;
+
+        }else{
+            pddlCondDel(&imp->cls);
+            //fprintf(stderr, "X\n");
+            return &condBoolNew(1)->cls;
+        }
+    }
+
+    return &imp->cls;
+}
+
 static int removeBool(pddl_cond_t **c, void *data)
 {
+    const pddl_t *pddl = data;
 
-    if ((*c)->type == PDDL_COND_AND
+    if ((*c)->type == PDDL_COND_ATOM){
+        *c = removeBoolAtom(OBJ(*c, atom), pddl);
+
+    }else if ((*c)->type == PDDL_COND_AND
             || (*c)->type == PDDL_COND_OR){
         *c = removeBoolPart(OBJ(*c, part));
 
     }else if ((*c)->type == PDDL_COND_WHEN){
         *c = removeBoolWhen(OBJ(*c, when));
+
+    }else if ((*c)->type == PDDL_COND_IMPLY){
+        *c = removeBoolImply(OBJ(*c, imply));
     }
 
     return 0;
@@ -2029,47 +2292,240 @@ static int moveDisjunctionsUp(pddl_cond_t **c, void *data)
     return 0;
 }
 
+/** (imply ...) is considered static if it has a simple flattened left and
+ *  right side and the left side consists solely of static predicates. */
+static int isStaticImply(const pddl_cond_imply_t *imp, const pddl_t *pddl)
+{
+    ASSERT(imp->left != NULL && imp->right != NULL);
+    pddl_cond_part_t *and;
+    pddl_cond_atom_t *atom;
+    pddl_cond_t *c;
+    bor_list_t *item;
 
-pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl)
+    if (imp->left->type == PDDL_COND_ATOM){
+        atom = OBJ(imp->left, atom);
+        if (atom->pred < 0)
+            return 0;
+        if (!pddlPredIsStatic(&pddl->pred.pred[atom->pred]))
+            return 0;
+
+    }else if (imp->left->type == PDDL_COND_AND){
+        and = OBJ(imp->left, part);
+        BOR_LIST_FOR_EACH(&and->part, item){
+            c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+            if (c->type != PDDL_COND_ATOM)
+                return 0;
+
+            atom = OBJ(c, atom);
+            if (atom->pred < 0)
+                return 0;
+            if (!pddlPredIsStatic(&pddl->pred.pred[atom->pred]))
+                return 0;
+        }
+
+    }else{
+        return 0;
+    }
+
+    if (imp->right->type == PDDL_COND_ATOM){
+        return 1;
+
+    }else if (imp->right->type == PDDL_COND_AND){
+        and = OBJ(imp->right, part);
+        BOR_LIST_FOR_EACH(&and->part, item){
+            c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+            if (c->type != PDDL_COND_ATOM)
+                return 0;
+        }
+
+    }else{
+        return 0;
+    }
+
+    return 1;
+}
+
+static int removeNonStaticImply(pddl_cond_t **c, void *data)
+{
+    pddl_cond_imply_t *imp;
+    const pddl_t *pddl = data;
+
+    if ((*c)->type != PDDL_COND_IMPLY)
+        return 0;
+    imp = OBJ(*c, imply);
+    if (!isStaticImply(imp, pddl)){
+        pddl_cond_part_t *or;
+        or = condPartNew(PDDL_COND_OR);
+        pddlCondPartAdd(or, pddlCondNegate(imp->left, pddl));
+        pddlCondPartAdd(or, imp->right);
+        *c = &or->cls;
+
+        imp->right = NULL;
+        pddlCondDel(&imp->cls);
+    }
+
+    return 0;
+}
+
+
+static void implyAtomParams(const pddl_cond_atom_t *atom, bor_iset_t *params)
+{
+    for (int i = 0; i < atom->arg_size; ++i){
+        if (atom->arg[i].param >= 0)
+            borISetAdd(params, atom->arg[i].param);
+    }
+}
+
+static int implyParams(pddl_cond_t *c, void *data)
+{
+    bor_iset_t *params = data;
+    pddl_cond_imply_t *imp;
+    bor_list_t *item;
+    pddl_cond_part_t *and;
+    pddl_cond_t *p;
+
+    if (c->type == PDDL_COND_IMPLY){
+        imp = OBJ(c, imply);
+        if (imp->left->type == PDDL_COND_ATOM){
+            implyAtomParams(OBJ(imp->left, atom), params);
+
+        }else if (imp->left->type == PDDL_COND_AND){
+            and = OBJ(imp->left, part);
+            BOR_LIST_FOR_EACH(&and->part, item){
+                p = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+                if (p->type == PDDL_COND_ATOM)
+                    implyAtomParams(OBJ(p, atom), params);
+            }
+        }
+    }
+
+    return 0;
+}
+
+struct instantiate_ctx {
+    const bor_iset_t *params;
+    const int *arg;
+};
+typedef struct instantiate_ctx instantiate_ctx_t;
+
+static int instantiateTraverse(pddl_cond_t *cond, void *ud)
+{
+    const instantiate_ctx_t *ctx = ud;
+    if (cond->type == PDDL_COND_ATOM){
+        pddl_cond_atom_t *atom = OBJ(cond, atom);
+        for (int i = 0; i < atom->arg_size; ++i){
+            for (int j = 0; j < borISetSize(ctx->params); ++j){
+                if (atom->arg[i].param == borISetGet(ctx->params, j)){
+                    atom->arg[i].param = -1;
+                    atom->arg[i].obj = ctx->arg[j];
+                    break;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+static pddl_cond_t *instantiate(pddl_cond_t *cond,
+                                const bor_iset_t *params,
+                                const int *arg,
+                                int eq_pred)
+{
+    pddl_cond_part_t *and;
+    pddl_cond_atom_t *eq;
+    pddl_cond_t *c = pddlCondClone(cond);
+    instantiate_ctx_t ctx;
+
+    and = condPartNew(PDDL_COND_AND);
+    for (int i = 0; i < borISetSize(params); ++i){
+        int param = borISetGet(params, i);
+        eq = condAtomNew();
+        eq->pred = eq_pred;
+        eq->arg_size = 2;
+        eq->arg = BOR_ALLOC_ARR(pddl_cond_atom_arg_t, 2);
+        eq->arg[0].param = param;
+        eq->arg[0].obj = -1;
+        eq->arg[1].param = -1;
+        eq->arg[1].obj = arg[i];
+        pddlCondPartAdd(and, &eq->cls);
+    }
+
+    ctx.params = params;
+    ctx.arg = arg;
+    pddlCondTraverse(c, NULL, instantiateTraverse, &ctx);
+
+    pddlCondPartAdd(and, c);
+    return &and->cls;
+}
+
+static void removeStaticImplyRec(pddl_cond_part_t *top,
+                                 pddl_cond_t *cond,
+                                 const pddl_t *pddl,
+                                 const pddl_params_t *params,
+                                 const bor_iset_t *imp_params,
+                                 int pidx,
+                                 int *arg)
+{
+    const int *obj;
+    int obj_size;
+
+    if (pidx == borISetSize(imp_params)){
+        pddl_cond_t *c = instantiate(cond, imp_params, arg,
+                                     pddl->pred.eq_pred);
+        pddlCondPartAdd(top, c);
+    }else{
+        int param = borISetGet(imp_params, pidx);
+        obj = pddlTypesObjsByType(&pddl->type, params->param[param].type,
+                                  &obj_size);
+        for (int i = 0; i < obj_size; ++i){
+            arg[pidx] = obj[i];
+            removeStaticImplyRec(top, cond, pddl, params,
+                                 imp_params, pidx + 1, arg);
+        }
+    }
+}
+                                 
+/** Implications are removed by instantiation of the left sides and putting
+ *  the instantiated objects to (= ...) predicate. */
+static int removeStaticImply(pddl_cond_t **cond, const pddl_t *pddl,
+                             const pddl_params_t *params)
+{
+    pddl_cond_part_t *or;
+    BOR_ISET(imply_params);
+    int *obj;
+
+    if (params == NULL)
+        return 0;
+
+    pddlCondTraverse(*cond, NULL, implyParams, &imply_params);
+    if (borISetSize(&imply_params) > 0){
+        obj = BOR_ALLOC_ARR(int, borISetSize(&imply_params));
+        or = condPartNew(PDDL_COND_OR);
+        removeStaticImplyRec(or, *cond, pddl, params, &imply_params, 0, obj);
+        BOR_FREE(obj);
+        pddlCondDel(*cond);
+        *cond = &or->cls;
+    }
+    borISetFree(&imply_params);
+    return 0;
+}
+
+pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl,
+                               const pddl_params_t *params)
 {
     pddl_cond_t *c = cond;
 
     // TODO: Check return values
     pddlCondInstantiateQuant(&c, &pddl->type);
-    pddlCondRebuild(&c, NULL, removeBool, NULL);
+    pddlCondRebuild(&c, NULL, removeNonStaticImply, (void *)pddl);
+    removeStaticImply(&c, pddl, params);
+    pddlCondRebuild(&c, NULL, removeBool, (void *)pddl);
     pddlCondRebuild(&c, NULL, flatten, NULL);
     pddlCondRebuild(&c, NULL, moveDisjunctionsUp, NULL);
     pddlCondRebuild(&c, NULL, flatten, NULL);
     c = pddlCondDeduplicate(c, pddl);
     return c;
-}
-
-
-static int cmpAtomArgs(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
-{
-    int cmp = 0;
-    if (a1->arg_size != a2->arg_size)
-        return a1->arg_size - a2->arg_size;
-    for (int i = 0; i < a1->arg_size && cmp == 0; ++i){
-        cmp = a1->arg[i].param - a2->arg[i].param;
-        if (cmp == 0)
-            cmp = a1->arg[i].obj - a2->arg[i].obj;
-    }
-    return cmp;
-}
-
-static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
-{
-    int cmp;
-
-    cmp = a1->pred - a2->pred;
-    if (cmp == 0){
-        cmp = cmpAtomArgs(a1, a2);
-        if (cmp == 0)
-            return a1->neg - a2->neg;
-    }
-
-    return cmp;
 }
 
 static void _deduplicate(pddl_cond_part_t *p)
@@ -2087,7 +2543,7 @@ static void _deduplicate(pddl_cond_part_t *p)
             c2 = BOR_LIST_ENTRY(item2, pddl_cond_t, conn);
             if (c2->type != PDDL_COND_ATOM)
                 continue;
-            if (cmpAtoms(OBJ(c1, atom), OBJ(c2, atom)) == 0){
+            if (pddlCondAtomCmp(OBJ(c1, atom), OBJ(c2, atom)) == 0){
                 borListDel(item2);
                 pddlCondDel(c2);
                 break;
@@ -2116,25 +2572,6 @@ struct deconflict_pre {
     int change;
 };
 
-static int atomNegPred(const pddl_cond_atom_t *a, const pddl_t *pddl)
-{
-    int pred = a->pred;
-    if (pddl->pred.pred[a->pred].neg_of >= 0)
-        pred = BOR_MIN(pred, pddl->pred.pred[a->pred].neg_of);
-    return pred;
-}
-
-static int atomsInConflictPre(const pddl_cond_atom_t *a1,
-                              const pddl_cond_atom_t *a2,
-                              const pddl_t *pddl)
-{
-    if (a1->pred == a2->pred && a1->neg != a2->neg)
-        return cmpAtomArgs(a1, a2) == 0;
-    if (atomNegPred(a1, pddl) == atomNegPred(a2, pddl) && a1->neg == a2->neg)
-        return cmpAtomArgs(a1, a2) == 0;
-    return 0;
-}
-
 static int preHasConflict(pddl_cond_part_t *p, const pddl_t *pddl)
 {
     bor_list_t *item, *item2;
@@ -2154,7 +2591,7 @@ static int preHasConflict(pddl_cond_part_t *p, const pddl_t *pddl)
                 continue;
             a2 = OBJ(c2, atom);
 
-            if (atomsInConflictPre(a1, a2, pddl))
+            if (pddlCondAtomInConflict(a1, a2, pddl))
                 return 1;
         }
     }
@@ -2176,7 +2613,8 @@ static int deconflictPre(pddl_cond_t **c, void *data)
     return 0;
 }
 
-pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl)
+pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl,
+                                   const pddl_params_t *params)
 {
     struct deconflict_pre dp;
     pddl_cond_t *c = cond;
@@ -2185,7 +2623,7 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl)
     dp.change = 0;
     pddlCondRebuild(&c, NULL, deconflictPre, &dp);
     if (dp.change)
-        c = pddlCondNormalize(c, pddl);
+        c = pddlCondNormalize(c, pddl, params);
     return c;
 }
 
@@ -2212,9 +2650,7 @@ static int removeConflictsInEff(pddl_cond_part_t *p)
             }
             a2 = OBJ(c2, atom);
 
-            if (a1->pred == a2->pred
-                    && a1->neg != a2->neg
-                    && cmpAtomArgs(a1, a2) == 0){
+            if (pddlCondAtomInConflict(a1, a2, NULL)){
                 if (a1->neg){
                     tmp = borListPrev(item);
                     borListDel(item);
@@ -2259,13 +2695,14 @@ static int deconflictEffPre(pddl_cond_t **c, void *data)
     return 0;
 }
 
-pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl)
+pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl,
+                                   const pddl_params_t *params)
 {
     pddl_cond_t *c = cond;
     int change = 0;
     pddlCondRebuild(&c, deconflictEffPre, deconflictEffPost, &change);
     if (change)
-        c = pddlCondNormalize(c, pddl);
+        c = pddlCondNormalize(c, pddl, params);
     return c;
 }
 
@@ -2276,6 +2713,68 @@ int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom)
             return 0;
     }
     return 1;
+}
+
+static int cmpAtomArgs(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
+{
+    int cmp = 0;
+    if (a1->arg_size != a2->arg_size)
+        return a1->arg_size - a2->arg_size;
+    for (int i = 0; i < a1->arg_size && cmp == 0; ++i){
+        cmp = a1->arg[i].param - a2->arg[i].param;
+        if (cmp == 0)
+            cmp = a1->arg[i].obj - a2->arg[i].obj;
+    }
+    return cmp;
+}
+
+static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2,
+                    int neg)
+{
+    int cmp;
+
+    cmp = a1->pred - a2->pred;
+    if (cmp == 0){
+        cmp = cmpAtomArgs(a1, a2);
+        if (cmp == 0 && neg)
+            return a1->neg - a2->neg;
+    }
+
+    return cmp;
+}
+
+int pddlCondAtomCmp(const pddl_cond_atom_t *a1,
+                    const pddl_cond_atom_t *a2)
+{
+    return cmpAtoms(a1, a2, 1);
+}
+
+int pddlCondAtomCmpNoNeg(const pddl_cond_atom_t *a1,
+                         const pddl_cond_atom_t *a2)
+{
+    return cmpAtoms(a1, a2, 0);
+}
+
+static int atomNegPred(const pddl_cond_atom_t *a, const pddl_t *pddl)
+{
+    int pred = a->pred;
+    if (pddl->pred.pred[a->pred].neg_of >= 0)
+        pred = BOR_MIN(pred, pddl->pred.pred[a->pred].neg_of);
+    return pred;
+}
+
+int pddlCondAtomInConflict(const pddl_cond_atom_t *a1,
+                           const pddl_cond_atom_t *a2,
+                           const pddl_t *pddl)
+{
+    if (a1->pred == a2->pred && a1->neg != a2->neg)
+        return cmpAtomArgs(a1, a2) == 0;
+    if (pddl != NULL
+            && atomNegPred(a1, pddl) == atomNegPred(a2, pddl)
+            && a1->neg == a2->neg){
+        return cmpAtomArgs(a1, a2) == 0;
+    }
+    return 0;
 }
 
 
@@ -2371,6 +2870,21 @@ static void condBoolPrint(const pddl_cond_bool_t *b, FILE *fout)
     }
 }
 
+static void condImplyPrint(const pddl_cond_imply_t *imp,
+                           const pddl_t *pddl,
+                           const pddl_params_t *params,
+                           FILE *fout)
+
+{
+    fprintf(fout, "(imply ");
+    if (imp->left)
+        pddlCondPrint(pddl, imp->left, params, fout);
+    fprintf(fout, " ");
+    if (imp->right)
+        pddlCondPrint(pddl, imp->right, params, fout);
+    fprintf(fout, ")");
+}
+
 void pddlCondPrint(const struct pddl *pddl,
                    const pddl_cond_t *cond,
                    const pddl_params_t *params,
@@ -2402,6 +2916,9 @@ void pddlCondPrint(const struct pddl *pddl,
 
     }else if (cond->type == PDDL_COND_BOOL){
         condBoolPrint(OBJ(cond, bool), fout);
+
+    }else if (cond->type == PDDL_COND_IMPLY){
+        condImplyPrint(OBJ(cond, imply), pddl, params, fout);
 
     }else{
         fprintf(stderr, "Fatal Error: Unknown type!\n");

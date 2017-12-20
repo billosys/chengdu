@@ -46,7 +46,10 @@ extern "C" {
 #define PDDL_COND_ASSIGN 6u
 #define PDDL_COND_INCREASE 7u
 #define PDDL_COND_BOOL   8u
-#define PDDL_COND_NUM_TYPES 9
+#define PDDL_COND_IMPLY  9u
+#define PDDL_COND_NUM_TYPES 10
+
+const char *pddlCondTypeName(int type);
 
 #define PDDL_COND_CAST(C, T) \
     (bor_container_of((C), pddl_cond_##T##_t, cls))
@@ -133,6 +136,16 @@ struct pddl_cond_bool {
 };
 typedef struct pddl_cond_bool pddl_cond_bool_t;
 
+/**
+ * Imply: (imply (...) (...))
+ */
+struct pddl_cond_imply {
+    pddl_cond_t cls;
+    pddl_cond_t *left;
+    pddl_cond_t *right;
+};
+typedef struct pddl_cond_imply pddl_cond_imply_t;
+
 
 /**
  * Free memory.
@@ -145,12 +158,10 @@ void pddlCondDel(pddl_cond_t *cond);
 pddl_cond_t *pddlCondClone(const pddl_cond_t *cond);
 
 /**
- * Creates and returns a negated copy of cond.
- * Works only with normalized preconditions, i.e., cond can be either
- * flattened (CNF) or atom.
+ * Returns a negated copy of the condition.
  */
-pddl_cond_t *pddlCondNegatePre(const pddl_cond_t *cond,
-                               const pddl_t *pddl);
+pddl_cond_t *pddlCondNegate(const pddl_cond_t *cond,
+                            const pddl_t *pddl);
 
 /**
  * Traverse all conditionals in a tree and call in pre/post order callbacks
@@ -260,7 +271,8 @@ void pddlCondSetPredReadWriteEff(const pddl_cond_t *cond, pddl_preds_t *preds);
  * Normalize conditionals by instantiation qunatifiers and transformation to
  * DNF so that the actions can be split.
  */
-pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl);
+pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl,
+                               const pddl_params_t *params);
 
 /**
  * Remove atom node duplicates.
@@ -271,9 +283,10 @@ pddl_cond_t *pddlCondDeduplicate(pddl_cond_t *cond, const pddl_t *pddl);
  * If conflicting literals are found
  *   1) in the and node, then the and node is replaced by false
  *   2) in the or node, the literals are removed (as if they were replaced
- *      by true are or simplified).
+ *      by true are simplified).
  */
-pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl);
+pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl,
+                                   const pddl_params_t *params);
 
 /**
  * If conflicting literals are found
@@ -281,12 +294,32 @@ pddl_cond_t *pddlCondDeconflictPre(pddl_cond_t *cond, const pddl_t *pddl);
  *      rule "first delete then add".
  *   2) in the or node, the error is reported.
  */
-pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl);
+pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl,
+                                   const pddl_params_t *params);
 
 /**
  * Returns true if the atom is a grounded fact.
  */
 int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom);
+
+/**
+ * Compares two atoms.
+ */
+int pddlCondAtomCmp(const pddl_cond_atom_t *a1,
+                    const pddl_cond_atom_t *a2);
+
+/**
+ * Compares two atoms without considering negation (.neg flag).
+ */
+int pddlCondAtomCmpNoNeg(const pddl_cond_atom_t *a1,
+                         const pddl_cond_atom_t *a2);
+
+/**
+ * Returns true if a1 and a2 are negations of each other.
+ */
+int pddlCondAtomInConflict(const pddl_cond_atom_t *a1,
+                           const pddl_cond_atom_t *a2,
+                           const pddl_t *pddl);
 
 void pddlCondPrint(const pddl_t *pddl,
                    const pddl_cond_t *cond,

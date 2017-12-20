@@ -147,8 +147,8 @@ void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src)
 
 void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl)
 {
-    a->pre = pddlCondNormalize(a->pre, pddl);
-    a->eff = pddlCondNormalize(a->eff, pddl);
+    a->pre = pddlCondNormalize(a->pre, pddl, &a->param);
+    a->eff = pddlCondNormalize(a->eff, pddl, &a->param);
 
     if (a->pre->type == PDDL_COND_ATOM)
         a->pre = pddlCondAtomToAnd(a->pre);

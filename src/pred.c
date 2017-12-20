@@ -178,8 +178,7 @@ int pddlPredsParse(pddl_t *pddl)
         return 0;
 
     pddl->pred.eq_pred = -1;
-    if (pddl->require & PDDL_REQUIRE_EQUALITY)
-        addEqPredicate(&pddl->pred);
+    addEqPredicate(&pddl->pred);
 
     // Determine if we can expect :private definitions
     private = (pddl->require & PDDL_REQUIRE_UNFACTORED_PRIVACY)
