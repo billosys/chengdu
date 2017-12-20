@@ -310,11 +310,23 @@ pddl_cond_t *pddlCondDeconflictEff(pddl_cond_t *cond, const pddl_t *pddl,
 int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom);
 
 /**
- * Returns true if a1 equals to a2 regardless of negation (i.e., .neg flag
- * is ignored).
+ * Compares two atoms.
  */
-int pddlCondAtomEq(const pddl_cond_atom_t *a1,
-                   const pddl_cond_atom_t *a2);
+int pddlCondAtomCmp(const pddl_cond_atom_t *a1,
+                    const pddl_cond_atom_t *a2);
+
+/**
+ * Compares two atoms without considering negation (.neg flag).
+ */
+int pddlCondAtomCmpNoNeg(const pddl_cond_atom_t *a1,
+                         const pddl_cond_atom_t *a2);
+
+/**
+ * Returns true if a1 and a2 are negations of each other.
+ */
+int pddlCondAtomInConflict(const pddl_cond_atom_t *a1,
+                           const pddl_cond_atom_t *a2,
+                           const pddl_t *pddl);
 
 void pddlCondPrint(const pddl_t *pddl,
                    const pddl_cond_t *cond,

@@ -2084,7 +2084,7 @@ static int atomIsInInit(const pddl_t *pddl, const pddl_cond_atom_t *atom)
     BOR_LIST_FOR_EACH(&pddl->init->part, item){
         c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
         if (c->type == PDDL_COND_ATOM
-                && pddlCondAtomEq(atom, OBJ(c, atom)))
+                && pddlCondAtomCmpNoNeg(atom, OBJ(c, atom)) == 0)
             return 1;
     }
     return 0;
@@ -2546,34 +2546,6 @@ pddl_cond_t *pddlCondNormalize(pddl_cond_t *cond, const pddl_t *pddl,
     return c;
 }
 
-
-static int cmpAtomArgs(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
-{
-    int cmp = 0;
-    if (a1->arg_size != a2->arg_size)
-        return a1->arg_size - a2->arg_size;
-    for (int i = 0; i < a1->arg_size && cmp == 0; ++i){
-        cmp = a1->arg[i].param - a2->arg[i].param;
-        if (cmp == 0)
-            cmp = a1->arg[i].obj - a2->arg[i].obj;
-    }
-    return cmp;
-}
-
-static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
-{
-    int cmp;
-
-    cmp = a1->pred - a2->pred;
-    if (cmp == 0){
-        cmp = cmpAtomArgs(a1, a2);
-        if (cmp == 0)
-            return a1->neg - a2->neg;
-    }
-
-    return cmp;
-}
-
 static void _deduplicate(pddl_cond_part_t *p)
 {
     bor_list_t *item, *item2;
@@ -2589,7 +2561,7 @@ static void _deduplicate(pddl_cond_part_t *p)
             c2 = BOR_LIST_ENTRY(item2, pddl_cond_t, conn);
             if (c2->type != PDDL_COND_ATOM)
                 continue;
-            if (cmpAtoms(OBJ(c1, atom), OBJ(c2, atom)) == 0){
+            if (pddlCondAtomCmp(OBJ(c1, atom), OBJ(c2, atom)) == 0){
                 borListDel(item2);
                 pddlCondDel(c2);
                 break;
@@ -2618,25 +2590,6 @@ struct deconflict_pre {
     int change;
 };
 
-static int atomNegPred(const pddl_cond_atom_t *a, const pddl_t *pddl)
-{
-    int pred = a->pred;
-    if (pddl->pred.pred[a->pred].neg_of >= 0)
-        pred = BOR_MIN(pred, pddl->pred.pred[a->pred].neg_of);
-    return pred;
-}
-
-static int atomsInConflictPre(const pddl_cond_atom_t *a1,
-                              const pddl_cond_atom_t *a2,
-                              const pddl_t *pddl)
-{
-    if (a1->pred == a2->pred && a1->neg != a2->neg)
-        return cmpAtomArgs(a1, a2) == 0;
-    if (atomNegPred(a1, pddl) == atomNegPred(a2, pddl) && a1->neg == a2->neg)
-        return cmpAtomArgs(a1, a2) == 0;
-    return 0;
-}
-
 static int preHasConflict(pddl_cond_part_t *p, const pddl_t *pddl)
 {
     bor_list_t *item, *item2;
@@ -2656,7 +2609,7 @@ static int preHasConflict(pddl_cond_part_t *p, const pddl_t *pddl)
                 continue;
             a2 = OBJ(c2, atom);
 
-            if (atomsInConflictPre(a1, a2, pddl))
+            if (pddlCondAtomInConflict(a1, a2, pddl))
                 return 1;
         }
     }
@@ -2715,9 +2668,7 @@ static int removeConflictsInEff(pddl_cond_part_t *p)
             }
             a2 = OBJ(c2, atom);
 
-            if (a1->pred == a2->pred
-                    && a1->neg != a2->neg
-                    && cmpAtomArgs(a1, a2) == 0){
+            if (pddlCondAtomInConflict(a1, a2, NULL)){
                 if (a1->neg){
                     tmp = borListPrev(item);
                     borListDel(item);
@@ -2782,19 +2733,66 @@ int pddlCondAtomIsGrounded(const pddl_cond_atom_t *atom)
     return 1;
 }
 
-int pddlCondAtomEq(const pddl_cond_atom_t *a1,
-                   const pddl_cond_atom_t *a2)
+static int cmpAtomArgs(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2)
 {
-    if (a1->pred != a2->pred || a1->arg_size != a2->arg_size)
-        return 0;
+    int cmp = 0;
+    if (a1->arg_size != a2->arg_size)
+        return a1->arg_size - a2->arg_size;
+    for (int i = 0; i < a1->arg_size && cmp == 0; ++i){
+        cmp = a1->arg[i].param - a2->arg[i].param;
+        if (cmp == 0)
+            cmp = a1->arg[i].obj - a2->arg[i].obj;
+    }
+    return cmp;
+}
 
-    for (int i = 0; i < a1->arg_size; ++i){
-        if (a1->arg[i].param != a2->arg[i].param
-                || a1->arg[i].obj != a2->arg[i].obj)
-            return 0;
+static int cmpAtoms(const pddl_cond_atom_t *a1, const pddl_cond_atom_t *a2,
+                    int neg)
+{
+    int cmp;
+
+    cmp = a1->pred - a2->pred;
+    if (cmp == 0){
+        cmp = cmpAtomArgs(a1, a2);
+        if (cmp == 0 && neg)
+            return a1->neg - a2->neg;
     }
 
-    return 1;
+    return cmp;
+}
+
+int pddlCondAtomCmp(const pddl_cond_atom_t *a1,
+                    const pddl_cond_atom_t *a2)
+{
+    return cmpAtoms(a1, a2, 1);
+}
+
+int pddlCondAtomCmpNoNeg(const pddl_cond_atom_t *a1,
+                         const pddl_cond_atom_t *a2)
+{
+    return cmpAtoms(a1, a2, 0);
+}
+
+static int atomNegPred(const pddl_cond_atom_t *a, const pddl_t *pddl)
+{
+    int pred = a->pred;
+    if (pddl->pred.pred[a->pred].neg_of >= 0)
+        pred = BOR_MIN(pred, pddl->pred.pred[a->pred].neg_of);
+    return pred;
+}
+
+int pddlCondAtomInConflict(const pddl_cond_atom_t *a1,
+                           const pddl_cond_atom_t *a2,
+                           const pddl_t *pddl)
+{
+    if (a1->pred == a2->pred && a1->neg != a2->neg)
+        return cmpAtomArgs(a1, a2) == 0;
+    if (pddl != NULL
+            && atomNegPred(a1, pddl) == atomNegPred(a2, pddl)
+            && a1->neg == a2->neg){
+        return cmpAtomArgs(a1, a2) == 0;
+    }
+    return 0;
 }
 
 
