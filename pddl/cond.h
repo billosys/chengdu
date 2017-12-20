@@ -160,15 +160,8 @@ pddl_cond_t *pddlCondClone(const pddl_cond_t *cond);
 /**
  * Returns a negated copy of the condition.
  */
-pddl_cond_t *pddlCondNegate(const pddl_cond_t *cond);
-
-/**
- * Creates and returns a negated copy of cond.
- * Works only with normalized preconditions, i.e., cond can be either
- * flattened (CNF) or atom.
- */
-pddl_cond_t *pddlCondNegatePre(const pddl_cond_t *cond,
-                               const pddl_t *pddl);
+pddl_cond_t *pddlCondNegate(const pddl_cond_t *cond,
+                            const pddl_t *pddl);
 
 /**
  * Traverse all conditionals in a tree and call in pre/post order callbacks

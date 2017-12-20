@@ -567,7 +567,7 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
 
                 // The original takes additional precondition which is the
                 // negation of w->pre
-                if ((neg_pre = pddlCondNegatePre(w->pre, pddl)) == NULL){
+                if ((neg_pre = pddlCondNegate(w->pre, pddl)) == NULL){
                     // This shoud never fail, because we force
                     // normalization before this.
                     TRACE;
