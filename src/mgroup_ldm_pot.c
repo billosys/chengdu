@@ -17,6 +17,7 @@
  * See the License for more information.
  */
 
+#include <boruvka/sort.h>
 #include "pddl/strips.h"
 #include "pddl/mgroup_ldm_pot.h"
 #include "pddl/err.h"
@@ -70,6 +71,293 @@ struct tg_graph {
 };
 typedef struct tg_graph tg_graph_t;
 
+static unsigned long tgNumNodes(const pot_t *pot, const bor_iset_t *mg);
+static int tgCanFitInMem(unsigned long num_nodes,
+                         unsigned long num_mgroups, unsigned long mem);
+
+struct rel_op {
+    bor_iset_t mgroup;
+    int size;
+};
+typedef struct rel_op rel_op_t;
+
+struct rel_mgroup {
+    bor_iset_t mgroup;
+    bor_iset_t op;
+};
+typedef struct rel_mgroup rel_mgroup_t;
+
+struct rel_graph {
+    rel_op_t *op;
+    int op_size;
+    rel_mgroup_t *mgroup;
+    int mgroup_size;
+};
+typedef struct rel_graph rel_graph_t;
+
+static int relGraphMinimizeCmp(const void *a, const void *b, void *ud)
+{
+    const int id1 = *(int *)a;
+    const int id2 = *(int *)b;
+    rel_graph_t *graph = ud;
+    const rel_op_t *op1 = graph->op + id1;
+    const rel_op_t *op2 = graph->op + id2;
+
+    return borISetCmp(&op1->mgroup, &op2->mgroup);
+}
+
+static void relGraphMinimize(rel_graph_t *graph)
+{
+    int cur, prev;
+    int *ops, mgi;
+
+    // First remove ops with only one incident mgroup
+    for (int i = 0; i < graph->op_size; ++i){
+        rel_op_t *op = graph->op + i;
+        if (borISetSize(&op->mgroup) == 1){
+            borISetRm(&graph->mgroup[borISetGet(&op->mgroup, 0)].op, i);
+            borISetEmpty(&op->mgroup);
+            op->size = 0;
+        }
+    }
+
+    // Sort operators according to the incident mgroups
+    ops = BOR_ALLOC_ARR(int, graph->op_size);
+    for (int i = 0; i < graph->op_size; ++i)
+        ops[i] = i;
+    borSort(ops, graph->op_size, sizeof(int), relGraphMinimizeCmp, graph);
+
+    // skip empty ops
+    for (cur = 0;
+            cur < graph->op_size
+                && borISetSize(&graph->op[ops[cur]].mgroup) == 0;
+         ++cur);
+
+    // join ops that are incident with the same mgroups
+    for (prev = cur++; cur < graph->op_size; ++cur){
+        rel_op_t *op_prev = graph->op + ops[prev];
+        rel_op_t *op_cur = graph->op + ops[cur];
+        if (borISetEq(&op_prev->mgroup, &op_cur->mgroup)){
+            BOR_ISET_FOR_EACH(&op_prev->mgroup, mgi)
+                borISetRm(&graph->mgroup[mgi].op, ops[prev]);
+            op_cur->size += op_prev->size;
+            borISetEmpty(&op_prev->mgroup);
+            op_prev->size = 0;
+        }
+        prev = cur;
+    }
+
+    for (int i = 0; i < graph->op_size; ++i){
+        if (graph->op[i].size == 0)
+            continue;
+        printf("Op %d [%d]:", i, graph->op[i].size);
+        int mg;
+        BOR_ISET_FOR_EACH(&graph->op[i].mgroup, mg)
+            printf(" %d", mg);
+        printf("\n");
+
+    }
+    for (int i = 0; i < graph->mgroup_size; ++i){
+        printf("MG %d:", i);
+        printf(" [");
+        int mg;
+        BOR_ISET_FOR_EACH(&graph->mgroup[i].mgroup, mg)
+            printf(" %d", mg);
+        printf(" ]");
+        int op;
+        BOR_ISET_FOR_EACH(&graph->mgroup[i].op, op)
+            printf(" %d", op);
+        printf("\n");
+
+    }
+    BOR_FREE(ops);
+}
+
+static int relGraphMergeCmp(const void *a, const void *b, void *ud)
+{
+    const int id1 = *(int *)a;
+    const int id2 = *(int *)b;
+    rel_graph_t *graph = ud;
+    const rel_op_t *op1 = graph->op + id1;
+    const rel_op_t *op2 = graph->op + id2;
+
+    return op2->size - op1->size;
+}
+
+
+static void relGraphGatherMGroups(const rel_graph_t *graph,
+                                  const bor_iset_t *mg,
+                                  bor_iset_t *mgroups)
+{
+    int idx;
+
+    borISetEmpty(mgroups);
+    BOR_ISET_FOR_EACH(mg, idx)
+        borISetUnion(mgroups, &graph->mgroup[idx].mgroup);
+}
+
+static void relGraphMergeMGroups(rel_graph_t *graph,
+                                 const bor_iset_t *mgs)
+{
+    int dst_id = borISetGet(mgs, 0);
+    rel_mgroup_t *dst = graph->mgroup + dst_id;
+
+    printf("DST: %d\n", dst_id);
+    for (int i = 1; i < mgs->size; ++i){
+        int src_id = borISetGet(mgs, i);
+        printf("SRC: %d\n", src_id);
+        rel_mgroup_t *src = graph->mgroup + src_id;
+        borISetUnion(&dst->mgroup, &src->mgroup);
+        borISetUnion(&dst->op, &src->op);
+
+        int opi;
+        BOR_ISET_FOR_EACH(&src->op, opi){
+            borISetRm(&graph->op[opi].mgroup, src_id);
+            borISetAdd(&graph->op[opi].mgroup, dst_id);
+        }
+
+        borISetEmpty(&src->mgroup);
+        borISetEmpty(&src->op);
+    }
+}
+
+static void relGraphMergeFullOp(rel_graph_t *graph, int op_id)
+{
+    BOR_ISET(mgs);
+    borISetUnion(&mgs, &graph->op[op_id].mgroup);
+    relGraphMergeMGroups(graph, &mgs);
+    borISetFree(&mgs);
+}
+
+static int relGraphMerge(const pot_t *pot, rel_graph_t *graph)
+{
+    unsigned long num_nodes;
+    BOR_ISET(mgroups);
+    int *ops;
+    int ret = -1;
+
+    relGraphMinimize(graph);
+
+    // Sort operators according to the incident mgroups
+    ops = BOR_ALLOC_ARR(int, graph->op_size);
+    for (int i = 0; i < graph->op_size; ++i)
+        ops[i] = i;
+    borSort(ops, graph->op_size, sizeof(int), relGraphMergeCmp, graph);
+
+    for (int i = 0; i < graph->op_size; ++i){
+        if (graph->op[ops[i]].size == 0)
+            break;
+        relGraphGatherMGroups(graph, &graph->op[ops[i]].mgroup, &mgroups);
+        num_nodes = tgNumNodes(pot, &mgroups);
+        if (tgCanFitInMem(num_nodes, borISetSize(&mgroups),
+                          6UL * 1024UL * 1024UL * 1024UL)){
+            printf("%d:%d:%lu", ops[i], graph->op[ops[i]].size, num_nodes);
+            int mg;
+            BOR_ISET_FOR_EACH(&graph->op[ops[i]].mgroup, mg)
+                printf(" %d", mg);
+            printf("\n");
+            relGraphMergeFullOp(graph, ops[i]);
+            ret = 0;
+            break;
+        }else{
+            printf("N %d:%d:%lu", ops[i], graph->op[ops[i]].size, num_nodes);
+            int mg;
+            BOR_ISET_FOR_EACH(&graph->op[ops[i]].mgroup, mg)
+                printf(" %d", mg);
+            printf("\n");
+        }
+    }
+
+    for (int i = 0; i < graph->op_size && ret != 0; ++i){
+        if (graph->op[ops[i]].size == 0)
+            break;
+        const rel_op_t *op = graph->op + ops[i];
+        for (int j = 0; j < borISetSize(&op->mgroup); ++j){
+            int m1 = borISetGet(&op->mgroup, j);
+            for (int k = j + 1; k < borISetSize(&op->mgroup); ++k){
+                int m2 = borISetGet(&op->mgroup, k);
+                borISetUnion2(&mgroups, &graph->mgroup[m1].mgroup,
+                                        &graph->mgroup[m2].mgroup);
+                num_nodes = tgNumNodes(pot, &mgroups);
+                if (tgCanFitInMem(num_nodes, borISetSize(&mgroups),
+                            6UL * 1024UL * 1024UL * 1024UL)){
+                    printf("%d:%d:%lu", ops[i], graph->op[ops[i]].size,
+                            num_nodes);
+                    int mg;
+                    BOR_ISET_FOR_EACH(&graph->op[ops[i]].mgroup, mg)
+                        printf(" %d", mg);
+                    printf("\n");
+                    relGraphMergeMGroups(graph, &mgroups);
+                    ret = 0;
+                    break;
+                }
+            }
+
+            if (ret == 0)
+                break;
+        }
+        if (ret == 0)
+            break;
+    }
+    BOR_FREE(ops);
+
+    for (int i = 0; i < graph->mgroup_size && ret != 0; ++i){
+        const rel_mgroup_t *m1 = graph->mgroup + i;
+        if (borISetSize(&m1->mgroup) == 0)
+            continue;
+        for (int j = i + 1; j < graph->mgroup_size; ++j){
+            const rel_mgroup_t *m2 = graph->mgroup + j;
+            if (borISetSize(&m2->mgroup) == 0)
+                continue;
+            borISetUnion2(&mgroups, &m1->mgroup, &m2->mgroup);
+            num_nodes = tgNumNodes(pot, &mgroups);
+            if (tgCanFitInMem(num_nodes, borISetSize(&mgroups),
+                        6UL * 1024UL * 1024UL * 1024UL)){
+                relGraphMergeMGroups(graph, &mgroups);
+                ret = 0;
+                break;
+            }
+        }
+    }
+
+    borISetFree(&mgroups);
+    return ret;
+}
+
+static void relGraphInit(const pot_t *pot, rel_graph_t *graph)
+{
+    int op;
+
+    graph->op_size = pot->strips->op.op_size;
+    graph->op = BOR_CALLOC_ARR(rel_op_t, graph->op_size);
+    graph->mgroup_size = pot->mgroup_size;
+    graph->mgroup = BOR_CALLOC_ARR(rel_mgroup_t, graph->mgroup_size);
+
+    for (int i = 0; i < pot->strips->op.op_size; ++i)
+        graph->op[i].size = 1;
+
+    for (int i = 0; i < pot->mgroup_size; ++i){
+        const mgroup_t *mg = pot->mgroup + i;
+        borISetAdd(&graph->mgroup[i].mgroup, i);
+        borISetUnion(&graph->mgroup[i].op, &mg->op);
+
+        BOR_ISET_FOR_EACH(&mg->op, op)
+            borISetAdd(&graph->op[op].mgroup, i);
+    }
+}
+
+static void relGraphFree(rel_graph_t *graph)
+{
+    for (int i = 0; i < graph->op_size; ++i){
+        borISetFree(&graph->op[i].mgroup);
+    }
+
+    for (int i = 0; i < graph->mgroup_size; ++i){
+        borISetFree(&graph->mgroup[i].mgroup);
+        borISetFree(&graph->mgroup[i].op);
+    }
+}
+
 
 static int tgCanFitInMem(unsigned long num_nodes,
                          unsigned long num_mgroups, unsigned long mem)
@@ -111,6 +399,12 @@ static unsigned long tgNumNodes(const pot_t *pot, const bor_iset_t *mg)
 {
     BOR_ISET(facts);
     unsigned long num_nodes;
+    int mgi;
+
+    num_nodes = 1;
+    BOR_ISET_FOR_EACH(mg, mgi)
+        num_nodes *= borISetSize(&pot->mgroup[mgi].fact);
+    return num_nodes;
 
     num_nodes = tgNumNodesRec(pot, mg, 0, &facts);
     borISetFree(&facts);
@@ -292,18 +586,23 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
         }
     }
     borISetFree(&tgmg);
+
+    rel_graph_t graph;
+    relGraphInit(pot, &graph);
+    while (relGraphMerge(pot, &graph) == 0);
+    relGraphFree(&graph);
 }
 
 static void potFree(pot_t *pot)
 {
-    pddlStripsDel(pot->strips);
-
     for (int i = 0; i < pot->strips->fact.fact_size; ++i){
         borISetFree(&pot->fact[i].op_del);
         borISetFree(&pot->fact[i].op_add);
     }
     if (pot->fact != NULL)
         BOR_FREE(pot->fact);
+
+    pddlStripsDel(pot->strips);
 }
 
 void pot(const pddl_strips_t *strips)
