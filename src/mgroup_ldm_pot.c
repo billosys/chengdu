@@ -37,6 +37,7 @@ struct mgroup {
     bor_iset_t op;
     bor_iset_t op_add;
     bor_iset_t op_del;
+    int is_goal;
 };
 typedef struct mgroup mgroup_t;
 
@@ -84,6 +85,7 @@ typedef struct rel_op rel_op_t;
 struct rel_mgroup {
     bor_iset_t mgroup;
     bor_iset_t op;
+    int is_goal;
 };
 typedef struct rel_mgroup rel_mgroup_t;
 
@@ -209,6 +211,7 @@ static void relGraphMergeMGroups(rel_graph_t *graph,
         rel_mgroup_t *src = graph->mgroup + src_id;
         borISetUnion(&dst->mgroup, &src->mgroup);
         borISetUnion(&dst->op, &src->op);
+        dst->is_goal |= src->is_goal;
 
         int opi;
         BOR_ISET_FOR_EACH(&src->op, opi){
@@ -227,6 +230,17 @@ static void relGraphMergeFullOp(rel_graph_t *graph, int op_id)
     borISetUnion(&mgs, &graph->op[op_id].mgroup);
     relGraphMergeMGroups(graph, &mgs);
     borISetFree(&mgs);
+}
+
+static int mgroupsHasGoal(const pot_t *pot, const bor_iset_t *mgroups)
+{
+    int mi;
+
+    BOR_ISET_FOR_EACH(mgroups, mi){
+        if (pot->mgroup[mi].is_goal)
+            return 1;
+    }
+    return 0;
 }
 
 static int relGraphMerge(const pot_t *pot, rel_graph_t *graph)
@@ -248,6 +262,9 @@ static int relGraphMerge(const pot_t *pot, rel_graph_t *graph)
         if (graph->op[ops[i]].size == 0)
             break;
         relGraphGatherMGroups(graph, &graph->op[ops[i]].mgroup, &mgroups);
+        if (!mgroupsHasGoal(pot, &mgroups))
+            continue;
+
         num_nodes = tgNumNodes(pot, &mgroups);
         if (tgCanFitInMem(num_nodes, borISetSize(&mgroups),
                           6UL * 1024UL * 1024UL * 1024UL)){
@@ -278,6 +295,8 @@ static int relGraphMerge(const pot_t *pot, rel_graph_t *graph)
                 int m2 = borISetGet(&op->mgroup, k);
                 borISetUnion2(&mgroups, &graph->mgroup[m1].mgroup,
                                         &graph->mgroup[m2].mgroup);
+                if (!mgroupsHasGoal(pot, &mgroups))
+                    continue;
                 num_nodes = tgNumNodes(pot, &mgroups);
                 if (tgCanFitInMem(num_nodes, borISetSize(&mgroups),
                             6UL * 1024UL * 1024UL * 1024UL)){
@@ -310,6 +329,8 @@ static int relGraphMerge(const pot_t *pot, rel_graph_t *graph)
             if (borISetSize(&m2->mgroup) == 0)
                 continue;
             borISetUnion2(&mgroups, &m1->mgroup, &m2->mgroup);
+            if (!mgroupsHasGoal(pot, &mgroups))
+                continue;
             num_nodes = tgNumNodes(pot, &mgroups);
             if (tgCanFitInMem(num_nodes, borISetSize(&mgroups),
                         6UL * 1024UL * 1024UL * 1024UL)){
@@ -340,6 +361,7 @@ static void relGraphInit(const pot_t *pot, rel_graph_t *graph)
         const mgroup_t *mg = pot->mgroup + i;
         borISetAdd(&graph->mgroup[i].mgroup, i);
         borISetUnion(&graph->mgroup[i].op, &mg->op);
+        graph->mgroup[i].is_goal = mg->is_goal;
 
         BOR_ISET_FOR_EACH(&mg->op, op)
             borISetAdd(&graph->op[op].mgroup, i);
@@ -435,6 +457,7 @@ static void mgroupMakeExactlyOne(mgroup_t *mgroup, pddl_strips_t *strips)
 static void mgroupAddSingle(pot_t *pot, int fact_id)
 {
     mgroup_t *mg;
+    BOR_ISET(new_goal);
 
     if (pot->mgroup_size >= pot->mgroup_alloc){
         pot->mgroup_alloc *= 2;
@@ -446,8 +469,21 @@ static void mgroupAddSingle(pot_t *pot, int fact_id)
     mg->id = pot->mgroup_size;
     borISetAdd(&mg->fact, fact_id);
     mgroupMakeExactlyOne(mg, pot->strips);
+    if (borISetIn(fact_id, &pot->strips->goal)){
+        mg->is_goal = 1;
+    }else{
+        borISetAdd(&new_goal, fact_id);
+        borISetUnion(&new_goal, &pot->strips->goal);
+        if (pddlMutexesIsMutex(&pot->strips->mutex, &new_goal)){
+            INFO("Adding %s to goal",
+                    pot->strips->fact.fact[borISetGet(&mg->fact, 1)]->name);
+            borISetAdd(&pot->strips->goal, borISetGet(&mg->fact, 1));
+            mg->is_goal = 1;
+        }
+    }
 
     ++pot->mgroup_size;
+    borISetFree(&new_goal);
 }
 
 static void mgroupComplete(pot_t *pot)
@@ -480,6 +516,7 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
     for (int mi = 0; mi < strips->mgroup.mgroup_size; ++mi){
         const pddl_mgroup_t *mg = strips->mgroup.mgroup + mi;
         pot->mgroup[mi].id = mi;
+        pot->mgroup[mi].is_goal = mg->is_goal;
         borISetUnion(&pot->mgroup[mi].fact, &mg->fact);
         if (!mg->is_exactly_1)
             mgroupMakeExactlyOne(pot->mgroup + mi, pot->strips);
