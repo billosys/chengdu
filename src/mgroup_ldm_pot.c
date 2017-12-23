@@ -20,6 +20,7 @@
 #include <boruvka/sort.h>
 #include "pddl/strips.h"
 #include "pddl/mgroup_ldm_pot.h"
+#include "pddl/util.h"
 #include "pddl/err.h"
 #include "err.h"
 #include "assert.h"
@@ -47,6 +48,8 @@ struct pot {
     mgroup_t *mgroup;
     int mgroup_size;
     int mgroup_alloc;
+    bor_iset_t *sync_prod;
+    int sync_prod_size;
 };
 typedef struct pot pot_t;
 
@@ -72,6 +75,7 @@ struct tg_graph {
 };
 typedef struct tg_graph tg_graph_t;
 
+/** Plan and prepare synchronized products of mgroups */
 static void sprodPrepare(pot_t *pot);
 static unsigned long tgNumNodes(const pot_t *pot, const bor_iset_t *mg);
 static int tgCanFitInMem(unsigned long num_nodes,
@@ -323,6 +327,16 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
     borISetFree(&tgmg);
 
     sprodPrepare(pot);
+    for (int i = 0; i < pot->sync_prod_size; ++i){
+        int mgi;
+        printf("Sync product:");
+        BOR_ISET_FOR_EACH(pot->sync_prod + i, mgi){
+            printf(" %d", mgi);
+            if (pot->mgroup[mgi].is_goal)
+                printf("G");
+        }
+        printf("\n");
+    }
 }
 
 static void potFree(pot_t *pot)
@@ -349,6 +363,7 @@ void pot(const pddl_strips_t *strips)
 /*** PLAN SYNC PRODUCTS ***/
 struct sprod_op {
     bor_iset_t mgroup;
+    bor_iset_t op;
     int size;
 };
 typedef struct sprod_op sprod_op_t;
@@ -390,6 +405,7 @@ static void sprodGraphMinimize(sprod_graph_t *graph)
         if (borISetSize(&op->mgroup) == 1){
             borISetRm(&graph->mgroup[borISetGet(&op->mgroup, 0)].op, i);
             borISetEmpty(&op->mgroup);
+            borISetEmpty(&op->op);
             op->size = 0;
         }
     }
@@ -414,7 +430,9 @@ static void sprodGraphMinimize(sprod_graph_t *graph)
             BOR_ISET_FOR_EACH(&op_prev->mgroup, mgi)
                 borISetRm(&graph->mgroup[mgi].op, ops[prev]);
             op_cur->size += op_prev->size;
+            borISetUnion(&op_cur->op, &op_prev->op);
             borISetEmpty(&op_prev->mgroup);
+            borISetEmpty(&op_prev->op);
             op_prev->size = 0;
         }
         prev = cur;
@@ -427,6 +445,10 @@ static void sprodGraphMinimize(sprod_graph_t *graph)
         int mg;
         BOR_ISET_FOR_EACH(&graph->op[i].mgroup, mg)
             printf(" %d", mg);
+        printf(" | ");
+        int op;
+        BOR_ISET_FOR_EACH(&graph->op[i].op, op)
+            printf(" %d", op);
         printf("\n");
 
     }
@@ -593,8 +615,10 @@ static void sprodGraphInit(const pot_t *pot, sprod_graph_t *graph)
     graph->mgroup_size = pot->mgroup_size;
     graph->mgroup = BOR_CALLOC_ARR(sprod_mgroup_t, graph->mgroup_size);
 
-    for (int i = 0; i < pot->strips->op.op_size; ++i)
+    for (int i = 0; i < pot->strips->op.op_size; ++i){
         graph->op[i].size = 1;
+        borISetAdd(&graph->op[i].op, i);
+    }
 
     // Connect operators and mgroups
     for (int i = 0; i < pot->mgroup_size; ++i){
@@ -623,10 +647,67 @@ static void sprodGraphFree(sprod_graph_t *graph)
         BOR_FREE(graph->mgroup);
 }
 
+static void sprodCostPart(pot_t *pot, const sprod_graph_t *graph)
+{
+    int scale = 1;
+
+    // Compute scaling factor for operators' costs
+    for (int opi = 0; opi < graph->op_size; ++opi){
+        int size = borISetSize(&graph->op[opi].mgroup);
+        if (size > 1)
+            scale = pddlLCM(scale, size);
+    }
+    printf("SCALE: %d\n", scale);
+
+    // Scale operators' costs
+    for (int opi = 0; opi < pot->strips->op.op_size; ++opi)
+        pot->strips->op.op[opi]->cost *= scale;
+
+    // Cost partitioning of the shared operators
+    for (int i = 0; i < graph->op_size; ++i){
+        if (graph->op[i].size == 0)
+            continue;
+        int div = borISetSize(&graph->op[i].mgroup);
+        int opi;
+        BOR_ISET_FOR_EACH(&graph->op[i].op, opi)
+            pot->strips->op.op[opi]->cost /= div;
+    }
+}
+
+static void sprodMakeList(pot_t *pot, const sprod_graph_t *graph)
+{
+    int size = 0;
+
+    for (int i = 0; i < graph->mgroup_size; ++i){
+        const sprod_mgroup_t *mg = graph->mgroup + i;
+        if (!mg->is_goal || borISetSize(&mg->mgroup) == 0)
+            continue;
+        ++size;
+    }
+
+    pot->sync_prod_size = size;
+    pot->sync_prod = BOR_CALLOC_ARR(bor_iset_t, size);
+    for (int i = 0, j = 0; i < graph->mgroup_size; ++i){
+        const sprod_mgroup_t *mg = graph->mgroup + i;
+        if (!mg->is_goal || borISetSize(&mg->mgroup) == 0)
+            continue;
+        borISetUnion(pot->sync_prod + j, &mg->mgroup);
+        ++j;
+    }
+}
+
 static void sprodPrepare(pot_t *pot)
 {
     sprod_graph_t graph;
     sprodGraphInit(pot, &graph);
     while (sprodGraphMerge(pot, &graph) == 0);
+
+    // Make cost partitioning of the operators that are shared between
+    // mgroups
+    sprodCostPart(pot, &graph);
+
+    // Create a list of the planned synchronized products
+    sprodMakeList(pot, &graph);
+
     sprodGraphFree(&graph);
 }
