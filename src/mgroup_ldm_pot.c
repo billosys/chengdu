@@ -243,26 +243,13 @@ static void tgInitEdgesTo(tg_graph_t *graph,
 
         setAddOps(pot, from_node, node, op_from, &ops);
 
-        printf("%d -> %d: ", from_node_id, i);
         BOR_ISET_FOR_EACH(&ops, opi){
-            printf(" %d", opi);
-            printf(":D");
-            int x;
-            BOR_ISET_FOR_EACH(&pot->strips->op.op[opi]->del_eff, x)
-                printf(":%d", x);
-            printf(":A");
-            BOR_ISET_FOR_EACH(&pot->strips->op.op[opi]->add_eff, x)
-                printf(":%d", x);
-            printf(":P");
-            BOR_ISET_FOR_EACH(&pot->strips->op.op[opi]->pre, x)
-                printf(":%d", x);
             tg_edge_t *next = from_node->next + i;
             tg_edge_t *prev = node->prev + from_node_id;
             int op_cost = pot->strips->op.op[opi]->cost;
             next->cost = BOR_MIN(next->cost, op_cost);
             prev->cost = BOR_MIN(prev->cost, op_cost);
         }
-        printf("\n");
     }
 
     borISetFree(&ops);
@@ -349,6 +336,7 @@ static void tgGraphInit(tg_graph_t *graph,
     graph->mem = BOR_MALLOC(max_mem);
 
     graph->node_size = tgNumNodes(pot, mgroups);
+    INFO("tg-graph-init: num_nodes: %d", graph->node_size);
     graph->node = graph->mem;
 
     mem_fact = (char *)(graph->node + graph->node_size);
@@ -371,9 +359,13 @@ static void tgGraphInit(tg_graph_t *graph,
         n->prev += (size_t)graph->node_size * (size_t)i;
     }
 
+    INFO2("tg-graph-alloc");
     tgInitNodes(graph, pot, mgroups);
+    INFO2("tg-graph-init-nodes");
     tgInitEdges(graph, pot);
+    INFO2("tg-graph-init-edges");
     tgMinimizeEdges(graph);
+    INFO2("tg-graph-init-minimize");
     for (int i = 0; i < graph->node_size; ++i){
         if (graph->node[i].is_mutex)
             continue;
@@ -593,6 +585,7 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
     }
     borISetFree(&tgmg);
 
+    INFO2("sprod-prepare");
     sprodPrepare(pot);
     for (int i = 0; i < pot->sync_prod_size; ++i){
         int mgi;
@@ -604,13 +597,13 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
         }
         printf("\n");
     }
+    INFO2("sprod-prepared");
 
     for (int i = 0; i < pot->sync_prod_size; ++i){
         tg_graph_t graph;
         tgGraphInit(&graph, pot, pot->sync_prod + i);
         INFO2("tg-graph");
         tgGraphFree(&graph);
-        break;
     }
 }
 
@@ -925,12 +918,14 @@ static void sprodCostPart(pot_t *pot, const sprod_graph_t *graph)
     int scale = 1;
 
     // Compute scaling factor for operators' costs
-    for (int opi = 0; opi < graph->op_size; ++opi){
+    // TODO: Parametrize scale limit
+    for (int opi = 0; opi < graph->op_size && scale < 1000; ++opi){
         int size = borISetSize(&graph->op[opi].mgroup);
+        INFO("SCALE-size: %d, scale: %d", size, scale);
         if (size > 1)
             scale = pddlLCM(scale, size);
     }
-    printf("SCALE: %d\n", scale);
+    INFO("SCALE: %d", scale);
 
     // Scale operators' costs
     for (int opi = 0; opi < pot->strips->op.op_size; ++opi)
@@ -978,9 +973,11 @@ static void sprodPrepare(pot_t *pot)
     // Make cost partitioning of the operators that are shared between
     // mgroups
     sprodCostPart(pot, &graph);
+    INFO2("COST PART");
 
     // Create a list of the planned synchronized products
     sprodMakeList(pot, &graph);
+    INFO2("MAKE LIST");
 
     sprodGraphFree(&graph);
 }
