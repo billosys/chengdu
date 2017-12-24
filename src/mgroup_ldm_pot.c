@@ -17,6 +17,7 @@
  * See the License for more information.
  */
 
+#include <limits.h>
 #include <boruvka/sort.h>
 #include "pddl/strips.h"
 #include "pddl/mgroup_ldm_pot.h"
@@ -28,6 +29,9 @@
 // TODO: unsigned long -> size_t
 //static unsigned long max_mem = 6UL * 1024UL * 1024UL * 1024UL;
 static unsigned long max_mem = 3UL * 1024UL * 1024UL * 1024UL;
+//static unsigned long max_mem = 1UL * 1024UL * 1024UL;
+
+#define COST_INF INT_MAX
 
 struct fact {
     bor_iset_t op_del; /*!< Operators that delete this fact */
@@ -181,13 +185,6 @@ static void _tgInitNodes(tg_graph_t *graph,
                 node->is_init = borISetIsSubset(&facts, &pot->strips->init);
                 node->is_goal = (gsize == goal_size);
 
-                for (int i = 0; i < graph->node_size; ++i){
-                    node->next[i].to = i;
-                    node->next[i].cost = -1;
-                    node->prev[i].to = i;
-                    node->prev[i].cost = -1;
-                }
-
             }else{
                 _tgInitNodes(graph, node, pot, goal_size,
                              mgroups, mgroup_idx + 1);
@@ -212,11 +209,141 @@ static void tgInitNodes(tg_graph_t *graph,
     borISetFree(&facts);
 }
 
+static void setAddOps(const pot_t *pot,
+                      const tg_node_t *from,
+                      const tg_node_t *to,
+                      const bor_iset_t *del_ops,
+                      bor_iset_t *ops)
+{
+    borISetEmpty(ops);
+    borISetUnion(ops, del_ops);
+    for (int i = 0; i < to->fact_size; ++i){
+        if (from->fact[i] != to->fact[i]){
+            borISetIntersect(ops, &pot->fact[to->fact[i]].op_add);
+            borISetIntersect(ops, &pot->fact[from->fact[i]].op_del);
+        }else{
+            borISetMinus(ops, &pot->fact[to->fact[i]].op_del);
+        }
+    }
+}
+
+static void tgInitEdgesTo(tg_graph_t *graph,
+                          const pot_t *pot,
+                          int from_node_id,
+                          const bor_iset_t *op_from)
+{
+    tg_node_t *from_node = graph->node + from_node_id;
+    BOR_ISET(ops);
+    int opi;
+
+    for (int i = 0; i < graph->node_size; ++i){
+        tg_node_t *node = graph->node + i;
+        if (i == from_node_id || node->is_mutex)
+            continue;
+
+        setAddOps(pot, from_node, node, op_from, &ops);
+
+        printf("%d -> %d: ", from_node_id, i);
+        BOR_ISET_FOR_EACH(&ops, opi){
+            printf(" %d", opi);
+            printf(":D");
+            int x;
+            BOR_ISET_FOR_EACH(&pot->strips->op.op[opi]->del_eff, x)
+                printf(":%d", x);
+            printf(":A");
+            BOR_ISET_FOR_EACH(&pot->strips->op.op[opi]->add_eff, x)
+                printf(":%d", x);
+            printf(":P");
+            BOR_ISET_FOR_EACH(&pot->strips->op.op[opi]->pre, x)
+                printf(":%d", x);
+            tg_edge_t *next = from_node->next + i;
+            tg_edge_t *prev = node->prev + from_node_id;
+            int op_cost = pot->strips->op.op[opi]->cost;
+            next->cost = BOR_MIN(next->cost, op_cost);
+            prev->cost = BOR_MIN(prev->cost, op_cost);
+        }
+        printf("\n");
+    }
+
+    borISetFree(&ops);
+}
+
+static void tgInitEdges(tg_graph_t *graph,
+                        const pot_t *pot)
+{
+    BOR_ISET(ops);
+
+    for (int i = 0; i < graph->node_size; ++i){
+        tg_node_t *node = graph->node + i;
+        if (node->is_mutex)
+            continue;
+        for (int j = 0; j < graph->node_size; ++j){
+            node->next[j].to = node->prev[j].to = j;
+            node->next[j].cost = node->prev[j].cost = COST_INF;
+        }
+    }
+
+
+    for (int i = 0; i < graph->node_size; ++i){
+        tg_node_t *node = graph->node + i;
+        if (node->is_mutex)
+            continue;
+
+        borISetEmpty(&ops);
+        for (int j = 0; j < node->fact_size; ++j)
+            borISetUnion(&ops, &pot->fact[node->fact[j]].op_del);
+        tgInitEdgesTo(graph, pot, i, &ops);
+    }
+
+    borISetFree(&ops);
+}
+
+static void tgMinimizeEdges(tg_graph_t *graph)
+{
+    for (int i = 0; i < graph->node_size; ++i){
+        tg_node_t *node = graph->node + i;
+        if (node->is_mutex)
+            continue;
+
+        node->next_size = node->prev_size = 0;
+
+        for (int j = 0; j < graph->node_size; ++j){
+            if (node->next[j].cost != COST_INF)
+                node->next[node->next_size++] = node->next[j];
+            if (node->prev[j].cost != COST_INF)
+                node->prev[node->prev_size++] = node->prev[j];
+        }
+    }
+}
+
 static void tgGraphInit(tg_graph_t *graph,
                         const pot_t *pot, const bor_iset_t *mgroups)
 {
     char *mem_fact, *mem_edge_next, *mem_edge_prev;
     size_t memsize;
+
+    int mgi;
+    BOR_ISET_FOR_EACH(mgroups, mgi){
+        const mgroup_t *mg = pot->mgroup + mgi;
+        printf("MG %d:\n", mgi);
+        for (int i = 0; i < borISetSize(&mg->fact); ++i){
+            printf("  %d %s ->",
+                    borISetGet(&mg->fact, i),
+                    pot->strips->fact.fact[borISetGet(&mg->fact, i)]->name);
+            for (int j = 0; j < borISetSize(&mg->fact); ++j){
+                if (i == j)
+                    continue;
+                BOR_ISET(ops);
+                borISetIntersect2(&ops,
+                        &pot->fact[borISetGet(&mg->fact, i)].op_del,
+                        &pot->fact[borISetGet(&mg->fact, j)].op_add);
+                if (borISetSize(&ops) > 0)
+                    printf(" %d", borISetGet(&mg->fact, j));
+                borISetFree(&ops);
+            }
+            printf("\n");
+        }
+    }
 
     bzero(graph, sizeof(*graph));
     graph->mem = BOR_MALLOC(max_mem);
@@ -245,7 +372,11 @@ static void tgGraphInit(tg_graph_t *graph,
     }
 
     tgInitNodes(graph, pot, mgroups);
+    tgInitEdges(graph, pot);
+    tgMinimizeEdges(graph);
     for (int i = 0; i < graph->node_size; ++i){
+        if (graph->node[i].is_mutex)
+            continue;
         printf("N%d:", i);
         if (graph->node[i].is_goal)
             printf("G");
@@ -258,6 +389,9 @@ static void tgGraphInit(tg_graph_t *graph,
             if (borISetIn(graph->node[i].fact[j], &pot->strips->goal))
                 printf("G");
         }
+
+        printf(" next: %d", graph->node[i].next_size);
+        printf(" prev: %d", graph->node[i].prev_size);
         printf("\n");
     }
 }
