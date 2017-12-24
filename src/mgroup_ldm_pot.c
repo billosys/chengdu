@@ -25,6 +25,10 @@
 #include "err.h"
 #include "assert.h"
 
+// TODO: unsigned long -> size_t
+//static unsigned long max_mem = 6UL * 1024UL * 1024UL * 1024UL;
+static unsigned long max_mem = 3UL * 1024UL * 1024UL * 1024UL;
+
 struct fact {
     bor_iset_t op_del; /*!< Operators that delete this fact */
     bor_iset_t op_add; /*!< Operators that add this fact */
@@ -66,10 +70,14 @@ struct tg_node {
     int next_size;
     tg_edge_t *prev;
     int prev_size;
+    unsigned char is_goal:1;
+    unsigned char is_init:1;
+    unsigned char is_mutex:1;
 } bor_packed;
 typedef struct tg_node tg_node_t;
 
 struct tg_graph {
+    void *mem;
     tg_node_t *node;
     int node_size;
 };
@@ -134,6 +142,130 @@ static unsigned long tgNumNodes(const pot_t *pot, const bor_iset_t *mg)
     borISetFree(&facts);
 
     return num_nodes;
+}
+
+
+static void _tgInitNodes(tg_graph_t *graph,
+                         tg_node_t *node,
+                         const pot_t *pot,
+                         int goal_size,
+                         const bor_iset_t *mgroups,
+                         int mgroup_idx)
+{
+    BOR_ISET(facts);
+    const mgroup_t *mgroup = pot->mgroup + borISetGet(mgroups, mgroup_idx);
+    int inc, fact, is_mutex;
+
+    inc = 1;
+    for (int i = mgroup_idx + 1; i < mgroups->size; ++i)
+        inc *= borISetSize(&pot->mgroup[borISetGet(mgroups, i)].fact);
+
+    BOR_ISET_FOR_EACH(&mgroup->fact, fact){
+        borISetEmpty(&facts);
+        for (int i = 0; i < mgroup_idx; ++i)
+            borISetAdd(&facts, node->fact[i]);
+        borISetAdd(&facts, fact);
+        is_mutex = pddlMutexesIsMutex(&pot->strips->mutex, &facts);
+
+        for (int i = 0; i < inc; ++i){
+            //printf("F[%d] %ld\n", mgroup_idx, (long)(node[i].fact));
+            //fflush(stdout);
+            node[i].fact[mgroup_idx] = fact;
+            node[i].is_mutex = is_mutex;
+        }
+
+        if (!is_mutex){
+            //if (mgroup_idx == 1){
+            if (mgroup_idx == borISetSize(mgroups) - 1){
+                int gsize = borISetIntersectionSize(&facts, &pot->strips->goal);
+                node->is_init = borISetIsSubset(&facts, &pot->strips->init);
+                node->is_goal = (gsize == goal_size);
+
+                for (int i = 0; i < graph->node_size; ++i){
+                    node->next[i].to = i;
+                    node->next[i].cost = -1;
+                    node->prev[i].to = i;
+                    node->prev[i].cost = -1;
+                }
+
+            }else{
+                _tgInitNodes(graph, node, pot, goal_size,
+                             mgroups, mgroup_idx + 1);
+            }
+        }
+        node += inc;
+    }
+}
+
+static void tgInitNodes(tg_graph_t *graph,
+                        const pot_t *pot,
+                        const bor_iset_t *mgroups)
+{
+    BOR_ISET(facts);
+    int mgi, goal_size = 0;
+
+    BOR_ISET_FOR_EACH(mgroups, mgi)
+        borISetUnion(&facts, &pot->mgroup[mgi].fact);
+    goal_size = borISetIntersectionSize(&facts, &pot->strips->goal);
+
+    _tgInitNodes(graph, graph->node, pot, goal_size, mgroups, 0);
+    borISetFree(&facts);
+}
+
+static void tgGraphInit(tg_graph_t *graph,
+                        const pot_t *pot, const bor_iset_t *mgroups)
+{
+    char *mem_fact, *mem_edge_next, *mem_edge_prev;
+    size_t memsize;
+
+    bzero(graph, sizeof(*graph));
+    graph->mem = BOR_MALLOC(max_mem);
+
+    graph->node_size = tgNumNodes(pot, mgroups);
+    graph->node = graph->mem;
+
+    mem_fact = (char *)(graph->node + graph->node_size);
+    memsize = sizeof(int) * borISetSize(mgroups) * graph->node_size;
+    mem_edge_next = mem_fact + memsize;
+    memsize = sizeof(tg_edge_t) * graph->node_size * graph->node_size;
+    mem_edge_prev = mem_edge_next + memsize;
+
+    bzero(graph->mem, max_mem);
+    for (int i = 0; i < graph->node_size; ++i){
+        tg_node_t *n = graph->node + i;
+        bzero(n, sizeof(tg_node_t));
+        n->fact_size = borISetSize(mgroups);
+        n->fact = (int *)mem_fact + (size_t)n->fact_size * (size_t)i;
+
+        n->next  = (tg_edge_t *)mem_edge_next;
+        n->next += (size_t)graph->node_size * (size_t)i;
+
+        n->prev  = (tg_edge_t *)mem_edge_prev;
+        n->prev += (size_t)graph->node_size * (size_t)i;
+    }
+
+    tgInitNodes(graph, pot, mgroups);
+    for (int i = 0; i < graph->node_size; ++i){
+        printf("N%d:", i);
+        if (graph->node[i].is_goal)
+            printf("G");
+        if (graph->node[i].is_init)
+            printf("I");
+        if (graph->node[i].is_mutex)
+            printf("X");
+        for (int j = 0; j < graph->node[i].fact_size; ++j){
+            printf(" %d", graph->node[i].fact[j]);
+            if (borISetIn(graph->node[i].fact[j], &pot->strips->goal))
+                printf("G");
+        }
+        printf("\n");
+    }
+}
+
+static void tgGraphFree(tg_graph_t *graph)
+{
+    if (graph->mem != NULL)
+        BOR_FREE(graph->mem);
 }
 
 static void mgroupMakeExactlyOne(mgroup_t *mgroup, pddl_strips_t *strips)
@@ -313,7 +445,8 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
         num_nodes = tgNumNodes(pot, &tgmg);
         printf("N: %lu\n", num_nodes);
 
-        if (tgCanFitInMem(num_nodes, i + 1, 6UL * 1024UL * 1024UL * 1024UL)){
+        // TODO: parametrize
+        if (tgCanFitInMem(num_nodes, i + 1, max_mem)){
             //borISetAdd(&tgmg, i);
             borISetUnion(&tgfacts, &pot->mgroup[i].fact);
         }else{
@@ -336,6 +469,14 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
                 printf("G");
         }
         printf("\n");
+    }
+
+    for (int i = 0; i < pot->sync_prod_size; ++i){
+        tg_graph_t graph;
+        tgGraphInit(&graph, pot, pot->sync_prod + i);
+        INFO2("tg-graph");
+        tgGraphFree(&graph);
+        break;
     }
 }
 
@@ -515,10 +656,8 @@ static int sprodGraphMergeMGroups(const pot_t *pot,
 
     // TODO: parametrize
     num_nodes = tgNumNodes(pot, mgs);
-    if (!tgCanFitInMem(num_nodes, borISetSize(mgs),
-                       6UL * 1024UL * 1024UL * 1024UL)){
+    if (!tgCanFitInMem(num_nodes, borISetSize(mgs), max_mem))
         return -1;
-    }
 
     for (int i = 1; i < mgs->size; ++i){
         int src_id = borISetGet(mgs, i);
