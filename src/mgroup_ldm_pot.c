@@ -19,6 +19,7 @@
 
 #include <limits.h>
 #include <boruvka/sort.h>
+#include <boruvka/iarr.h>
 #include "pddl/strips.h"
 #include "pddl/mgroup_ldm_pot.h"
 #include "pddl/util.h"
@@ -61,15 +62,17 @@ struct pot {
 };
 typedef struct pot pot_t;
 
+// TODO: Remap costs to up to 256 costs and save some memory per edge.
 struct tg_edge {
     int to;
     int cost;
+    int cur_cost;
 } bor_packed;
 typedef struct tg_edge tg_edge_t;
 
 struct tg_node {
     int *fact;
-    int fact_size;
+    int fact_size; // TODO: Move it tg_graph_t
     tg_edge_t *next;
     int next_size;
     tg_edge_t *prev;
@@ -77,6 +80,7 @@ struct tg_node {
     unsigned char is_goal:1;
     unsigned char is_init:1;
     unsigned char is_mutex:1;
+    unsigned char is_goal_zone:1;
 } bor_packed;
 typedef struct tg_node tg_node_t;
 
@@ -148,6 +152,50 @@ static unsigned long tgNumNodes(const pot_t *pot, const bor_iset_t *mg)
     return num_nodes;
 }
 
+
+static void tgMarkGoalZone(tg_graph_t *graph,
+                           const bor_iset_t *goal_nodes)
+{
+    // TODO: 
+    BOR_IARR(queue);
+    int node_id;
+
+    for (int i = 0; i < graph->node_size; ++i){
+        if (!graph->node[i].is_mutex)
+            graph->node[i].is_goal_zone = 0;
+    }
+
+    BOR_ISET_FOR_EACH(goal_nodes, node_id)
+        borIArrAdd(&queue, node_id);
+
+    while (queue.size != 0){
+        node_id = borIArrGet(&queue, queue.size - 1);
+        --queue.size;
+        //borISetRm(&queue, node_id);
+
+        tg_node_t *node = graph->node + node_id;
+        if (node->is_goal_zone)
+            continue;
+
+        node->is_goal_zone = 1;
+        for (int i = 0; node->prev_size; ++i){
+            const tg_edge_t *e = node->prev + i;
+            if (e->cur_cost == 0 && !graph->node[e->to].is_goal_zone)
+                borIArrAdd(&queue, e->to);
+        }
+    }
+    borIArrFree(&queue);
+}
+
+static tgLdmInit(tg_graph_t *graph)
+{
+    for (int i = 0; i < graph->node_size; ++i){
+        tg_node_t *n = graph->node + i;
+        if (n->is_mutex)
+            continue;
+        // TODO
+    }
+}
 
 static void _tgInitNodes(tg_graph_t *graph,
                          tg_node_t *node,
@@ -301,6 +349,22 @@ static void tgMinimizeEdges(tg_graph_t *graph)
                 node->prev[node->prev_size++] = node->prev[j];
         }
     }
+
+    BOR_ISET(costs);
+    for (int i = 0; i < graph->node_size; ++i){
+        tg_node_t *node = graph->node + i;
+        if (node->is_mutex)
+            continue;
+        for (int j = 0; j < node->next_size; ++j)
+            borISetAdd(&costs, node->next[j].cost);
+    }
+
+    INFO2("C");
+    int c;
+    BOR_ISET_FOR_EACH(&costs, c){
+        INFO("Cost: %d", c);
+    }
+    borISetFree(&costs);
 }
 
 static void tgGraphInit(tg_graph_t *graph,
