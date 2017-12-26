@@ -20,6 +20,7 @@
 #include <limits.h>
 #include <boruvka/sort.h>
 #include <boruvka/iarr.h>
+#include <boruvka/pairheap.h>
 #include "pddl/strips.h"
 #include "pddl/mgroup_ldm_pot.h"
 #include "pddl/util.h"
@@ -59,6 +60,9 @@ struct pot {
     int mgroup_alloc;
     bor_iset_t *sync_prod;
     int sync_prod_size;
+
+    int scale;
+    int init_heur;
 };
 typedef struct pot pot_t;
 
@@ -81,6 +85,7 @@ struct tg_node {
     unsigned char is_init:1;
     unsigned char is_mutex:1;
     unsigned char is_goal_zone:1;
+    int goal_dist;
 } bor_packed;
 typedef struct tg_node tg_node_t;
 
@@ -187,7 +192,7 @@ static void tgMarkGoalZone(tg_graph_t *graph,
     borIArrFree(&queue);
 }
 
-static tgLdmInit(tg_graph_t *graph)
+static void tgLdmInit(tg_graph_t *graph)
 {
     for (int i = 0; i < graph->node_size; ++i){
         tg_node_t *n = graph->node + i;
@@ -195,6 +200,65 @@ static tgLdmInit(tg_graph_t *graph)
             continue;
         // TODO
     }
+}
+
+struct dij_node {
+    int node_id;
+    bor_pairheap_node_t heap;
+};
+typedef struct dij_node dij_node_t;
+
+static int dijLT(const bor_pairheap_node_t *_n1,
+                 const bor_pairheap_node_t *_n2,
+                 void *data)
+{
+    tg_graph_t *graph = data;
+    const dij_node_t *n1 = bor_container_of(_n1, dij_node_t, heap);
+    const dij_node_t *n2 = bor_container_of(_n2, dij_node_t, heap);
+    const tg_node_t *m1 = graph->node + n1->node_id;
+    const tg_node_t *m2 = graph->node + n2->node_id;
+
+    return m1->goal_dist < m2->goal_dist;
+}
+
+static void tgGraphGoalDistance(tg_graph_t *graph)
+{
+    bor_pairheap_t *heap;
+    dij_node_t *dij_node;
+    tg_node_t *node;
+    int dist;
+
+    dij_node = BOR_ALLOC_ARR(dij_node_t, graph->node_size);
+    heap = borPairHeapNew(dijLT, graph);
+    for (int i = 0; i < graph->node_size; ++i){
+        node = graph->node + i;
+        if (node->is_goal){
+            node->goal_dist = 0;
+        }else{
+            // TODO: define macro
+            node->goal_dist = COST_INF / 2;
+        }
+        dij_node[i].node_id = i;
+        borPairHeapAdd(heap, &dij_node[i].heap);
+    }
+
+    while (!borPairHeapEmpty(heap)){
+        bor_pairheap_node_t *pn = borPairHeapExtractMin(heap);
+        dij_node_t *n = bor_container_of(pn, dij_node_t, heap);
+        node = graph->node + n->node_id;
+        for (int i = 0; i < node->prev_size; ++i){
+            const tg_edge_t *e = node->prev + i;
+            tg_node_t *next = graph->node + e->to;
+            dist = node->goal_dist + e->cost;
+            if (dist < next->goal_dist){
+                next->goal_dist = dist;
+                borPairHeapUpdate(heap, &dij_node[e->to].heap);
+            }
+        }
+    }
+
+    BOR_FREE(dij_node);
+    borPairHeapDel(heap);
 }
 
 static void _tgInitNodes(tg_graph_t *graph,
@@ -430,10 +494,13 @@ static void tgGraphInit(tg_graph_t *graph,
     INFO2("tg-graph-init-edges");
     tgMinimizeEdges(graph);
     INFO2("tg-graph-init-minimize");
+    tgGraphGoalDistance(graph);
+    INFO2("tg-graph-goal-distance");
     for (int i = 0; i < graph->node_size; ++i){
         if (graph->node[i].is_mutex)
             continue;
         printf("N%d:", i);
+        printf("D%d:", graph->node[i].goal_dist);
         if (graph->node[i].is_goal)
             printf("G");
         if (graph->node[i].is_init)
@@ -663,12 +730,23 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
     }
     INFO2("sprod-prepared");
 
+    pot->init_heur = 0;
     for (int i = 0; i < pot->sync_prod_size; ++i){
         tg_graph_t graph;
         tgGraphInit(&graph, pot, pot->sync_prod + i);
+        for (int j = 0; j < graph.node_size; ++j){
+            if (graph.node[j].is_init){
+                pot->init_heur += graph.node[j].goal_dist;
+                break;
+            }
+        }
         INFO2("tg-graph");
         tgGraphFree(&graph);
     }
+
+    printf("INIT HEUR UNSCALED: %d (scale: %d)\n", pot->init_heur,
+            pot->scale);
+    printf("INIT HEUR: %d\n", pot->init_heur / pot->scale);
 }
 
 static void potFree(pot_t *pot)
@@ -990,6 +1068,7 @@ static void sprodCostPart(pot_t *pot, const sprod_graph_t *graph)
             scale = pddlLCM(scale, size);
     }
     INFO("SCALE: %d", scale);
+    pot->scale = scale;
 
     // Scale operators' costs
     for (int opi = 0; opi < pot->strips->op.op_size; ++opi)
