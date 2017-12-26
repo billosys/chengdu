@@ -68,7 +68,6 @@ typedef struct pot pot_t;
 
 // TODO: Remap costs to up to 256 costs and save some memory per edge.
 struct tg_edge {
-    int to;
     int cost;
     int cur_cost;
 } bor_packed;
@@ -78,9 +77,7 @@ struct tg_node {
     int *fact;
     int fact_size; // TODO: Move it tg_graph_t
     tg_edge_t *next;
-    int next_size;
     tg_edge_t *prev;
-    int prev_size;
     unsigned char is_goal:1;
     unsigned char is_init:1;
     unsigned char is_mutex:1;
@@ -158,6 +155,7 @@ static unsigned long tgNumNodes(const pot_t *pot, const bor_iset_t *mg)
 }
 
 
+/*
 static void tgMarkGoalZone(tg_graph_t *graph,
                            const bor_iset_t *goal_nodes)
 {
@@ -191,6 +189,7 @@ static void tgMarkGoalZone(tg_graph_t *graph,
     }
     borIArrFree(&queue);
 }
+*/
 
 static void tgLdmInit(tg_graph_t *graph)
 {
@@ -246,14 +245,20 @@ static void tgGraphGoalDistance(tg_graph_t *graph)
         bor_pairheap_node_t *pn = borPairHeapExtractMin(heap);
         dij_node_t *n = bor_container_of(pn, dij_node_t, heap);
         node = graph->node + n->node_id;
-        for (int i = 0; i < node->prev_size; ++i){
+        for (int i = 0; i < graph->node_size;){
             const tg_edge_t *e = node->prev + i;
-            tg_node_t *next = graph->node + e->to;
+            if (e->cost < 0){
+                i -= e->cost;
+                continue;
+            }
+                
+            tg_node_t *next = graph->node + i;
             dist = node->goal_dist + e->cost;
             if (dist < next->goal_dist){
                 next->goal_dist = dist;
-                borPairHeapUpdate(heap, &dij_node[e->to].heap);
+                borPairHeapUpdate(heap, &dij_node[i].heap);
             }
+            ++i;
         }
     }
 
@@ -377,7 +382,6 @@ static void tgInitEdges(tg_graph_t *graph,
         if (node->is_mutex)
             continue;
         for (int j = 0; j < graph->node_size; ++j){
-            node->next[j].to = node->prev[j].to = j;
             node->next[j].cost = node->prev[j].cost = COST_INF;
         }
     }
@@ -397,6 +401,20 @@ static void tgInitEdges(tg_graph_t *graph,
     borISetFree(&ops);
 }
 
+static void tgMinimizeNodeEdges(tg_edge_t *edge, int node_size)
+{
+    for (int j = node_size - 1, p = 0; j >= 0; --j){
+        if (edge[j].cost != COST_INF){
+            p = 0;
+        }else{
+            edge[j].cost = -1;
+            if (p)
+                edge[j].cost += edge[j + 1].cost;
+            p = 1;
+        }
+    }
+}
+
 static void tgMinimizeEdges(tg_graph_t *graph)
 {
     for (int i = 0; i < graph->node_size; ++i){
@@ -404,14 +422,8 @@ static void tgMinimizeEdges(tg_graph_t *graph)
         if (node->is_mutex)
             continue;
 
-        node->next_size = node->prev_size = 0;
-
-        for (int j = 0; j < graph->node_size; ++j){
-            if (node->next[j].cost != COST_INF)
-                node->next[node->next_size++] = node->next[j];
-            if (node->prev[j].cost != COST_INF)
-                node->prev[node->prev_size++] = node->prev[j];
-        }
+        tgMinimizeNodeEdges(node->next, graph->node_size);
+        tgMinimizeNodeEdges(node->prev, graph->node_size);
     }
 
     BOR_ISET(costs);
@@ -419,8 +431,13 @@ static void tgMinimizeEdges(tg_graph_t *graph)
         tg_node_t *node = graph->node + i;
         if (node->is_mutex)
             continue;
-        for (int j = 0; j < node->next_size; ++j)
-            borISetAdd(&costs, node->next[j].cost);
+        for (int j = 0; j < graph->node_size; ++j){
+            if (node->next[j].cost >= 0){
+                borISetAdd(&costs, node->next[j].cost);
+            }else{
+                j -= node->next[j].cost + 1;
+            }
+        }
     }
 
     INFO2("C");
@@ -512,9 +529,6 @@ static void tgGraphInit(tg_graph_t *graph,
             if (borISetIn(graph->node[i].fact[j], &pot->strips->goal))
                 printf("G");
         }
-
-        printf(" next: %d", graph->node[i].next_size);
-        printf(" prev: %d", graph->node[i].prev_size);
         printf("\n");
     }
 }
@@ -737,6 +751,7 @@ static void potInit(pot_t *pot, const pddl_strips_t *strips)
         for (int j = 0; j < graph.node_size; ++j){
             if (graph.node[j].is_init){
                 pot->init_heur += graph.node[j].goal_dist;
+                printf("I: %d\n", graph.node[j].goal_dist);
                 break;
             }
         }
@@ -1115,7 +1130,8 @@ static void sprodPrepare(pot_t *pot)
 
     // Make cost partitioning of the operators that are shared between
     // mgroups
-    sprodCostPart(pot, &graph);
+    pot->scale = 1;
+    //sprodCostPart(pot, &graph);
     INFO2("COST PART");
 
     // Create a list of the planned synchronized products
