@@ -443,6 +443,8 @@ void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
 
     for (int i = 0; i < ms->mgroup_size; ++i){
         m = mgs[i];
+        if (m->none_of_those >= 0)
+            fprintf(fout, "n:");
         if (m->is_init)
             fprintf(fout, "i:");
         if (m->is_goal)
@@ -474,6 +476,12 @@ void pddlMGroupsPrintPython(const pddl_mgroups_t *mg, FILE *fout)
         BOR_ISET_FOR_EACH(&g->fact, fact_id)
             fprintf(fout, " %d,", fact_id);
         fprintf(fout, "]),\n");
+        if (g->none_of_those < 0){
+            fprintf(fout, "        'none_of_those' : None,\n");
+        }else{
+            fprintf(fout, "        'none_of_those' : %d,\n",
+                    g->none_of_those);
+        }
         fprintf(fout, "        'is_init' : %s,\n",
                 (g->is_init ? "True" : "False"));
         fprintf(fout, "        'is_goal' : %s,\n",

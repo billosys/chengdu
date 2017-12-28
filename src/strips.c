@@ -83,6 +83,20 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     pddlMGroupsInit(&strips->mgroup);
 }
 
+static void makeExactlyOneExtendGoal(pddl_strips_t *strips,
+                                     pddl_mgroup_t *mg,
+                                     int none_of_those)
+{
+    int fact;
+
+    BOR_ISET_FOR_EACH(&mg->fact, fact){
+        if (!pddlMutexesIsMutexWithFact(&strips->mutex, fact, &strips->goal))
+            return;
+    }
+    mg->is_goal = 1;
+    borISetAdd(&strips->goal, none_of_those);
+}
+
 static int makeExactlyOneMGroup(pddl_strips_t *strips,
                                 int mgroup_id,
                                 pddl_mgroup_t *mg)
@@ -104,8 +118,13 @@ static int makeExactlyOneMGroup(pddl_strips_t *strips,
     pddlFactFree(&fact);
 
     // Add none-of-those to init if necessary
-    if (borISetIsDisjunct(&strips->init, &mg->fact))
+    if (borISetIsDisjunct(&strips->init, &mg->fact)){
         borISetAdd(&strips->init, none_of_those);
+        mg->is_init = 1;
+    }
+
+    // Add none-of-those to the goal if possible
+    makeExactlyOneExtendGoal(strips, mg, none_of_those);
 
     // Add mutexes between none-of-those and all other facts
     BOR_ISET_FOR_EACH(&mg->fact, fact_id){
