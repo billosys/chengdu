@@ -36,6 +36,7 @@ extern "C" {
  */
 struct pddl_mgroup {
     bor_iset_t fact; /*!< Set of facts the mutex group consists of */
+    int none_of_those; /*!< ID of the "none-of-those" fact or -1 */
     int is_init; /*!< True if it has non-empty intersection with the init */
     int is_goal; /*!< True if it has non-empty intersection with the goal */
     int is_fa; /*!< True if it is fact-alternatig mutex group */

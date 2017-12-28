@@ -83,80 +83,21 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     pddlMGroupsInit(&strips->mgroup);
 }
 
-
-static void makeExactlyOneMGroupFAUpdateOps(pddl_strips_t *strips,
-                                            const pddl_mgroup_t *mg,
-                                            int none_of_those)
-{
-    BOR_ISET(predel);
-
-    for (int opi = 0; opi < strips->op.op_size; ++opi){
-        pddl_strips_op_t *op = strips->op.op[opi];
-        borISetIntersect2(&predel, &op->pre, &op->del_eff);
-
-        if (borISetIsDisjunct(&mg->fact, &op->add_eff)
-                && !borISetIsDisjunct(&mg->fact, &predel)){
-            // Add none-of-those to the add effect if other fact is deleted
-            // by the operator.
-            borISetAdd(&op->add_eff, none_of_those);
-        }
-    }
-
-    borISetFree(&predel);
-}
-
-static void makeExactlyOneMGroupSingleUpdateOps(pddl_strips_t *strips,
-                                                int fact,
-                                                int none_of_those)
-{
-    int op_size = strips->op.op_size;
-    pddl_strips_op_t new_op;
-
-    for (int opi = 0; opi < op_size; ++opi){
-        pddl_strips_op_t *op = strips->op.op[opi];
-
-        if (borISetIn(fact, &op->add_eff)){
-            if (borISetSize(&op->add_eff) > 1){
-                pddlStripsOpInit(&new_op);
-                pddlStripsOpCopy(&new_op, op);
-                borISetAdd(&new_op.pre, fact);
-                borISetRm(&new_op.add_eff, fact);
-                pddlStripsOpsAdd(&strips->op, &new_op);
-                pddlStripsOpFree(&new_op);
-            }
-            borISetAdd(&op->pre, none_of_those);
-            borISetAdd(&op->del_eff, none_of_those);
-
-        }else if (borISetIn(fact, &op->del_eff)){
-            if (borISetIn(fact, &op->pre)){
-                borISetAdd(&op->add_eff, none_of_those);
-            }else{
-                pddlStripsOpInit(&new_op);
-                pddlStripsOpCopy(&new_op, op);
-                borISetAdd(&new_op.pre, none_of_those);
-                borISetRm(&new_op.del_eff, fact);
-                pddlStripsOpsAdd(&strips->op, &new_op);
-                pddlStripsOpFree(&new_op);
-
-                borISetAdd(&op->pre, fact);
-                borISetAdd(&op->add_eff, none_of_those);
-            }
-        }
-    }
-}
-
 static int makeExactlyOneMGroup(pddl_strips_t *strips,
                                 int mgroup_id,
                                 pddl_mgroup_t *mg)
 {
     pddl_fact_t fact;
     int none_of_those;
-    char name[128];
+    char name[1024], *s;
     BOR_ISET(mutex);
     int fact_id;
 
     // Create an artificial fact "none-of-those"
-    sprintf(name, "none-of-those-%d", mgroup_id);
+    s = name;
+    s += sprintf(s, "NOT");
+    BOR_ISET_FOR_EACH(&mg->fact, fact_id)
+        s += sprintf(s, ":%s", strips->fact.fact[fact_id]->name);
     pddlFactInit(&fact);
     fact.name = BOR_STRDUP(name);
     none_of_those = pddlFactsAdd(&strips->fact, &fact);
@@ -165,17 +106,6 @@ static int makeExactlyOneMGroup(pddl_strips_t *strips,
     // Add none-of-those to init if necessary
     if (borISetIsDisjunct(&strips->init, &mg->fact))
         borISetAdd(&strips->init, none_of_those);
-
-    // Update operators if necessary
-    if (mg->is_fa){
-        makeExactlyOneMGroupFAUpdateOps(strips, mg, none_of_those);
-    }else if (borISetSize(&mg->fact) == 1){
-        makeExactlyOneMGroupSingleUpdateOps(strips, borISetGet(&mg->fact, 0),
-                                            none_of_those);
-    }else{
-        ERR_RET2(-1, "Only fam-groups and single-fact mutex groups"
-                     " are supported for now!");
-    }
 
     // Add mutexes between none-of-those and all other facts
     BOR_ISET_FOR_EACH(&mg->fact, fact_id){
@@ -187,74 +117,12 @@ static int makeExactlyOneMGroup(pddl_strips_t *strips,
 
     // Add none-of-those to the mutex group
     borISetAdd(&mg->fact, none_of_those);
+    mg->none_of_those = none_of_those;
     mg->is_exactly_1 = 1;
 
     borISetFree(&mutex);
 
     return 0;
-}
-
-static void compileAwayOpsWithDelOnlyOnExactlyOneMGroup(pddl_strips_t *strips,
-                                                        const pddl_mgroup_t *mg)
-{
-    BOR_ISET(predel);
-    BOR_ISET(deleff);
-    int op_size = strips->op.op_size;
-    int fact;
-    pddl_strips_op_t new_op;
-
-    for (int opi = 0; opi < op_size; ++opi){
-        pddl_strips_op_t *op = strips->op.op[opi];
-
-        // Find out whether there is deleted a fact (from the mutex group)
-        // that is not mentioned in the precondition.
-        borISetIntersect2(&deleff, &mg->fact, &op->del_eff);
-        if (borISetSize(&deleff) == 0)
-            continue;
-        borISetIntersect2(&predel, &op->pre, &deleff);
-        borISetMinus(&deleff, &predel);
-
-        if (borISetSize(&deleff) > 0){
-            if (borISetSize(&predel) > 0){
-                // The delete effect is redundant -- it can be safely
-                // removed because the precondition makes sure that other
-                // fact from the mutex group is present in the state when
-                // this operator is applied.
-                borISetMinus(&op->del_eff, &deleff);
-
-            }else{
-                INFO("Compiling away delete-only effect '%s'"
-                     " in the operator '%s'",
-                     strips->fact.fact[borISetGet(&deleff, 0)]->name,
-                     op->name);
-                // If a fact from the mutex group is not mentioned in the
-                // precondition, we need to add mutex group facts to the
-                // preconditions -- all possibilities are required.
-                for (int i = 1; i < borISetSize(&mg->fact); ++i){
-                    fact = borISetGet(&mg->fact, i);
-                    pddlStripsOpInit(&new_op);
-                    pddlStripsOpCopy(&new_op, op);
-                    borISetMinus(&new_op.del_eff, &deleff);
-                    borISetAdd(&new_op.pre, fact);
-                    if (borISetIn(fact, &deleff))
-                        borISetAdd(&new_op.del_eff, fact);
-                    pddlStripsOpsAdd(&strips->op, &new_op);
-                    INFO("  Adding copy of the operator '%s'"
-                         " with added pre '%s'",
-                         new_op.name, strips->fact.fact[fact]->name);
-                    pddlStripsOpFree(&new_op);
-                }
-
-                fact = borISetGet(&mg->fact, 0);
-                borISetMinus(&op->del_eff, &deleff);
-                borISetAdd(&op->pre, fact);
-                if (borISetIn(fact, &deleff))
-                    borISetAdd(&op->del_eff, fact);
-            }
-        }
-    }
-    borISetFree(&predel);
-    borISetFree(&deleff);
 }
 
 int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips)
@@ -265,7 +133,6 @@ int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips)
             if (makeExactlyOneMGroup(strips, i, mg) != 0)
                 TRACE_RET(-1);
         }
-        compileAwayOpsWithDelOnlyOnExactlyOneMGroup(strips, mg);
     }
     return 0;
 }

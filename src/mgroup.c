@@ -29,6 +29,7 @@ void pddlMGroupInit(pddl_mgroup_t *mg)
 {
     bzero(mg, sizeof(*mg));
     borISetInit(&mg->fact);
+    mg->none_of_those = -1;
 }
 
 void pddlMGroupFree(pddl_mgroup_t *mg)
@@ -280,6 +281,7 @@ void pddlMGroupsCopy(pddl_mgroups_t *dst, const pddl_mgroups_t *src)
     pddlMGroupsInit(dst);
     PDDL_MGROUPS_FOR_EACH(src, sm){
         dm = pddlMGroupsAdd(dst, &sm->fact);
+        dm->none_of_those = sm->none_of_those;
         dm->is_init = sm->is_init;
         dm->is_goal = sm->is_goal;
         dm->is_fa = sm->is_fa;
