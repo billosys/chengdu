@@ -53,6 +53,7 @@ struct pddl_sync_product {
     pddl_sync_product_node_t *node;
     int node_size;
     int fact_size;
+    int has_goal;
 } bor_packed;
 typedef struct pddl_sync_product pddl_sync_product_t;
 

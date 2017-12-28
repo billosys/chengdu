@@ -125,6 +125,7 @@ static void _initNodes(pddl_sync_product_t *sprod,
                 int isize = borISetIntersectionSize(&facts, &strips->init);
                 node->is_goal = (gsize == goal_size);
                 node->is_init = (isize == init_size);
+                sprod->has_goal |= node->is_goal;
 
             }else{
                 _initNodes(sprod, node, mgroups, strips, goal_size,
@@ -297,6 +298,28 @@ static void minimizeEdges(pddl_sync_product_t *sprod)
     borISetFree(&costs);
 }
 
+static int nodeHasNoOutgoingEdges(const pddl_sync_product_t *sprod,
+                                  const pddl_sync_product_node_t *n)
+{
+    return n->next[0].cost == -1 * sprod->node_size;
+}
+
+static void removeDeadEnds(pddl_sync_product_t *sprod)
+{
+    if (!sprod->has_goal)
+        return;
+
+    BOR_ISET(dead_ends);
+    for (int i = 0; i < sprod->node_size; ++i){
+        const pddl_sync_product_node_t *n = sprod->node + i;
+        if (nodeHasNoOutgoingEdges(sprod, n) && !n->is_goal){
+            // TODO
+            fprintf(stderr, "TODO: DEAD END\n");
+        }
+    }
+    borISetFree(&dead_ends);
+}
+
 int pddlSyncProductInit(pddl_sync_product_t *sprod,
                         const bor_iset_t *mgroups,
                         const pddl_strips_t *strips,
@@ -322,6 +345,7 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
     initNodes(sprod, mgroups, strips);
     initEdges(sprod, mgroups, strips, cross_ref);
     minimizeEdges(sprod);
+    removeDeadEnds(sprod);
 
     return 0;
 }
