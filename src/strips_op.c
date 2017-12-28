@@ -198,6 +198,30 @@ void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap)
     }
 }
 
+static int opCmp(const void *a, const void *b, void *_)
+{
+    pddl_strips_op_t *o1 = *(pddl_strips_op_t **)a;
+    pddl_strips_op_t *o2 = *(pddl_strips_op_t **)b;
+    return strcmp(o1->name, o2->name);
+}
+
+void pddlStripsOpsSort(pddl_strips_ops_t *ops)
+{
+    pddl_strips_op_t **op;
+
+    op = BOR_ALLOC_ARR(pddl_strips_op_t *, ops->op_size);
+    for (int i = 0; i < ops->op_size; ++i)
+        op[i] = ops->op[i];
+    borSort(op, ops->op_size, sizeof(pddl_strips_op_t *), opCmp, NULL);
+
+    for (int i = 0; i < ops->op_size; ++i){
+        ops->op[i] = op[i];
+        op[i]->id = i;
+    }
+
+    BOR_FREE(op);
+}
+
 void pddlStripsOpRemoveFact(pddl_strips_op_t *op, int fact_id)
 {
     int reorder = 0;

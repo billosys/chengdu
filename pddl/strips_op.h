@@ -195,6 +195,11 @@ void pddlStripsOpsDelOps(pddl_strips_ops_t *ops, const int *m);
  */
 void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap);
 
+/**
+ * Sort operators by name.
+ */
+void pddlStripsOpsSort(pddl_strips_ops_t *ops);
+
 void pddlStripsOpPrintDebug(const pddl_strips_op_t *op,
                             const pddl_facts_t *fs,
                             FILE *fout);
