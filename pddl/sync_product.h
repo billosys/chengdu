@@ -20,6 +20,7 @@
 #ifndef __PDDL_SYNC_PRODUCT_H__
 #define __PDDL_SYNC_PRODUCT_H__
 
+#include <boruvka/iarr.h>
 #include <pddl/strips.h>
 #include <pddl/strips_cross_ref.h>
 
@@ -115,6 +116,13 @@ void pddlSyncProductEdgeOps(const pddl_sync_product_t *sprod,
                             const pddl_strips_cross_ref_t *cref,
                             int from_node, int to_node,
                             bor_iset_t *ops);
+
+/**
+ * Computes the shortest distance from each node to the nearest goal node.
+ * If there is no path, -1 is used instead of distance.
+ */
+void pddlSyncProductGoalDistance(const pddl_sync_product_t *sprod,
+                                 bor_iarr_t *dist);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -20,6 +20,7 @@
 #include <sys/mman.h>
 #include <limits.h>
 
+#include <boruvka/pairheap.h>
 #include <boruvka/alloc.h>
 
 #include "pddl/sync_product.h"
@@ -373,4 +374,73 @@ void pddlSyncProductEdgeOps(const pddl_sync_product_t *sprod,
     borISetUnion(ops_out, &ops);
     borISetFree(&ops);
     borISetFree(&del_ops);
+}
+
+
+struct dij_node {
+    int node_id;
+    bor_pairheap_node_t heap;
+};
+typedef struct dij_node dij_node_t;
+
+static int dijLT(const bor_pairheap_node_t *_n1,
+                 const bor_pairheap_node_t *_n2,
+                 void *data)
+{
+    bor_iarr_t *dist = data;
+    const dij_node_t *n1 = bor_container_of(_n1, dij_node_t, heap);
+    const dij_node_t *n2 = bor_container_of(_n2, dij_node_t, heap);
+    return borIArrGet(dist, n1->node_id) < borIArrGet(dist, n2->node_id);
+}
+
+void pddlSyncProductGoalDistance(const pddl_sync_product_t *sprod,
+                                 bor_iarr_t *dist)
+{
+    bor_pairheap_t *heap;
+    dij_node_t *dij_node;
+
+    // Allocate output array
+    borIArrResize(dist, sprod->node_size);
+    if (!sprod->has_goal){
+        for (int i = 0; i < sprod->node_size; ++i)
+            borIArrSet(dist, i, -1);
+        return;
+    }
+
+    // Allocate and initialize structures for dijkstra algorithm
+    dij_node = BOR_ALLOC_ARR(dij_node_t, sprod->node_size);
+    heap = borPairHeapNew(dijLT, dist);
+    for (int i = 0; i < sprod->node_size; ++i){
+        const pddl_sync_product_node_t *node = sprod->node + i;
+        if (node->is_goal){
+            borIArrSet(dist, i, 0);
+        }else{
+            borIArrSet(dist, i, COST_INF);
+        }
+        dij_node[i].node_id = i;
+        borPairHeapAdd(heap, &dij_node[i].heap);
+    }
+
+    // Run dijkstra algorithm
+    while (!borPairHeapEmpty(heap)){
+        bor_pairheap_node_t *pn = borPairHeapExtractMin(heap);
+        dij_node_t *n = bor_container_of(pn, dij_node_t, heap);
+        PDDL_SYNC_PRODUCT_FOR_EACH_PREV(sprod, n->node_id, next_id){
+            int d = borIArrGet(dist, n->node_id)
+                        + sprod->node[next_id].next[n->node_id].cost;
+            if (d < borIArrGet(dist, next_id)){
+                borIArrSet(dist, next_id, d);
+                borPairHeapUpdate(heap, &dij_node[next_id].heap);
+            }
+        }
+    }
+
+    // Rewrite COST_INF to -1
+    for (int i = 0; i < sprod->node_size; ++i){
+        if (borIArrGet(dist, i) == COST_INF)
+            borIArrSet(dist, i, -1);
+    }
+
+    BOR_FREE(dij_node);
+    borPairHeapDel(heap);
 }
