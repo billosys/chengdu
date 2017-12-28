@@ -21,18 +21,67 @@
 
 #include "pddl/strips_cross_ref.h"
 
-#define TEST_FLAG(F, T, M) \
-    (!((F) & PDDL_STRIPS_CROSS_REF_NO_##T##_##M))
-
-void pddlStripsCrossRefInit(pddl_strips_cross_ref_t *cr,
-                            const pddl_strips_t *strips,
-                            unsigned flags)
+static void facts(pddl_strips_cross_ref_t *cr,
+                  const pddl_strips_t *strips)
 {
-    const pddl_strips_op_t *op;
-    const pddl_mgroup_t *mgroup;
-    pddl_strips_cross_ref_mgroup_t *mg;
-    int fact;
+    for (int opi = 0; opi < strips->op.op_size; ++opi){
+        const pddl_strips_op_t *op = strips->op.op[opi];
+        int fact;
 
+        BOR_ISET_FOR_EACH(&op->pre, fact)
+            borISetAdd(&cr->fact[fact].op_pre, opi);
+        BOR_ISET_FOR_EACH(&op->del_eff, fact)
+            borISetAdd(&cr->fact[fact].op_del, opi);
+        BOR_ISET_FOR_EACH(&op->add_eff, fact)
+            borISetAdd(&cr->fact[fact].op_add, opi);
+    }
+}
+
+static void mgroupNoneOfThose(pddl_strips_cross_ref_t *cr,
+                              const pddl_mgroup_t *mgroup,
+                              pddl_strips_cross_ref_mgroup_t *mg)
+{
+    BOR_ISET(ops);
+    int op_id;
+
+    borISetMinus2(&ops, &mg->op_del, &mg->op_add);
+    BOR_ISET_FOR_EACH(&ops, op_id)
+        borISetAdd(&cr->fact[mgroup->none_of_those].op_add, op_id);
+
+    borISetMinus2(&ops, &mg->op_add, &mg->op_del);
+    BOR_ISET_FOR_EACH(&ops, op_id)
+        borISetAdd(&cr->fact[mgroup->none_of_those].op_del, op_id);
+
+    borISetFree(&ops);
+}
+
+static void mgroups(pddl_strips_cross_ref_t *cr,
+                    const pddl_strips_t *strips)
+{
+    for (int mi = 0; mi < strips->mgroup.mgroup_size; ++mi){
+        const pddl_mgroup_t *mgroup = strips->mgroup.mgroup + mi;
+        pddl_strips_cross_ref_mgroup_t *mg = cr->mgroup + mi;
+        int fact;
+
+        BOR_ISET_FOR_EACH(&mgroup->fact, fact){
+            borISetUnion(&mg->op_pre, &cr->fact[fact].op_pre);
+            borISetUnion(&mg->op_del, &cr->fact[fact].op_del);
+            borISetUnion(&mg->op_add, &cr->fact[fact].op_add);
+        }
+
+        borISetUnion2(&mg->op, &mg->op_del, &mg->op_add);
+        borISetUnion(&mg->op, &mg->op_pre);
+        borISetUnion2(&mg->op_del_add, &mg->op_del, &mg->op_add);
+
+        if (mgroup->none_of_those >= 0)
+            mgroupNoneOfThose(cr, mgroup, mg);
+    }
+}
+
+// TODO: Better flags
+void pddlStripsCrossRefInit(pddl_strips_cross_ref_t *cr,
+                            const pddl_strips_t *strips)
+{
     bzero(cr, sizeof(*cr));
     cr->strips = strips;
     cr->fact_size = strips->fact.fact_size;
@@ -41,41 +90,8 @@ void pddlStripsCrossRefInit(pddl_strips_cross_ref_t *cr,
     cr->mgroup = BOR_CALLOC_ARR(pddl_strips_cross_ref_mgroup_t,
                                 cr->mgroup_size);
 
-    for (int opi = 0; opi < strips->op.op_size; ++opi){
-        op = strips->op.op[opi];
-        if (TEST_FLAG(flags, FACT, OP_PRE)){
-            BOR_ISET_FOR_EACH(&op->pre, fact)
-                borISetAdd(&cr->fact[fact].op_pre, opi);
-        }
-        if (TEST_FLAG(flags, FACT, OP_DEL)){
-            BOR_ISET_FOR_EACH(&op->del_eff, fact)
-                borISetAdd(&cr->fact[fact].op_del, opi);
-        }
-        if (TEST_FLAG(flags, FACT, OP_ADD)){
-            BOR_ISET_FOR_EACH(&op->add_eff, fact)
-                borISetAdd(&cr->fact[fact].op_add, opi);
-        }
-    }
-
-    for (int mi = 0; mi < strips->mgroup.mgroup_size; ++mi){
-        mgroup = strips->mgroup.mgroup + mi;
-        mg = cr->mgroup + mi;
-        BOR_ISET_FOR_EACH(&mgroup->fact, fact){
-            if (TEST_FLAG(flags, MGROUP, OP_PRE))
-                borISetUnion(&mg->op_pre, &cr->fact[fact].op_pre);
-            if (TEST_FLAG(flags, MGROUP, OP_DEL))
-                borISetUnion(&mg->op_del, &cr->fact[fact].op_del);
-            if (TEST_FLAG(flags, MGROUP, OP_ADD))
-                borISetUnion(&mg->op_add, &cr->fact[fact].op_add);
-        }
-
-        if (TEST_FLAG(flags, MGROUP, OP)){
-            borISetUnion2(&mg->op, &mg->op_del, &mg->op_add);
-            borISetUnion(&mg->op, &mg->op_pre);
-        }
-        if (TEST_FLAG(flags, MGROUP, OP_DEL_ADD))
-            borISetUnion2(&mg->op_del_add, &mg->op_del, &mg->op_add);
-    }
+    facts(cr, strips);
+    mgroups(cr, strips);
 }
 
 void pddlStripsCrossRefFree(pddl_strips_cross_ref_t *cr)

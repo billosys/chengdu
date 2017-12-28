@@ -53,24 +53,12 @@ struct pddl_strips_cross_ref {
 typedef struct pddl_strips_cross_ref pddl_strips_cross_ref_t;
 
 
-/** The following flags turn off the specified cross reference */
-#define PDDL_STRIPS_CROSS_REF_NO_FACT_OP_PRE        0x001u
-#define PDDL_STRIPS_CROSS_REF_NO_FACT_OP_DEL        0x002u
-#define PDDL_STRIPS_CROSS_REF_NO_FACT_OP_ADD        0x004u
-#define PDDL_STRIPS_CROSS_REF_NO_MGROUP_OP_PRE      0x008u
-#define PDDL_STRIPS_CROSS_REF_NO_MGROUP_OP_DEL      0x010u
-#define PDDL_STRIPS_CROSS_REF_NO_MGROUP_OP_ADD      0x020u
-#define PDDL_STRIPS_CROSS_REF_NO_MGROUP_OP          0x040u
-#define PDDL_STRIPS_CROSS_REF_NO_MGROUP_OP_DEL_ADD  0x080u
-
-
 /**
  * Cross reference strips objects.
  * If the flags is set to 0, all cross references are filled in.
  */
 void pddlStripsCrossRefInit(pddl_strips_cross_ref_t *cr,
-                            const pddl_strips_t *strips,
-                            unsigned flags);
+                            const pddl_strips_t *strips);
 
 /**
  * Frees allocated memory.
