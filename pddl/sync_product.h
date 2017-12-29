@@ -23,6 +23,7 @@
 #include <boruvka/iarr.h>
 #include <pddl/strips.h>
 #include <pddl/strips_cross_ref.h>
+#include <pddl/landmark.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +46,7 @@ struct pddl_sync_product_node {
     unsigned char is_mutex:1; /*!< True if this state is in mutex, i.e., it
                                    is unreachable state */
     unsigned char is_goal_zone:1;
+    unsigned char is_init_zone:1;
 } bor_packed;
 typedef struct pddl_sync_product_node pddl_sync_product_node_t;
 
@@ -124,6 +126,14 @@ void pddlSyncProductEdgeOps(const pddl_sync_product_t *sprod,
 void pddlSyncProductGoalDistance(const pddl_sync_product_t *sprod,
                                  bor_iarr_t *dist);
 
+
+// TODO
+int pddlSyncProductFindLandmarks(pddl_sync_product_t *sprod,
+                                 const pddl_strips_cross_ref_t *cref,
+                                 int init_node,
+                                 pddl_landmarks_t *ldms,
+                                 bor_iarr_t *ldm_sequence,
+                                 bor_iset_t *ldm_union);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

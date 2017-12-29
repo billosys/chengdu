@@ -444,3 +444,149 @@ void pddlSyncProductGoalDistance(const pddl_sync_product_t *sprod,
     BOR_FREE(dij_node);
     borPairHeapDel(heap);
 }
+
+
+static void ldmInit(pddl_sync_product_t *sprod,
+                    bor_iarr_t *goal_zone_queue)
+{
+    for (int i = 0; i < sprod->node_size; ++i){
+        pddl_sync_product_node_t *node = sprod->node + i;
+        node->is_goal_zone = 0;
+        if (node->is_goal){
+            borIArrAdd(goal_zone_queue, i);
+            node->is_goal_zone = 1;
+        }
+        PDDL_SYNC_PRODUCT_FOR_EACH_NEXT(sprod, node, next_id)
+            node->next[next_id].cur_cost = node->next[next_id].cost;
+    }
+}
+
+static void ldmMarkGoalZone(pddl_sync_product_t *sprod,
+                            bor_iarr_t *queue)
+{
+    for (int idx = 0; idx < borIArrSize(queue); ++idx){
+        int node_id = borIArrGet(queue, idx);
+
+        PDDL_SYNC_PRODUCT_FOR_EACH_PREV(sprod, node_id, prev_id){
+            if (sprod->node[prev_id].is_goal_zone)
+                continue;
+
+            if (sprod->node[prev_id].next[node_id].cur_cost == 0){
+                borIArrAdd(queue, prev_id);
+                sprod->node[prev_id].is_goal_zone = 1;
+            }
+        }
+    }
+}
+
+static void ldmFindCut(pddl_sync_product_t *sprod,
+                       const pddl_strips_cross_ref_t *cref,
+                       int init_node,
+                       bor_iarr_t *queue,
+                       bor_iset_t *cut_op,
+                       bor_iset_t *cut_node,
+                       int *cut_cost)
+{
+    for (int i = 0; i < sprod->node_size; ++i)
+        sprod->node[i].is_init_zone = 0;
+
+    borISetEmpty(cut_op);
+    borISetEmpty(cut_node);
+    *cut_cost = COST_INF;
+
+    borIArrEmpty(queue);
+    borIArrAdd(queue, init_node);
+    sprod->node[init_node].is_init_zone = 1;
+
+    for (int idx = 0; idx < borIArrSize(queue); ++idx){
+        int node_id = borIArrGet(queue, idx);
+        pddl_sync_product_node_t *node = sprod->node + node_id;
+
+        PDDL_SYNC_PRODUCT_FOR_EACH_NEXT(sprod, node, next_id){
+            pddl_sync_product_node_t *next = sprod->node + next_id;
+            if (next->is_init_zone)
+                continue;
+
+            if (next->is_goal_zone){
+                pddlSyncProductEdgeOps(sprod, cref, node_id, next_id, cut_op);
+                borISetAdd(cut_node, node_id);
+                *cut_cost = BOR_MIN(*cut_cost, node->next[next_id].cur_cost);
+            }else{
+                borIArrAdd(queue, next_id);
+                next->is_init_zone = 1;
+            }
+        }
+    }
+}
+
+static void ldmApplyCut(pddl_sync_product_t *sprod,
+                        const bor_iset_t *cut_nodes,
+                        int cut_cost)
+{
+    int node_id;
+
+    BOR_ISET_FOR_EACH(cut_nodes, node_id){
+        pddl_sync_product_node_t *node = sprod->node + node_id;
+        PDDL_SYNC_PRODUCT_FOR_EACH_NEXT(sprod, node, next_id){
+            if (sprod->node[next_id].is_goal_zone)
+                node->next[next_id].cur_cost -= cut_cost;
+        }
+    }
+}
+
+static void ldm(pddl_sync_product_t *sprod,
+                const pddl_strips_cross_ref_t *cref,
+                int init_node_id,
+                pddl_landmarks_t *ldms,
+                bor_iarr_t *ldm_sequence,
+                bor_iset_t *ldm_union)
+{
+    BOR_IARR(goal_zone_queue);
+    BOR_IARR(init_zone_queue);
+    BOR_ISET(cut_op);
+    BOR_ISET(cut_node);
+    pddl_sync_product_node_t *init_node = sprod->node + init_node_id;
+    int cut_cost;
+
+    ldmInit(sprod, &goal_zone_queue);
+    ldmMarkGoalZone(sprod, &goal_zone_queue);
+    while (!init_node->is_goal_zone){
+        ldmFindCut(sprod, cref, init_node_id, &init_zone_queue,
+                   &cut_op, &cut_node, &cut_cost);
+        if (ldms != NULL){
+            int ldm_id = pddlLandmarksAdd(ldms, &cut_op)->id;
+            if (ldm_sequence != NULL)
+                borIArrPrepend(ldm_sequence, ldm_id);
+        }
+        if (ldm_union != NULL)
+            borISetUnion(ldm_union, &cut_op);
+
+        ldmApplyCut(sprod, &cut_node, cut_cost);
+        ldmMarkGoalZone(sprod, &goal_zone_queue);
+    }
+
+    borISetFree(&cut_op);
+    borISetFree(&cut_node);
+    borIArrFree(&goal_zone_queue);
+    borIArrFree(&init_zone_queue);
+}
+
+int pddlSyncProductFindLandmarks(pddl_sync_product_t *sprod,
+                                 const pddl_strips_cross_ref_t *cref,
+                                 int init_node,
+                                 pddl_landmarks_t *ldms,
+                                 bor_iarr_t *ldm_sequence,
+                                 bor_iset_t *ldm_union)
+{
+    if (!sprod->has_goal)
+        ERR_RET2(-1, "Synchronized product does not contain any goal node.");
+    if (ldm_sequence != NULL && ldms == NULL)
+        ERR_RET2(-1, "ldm_sequence requires ldms");
+    if (ldms == NULL && ldm_sequence == NULL && ldm_union == NULL)
+        ERR_RET2(-1, "No output specified.");
+    if (sprod->node[init_node].is_goal)
+        return 0;
+
+    ldm(sprod, cref, init_node, ldms, ldm_sequence, ldm_union);
+    return 0;
+}
