@@ -25,6 +25,24 @@
 #include "err.h"
 #include "assert.h"
 
+
+static int mgroupCmp(const void *a, const void *b, void *_)
+{
+    const pddl_mgroup_t *m1 = a;
+    const pddl_mgroup_t *m2 = b;
+    int cmp = borISetSize(&m2->fact) - borISetSize(&m1->fact);
+
+    if (cmp == 0)
+        return borISetCmp(&m1->fact, &m2->fact);
+    return cmp;
+}
+
+static void mgroupsSort(pddl_mgroups_t *mgs)
+{
+    borSort(mgs->mgroup, mgs->mgroup_size, sizeof(pddl_mgroup_t),
+            mgroupCmp, NULL);
+}
+
 void pddlMGroupInit(pddl_mgroup_t *mg)
 {
     bzero(mg, sizeof(*mg));
@@ -394,6 +412,8 @@ int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs)
 void pddlMGroupsFinalize(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
 {
     pddl_mgroup_t *mg;
+
+    mgroupsSort(mgs);
     PDDL_MGROUPS_FOR_EACH(mgs, mg){
         if (mg->is_fa && mg->is_goal){
             mg->is_exactly_1 = 1;
