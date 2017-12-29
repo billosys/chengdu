@@ -376,6 +376,15 @@ void pddlSyncProductEdgeOps(const pddl_sync_product_t *sprod,
     borISetFree(&del_ops);
 }
 
+int pddlSyncProductInitNode(const pddl_sync_product_t *sprod)
+{
+    for (int i = 0; i < sprod->node_size; ++i){
+        if (sprod->node[i].is_init)
+            return i;
+    }
+    return -1;
+}
+
 
 struct dij_node {
     int node_id;

@@ -120,6 +120,11 @@ void pddlSyncProductEdgeOps(const pddl_sync_product_t *sprod,
                             bor_iset_t *ops);
 
 /**
+ * Returns ID for the node corresponding to the initial state.
+ */
+int pddlSyncProductInitNode(const pddl_sync_product_t *sprod);
+
+/**
  * Computes the shortest distance from each node to the nearest goal node.
  * If there is no path, -1 is used instead of distance.
  */
@@ -127,7 +132,9 @@ void pddlSyncProductGoalDistance(const pddl_sync_product_t *sprod,
                                  bor_iarr_t *dist);
 
 
-// TODO
+/**
+ * Finds landmarks from the given node.
+ */
 int pddlSyncProductFindLandmarks(pddl_sync_product_t *sprod,
                                  const pddl_strips_cross_ref_t *cref,
                                  int init_node,

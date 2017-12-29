@@ -28,6 +28,7 @@ OBJS += strips_plan
 OBJS += ground_atom
 OBJS += strips_ground
 OBJS += strips_reachability_graph
+OBJS += strips_cross_ref
 OBJS += mutex
 OBJS += mutex_hm
 OBJS += mutex_h2
@@ -44,6 +45,8 @@ OBJS += g
 OBJS += mgroup_tg_ldm
 OBJS += heur_lm_cut
 OBJS += heur_flow
+OBJS += mgroup_ldm_pot
+OBJS += sync_product
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
