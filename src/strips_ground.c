@@ -114,6 +114,7 @@ struct ground {
 
     pddl_ground_atoms_t static_facts;
     pddl_ground_atoms_t facts;
+    int *ground_atom_to_fact_id;
     pddl_ground_atoms_t funcs;
     tree_t *tree;
     ground_args_arr_t ground_args;
@@ -777,7 +778,7 @@ static void groundAtoms(ground_t *g,
         atom = PDDL_COND_CAST(atoms->cond[i], atom);
         ga = pddlGroundAtomsFindAtom(&g->facts, atom, arg);
         if (ga != NULL)
-            borISetAdd(out, ga->id);
+            borISetAdd(out, g->ground_atom_to_fact_id[ga->id]);
     }
 }
 
@@ -889,6 +890,8 @@ static int groundActions(ground_t *g, pddl_strips_t *strips)
         pddlStripsOpFree(&op);
     }
 
+    pddlStripsOpsSort(&strips->op);
+
     return 0;
 }
 
@@ -906,6 +909,17 @@ static int createStripsFacts(ground_t *g, pddl_strips_t *strips)
                    " different IDs. This is definitelly a bug!");
         }
     }
+
+    g->ground_atom_to_fact_id = BOR_ALLOC_ARR(int, strips->fact.fact_size);
+    pddlFactsSort(&strips->fact, g->ground_atom_to_fact_id);
+#ifdef DEBUG
+    for (int i = 0; i < g->facts.atom_size; ++i){
+        ga = g->facts.atom[i];
+        ASSERT(ga->id == i);
+        fact_id = pddlFactsAddGroundAtom(&strips->fact, ga, g->pddl);
+        ASSERT(fact_id == g->ground_atom_to_fact_id[ga->id]);
+    }
+#endif
     return 0;
 }
 
@@ -922,7 +936,7 @@ static int groundInitState(ground_t *g, pddl_strips_t *strips)
             a = PDDL_COND_CAST(c, atom);
             ga = pddlGroundAtomsFindAtom(&g->facts, a, NULL);
             if (ga != NULL)
-                borISetAdd(&strips->init, ga->id);
+                borISetAdd(&strips->init, g->ground_atom_to_fact_id[ga->id]);
         }
     }
     return 0;
@@ -951,7 +965,7 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
         ga = pddlGroundAtomsFindAtom(&g->facts, atom, NULL);
         if (ga != NULL){
             // Add the fact to the goal specification
-            borISetAdd(&strips->goal, ga->id);
+            borISetAdd(&strips->goal, g->ground_atom_to_fact_id[ga->id]);
         }else{
             // The problem is unsolvable, because a goal fact is not
             // reachable.
@@ -1020,6 +1034,7 @@ static int groundInit(ground_t *g, const pddl_t *pddl)
 
     pddlGroundAtomsInit(&g->static_facts);
     pddlGroundAtomsInit(&g->facts);
+    g->ground_atom_to_fact_id = NULL;
     pddlGroundAtomsInit(&g->funcs);
 
     groundInitFact(g, pddl);
@@ -1039,6 +1054,8 @@ static void groundFree(ground_t *g)
         BOR_FREE(g->tree);
     pddlGroundAtomsFree(&g->static_facts);
     pddlGroundAtomsFree(&g->facts);
+    if (g->ground_atom_to_fact_id != NULL)
+        BOR_FREE(g->ground_atom_to_fact_id);
     pddlGroundAtomsFree(&g->funcs);
     pddlPrepActionsFree(&g->action);
     groundArgsFree(&g->ground_args);

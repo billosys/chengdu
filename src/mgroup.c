@@ -25,6 +25,24 @@
 #include "err.h"
 #include "assert.h"
 
+
+static int mgroupCmp(const void *a, const void *b, void *_)
+{
+    const pddl_mgroup_t *m1 = a;
+    const pddl_mgroup_t *m2 = b;
+    int cmp = borISetSize(&m2->fact) - borISetSize(&m1->fact);
+
+    if (cmp == 0)
+        return borISetCmp(&m1->fact, &m2->fact);
+    return cmp;
+}
+
+static void mgroupsSort(pddl_mgroups_t *mgs)
+{
+    borSort(mgs->mgroup, mgs->mgroup_size, sizeof(pddl_mgroup_t),
+            mgroupCmp, NULL);
+}
+
 void pddlMGroupInit(pddl_mgroup_t *mg)
 {
     bzero(mg, sizeof(*mg));
@@ -394,6 +412,8 @@ int pddlMGroupsFA(const pddl_strips_t *strips, pddl_mgroups_t *mgs)
 void pddlMGroupsFinalize(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
 {
     pddl_mgroup_t *mg;
+
+    mgroupsSort(mgs);
     PDDL_MGROUPS_FOR_EACH(mgs, mg){
         if (mg->is_fa && mg->is_goal){
             mg->is_exactly_1 = 1;
@@ -411,38 +431,17 @@ void pddlMGroupsFinalize(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
     }
 }
 
-static int mgCmp(const void *a, const void *b, void *_)
-{
-    const pddl_mgroup_t *m1 = *(pddl_mgroup_t **)a;
-    const pddl_mgroup_t *m2 = *(pddl_mgroup_t **)b;
-    int cmp = borISetSize(&m2->fact) - borISetSize(&m1->fact);
-    for (int i = 0; i < borISetSize(&m1->fact) && cmp == 0; ++i)
-        cmp = borISetGet(&m1->fact, i) - borISetGet(&m2->fact, i);
-    return cmp;
-}
-
-static void sortMGs(pddl_mgroup_t **sorted, const pddl_mgroups_t *mgs)
-{
-    for (int i = 0; i < mgs->mgroup_size; ++i)
-        sorted[i] = mgs->mgroup + i;
-    borSort(sorted, mgs->mgroup_size, sizeof(pddl_mgroup_t *), mgCmp, NULL);
-}
-
 void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
                             const pddl_mgroups_t *ms, FILE *fout)
 {
-    pddl_mgroup_t **mgs;
     const pddl_mgroup_t *m;
     int fact;
 
     if (ms->mgroup_size == 0)
         return;
 
-    mgs = BOR_ALLOC_ARR(pddl_mgroup_t *, ms->mgroup_size);
-    sortMGs(mgs, ms);
-
     for (int i = 0; i < ms->mgroup_size; ++i){
-        m = mgs[i];
+        m = ms->mgroup + i;
         if (m->none_of_those >= 0)
             fprintf(fout, "n:");
         if (m->is_init)
@@ -458,8 +457,6 @@ void pddlMGroupsPrettyPrint(const struct pddl *pddl, const pddl_facts_t *fs,
             fprintf(fout, " %s;", fs->fact[fact]->name);
         fprintf(fout, "\n");
     }
-
-    BOR_FREE(mgs);
 }
 
 void pddlMGroupsPrintPython(const pddl_mgroups_t *mg, FILE *fout)

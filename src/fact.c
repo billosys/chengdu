@@ -158,6 +158,7 @@ static int addFact(pddl_facts_t *fs, pddl_fact_t *fact)
     fact->id = fs->fact_size;
     fs->fact[fs->fact_size] = fact;
     ++fs->fact_size;
+    borHTableInsert(fs->htable, &fact->htable);
     return fact->id;
 }
 
@@ -226,6 +227,25 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)
 {
     for (int i = 0; i < src->fact_size; ++i)
         pddlFactsAdd(dst, src->fact[i]);
+}
+
+static int factCmpByName(const void *a, const void *b, void *_)
+{
+    const pddl_fact_t *f1 = *(pddl_fact_t **)a;
+    const pddl_fact_t *f2 = *(pddl_fact_t **)b;
+    return strcmp(f1->name, f2->name);
+}
+
+void pddlFactsSort(pddl_facts_t *fs, int *remap)
+{
+    borSort(fs->fact, fs->fact_size, sizeof(pddl_fact_t *),
+            factCmpByName, NULL);
+    for (int i = 0; i < fs->fact_size; ++i){
+        pddl_fact_t *f = fs->fact[i];
+        if (remap != NULL)
+            remap[f->id] = i;
+        f->id = i;
+    }
 }
 
 static int printCmp(const void *_a, const void *_b, void *_fs)
