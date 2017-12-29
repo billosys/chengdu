@@ -119,6 +119,12 @@ void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs, const int *m, int *remap);
  */
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
 
+/**
+ * Sorts facts by their name and returns remapping from the old id to the
+ * new id if remap is non-NULL.
+ */
+void pddlFactsSort(pddl_facts_t *fs, int *remap);
+
 
 void pddlFactsPrintSorted(const pddl_facts_t *fs,
                           const char *prefix, const char *suffix,
