@@ -28,7 +28,7 @@ search: ../libpddl.a $(OBJS)
 
 pddl-translate: $(TRANSLATE_OBJS) ../libpddl.a
 	$(CC) $(CFLAGS) -o $@ $(TRANSLATE_OBJS) $(LDFLAGS)
-pddl-ldm: ../libpddl.a
+pddl-ldm: ldm.c ../libpddl.a
 	$(CC) $(CFLAGS) -o $@ ldm.c $(LDFLAGS)
 
 pddl-%: %.c ../libpddl.a

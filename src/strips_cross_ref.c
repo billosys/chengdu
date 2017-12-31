@@ -67,6 +67,7 @@ static void mgroups(pddl_strips_cross_ref_t *cr,
             borISetUnion(&mg->op_pre, &cr->fact[fact].op_pre);
             borISetUnion(&mg->op_del, &cr->fact[fact].op_del);
             borISetUnion(&mg->op_add, &cr->fact[fact].op_add);
+            borISetAdd(&cr->fact[fact].mgroup, mi);
         }
 
         borISetUnion2(&mg->op, &mg->op_del, &mg->op_add);
