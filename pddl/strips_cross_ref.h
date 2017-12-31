@@ -30,6 +30,7 @@ struct pddl_strips_cross_ref_fact {
     bor_iset_t op_pre;
     bor_iset_t op_del;
     bor_iset_t op_add;
+    bor_iset_t mgroup;
 };
 typedef struct pddl_strips_cross_ref_fact pddl_strips_cross_ref_fact_t;
 
