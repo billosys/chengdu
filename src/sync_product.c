@@ -276,27 +276,6 @@ static void minimizeEdges(pddl_sync_product_t *sprod)
         minimizeNextEdges(node->next, sprod->node_size);
         minimizePrevEdges(node->prev, sprod->node_size);
     }
-
-    BOR_ISET(costs);
-    for (int i = 0; i < sprod->node_size; ++i){
-        pddl_sync_product_node_t *node = sprod->node + i;
-        if (node->is_mutex)
-            continue;
-        for (int j = 0; j < sprod->node_size; ++j){
-            if (node->next[j].cost >= 0){
-                borISetAdd(&costs, node->next[j].cost);
-            }else{
-                j -= node->next[j].cost + 1;
-            }
-        }
-    }
-
-    INFO2("CX");
-    int c;
-    BOR_ISET_FOR_EACH(&costs, c){
-        INFO("Cost: %d", c);
-    }
-    borISetFree(&costs);
 }
 
 static int nodeHasNoOutgoingEdges(const pddl_sync_product_t *sprod,
@@ -548,7 +527,8 @@ static void ldm(pddl_sync_product_t *sprod,
                 int init_node_id,
                 pddl_landmarks_t *ldms,
                 bor_iarr_t *ldm_sequence,
-                bor_iset_t *ldm_union)
+                bor_iset_t *ldm_union,
+                int *ldm_cost)
 {
     BOR_IARR(goal_zone_queue);
     BOR_IARR(init_zone_queue);
@@ -569,6 +549,8 @@ static void ldm(pddl_sync_product_t *sprod,
         }
         if (ldm_union != NULL)
             borISetUnion(ldm_union, &cut_op);
+        if (ldm_cost != NULL)
+            *ldm_cost += cut_cost;
 
         ldmApplyCut(sprod, &cut_node, cut_cost);
         ldmMarkGoalZone(sprod, &goal_zone_queue);
@@ -585,17 +567,22 @@ int pddlSyncProductFindLandmarks(pddl_sync_product_t *sprod,
                                  int init_node,
                                  pddl_landmarks_t *ldms,
                                  bor_iarr_t *ldm_sequence,
-                                 bor_iset_t *ldm_union)
+                                 bor_iset_t *ldm_union,
+                                 int *ldm_cost)
 {
     if (!sprod->has_goal)
         ERR_RET2(-1, "Synchronized product does not contain any goal node.");
     if (ldm_sequence != NULL && ldms == NULL)
         ERR_RET2(-1, "ldm_sequence requires ldms");
-    if (ldms == NULL && ldm_sequence == NULL && ldm_union == NULL)
+    if (ldms == NULL && ldm_sequence == NULL
+            && ldm_union == NULL && ldm_cost == NULL){
         ERR_RET2(-1, "No output specified.");
+    }
     if (sprod->node[init_node].is_goal)
         return 0;
 
-    ldm(sprod, cref, init_node, ldms, ldm_sequence, ldm_union);
+    if (ldm_cost != NULL)
+        *ldm_cost = 0;
+    ldm(sprod, cref, init_node, ldms, ldm_sequence, ldm_union, ldm_cost);
     return 0;
 }

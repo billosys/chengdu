@@ -140,7 +140,8 @@ int pddlSyncProductFindLandmarks(pddl_sync_product_t *sprod,
                                  int init_node,
                                  pddl_landmarks_t *ldms,
                                  bor_iarr_t *ldm_sequence,
-                                 bor_iset_t *ldm_union);
+                                 bor_iset_t *ldm_union,
+                                 int *ldm_cost);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
