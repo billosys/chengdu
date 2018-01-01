@@ -34,6 +34,11 @@ static void facts(pddl_strips_cross_ref_t *cr,
             borISetAdd(&cr->fact[fact].op_del, opi);
         BOR_ISET_FOR_EACH(&op->add_eff, fact)
             borISetAdd(&cr->fact[fact].op_add, opi);
+
+        for (fact = 0; fact < strips->fact.fact_size; ++fact){
+            if (pddlMutexesIsMutexWithFact(&strips->mutex, fact, &op->pre))
+                borISetAdd(&cr->fact[fact].op_pre_mutex, opi);
+        }
     }
 }
 

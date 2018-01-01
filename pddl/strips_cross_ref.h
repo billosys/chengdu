@@ -28,6 +28,7 @@ extern "C" {
 
 struct pddl_strips_cross_ref_fact {
     bor_iset_t op_pre;
+    bor_iset_t op_pre_mutex;
     bor_iset_t op_del;
     bor_iset_t op_add;
     bor_iset_t mgroup;

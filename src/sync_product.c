@@ -174,6 +174,7 @@ static void setAddOps(const pddl_sync_product_t *sprod,
             borISetIntersect(ops, &cref->fact[from->fact[i]].op_del);
         }else{
             borISetMinus(ops, &cref->fact[to->fact[i]].op_del);
+            borISetMinus(ops, &cref->fact[to->fact[i]].op_pre_mutex);
         }
     }
 }
