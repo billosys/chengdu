@@ -104,8 +104,10 @@ void pddlStripsCrossRefFree(pddl_strips_cross_ref_t *cr)
 {
     for (int i = 0; i < cr->fact_size; ++i){
         borISetFree(&cr->fact[i].op_pre);
+        borISetFree(&cr->fact[i].op_pre_mutex);
         borISetFree(&cr->fact[i].op_del);
         borISetFree(&cr->fact[i].op_add);
+        borISetFree(&cr->fact[i].mgroup);
     }
     if (cr->fact != NULL)
         BOR_FREE(cr->fact);
