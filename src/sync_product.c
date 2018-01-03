@@ -326,7 +326,7 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
     initNodes(sprod, mgroups, strips);
     initEdges(sprod, mgroups, strips, cross_ref);
     minimizeEdges(sprod);
-    removeDeadEnds(sprod);
+    //removeDeadEnds(sprod);
 
     return 0;
 }
@@ -543,6 +543,11 @@ static void ldm(pddl_sync_product_t *sprod,
     while (!init_node->is_goal_zone){
         ldmFindCut(sprod, cref, init_node_id, &init_zone_queue,
                    &cut_op, &cut_node, &cut_cost);
+
+        // The initial node can be disconnected from the goal nodes
+        if (borISetSize(&cut_node) == 0)
+            break;
+
         if (ldms != NULL){
             int ldm_id = pddlLandmarksAdd(ldms, &cut_op)->id;
             if (ldm_sequence != NULL)
