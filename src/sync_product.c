@@ -25,25 +25,34 @@
 
 #include "pddl/sync_product.h"
 #include "err.h"
+#include "assert.h"
 
 #define COST_INF (INT_MAX / 2)
 
-size_t pddlSyncProductMaxNodes(const bor_iset_t *mgroups,
-                               const pddl_strips_t *strips)
+static size_t maxNodes(const bor_iset_t *mgroups,
+                       const pddl_strips_t *strips,
+                       int num_landmarks)
 {
     size_t num_nodes;
     int mi;
 
-    num_nodes = 1;
+    num_nodes = num_landmarks + 1;
     BOR_ISET_FOR_EACH(mgroups, mi)
         num_nodes *= borISetSize(&strips->mgroup.mgroup[mi].fact);
     return num_nodes;
 }
 
-size_t pddlSyncProductRequiredMem(const bor_iset_t *mgroups,
-                                  const pddl_strips_t *strips)
+size_t pddlSyncProductMaxNodes(const bor_iset_t *mgroups,
+                               const pddl_strips_t *strips)
 {
-    size_t num_nodes = pddlSyncProductMaxNodes(mgroups, strips);
+    return maxNodes(mgroups, strips, 0);
+}
+
+static size_t requiredMem(const bor_iset_t *mgroups,
+                          const pddl_strips_t *strips,
+                          int num_landmarks)
+{
+    size_t num_nodes = maxNodes(mgroups, strips, num_landmarks);
     size_t req_mem;
 
     req_mem  = num_nodes * sizeof(pddl_sync_product_node_t);
@@ -51,6 +60,12 @@ size_t pddlSyncProductRequiredMem(const bor_iset_t *mgroups,
     req_mem += num_nodes * num_nodes * sizeof(int);
     req_mem += num_nodes * borISetSize(mgroups) * sizeof(int);
     return req_mem;
+}
+
+size_t pddlSyncProductRequiredMem(const bor_iset_t *mgroups,
+                                  const pddl_strips_t *strips)
+{
+    return requiredMem(mgroups, strips, 0);
 }
 
 int pddlSyncProductCanFitInMem(const bor_iset_t *mgroups,
@@ -159,6 +174,42 @@ static void initNodes(pddl_sync_product_t *sprod,
     borISetFree(&facts);
 }
 
+static void initNodesLdm(pddl_sync_product_t *sprod,
+                         const bor_iset_t *mgroups,
+                         const pddl_strips_t *strips)
+{
+    int num_nodes, mgi;
+    pddl_sync_product_node_t *dst;
+
+    num_nodes = 1;
+    BOR_ISET_FOR_EACH(mgroups, mgi)
+        num_nodes *= borISetSize(&strips->mgroup.mgroup[mgi].fact);
+
+    for (int i = 0; i < num_nodes; ++i)
+        sprod->node[i].ldm_level = 0;
+
+    dst = sprod->node;
+    for (int level = 0; level < sprod->ldm_seq_size; ++level){
+        dst += num_nodes;
+        for (int n = 0; n < num_nodes; ++n){
+            dst[n].ldm_level = level + 1;
+            dst[n].is_goal = sprod->node[n].is_goal;
+            dst[n].is_init = sprod->node[n].is_init;
+            dst[n].is_mutex = sprod->node[n].is_mutex;
+            memcpy(dst[n].fact, sprod->node[n].fact,
+                   sizeof(int) * sprod->fact_size);
+        }
+    }
+
+    for (int i = 0; i < sprod->node_size; ++i){
+        pddl_sync_product_node_t *n = sprod->node + i;
+        if (n->is_init && n->ldm_level != 0)
+            n->is_init = 0;
+        if (n->is_goal && n->ldm_level != sprod->ldm_seq_size)
+            n->is_goal = 0;
+    }
+}
+
 static void setAddOps(const pddl_sync_product_t *sprod,
                       const pddl_strips_cross_ref_t *cref,
                       const pddl_sync_product_node_t *from,
@@ -167,8 +218,37 @@ static void setAddOps(const pddl_sync_product_t *sprod,
                       bor_iset_t *ops)
 {
     borISetEmpty(ops);
-    borISetUnion(ops, del_ops);
-    for (int i = 0; i < sprod->fact_size; ++i){
+
+    if (from->ldm_level == to->ldm_level){
+        borISetUnion(ops, del_ops);
+
+    }else{
+        // Allow edges only from lower to higher levels
+        if (to->ldm_level < from->ldm_level)
+            return;
+        ASSERT(from->ldm_level < sprod->ldm_seq_size);
+
+        if (memcmp(from->fact, to->fact, sizeof(int) * sprod->fact_size) == 0){
+            // If the nodes differ only in the level use only the landmark
+            // operators that will be later pruned to those that does not
+            // touch any fact and are applicable in the node
+            borISetUnion(ops, sprod->ldm_seq + from->ldm_level);
+
+        }else{
+            // If the nodes differ restrict the operator to only those that
+            // are part of the respective landmark.
+            borISetIntersect2(ops, del_ops, sprod->ldm_seq + from->ldm_level);
+        }
+
+        // The edges across more than one level must correspond to the
+        // operators that would hit all intermediate landmarks.
+        for (int i = from->ldm_level + 1;
+                i < to->ldm_level && borISetSize(ops) > 0; ++i){
+            borISetIntersect(ops, sprod->ldm_seq + i);
+        }
+    }
+
+    for (int i = 0; i < sprod->fact_size && borISetSize(ops) > 0; ++i){
         if (from->fact[i] != to->fact[i]){
             borISetIntersect(ops, &cref->fact[to->fact[i]].op_add);
             borISetIntersect(ops, &cref->fact[from->fact[i]].op_del);
@@ -301,13 +381,24 @@ static void removeDeadEnds(pddl_sync_product_t *sprod)
     borISetFree(&dead_ends);
 }
 
-int pddlSyncProductInit(pddl_sync_product_t *sprod,
-                        const bor_iset_t *mgroups,
-                        const pddl_strips_t *strips,
-                        const pddl_strips_cross_ref_t *cross_ref)
+int syncProductInit(pddl_sync_product_t *sprod,
+                    const pddl_strips_t *strips,
+                    const pddl_strips_cross_ref_t *cross_ref,
+                    const bor_iset_t *mgroups,
+                    const pddl_landmarks_t *ldms,
+                    const bor_iarr_t *ldm_seq)
 {
     bzero(sprod, sizeof(*sprod));
-    sprod->mem_size = pddlSyncProductRequiredMem(mgroups, strips);
+    if (ldm_seq != NULL && ldms != NULL){
+        sprod->ldm_seq_size = borIArrSize(ldm_seq);
+        sprod->ldm_seq = BOR_CALLOC_ARR(bor_iset_t, sprod->ldm_seq_size);
+        for (int i = 0; i < borIArrSize(ldm_seq); ++i){
+            const pddl_landmark_t *ldm = ldms->ldm[borIArrGet(ldm_seq, i)];
+            borISetUnion(sprod->ldm_seq + i, &ldm->op);
+        }
+    }
+
+    sprod->mem_size = requiredMem(mgroups, strips, sprod->ldm_seq_size);
     sprod->mem = mmap(NULL, sprod->mem_size,
                       PROT_READ | PROT_WRITE,
                       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -316,7 +407,7 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
                 (unsigned long)sprod->mem_size);
     }
 
-    sprod->node_size = pddlSyncProductMaxNodes(mgroups, strips);
+    sprod->node_size = maxNodes(mgroups, strips, sprod->ldm_seq_size);
     sprod->fact_size = borISetSize(mgroups);
 
     // Set up pointers so that the whole synchronized product fits into the
@@ -324,6 +415,8 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
     setUpMemory(sprod);
 
     initNodes(sprod, mgroups, strips);
+    if (sprod->ldm_seq_size > 0)
+        initNodesLdm(sprod, mgroups, strips);
     initEdges(sprod, mgroups, strips, cross_ref);
     minimizeEdges(sprod);
     //removeDeadEnds(sprod);
@@ -331,10 +424,33 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
     return 0;
 }
 
+int pddlSyncProductInit(pddl_sync_product_t *sprod,
+                        const bor_iset_t *mgroups,
+                        const pddl_strips_t *strips,
+                        const pddl_strips_cross_ref_t *cross_ref)
+{
+    return syncProductInit(sprod, strips, cross_ref, mgroups, NULL, NULL);
+}
+
+int pddlSyncProductInitLdm(pddl_sync_product_t *sprod,
+                           const pddl_strips_t *strips,
+                           const pddl_strips_cross_ref_t *cross_ref,
+                           const bor_iset_t *mgroups,
+                           const pddl_landmarks_t *ldms,
+                           const bor_iarr_t *ldm_seq)
+{
+    return syncProductInit(sprod, strips, cross_ref, mgroups, ldms, ldm_seq);
+}
+
 void pddlSyncProductFree(pddl_sync_product_t *sprod)
 {
     if (sprod->mem != NULL)
         munmap(sprod->mem, sprod->mem_size);
+
+    for (int i = 0; i < sprod->ldm_seq_size; ++i)
+        borISetFree(sprod->ldm_seq + i);
+    if (sprod->ldm_seq != NULL)
+        BOR_FREE(sprod->ldm_seq);
 }
 
 void pddlSyncProductEdgeOps(const pddl_sync_product_t *sprod,

@@ -41,6 +41,7 @@ struct pddl_sync_product_node {
     pddl_sync_product_edge_t *next; /*!< Edges starting in this node */
     //pddl_sync_product_edge_t *prev; /*!< Edges ending in this node */
     int *prev;
+    int ldm_level;
     unsigned char is_goal:1; /*!< True if this is a goal state */
     unsigned char is_init:1; /*!< True if this is the initial state */
     unsigned char is_mutex:1; /*!< True if this state is in mutex, i.e., it
@@ -57,6 +58,9 @@ struct pddl_sync_product {
     int node_size;
     int fact_size;
     int has_goal;
+
+    bor_iset_t *ldm_seq;
+    int ldm_seq_size;
 } bor_packed;
 typedef struct pddl_sync_product pddl_sync_product_t;
 
@@ -103,6 +107,16 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
                         const bor_iset_t *mgroups,
                         const pddl_strips_t *strips,
                         const pddl_strips_cross_ref_t *cross_ref);
+
+/**
+ * TODO
+ */
+int pddlSyncProductInitLdm(pddl_sync_product_t *sprod,
+                           const pddl_strips_t *strips,
+                           const pddl_strips_cross_ref_t *cross_ref,
+                           const bor_iset_t *mgroups,
+                           const pddl_landmarks_t *ldms,
+                           const bor_iarr_t *ldm_seq);
 
 /**
  * Frees allocated memory.
