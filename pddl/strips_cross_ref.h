@@ -51,6 +51,8 @@ struct pddl_strips_cross_ref {
     int fact_size;
     pddl_strips_cross_ref_mgroup_t *mgroup;
     int mgroup_size;
+
+    bor_iset_t op_only_once; /*!< Operators that can be used only once */
 };
 typedef struct pddl_strips_cross_ref pddl_strips_cross_ref_t;
 

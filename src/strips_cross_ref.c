@@ -84,6 +84,26 @@ static void mgroups(pddl_strips_cross_ref_t *cr,
     }
 }
 
+static void opOnlyOnce(const pddl_strips_cross_ref_t *cref,
+                       const pddl_strips_t *strips,
+                       bor_iset_t *op_only_once)
+{
+    BOR_ISET(pre_del);
+    int fact;
+
+    for (int i = 0; i < strips->op.op_size; ++i){
+        const pddl_strips_op_t *op = strips->op.op[i];
+        borISetIntersect2(&pre_del, &op->pre, &op->del_eff);
+        BOR_ISET_FOR_EACH(&pre_del, fact){
+            if (borISetSize(&cref->fact[fact].op_add) == 0)
+                borISetAdd(op_only_once, i);
+        }
+    }
+
+    borISetFree(&pre_del);
+}
+
+
 // TODO: Better flags
 void pddlStripsCrossRefInit(pddl_strips_cross_ref_t *cr,
                             const pddl_strips_t *strips)
@@ -98,6 +118,7 @@ void pddlStripsCrossRefInit(pddl_strips_cross_ref_t *cr,
 
     facts(cr, strips);
     mgroups(cr, strips);
+    opOnlyOnce(cr, strips, &cr->op_only_once);
 }
 
 void pddlStripsCrossRefFree(pddl_strips_cross_ref_t *cr)
@@ -122,4 +143,6 @@ void pddlStripsCrossRefFree(pddl_strips_cross_ref_t *cr)
     }
     if (cr->mgroup != NULL)
         BOR_FREE(cr->mgroup);
+
+    borISetFree(&cr->op_only_once);
 }
