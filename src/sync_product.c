@@ -72,7 +72,15 @@ int pddlSyncProductCanFitInMem(const bor_iset_t *mgroups,
                                const pddl_strips_t *strips,
                                size_t mem)
 {
-    return pddlSyncProductRequiredMem(mgroups, strips) <= mem;
+    return pddlSyncProductLdmCanFitInMem(mgroups, strips, 0, mem);
+}
+
+int pddlSyncProductLdmCanFitInMem(const bor_iset_t *mgroups,
+                                  const pddl_strips_t *strips,
+                                  int num_landmarks,
+                                  size_t mem)
+{
+    return requiredMem(mgroups, strips, num_landmarks) <= mem;
 }
 
 static void setUpMemory(pddl_sync_product_t *sprod)
@@ -189,7 +197,7 @@ static void initNodesLdm(pddl_sync_product_t *sprod,
         sprod->node[i].ldm_level = 0;
 
     dst = sprod->node;
-    for (int level = 0; level < sprod->ldm_seq_size; ++level){
+    for (int level = 0; level < sprod->ldm_seq.ldm_size; ++level){
         dst += num_nodes;
         for (int n = 0; n < num_nodes; ++n){
             dst[n].ldm_level = level + 1;
@@ -205,12 +213,12 @@ static void initNodesLdm(pddl_sync_product_t *sprod,
         pddl_sync_product_node_t *n = sprod->node + i;
         if (n->is_init && n->ldm_level != 0)
             n->is_init = 0;
-        if (n->is_goal && n->ldm_level != sprod->ldm_seq_size)
+        if (n->is_goal && n->ldm_level != sprod->ldm_seq.ldm_size)
             n->is_goal = 0;
     }
 }
 
-static void setAddOps(const pddl_sync_product_t *sprod,
+static void setAddOps(const pddl_sync_product_t *sp,
                       const pddl_strips_cross_ref_t *cref,
                       const pddl_sync_product_node_t *from,
                       const pddl_sync_product_node_t *to,
@@ -222,33 +230,36 @@ static void setAddOps(const pddl_sync_product_t *sprod,
     if (from->ldm_level == to->ldm_level){
         borISetUnion(ops, del_ops);
 
+        if (sp->ldm_seq.ldm_size > 0
+                && from->ldm_level < sp->ldm_seq.ldm_size)
+            borISetMinus(ops, sp->ldm_seq.ldm + from->ldm_level);
     }else{
         // Allow edges only from lower to higher levels
         if (to->ldm_level < from->ldm_level)
             return;
-        ASSERT(from->ldm_level < sprod->ldm_seq_size);
+        ASSERT(from->ldm_level < sp->ldm_seq.ldm_size);
 
-        if (memcmp(from->fact, to->fact, sizeof(int) * sprod->fact_size) == 0){
+        if (memcmp(from->fact, to->fact, sizeof(int) * sp->fact_size) == 0){
             // If the nodes differ only in the level use only the landmark
             // operators that will be later pruned to those that does not
             // touch any fact and are applicable in the node
-            borISetUnion(ops, sprod->ldm_seq + from->ldm_level);
+            borISetUnion(ops, sp->ldm_seq.ldm + from->ldm_level);
 
         }else{
             // If the nodes differ restrict the operator to only those that
             // are part of the respective landmark.
-            borISetIntersect2(ops, del_ops, sprod->ldm_seq + from->ldm_level);
+            borISetIntersect2(ops, del_ops, sp->ldm_seq.ldm + from->ldm_level);
         }
 
         // The edges across more than one level must correspond to the
         // operators that would hit all intermediate landmarks.
         for (int i = from->ldm_level + 1;
                 i < to->ldm_level && borISetSize(ops) > 0; ++i){
-            borISetIntersect(ops, sprod->ldm_seq + i);
+            borISetIntersect(ops, sp->ldm_seq.ldm + i);
         }
     }
 
-    for (int i = 0; i < sprod->fact_size && borISetSize(ops) > 0; ++i){
+    for (int i = 0; i < sp->fact_size && borISetSize(ops) > 0; ++i){
         if (from->fact[i] != to->fact[i]){
             borISetIntersect(ops, &cref->fact[to->fact[i]].op_add);
             borISetIntersect(ops, &cref->fact[from->fact[i]].op_del);
@@ -385,20 +396,15 @@ int syncProductInit(pddl_sync_product_t *sprod,
                     const pddl_strips_t *strips,
                     const pddl_strips_cross_ref_t *cross_ref,
                     const bor_iset_t *mgroups,
-                    const pddl_landmarks_t *ldms,
-                    const bor_iarr_t *ldm_seq)
+                    const pddl_landmark_seq_t *lseq)
 {
     bzero(sprod, sizeof(*sprod));
-    if (ldm_seq != NULL && ldms != NULL){
-        sprod->ldm_seq_size = borIArrSize(ldm_seq);
-        sprod->ldm_seq = BOR_CALLOC_ARR(bor_iset_t, sprod->ldm_seq_size);
-        for (int i = 0; i < borIArrSize(ldm_seq); ++i){
-            const pddl_landmark_t *ldm = ldms->ldm[borIArrGet(ldm_seq, i)];
-            borISetUnion(sprod->ldm_seq + i, &ldm->op);
-        }
-    }
 
-    sprod->mem_size = requiredMem(mgroups, strips, sprod->ldm_seq_size);
+    pddlLandmarkSeqInit(&sprod->ldm_seq);
+    if (lseq != NULL)
+        pddlLandmarkSeqCopy(&sprod->ldm_seq, lseq);
+
+    sprod->mem_size = requiredMem(mgroups, strips, sprod->ldm_seq.ldm_size);
     sprod->mem = mmap(NULL, sprod->mem_size,
                       PROT_READ | PROT_WRITE,
                       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -407,7 +413,7 @@ int syncProductInit(pddl_sync_product_t *sprod,
                 (unsigned long)sprod->mem_size);
     }
 
-    sprod->node_size = maxNodes(mgroups, strips, sprod->ldm_seq_size);
+    sprod->node_size = maxNodes(mgroups, strips, sprod->ldm_seq.ldm_size);
     sprod->fact_size = borISetSize(mgroups);
 
     // Set up pointers so that the whole synchronized product fits into the
@@ -415,7 +421,7 @@ int syncProductInit(pddl_sync_product_t *sprod,
     setUpMemory(sprod);
 
     initNodes(sprod, mgroups, strips);
-    if (sprod->ldm_seq_size > 0)
+    if (sprod->ldm_seq.ldm_size > 0)
         initNodesLdm(sprod, mgroups, strips);
     initEdges(sprod, mgroups, strips, cross_ref);
     minimizeEdges(sprod);
@@ -429,28 +435,23 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
                         const pddl_strips_t *strips,
                         const pddl_strips_cross_ref_t *cross_ref)
 {
-    return syncProductInit(sprod, strips, cross_ref, mgroups, NULL, NULL);
+    return syncProductInit(sprod, strips, cross_ref, mgroups, NULL);
 }
 
 int pddlSyncProductInitLdm(pddl_sync_product_t *sprod,
                            const pddl_strips_t *strips,
                            const pddl_strips_cross_ref_t *cross_ref,
                            const bor_iset_t *mgroups,
-                           const pddl_landmarks_t *ldms,
-                           const bor_iarr_t *ldm_seq)
+                           const pddl_landmark_seq_t *lseq)
 {
-    return syncProductInit(sprod, strips, cross_ref, mgroups, ldms, ldm_seq);
+    return syncProductInit(sprod, strips, cross_ref, mgroups, lseq);
 }
 
 void pddlSyncProductFree(pddl_sync_product_t *sprod)
 {
     if (sprod->mem != NULL)
         munmap(sprod->mem, sprod->mem_size);
-
-    for (int i = 0; i < sprod->ldm_seq_size; ++i)
-        borISetFree(sprod->ldm_seq + i);
-    if (sprod->ldm_seq != NULL)
-        BOR_FREE(sprod->ldm_seq);
+    pddlLandmarkSeqFree(&sprod->ldm_seq);
 }
 
 void pddlSyncProductEdgeOps(const pddl_sync_product_t *sprod,
@@ -643,7 +644,7 @@ static void ldm(pddl_sync_product_t *sprod,
                 const pddl_strips_cross_ref_t *cref,
                 int init_node_id,
                 pddl_landmarks_t *ldms,
-                bor_iarr_t *ldm_sequence,
+                pddl_landmark_seq_t *lseq,
                 bor_iset_t *ldm_union,
                 int *ldm_cost)
 {
@@ -664,11 +665,10 @@ static void ldm(pddl_sync_product_t *sprod,
         if (borISetSize(&cut_node) == 0)
             break;
 
-        if (ldms != NULL){
-            int ldm_id = pddlLandmarksAdd(ldms, &cut_op)->id;
-            if (ldm_sequence != NULL)
-                borIArrPrepend(ldm_sequence, ldm_id);
-        }
+        if (ldms != NULL)
+            pddlLandmarksAdd(ldms, &cut_op);
+        if (lseq != NULL)
+            pddlLandmarkSeqPrepend(lseq, &cut_op);
         if (ldm_union != NULL)
             borISetUnion(ldm_union, &cut_op);
         if (ldm_cost != NULL)
@@ -688,23 +688,22 @@ int pddlSyncProductFindLandmarks(pddl_sync_product_t *sprod,
                                  const pddl_strips_cross_ref_t *cref,
                                  int init_node,
                                  pddl_landmarks_t *ldms,
-                                 bor_iarr_t *ldm_sequence,
+                                 pddl_landmark_seq_t *lseq,
                                  bor_iset_t *ldm_union,
                                  int *ldm_cost)
 {
     if (!sprod->has_goal)
         ERR_RET2(-1, "Synchronized product does not contain any goal node.");
-    if (ldm_sequence != NULL && ldms == NULL)
-        ERR_RET2(-1, "ldm_sequence requires ldms");
-    if (ldms == NULL && ldm_sequence == NULL
-            && ldm_union == NULL && ldm_cost == NULL){
+    if (ldms == NULL && lseq == NULL && ldm_union == NULL && ldm_cost == NULL){
         ERR_RET2(-1, "No output specified.");
     }
     if (sprod->node[init_node].is_goal)
         return 0;
 
+    if (lseq != NULL)
+        pddlLandmarkSeqEmpty(lseq);
     if (ldm_cost != NULL)
         *ldm_cost = 0;
-    ldm(sprod, cref, init_node, ldms, ldm_sequence, ldm_union, ldm_cost);
+    ldm(sprod, cref, init_node, ldms, lseq, ldm_union, ldm_cost);
     return 0;
 }

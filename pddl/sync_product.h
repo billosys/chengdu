@@ -58,9 +58,7 @@ struct pddl_sync_product {
     int node_size;
     int fact_size;
     int has_goal;
-
-    bor_iset_t *ldm_seq;
-    int ldm_seq_size;
+    pddl_landmark_seq_t ldm_seq;
 } bor_packed;
 typedef struct pddl_sync_product pddl_sync_product_t;
 
@@ -100,6 +98,14 @@ int pddlSyncProductCanFitInMem(const bor_iset_t *mgroups,
                                size_t mem);
 
 /**
+ * TODO
+ */
+int pddlSyncProductLdmCanFitInMem(const bor_iset_t *mgroups,
+                                  const pddl_strips_t *strips,
+                                  int num_landmarks,
+                                  size_t mem);
+
+/**
  * Creates a synchronized product of the given mutex groups.
  * TODO
  */
@@ -115,8 +121,7 @@ int pddlSyncProductInitLdm(pddl_sync_product_t *sprod,
                            const pddl_strips_t *strips,
                            const pddl_strips_cross_ref_t *cross_ref,
                            const bor_iset_t *mgroups,
-                           const pddl_landmarks_t *ldms,
-                           const bor_iarr_t *ldm_seq);
+                           const pddl_landmark_seq_t *lseq);
 
 /**
  * Frees allocated memory.
@@ -148,12 +153,13 @@ void pddlSyncProductGoalDistance(const pddl_sync_product_t *sprod,
 
 /**
  * Finds landmarks from the given node.
+ * TODO
  */
 int pddlSyncProductFindLandmarks(pddl_sync_product_t *sprod,
                                  const pddl_strips_cross_ref_t *cref,
                                  int init_node,
                                  pddl_landmarks_t *ldms,
-                                 bor_iarr_t *ldm_sequence,
+                                 pddl_landmark_seq_t *lseq,
                                  bor_iset_t *ldm_union,
                                  int *ldm_cost);
 #ifdef __cplusplus

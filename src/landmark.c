@@ -138,3 +138,96 @@ void pddlDisjunctiveLandmarksAdd(pddl_disjunctive_landmarks_t *ldms,
     borISetUnion(&ldms->ldm[ldms->ldm_size], ldm);
     ++ldms->ldm_size;
 }
+
+
+void pddlLandmarkSeqInit(pddl_landmark_seq_t *lseq)
+{
+    bzero(lseq, sizeof(*lseq));
+}
+
+void pddlLandmarkSeqFree(pddl_landmark_seq_t *lseq)
+{
+    for (int i = 0; i < lseq->ldm_size; ++i)
+        borISetFree(lseq->ldm + i);
+    if (lseq->ldm != NULL)
+        BOR_FREE(lseq->ldm);
+}
+
+void pddlLandmarkSeqCopy(pddl_landmark_seq_t *dst,
+                         const pddl_landmark_seq_t *src)
+{
+    for (int i = 0; i < src->ldm_size; ++i)
+        pddlLandmarkSeqAppend(dst, src->ldm + i);
+}
+
+static void landmarkSeqMakeSpace(pddl_landmark_seq_t *lseq)
+{
+    if (lseq->ldm_size == lseq->ldm_alloc){
+        if (lseq->ldm_alloc == 0)
+            lseq->ldm_alloc = 1;
+        lseq->ldm_alloc *= 2;
+        lseq->ldm = BOR_REALLOC_ARR(lseq->ldm, bor_iset_t, lseq->ldm_alloc);
+        for (int i = lseq->ldm_size; i < lseq->ldm_alloc; ++i)
+            borISetInit(lseq->ldm + i);
+    }
+}
+
+void pddlLandmarkSeqAppend(pddl_landmark_seq_t *lseq, const bor_iset_t *ldm)
+{
+    landmarkSeqMakeSpace(lseq);
+    borISetEmpty(lseq->ldm + lseq->ldm_size);
+    borISetUnion(lseq->ldm + lseq->ldm_size, ldm);
+    ++lseq->ldm_size;
+}
+
+void pddlLandmarkSeqPrepend(pddl_landmark_seq_t *lseq, const bor_iset_t *ldm)
+{
+    landmarkSeqMakeSpace(lseq);
+    for (int i = lseq->ldm_size; i > 0; --i)
+        lseq->ldm[i] = lseq->ldm[i - 1];
+    borISetInit(lseq->ldm + 0);
+    borISetUnion(lseq->ldm + 0, ldm);
+    ++lseq->ldm_size;
+}
+
+static int landmarkSeqPruneOpBeforeAfter(pddl_landmark_seq_t *lseq,
+                                          int ldm_id,
+                                          int op_id)
+{
+    int change = 0, from, to;
+
+    for (to = ldm_id - 1; to >= 0 && borISetIn(op_id, lseq->ldm + to); --to);
+    for (int i = 0; i <= to; ++i){
+        int size = borISetSize(lseq->ldm + i);
+        borISetRm(lseq->ldm + i, op_id);
+        change |= (size != borISetSize(lseq->ldm + i));
+    }
+
+
+    for (from = ldm_id + 1;
+            from < lseq->ldm_size && borISetIn(op_id, lseq->ldm + from);
+            ++from);
+    for (int i = from; i < lseq->ldm_size; ++i){
+        int size = borISetSize(lseq->ldm + i);
+        borISetRm(lseq->ldm + i, op_id);
+        change |= (size != borISetSize(lseq->ldm + i));
+    }
+    return change;
+}
+
+void pddlLandmarkSeqPruneOnlyOnceOps(pddl_landmark_seq_t *lseq,
+                                     const bor_iset_t *only_once_ops)
+{
+    int change = 1;
+
+    while (change) {
+        change = 0;
+        for (int i = 0; i < lseq->ldm_size; ++i){
+            const bor_iset_t *ldm = lseq->ldm + i;
+            if (borISetSize(ldm) == 1 && borISetIsSubset(ldm, only_once_ops)){
+                int op = borISetGet(ldm, 0);
+                change |= landmarkSeqPruneOpBeforeAfter(lseq, i, op);
+            }
+        }
+    }
+}

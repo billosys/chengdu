@@ -69,6 +69,53 @@ void pddlDisjunctiveLandmarksAdd(pddl_disjunctive_landmarks_t *ldms,
                                  const bor_iset_t *ldm);
 
 
+/**
+ * Sequence of landmarks.
+ */
+struct pddl_landmark_seq {
+    bor_iset_t *ldm;
+    int ldm_size;
+    int ldm_alloc;
+};
+typedef struct pddl_landmark_seq pddl_landmark_seq_t;
+
+/**
+ * TODO
+ */
+void pddlLandmarkSeqInit(pddl_landmark_seq_t *lseq);
+
+/**
+ * TODO
+ */
+void pddlLandmarkSeqFree(pddl_landmark_seq_t *lseq);
+
+/**
+ * TODO
+ */
+void pddlLandmarkSeqCopy(pddl_landmark_seq_t *dst,
+                         const pddl_landmark_seq_t *src);
+
+/**
+ * TODO
+ */
+void pddlLandmarkSeqAppend(pddl_landmark_seq_t *lseq, const bor_iset_t *ldm);
+
+/**
+ * TODO
+ */
+void pddlLandmarkSeqPrepend(pddl_landmark_seq_t *lseq, const bor_iset_t *ldm);
+
+_bor_inline void pddlLandmarkSeqEmpty(pddl_landmark_seq_t *lseq)
+{
+    lseq->ldm_size = 0;
+}
+
+/**
+ * TODO
+ */
+void pddlLandmarkSeqPruneOnlyOnceOps(pddl_landmark_seq_t *lseq,
+                                     const bor_iset_t *only_once_ops);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
