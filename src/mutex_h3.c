@@ -114,6 +114,8 @@ struct h3 {
     char *meta_fact2;
     char *meta_fact3;
     set_range_t *meta_fact3_set;
+    char *op_fact1;
+    char *op_fact2;
     int *ext;
     int fact_size;
     int *op_applied;
@@ -185,6 +187,29 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
         h3->meta_fact3_set = BOR_CALLOC_ARR(set_range_t,
                                             h3->fact_size * h3->fact_size);
     }
+    // TODO: Parametrize
+    if ((size_t)h3->fact_size * (size_t)strips->op.op_size
+            < 1024ul * 1024ul * 1024ul){
+        size_t size = (size_t)h3->fact_size * strips->op.op_size;
+        h3->op_fact1 = BOR_CALLOC_ARR(char, size);
+        for (int opi = 0; opi < strips->op.op_size; ++opi){
+            int f;
+            BOR_ISET_FOR_EACH(&strips->op.op[opi]->add_eff, f)
+                h3->op_fact1[opi * h3->fact_size + f] = -1;
+            BOR_ISET_FOR_EACH(&strips->op.op[opi]->del_eff, f)
+                h3->op_fact1[opi * h3->fact_size + f] = -1;
+        }
+    }
+    if ((size_t)h3->fact_size
+            * (size_t)h3->fact_size
+            * (size_t)strips->op.op_size
+                < 5024ul * 1024ul * 1024ul){
+        fprintf(stderr, "YYY\n");
+        size_t size = (size_t)h3->fact_size * strips->op.op_size;
+        size *= h3->fact_size;
+        INFO("size: %lu\n", size);
+        h3->op_fact2 = BOR_CALLOC_ARR(char, size);
+    }
     h3->ext = BOR_ALLOC_ARR(int, h3->fact_size);
     h3->op_applied = BOR_CALLOC_ARR(int, strips->op.op_size);
     h3->op_unreachable = unreachable_op;
@@ -255,6 +280,10 @@ static void h3Free(h3_t *h3)
         }
         BOR_FREE(h3->meta_fact3_set);
     }
+    if (h3->op_fact1 != NULL)
+        BOR_FREE(h3->op_fact1);
+    if (h3->op_fact2 != NULL)
+        BOR_FREE(h3->op_fact2);
     if (h3->ext != NULL)
         BOR_FREE(h3->ext);
 
@@ -455,20 +484,6 @@ static int applyOp(const pddl_strips_op_t *op, h3_t *h3)
     if (!isApplicable(op, h3))
         return 0;
 
-    /*
-    fprintf(stderr, "A %d ", op->id);
-    fprintf(stderr, " pre:");
-    int f;
-    BOR_ISET_FOR_EACH(&op->pre, f)
-        fprintf(stderr, " %d", f);
-    fprintf(stderr, " add:");
-    BOR_ISET_FOR_EACH(&op->add_eff, f)
-        fprintf(stderr, " %d", f);
-    fprintf(stderr, " del:");
-    BOR_ISET_FOR_EACH(&op->del_eff, f)
-        fprintf(stderr, " %d", f);
-    fprintf(stderr, "\n");
-    */
     if (!h3->op_applied[op->id]){
         // This needs to be run only the first time the operator is
         // applied.
@@ -477,26 +492,70 @@ static int applyOp(const pddl_strips_op_t *op, h3_t *h3)
     // This needs to be set here because isApplicable2 depends on it
     h3->op_applied[op->id] = 1;
 
-    bzero(h3->ext, sizeof(int) * h3->fact_size);
-    for (int f1 = 0; f1 < h3->fact_size; ++f1){
-        if (borISetIn(f1, &op->add_eff)
-                || borISetIn(f1, &op->del_eff)
-                || !metaFactIsSet1(h3, f1)
-                || !testSet2(h3, &op->pre, f1))
-            continue;
-        updated |= addSet2(h3, &op->add_eff, f1);
-        h3->ext[f1] = 1;
-    }
+    if (h3->op_fact1 != NULL){
+        char *fact1 = h3->op_fact1 + op->id * h3->fact_size;
+        for (int f1 = 0; f1 < h3->fact_size; ++f1){
+            if (fact1[f1] || !metaFactIsSet1(h3, f1))
+                continue;
+            fact1[f1] = testSet2(h3, &op->pre, f1);
+            if (fact1[f1])
+                updated |= addSet2(h3, &op->add_eff, f1);
+        }
 
-    for (int f1 = 0; f1 < h3->fact_size; ++f1){
-        if (!h3->ext[f1])
-            continue;
-        for (int f2 = f1 + 1; f2 < h3->fact_size; ++f2){
-            if (!h3->ext[f2])
+        if (h3->op_fact2 != NULL){
+            char *fact2 = h3->op_fact2;
+            fact2 += (size_t)op->id * (size_t)h3->fact_size * h3->fact_size;
+            for (int f1 = 0; f1 < h3->fact_size; ++f1){
+                if (fact1[f1] != 1)
+                    continue;
+                for (int f2 = f1 + 1; f2 < h3->fact_size; ++f2){
+                    if (fact1[f2] != 1
+                            || fact2[f1 * h3->fact_size + f2]
+                            || !metaFactIsSet2(h3, f1, f2))
+                        continue;
+                    if (testSet3(h3, &op->pre, f1, f2)){
+                        fact2[f1 * h3->fact_size + f2] = 1;
+                        updated |= addSet3(h3, &op->add_eff, f1, f2);
+                    }
+                }
+            }
+
+        }else{
+            for (int f1 = 0; f1 < h3->fact_size; ++f1){
+                if (fact1[f1] != 1)
+                    continue;
+                for (int f2 = f1 + 1; f2 < h3->fact_size; ++f2){
+                    if (fact1[f2] != 1
+                            || !metaFactIsSet2(h3, f1, f2)
+                            || !testSet3(h3, &op->pre, f1, f2))
+                        continue;
+                    updated |= addSet3(h3, &op->add_eff, f1, f2);
+                }
+            }
+        }
+
+    }else{
+        bzero(h3->ext, sizeof(int) * h3->fact_size);
+        for (int f1 = 0; f1 < h3->fact_size; ++f1){
+            if (borISetIn(f1, &op->add_eff)
+                    || borISetIn(f1, &op->del_eff)
+                    || !metaFactIsSet1(h3, f1)
+                    || !testSet2(h3, &op->pre, f1))
                 continue;
-            if (!metaFactIsSet2(h3, f1, f2) || !testSet3(h3, &op->pre, f1, f2))
+            updated |= addSet2(h3, &op->add_eff, f1);
+            h3->ext[f1] = 1;
+        }
+
+        for (int f1 = 0; f1 < h3->fact_size; ++f1){
+            if (!h3->ext[f1])
                 continue;
-            updated |= addSet3(h3, &op->add_eff, f1, f2);
+            for (int f2 = f1 + 1; f2 < h3->fact_size; ++f2){
+                if (!h3->ext[f2]
+                        || !metaFactIsSet2(h3, f1, f2)
+                        || !testSet3(h3, &op->pre, f1, f2))
+                    continue;
+                updated |= addSet3(h3, &op->add_eff, f1, f2);
+            }
         }
     }
 
@@ -521,9 +580,8 @@ int _pddlMutexesH3(const pddl_strips_t *strips, pddl_mutexes_t *ms,
     do {
         updated = 0;
         INFO2("CYCLE");
-        PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op){
+        PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op)
             updated |= applyOp(op, &h3);
-        }
     } while (updated);
 
     if (ms != NULL){
@@ -546,8 +604,6 @@ int _pddlMutexesH3(const pddl_strips_t *strips, pddl_mutexes_t *ms,
                     m->hm = 2;
                     continue;
                 }
-                // TODO
-                continue;
                 for (int f3 = f2 + 1; f3 < h3.fact_size; ++f3){
                     if (!metaFactIsSet3(&h3, f1, f2, f3)){
                         borISetEmpty(&mgroup);
