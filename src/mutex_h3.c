@@ -204,21 +204,13 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
             * (size_t)h3->fact_size
             * (size_t)strips->op.op_size
                 < 5024ul * 1024ul * 1024ul){
-        fprintf(stderr, "YYY\n");
         size_t size = (size_t)h3->fact_size * strips->op.op_size;
         size *= h3->fact_size;
-        INFO("size: %lu\n", size);
         h3->op_fact2 = BOR_CALLOC_ARR(char, size);
     }
     h3->ext = BOR_ALLOC_ARR(int, h3->fact_size);
     h3->op_applied = BOR_CALLOC_ARR(int, strips->op.op_size);
     h3->op_unreachable = unreachable_op;
-
-    /*
-    BOR_ISET_FOR_EACH(&strips->init, f1)
-        fprintf(stderr, " %d", f1);
-    fprintf(stderr, "\n");
-    */
 
     for (int i = 0; i < borISetSize(&strips->init); ++i){
         f1 = borISetGet(&strips->init, i);
@@ -232,35 +224,6 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
             }
         }
     }
-
-    /*
-    for (int i = 0; i < borISetSize(&strips->init); ++i){
-        f1 = borISetGet(&strips->init, i);
-        ASSERT(metaFactIsSet1(h3, f1));
-        for (int j = i + 1; j < borISetSize(&strips->init); ++j){
-            f2 = borISetGet(&strips->init, j);
-            ASSERT(metaFactIsSet2(h3, f1, f2));
-            for (int k = j + 1; k < borISetSize(&strips->init); ++k){
-                f3 = borISetGet(&strips->init, k);
-                ASSERT(metaFactIsSet3(h3, f1, f2, f3));
-            }
-        }
-    }
-
-    for (int i = 0; i < borISetSize(&strips->init); ++i){
-        f1 = borISetGet(&strips->init, i);
-        ASSERT(metaFactIsSet1(h3, f1));
-        for (int j = 0; j < borISetSize(&strips->init); ++j){
-            f2 = borISetGet(&strips->init, j);
-            const meta_fact_t *mf = h3->meta_fact + f1 * h3->fact_size + f2;
-            fprintf(stderr, "%d/%d:%d:", f1, f2, mf->is_set);
-            for (int x = 0; x < mf->size; ++x)
-                fprintf(stderr, " %d:%d", mf->range[x].from,
-                        mf->range[x].to);
-            fprintf(stderr, "\n");
-        }
-    }
-    */
 }
 
 static void h3Free(h3_t *h3)
@@ -579,7 +542,6 @@ int _pddlMutexesH3(const pddl_strips_t *strips, pddl_mutexes_t *ms,
 
     do {
         updated = 0;
-        INFO2("CYCLE");
         PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op)
             updated |= applyOp(op, &h3);
     } while (updated);
