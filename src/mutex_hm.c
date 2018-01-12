@@ -25,14 +25,19 @@
 /** Implemented in src/mutex_h2.c */
 int _pddlMutexesH2(const pddl_strips_t *strips, pddl_mutexes_t *ms,
                    int *unreachable_ops);
+/** Implemented in src/mutex_h3.c */
+int _pddlMutexesH3(const pddl_strips_t *strips, pddl_mutexes_t *ms,
+                   int *unreachable_ops);
 
 int pddlMutexesHm(int m, const pddl_strips_t *strips, pddl_mutexes_t *ms,
                   int *unreachable_ops)
 {
-    if (m != 2)
+    if (m != 2 && m != 3)
         ERR_RET2(-1, "pddlMutexesHm() is implemented only for h^2 for now.");
     if (m == 2)
         return _pddlMutexesH2(strips, ms, unreachable_ops);
+    if (m == 3)
+        return _pddlMutexesH3(strips, ms, unreachable_ops);
     return -1;
 }
 
