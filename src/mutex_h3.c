@@ -26,22 +26,94 @@
 
 typedef int16_t fact_id_t;
 
-struct meta_fact_range {
+struct set_range_pair {
     fact_id_t from;
     fact_id_t to;
 } bor_packed;
-typedef struct meta_fact_range meta_fact_range_t;
+typedef struct set_range_pair set_range_pair_t;
 
-struct meta_fact {
-    meta_fact_range_t *range;
+struct set_range {
+    set_range_pair_t *v;
     fact_id_t size;
     fact_id_t alloc;
-    char is_set;
 } bor_packed;
-typedef struct meta_fact meta_fact_t;
+typedef struct set_range set_range_t;
+
+_bor_inline int setRangeIsSet(const set_range_t *s, int v)
+{
+    int left = 0, right = s->size - 1;
+    int idx = (left + right) / 2;
+    while (left <= right){
+        if (s->v[idx].from <= v && v <= s->v[idx].to){
+            return 1;
+        }else if (v < s->v[idx].from){
+            right = idx - 1;
+        }else{ // f3 > mf->range[idx].to
+            left = idx + 1;
+        }
+
+        idx = (left + right) / 2;
+    }
+    return 0;
+}
+
+_bor_inline void setRangeAlloc(set_range_t *s)
+{
+    if (s->size == s->alloc){
+        if (s->alloc == 0)
+            s->alloc = 1;
+        s->alloc *= 2;
+        s->v = BOR_REALLOC_ARR(s->v, set_range_pair_t, s->alloc);
+    }
+}
+
+_bor_inline void setRangeSet(set_range_t *s, int v)
+{
+    for (int i = 0; i < s->size; ++i){
+        if (s->v[i].from >= v && v >= s->v[i].to){
+            return;
+
+        }else if (s->v[i].from == v + 1){
+            s->v[i].from = v;
+            if (i > 0 && s->v[i - 1].to >= s->v[i].from - 1){
+                s->v[i - 1].to = s->v[i].to;
+                for (; i < s->size - 1; ++i)
+                    s->v[i] = s->v[i + 1];
+                --s->size;
+            }
+            return;
+
+        }else if (s->v[i].to == v - 1){
+            s->v[i].to = v;
+            if (i < s->size - 1
+                    && s->v[i].to >= s->v[i + 1].from - 1){
+                s->v[i].to = s->v[i + 1].to;
+                for (++i; i < s->size - 1; ++i)
+                    s->v[i] = s->v[i + 1];
+                --s->size;
+            }
+            return;
+
+        }else if (s->v[i].from > v){
+            setRangeAlloc(s);
+            for (int j = s->size; j > i; --j)
+                s->v[j] = s->v[j - 1];
+            s->v[i].from = s->v[i].to = v;
+            ++s->size;
+            return;
+        }
+    }
+
+    setRangeAlloc(s);
+    s->v[s->size].from = s->v[s->size].to = v;
+    ++s->size;
+}
 
 struct h3 {
-    meta_fact_t *meta_fact;
+    char *meta_fact1;
+    char *meta_fact2;
+    char *meta_fact3;
+    set_range_t *meta_fact3_set;
     int *ext;
     int fact_size;
     int *op_applied;
@@ -52,92 +124,48 @@ typedef struct h3 h3_t;
 // Assumes f1 < f2 < f3
 _bor_inline int metaFactIsSet3(const h3_t *h3, int f1, int f2, int f3)
 {
-    const meta_fact_t *mf = h3->meta_fact + f1 * h3->fact_size + f2;
-    for (int i = 0; i < mf->size; ++i){
-        if (mf->range[i].from <= f3 && f3 <= mf->range[i].to)
-            return 1;
-        if (mf->range[i].from > f3)
-            return 0;
+    if (h3->meta_fact3 != NULL){
+        int idx = (f1 * h3->fact_size + f2) * h3->fact_size + f3;
+        return h3->meta_fact3[idx];
+    }else{
+        set_range_t *s = h3->meta_fact3_set + f1 * h3->fact_size + f2;
+        return setRangeIsSet(s, f3);
     }
-    return 0;
 }
 
 // Assumes f1 <= f2
 _bor_inline int metaFactIsSet2(const h3_t *h3, int f1, int f2)
 {
-    return h3->meta_fact[f1 * h3->fact_size + f2].is_set; 
+    return h3->meta_fact2[f1 * h3->fact_size + f2];
 }
 
 _bor_inline int metaFactIsSet1(const h3_t *h3, int fid)
 {
-    return metaFactIsSet2(h3, fid, fid);
+    return h3->meta_fact1[fid];
 }
 
 // Assumes f1 <= f2 <= f3
 _bor_inline void metaFactSet3(h3_t *h3, int f1, int f2, int f3)
 {
-    meta_fact_t *mf = h3->meta_fact + f1 * h3->fact_size + f2;
-    for (int i = 0; i < mf->size; ++i){
-        if (mf->range[i].from >= f3 && f3 >= mf->range[i].to){
-            return;
-
-        }else if (mf->range[i].from == f3 + 1){
-            mf->range[i].from = f3;
-            if (i > 0
-                    && mf->range[i - 1].to >= mf->range[i].from - 1){
-                mf->range[i - 1].to = mf->range[i].to;
-                for (; i < mf->size - 1; ++i)
-                    mf->range[i] = mf->range[i + 1];
-                --mf->size;
-            }
-            return;
-
-        }else if (mf->range[i].to == f3 - 1){
-            mf->range[i].to = f3;
-            if (i < mf->size - 1
-                    && mf->range[i].to >= mf->range[i + 1].from - 1){
-                mf->range[i].to = mf->range[i + 1].to;
-                for (++i; i < mf->size - 1; ++i)
-                    mf->range[i] = mf->range[i + 1];
-                --mf->size;
-            }
-            return;
-
-        }else if (mf->range[i].from > f3){
-            if (mf->size == mf->alloc){
-                if (mf->alloc == 0)
-                    mf->alloc = 1;
-                mf->alloc *= 2;
-                mf->range = BOR_REALLOC_ARR(mf->range, meta_fact_range_t,
-                                            mf->alloc);
-            }
-            for (int j = mf->size; j > i; --j)
-                mf->range[j] = mf->range[j - 1];
-            mf->range[i].from = mf->range[i].to = f3;
-            ++mf->size;
-            return;
-        }
+    if (h3->meta_fact3 != NULL){
+        int idx = (f1 * h3->fact_size + f2) * h3->fact_size + f3;
+        h3->meta_fact3[idx] = 1;
+    }else{
+        set_range_t *s = h3->meta_fact3_set + f1 * h3->fact_size + f2;
+        setRangeSet(s, f3);
     }
-
-    if (mf->size == mf->alloc){
-        if (mf->alloc == 0)
-            mf->alloc = 1;
-        mf->alloc *= 2;
-        mf->range = BOR_REALLOC_ARR(mf->range, meta_fact_range_t, mf->alloc);
-    }
-    mf->range[mf->size].from = mf->range[mf->size].to = f3;
-    ++mf->size;
 }
 
 // Assumes f1 <= f2
 _bor_inline void metaFactSet2(h3_t *h3, int f1, int f2)
 {
-    h3->meta_fact[f1 * h3->fact_size + f2].is_set = 1;
+    h3->meta_fact2[f1 * h3->fact_size + f2] = 1;
+    h3->meta_fact2[f2 * h3->fact_size + f1] = 1;
 }
 
 _bor_inline void metaFactSet1(h3_t *h3, int fid)
 {
-    metaFactSet2(h3, fid, fid);
+    h3->meta_fact1[fid] = 1;
 }
 
 static void h3Init(h3_t *h3, const pddl_strips_t *strips,
@@ -147,7 +175,16 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
 
     bzero(h3, sizeof(*h3));
     h3->fact_size = strips->fact.fact_size;
-    h3->meta_fact = BOR_CALLOC_ARR(meta_fact_t, h3->fact_size * h3->fact_size);
+    h3->meta_fact1 = BOR_CALLOC_ARR(char, h3->fact_size);
+    h3->meta_fact2 = BOR_CALLOC_ARR(char, h3->fact_size * h3->fact_size);
+    // TODO: Parametrize
+    if (h3->fact_size < 1024){
+        int size = h3->fact_size * h3->fact_size * h3->fact_size;
+        h3->meta_fact3 = BOR_CALLOC_ARR(char, size);
+    }else{
+        h3->meta_fact3_set = BOR_CALLOC_ARR(set_range_t,
+                                            h3->fact_size * h3->fact_size);
+    }
     h3->ext = BOR_ALLOC_ARR(int, h3->fact_size);
     h3->op_applied = BOR_CALLOC_ARR(int, strips->op.op_size);
     h3->op_unreachable = unreachable_op;
@@ -203,14 +240,21 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
 
 static void h3Free(h3_t *h3)
 {
-    for (int i = 0; i < h3->fact_size; ++i){
-        for (int j = i + 1; j < h3->fact_size; ++j){
-            if (h3->meta_fact[i * h3->fact_size + j].range != NULL)
-                BOR_FREE(h3->meta_fact[i * h3->fact_size + j].range);
+    if (h3->meta_fact1 != NULL)
+        BOR_FREE(h3->meta_fact1);
+    if (h3->meta_fact2 != NULL)
+        BOR_FREE(h3->meta_fact2);
+    if (h3->meta_fact3 != NULL)
+        BOR_FREE(h3->meta_fact3);
+    if (h3->meta_fact3_set != NULL){
+        for (int i = 0; i < h3->fact_size; ++i){
+            for (int j = i + 1; j < h3->fact_size; ++j){
+                if (h3->meta_fact3_set[i * h3->fact_size + j].v != NULL)
+                    BOR_FREE(h3->meta_fact3_set[i * h3->fact_size + j].v);
+            }
         }
+        BOR_FREE(h3->meta_fact3_set);
     }
-    if (h3->meta_fact != NULL)
-        BOR_FREE(h3->meta_fact);
     if (h3->ext != NULL)
         BOR_FREE(h3->ext);
 
