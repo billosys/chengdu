@@ -32,6 +32,7 @@ OBJS += strips_cross_ref
 OBJS += mutex
 OBJS += mutex_hm
 OBJS += mutex_h2
+OBJS += mutex_h3
 OBJS += mgroup
 OBJS += fdr_var
 OBJS += fdr_part_state
