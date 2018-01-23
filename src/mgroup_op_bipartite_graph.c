@@ -37,11 +37,11 @@ void pddlMGroupOpBipartiteGraphInit(pddl_mgroup_op_bipartite_graph_t *g,
 
     for (int i = 0; i < strips->mgroup.mgroup_size; ++i){
         borISetAdd(&g->mgroup[i].mgroup, i);
-        borISetUnion(&g->mgroup[i].op, &cref->mgroup[i].op);
+        borISetUnion(&g->mgroup[i].op, &cref->mgroup[i].op_del_add);
         g->mgroup[i].is_goal = strips->mgroup.mgroup[i].is_goal;
 
         int op;
-        BOR_ISET_FOR_EACH(&cref->mgroup[i].op, op)
+        BOR_ISET_FOR_EACH(&cref->mgroup[i].op_del_add, op)
             borISetAdd(&g->op[op].mgroup, i);
     }
 }
@@ -57,7 +57,7 @@ void pddlMGroupOpBipartiteGraphFree(pddl_mgroup_op_bipartite_graph_t *g)
 
     for (int i = 0; i < g->mgroup_size; ++i){
         borISetFree(&g->mgroup[i].mgroup);
-        borISetFree(&g->mgroup[i].mgroup);
+        borISetFree(&g->mgroup[i].op);
     }
     if (g->mgroup != NULL)
         BOR_FREE(g->mgroup);
@@ -138,6 +138,7 @@ void pddlMGroupOpBipartiteGraphMerge(pddl_mgroup_op_bipartite_graph_t *g,
 
     borISetEmpty(&src->mgroup);
     borISetEmpty(&src->op);
+    src->is_goal = 0;
 }
 
 void pddlMGroupOpBipartiteGraphPrint(const pddl_mgroup_op_bipartite_graph_t *g,
@@ -160,6 +161,8 @@ void pddlMGroupOpBipartiteGraphPrint(const pddl_mgroup_op_bipartite_graph_t *g,
     }
     for (int i = 0; i < g->mgroup_size; ++i){
         fprintf(fout, "MG %d:", i);
+        if (g->mgroup[i].is_goal)
+            fprintf(fout, "g:");
         fprintf(fout, " [");
         int mg;
         BOR_ISET_FOR_EACH(&g->mgroup[i].mgroup, mg)

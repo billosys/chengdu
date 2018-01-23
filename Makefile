@@ -47,6 +47,7 @@ OBJS += g
 OBJS += mgroup_tg_ldm
 OBJS += heur_lm_cut
 OBJS += heur_flow
+OBJS += heur_mgroup_merge
 OBJS += mgroup_ldm_pot
 OBJS += sync_product
 
