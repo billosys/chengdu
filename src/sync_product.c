@@ -524,7 +524,8 @@ void pddlSyncProductGoalDistance(const pddl_sync_product_t *sprod,
             borIArrSet(dist, i, COST_INF);
         }
         dij_node[i].node_id = i;
-        borPairHeapAdd(heap, &dij_node[i].heap);
+        if (!node->is_mutex)
+            borPairHeapAdd(heap, &dij_node[i].heap);
     }
 
     // Run dijkstra algorithm
@@ -532,6 +533,9 @@ void pddlSyncProductGoalDistance(const pddl_sync_product_t *sprod,
         bor_pairheap_node_t *pn = borPairHeapExtractMin(heap);
         dij_node_t *n = bor_container_of(pn, dij_node_t, heap);
         PDDL_SYNC_PRODUCT_FOR_EACH_PREV(sprod, n->node_id, next_id){
+            if (sprod->node[next_id].is_mutex)
+                continue;
+
             int d = borIArrGet(dist, n->node_id)
                         + sprod->node[next_id].next[n->node_id].cost;
             if (d < borIArrGet(dist, next_id)){
