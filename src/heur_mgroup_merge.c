@@ -41,8 +41,6 @@ struct merge_candidates {
 };
 typedef struct merge_candidates merge_candidates_t;
 
-// TODO
-const size_t MAX_MEM = 4UL * 1024UL * 1024UL * 1024UL;
 
 static int canMergeNodes(const pddl_mgroup_op_bipartite_graph_t *g,
                          int n1, int n2,
@@ -159,7 +157,7 @@ static void findMerges(pddl_heur_mgroup_merge_t *h,
             int m2 = c->mg[1];
             if (!graph.mgroup[m1].is_goal && !graph.mgroup[m2].is_goal)
                 continue;
-            if (canMergeNodes(&graph, m1, m2, strips, MAX_MEM)){
+            if (canMergeNodes(&graph, m1, m2, strips, h->max_mem)){
                 pddlMGroupOpBipartiteGraphMerge(&graph, m1, m2);
                 change = 1;
                 break;
@@ -185,7 +183,7 @@ static void findMerges(pddl_heur_mgroup_merge_t *h,
         if (!m->is_goal && borISetSize(&m->mgroup) > 0){
             for (int j = 0; j < h->merge_size; ++j){
                 if (canMergeMGroups(&h->merge[j].mgroup, &m->mgroup,
-                                    strips, MAX_MEM)){
+                                    strips, h->max_mem)){
                     borISetUnion(&h->merge[j].mgroup, &m->mgroup);
                 }
             }
@@ -204,7 +202,6 @@ static void findMerges(pddl_heur_mgroup_merge_t *h,
 
     pddlMGroupOpBipartiteGraphMinimize(&graph);
     pddlMGroupOpBipartiteGraphPrint(&graph, stderr);
-    */
 
     for (int i = 0; i < h->merge_size; ++i){
         int m;
@@ -213,6 +210,7 @@ static void findMerges(pddl_heur_mgroup_merge_t *h,
             fprintf(stderr, " %d", m);
         fprintf(stderr, "\n");
     }
+    */
 
     mergeCandidatesFree(&cands);
     pddlMGroupOpBipartiteGraphFree(&graph);
@@ -243,7 +241,7 @@ static void costPart(pddl_heur_mgroup_merge_t *h,
     }
     if (scale < 0 || scale > SCALE_HARD_LIMIT)
         scale = SCALE_LIMIT;
-    INFO("Operator cost scaling factor: %d", scale);
+    INFO("h-mgroup-merge: Operator cost scaling factor: %d", scale);
 
     // Apply scaling factor and apply uniform cost partitioning
     h->op_cost_scale = scale;
@@ -288,7 +286,7 @@ static void computeMerge(pddl_heur_mgroup_merge_t *h,
     BOR_IARR(dist);
 
     pddlSyncProductInit(&sp, &merge->mgroup, h->strips, cref);
-    INFO("Sync Product computed, nodes: %d", sp.node_size);
+    INFO("h-mgroup-merge: Sync Product computed, nodes: %d", sp.node_size);
 
     pddlSyncProductGoalDistance(&sp, &dist);
     for (int i = 0; i < sp.node_size; ++i){
@@ -297,28 +295,41 @@ static void computeMerge(pddl_heur_mgroup_merge_t *h,
             continue;
         addValue(merge, &sp, n, borIArrGet(&dist, i));
     }
-    INFO("Goal Distances computed, values: %d", merge->value_size);
+    INFO("h-mgroup-merge: Goal Distances computed, values: %d",
+         merge->value_size);
 
     pddlSyncProductFree(&sp);
     borIArrFree(&dist);
 }
 
 void pddlHeurMGroupMergeInit(pddl_heur_mgroup_merge_t *h,
-                             const pddl_strips_t *_strips)
+                             const pddl_strips_t *_strips,
+                             int use_cost_part,
+                             size_t max_mem)
 {
     pddl_strips_t *strips = pddlStripsClone(_strips);
     pddl_strips_cross_ref_t cref;
 
+    INFO("h-mgroup-merge: cost-part: %d, max_mem: %lu",
+         use_cost_part, (unsigned long)max_mem);
     pddlStripsCompleteMGroups(strips);
     pddlStripsMakeExactlyOneMGroups(strips);
     pddlStripsCrossRefInit(&cref, strips);
+    INFO2("h-mgroup-merge: Initialized.");
 
     bzero(h, sizeof(*h));
     h->strips = strips;
     h->op_cost_scale = 1;
+    h->max_mem = max_mem;
 
     findMerges(h, strips, &cref);
-    costPart(h, &cref);
+    INFO("h-mgroup-merge: %d merges planned.", h->merge_size);
+
+    if (use_cost_part){
+        costPart(h, &cref);
+        INFO2("h-mgroup-merge: Cost partitioning done.");
+    }
+
     for (int i = 0; i < h->merge_size; ++i)
         computeMerge(h, &cref, h->merge + i);
 

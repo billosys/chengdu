@@ -49,11 +49,14 @@ struct pddl_heur_mgroup_merge {
     pddl_heur_mgroup_merge_merge_t *merge;
     int merge_size;
     int op_cost_scale;
+    size_t max_mem;
 };
 typedef struct pddl_heur_mgroup_merge pddl_heur_mgroup_merge_t;
 
 void pddlHeurMGroupMergeInit(pddl_heur_mgroup_merge_t *h,
-                             const pddl_strips_t *strips);
+                             const pddl_strips_t *strips,
+                             int use_cost_part,
+                             size_t max_mem);
 void pddlHeurMGroupMergeFree(pddl_heur_mgroup_merge_t *h);
 
 #ifdef __cplusplus
