@@ -44,8 +44,6 @@ struct pddl_sync_product_node {
     int ldm_level;
     unsigned char is_goal:1; /*!< True if this is a goal state */
     unsigned char is_init:1; /*!< True if this is the initial state */
-    unsigned char is_mutex:1; /*!< True if this state is in mutex, i.e., it
-                                   is unreachable state */
     unsigned char is_goal_zone:1;
     unsigned char is_init_zone:1;
 } bor_packed;
