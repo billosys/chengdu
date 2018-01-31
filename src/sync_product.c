@@ -118,6 +118,15 @@ static void setUpMemory(pddl_sync_product_t *sprod, size_t max_node_size)
     }
 }
 
+static void _initNodesNextFact(pddl_sync_product_t *sprod,
+                               const bor_iset_t *mgroups,
+                               const pddl_strips_t *strips,
+                               int goal_size,
+                               int init_size,
+                               int mgroup_idx,
+                               bor_iset_t *facts,
+                               int *fact_arr,
+                               int fact);
 static void _initNodes(pddl_sync_product_t *sprod,
                        const bor_iset_t *mgroups,
                        const pddl_strips_t *strips,
@@ -129,31 +138,54 @@ static void _initNodes(pddl_sync_product_t *sprod,
 {
     const pddl_mgroup_t *mgroup;
     int mgroups_size = borISetSize(mgroups);
-    int fact;
+    int fact = -1;
 
     mgroup = strips->mgroup.mgroup + borISetGet(mgroups, mgroup_idx);
-    BOR_ISET_FOR_EACH(&mgroup->fact, fact){
-        fact_arr[mgroup_idx] = fact;
-
-        borISetEmpty(facts);
-        for (int i = 0; i < mgroup_idx; ++i)
-            borISetAdd(facts, fact_arr[i]);
-        borISetAdd(facts, fact);
-        if (pddlMutexesIsMutex(&strips->mutex, facts))
-            continue;
-
-        if (mgroup_idx == mgroups_size - 1){
-            pddl_sync_product_node_t *node = sprod->node + sprod->node_size++;
-            int gsize = borISetIntersectionSize(facts, &strips->goal);
-            int isize = borISetIntersectionSize(facts, &strips->init);
-            node->is_goal = (gsize == goal_size);
-            node->is_init = (isize == init_size);
-            sprod->has_goal |= node->is_goal;
-            memcpy(node->fact, fact_arr, sizeof(int) * mgroups_size);
-        }else{
-            _initNodes(sprod, mgroups, strips, goal_size, init_size,
-                       mgroup_idx + 1, facts, fact_arr);
+    if (borISetIsDisjunct(facts, &mgroup->fact)){
+        BOR_ISET_FOR_EACH(&mgroup->fact, fact){
+            borISetAdd(facts, fact);
+            if (!pddlMutexesIsMutex(&strips->mutex, facts)){
+                _initNodesNextFact(sprod, mgroups, strips, goal_size,
+                                   init_size, mgroup_idx, facts, fact_arr,
+                                   fact);
+            }
+            borISetRm(facts, fact);
         }
+    }else{
+        BOR_ISET_FOR_EACH(facts, fact){
+            if (borISetIn(fact, &mgroup->fact))
+                break;
+        }
+        ASSERT(fact != -1);
+        _initNodesNextFact(sprod, mgroups, strips, goal_size, init_size,
+                           mgroup_idx, facts, fact_arr, fact);
+    }
+}
+
+static void _initNodesNextFact(pddl_sync_product_t *sprod,
+                               const bor_iset_t *mgroups,
+                               const pddl_strips_t *strips,
+                               int goal_size,
+                               int init_size,
+                               int mgroup_idx,
+                               bor_iset_t *facts,
+                               int *fact_arr,
+                               int fact)
+{
+    int mgroups_size = borISetSize(mgroups);
+
+    fact_arr[mgroup_idx] = fact;
+    if (mgroup_idx == mgroups_size - 1){
+        pddl_sync_product_node_t *node = sprod->node + sprod->node_size++;
+        int gsize = borISetIntersectionSize(facts, &strips->goal);
+        int isize = borISetIntersectionSize(facts, &strips->init);
+        node->is_goal = (gsize == goal_size);
+        node->is_init = (isize == init_size);
+        sprod->has_goal |= node->is_goal;
+        memcpy(node->fact, fact_arr, sizeof(int) * mgroups_size);
+    }else{
+        _initNodes(sprod, mgroups, strips, goal_size, init_size,
+                   mgroup_idx + 1, facts, fact_arr);
     }
 }
 
@@ -175,6 +207,7 @@ static void initNodes(pddl_sync_product_t *sprod,
         init_size = strips->fact.fact_size + 1;
 
     fact_arr = BOR_ALLOC_ARR(int, borISetSize(mgroups));
+    borISetEmpty(&facts);
     _initNodes(sprod, mgroups, strips, goal_size, init_size, 0,
                &facts, fact_arr);
     borISetFree(&facts);
