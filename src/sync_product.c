@@ -33,13 +33,21 @@ static size_t maxNodes(const bor_iset_t *mgroups,
                        const pddl_strips_t *strips,
                        int num_landmarks)
 {
-    size_t num_nodes;
-    int mi;
+    BOR_ISET(facts);
+    BOR_ISET(mgroup_facts);
+    int mgi;
+    size_t max_nodes;
 
-    num_nodes = num_landmarks + 1;
-    BOR_ISET_FOR_EACH(mgroups, mi)
-        num_nodes *= borISetSize(&strips->mgroup.mgroup[mi].fact);
-    return num_nodes;
+    max_nodes = 1;
+    BOR_ISET_FOR_EACH(mgroups, mgi){
+        const pddl_mgroup_t *mg = strips->mgroup.mgroup + mgi;
+        borISetMinus2(&mgroup_facts, &mg->fact, &facts);
+        max_nodes *= borISetSize(&mgroup_facts);
+        borISetUnion(&facts, &mgroup_facts);
+    }
+
+    max_nodes *= num_landmarks + 1;
+    return max_nodes;
 }
 
 size_t pddlSyncProductMaxNodes(const bor_iset_t *mgroups,
@@ -399,7 +407,6 @@ int syncProductInit(pddl_sync_product_t *sprod,
     sprod->node_size = 0;
     sprod->fact_size = borISetSize(mgroups);
 
-    INFO("Max nodes: %d", maxNodes(mgroups, strips, sprod->ldm_seq.ldm_size));
     // Set up pointers so that the whole synchronized product fits into the
     // preallocated memory
     setUpMemory(sprod, maxNodes(mgroups, strips, sprod->ldm_seq.ldm_size));

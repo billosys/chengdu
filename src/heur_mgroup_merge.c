@@ -285,14 +285,22 @@ static void computeMerge(pddl_heur_mgroup_merge_t *h,
     pddl_sync_product_t sp;
     BOR_IARR(dist);
 
+    int mi;
+    BOR_ISET_FOR_EACH(&merge->mgroup, mi){
+        fprintf(stderr, " %d(%d)", mi,
+                borISetSize(&h->strips->mgroup.mgroup[mi].fact));
+    }
+    fprintf(stderr, "\n");
     pddlSyncProductInit(&sp, &merge->mgroup, h->strips, cref);
-    INFO("h-mgroup-merge: Sync Product computed, nodes: %d", sp.node_size);
+    INFO("h-mgroup-merge: Computed sync product of %d mgroups,"
+         " nodes: %d, max-nodes: %lu, max-mem: %lu",
+         borISetSize(&merge->mgroup), sp.node_size,
+         (unsigned long)pddlSyncProductMaxNodes(&merge->mgroup, h->strips),
+         (unsigned long)pddlSyncProductRequiredMem(&merge->mgroup, h->strips));
 
     pddlSyncProductGoalDistance(&sp, &dist);
     for (int i = 0; i < sp.node_size; ++i){
         const pddl_sync_product_node_t *n = sp.node + i;
-        if (n->is_mutex)
-            continue;
         addValue(merge, &sp, n, borIArrGet(&dist, i));
     }
     INFO("h-mgroup-merge: Goal Distances computed, values: %d",
