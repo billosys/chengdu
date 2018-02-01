@@ -46,6 +46,9 @@ static size_t maxNodes(const bor_iset_t *mgroups,
         borISetUnion(&facts, &mgroup_facts);
     }
 
+    borISetFree(&facts);
+    borISetFree(&mgroup_facts);
+
     max_nodes *= num_landmarks + 1;
     return max_nodes;
 }
@@ -246,17 +249,144 @@ static void initNodesLdm(pddl_sync_product_t *sprod,
     }
 }
 
+struct edge_ops_cache_pos {
+    int fact_from;
+    int fact_to;
+    bor_iset_t ops;
+};
+typedef struct edge_ops_cache_pos edge_ops_cache_pos_t;
+
+struct edge_ops_cache {
+    edge_ops_cache_pos_t *pos;
+    int pos_size;
+    const pddl_sync_product_node_t *from_node;
+    bor_iset_t init_ops;
+};
+typedef struct edge_ops_cache edge_ops_cache_t;
+
+static void edgeOpsCacheInit(edge_ops_cache_t *cache,
+                             const pddl_sync_product_t *sp)
+{
+    cache->pos_size = sp->fact_size - 1;
+    cache->pos = BOR_CALLOC_ARR(edge_ops_cache_pos_t, cache->pos_size);
+    for (int i = 0; i < cache->pos_size; ++i)
+        cache->pos[i].fact_from = cache->pos[i].fact_to = -1;
+    cache->from_node = NULL;
+    borISetInit(&cache->init_ops);
+}
+
+static void edgeOpsCacheFree(edge_ops_cache_t *cache)
+{
+    for (int i = 0; i < cache->pos_size; ++i)
+        borISetFree(&cache->pos[i].ops);
+    if (cache->pos != NULL)
+        BOR_FREE(cache->pos);
+    borISetFree(&cache->init_ops);
+}
+
+static void edgeOpsCacheSetFromNode(edge_ops_cache_t *cache,
+                                    const pddl_sync_product_node_t *from,
+                                    const bor_iset_t *del_ops)
+{
+    cache->from_node = from;
+    borISetSet(&cache->init_ops, del_ops);
+    for (int i = 0; i < cache->pos_size; ++i)
+        cache->pos[i].fact_from = cache->pos[i].fact_to = -1;
+}
+
+static void setAddOpsStep(const pddl_strips_cross_ref_t *cref,
+                          int from_fact, int to_fact,
+                          const bor_iset_t *src,
+                          bor_iset_t *dst);
+
+static void edgeOpsCacheSetPos(edge_ops_cache_t *cache,
+                               int pos,
+                               const pddl_strips_cross_ref_t *cref,
+                               int from_fact, int to_fact)
+{
+    const bor_iset_t *src;
+
+    if (pos == 0){
+        src = &cache->init_ops;
+    }else{
+        src = &cache->pos[pos - 1].ops;
+    }
+
+    setAddOpsStep(cref, from_fact, to_fact, src, &cache->pos[pos].ops);
+    cache->pos[pos].fact_from = from_fact;
+    cache->pos[pos].fact_to = to_fact;
+}
+
+static void edgeOpsCache(edge_ops_cache_t *cache,
+                         const pddl_strips_cross_ref_t *cref,
+                         const pddl_sync_product_node_t *from,
+                         const pddl_sync_product_node_t *to,
+                         const bor_iset_t *del_ops,
+                         bor_iset_t *ops)
+{
+    const bor_iset_t *src;
+    int pos;
+
+    // Initialize cache if it corresponds to a different from-node
+    if (cache->from_node != from)
+        edgeOpsCacheSetFromNode(cache, from, del_ops);
+
+    // Find matching position steps
+    for (pos = 0; pos < cache->pos_size; ++pos){
+        if (cache->pos[pos].fact_from != from->fact[pos]
+                || cache->pos[pos].fact_to != to->fact[pos])
+            break;
+    }
+
+    // Fill-in the rest of the cache
+    for (; pos < cache->pos_size; ++pos)
+        edgeOpsCacheSetPos(cache, pos, cref, from->fact[pos], to->fact[pos]);
+
+    // And finally, compute the output (which is not cached)
+    if (pos == 0){
+        src = &cache->init_ops;
+    }else{
+        src = &cache->pos[pos - 1].ops;
+    }
+    setAddOpsStep(cref, from->fact[pos], to->fact[pos], src, ops);
+}
+
+static void setAddOpsStep(const pddl_strips_cross_ref_t *cref,
+                          int from_fact, int to_fact,
+                          const bor_iset_t *src,
+                          bor_iset_t *dst)
+{
+    if (from_fact != to_fact){
+        if (src == dst){
+            borISetIntersect(dst, &cref->fact[to_fact].op_add);
+        }else{
+            borISetIntersect2(dst, src, &cref->fact[to_fact].op_add);
+        }
+        borISetIntersect(dst, &cref->fact[from_fact].op_del);
+    }else{
+        if (src == dst){
+            borISetMinus(dst, &cref->fact[to_fact].op_del);
+        }else{
+            borISetMinus2(dst, src, &cref->fact[to_fact].op_del);
+        }
+        borISetMinus(dst, &cref->fact[to_fact].op_pre_mutex);
+    }
+}
+
 static void setAddOps(const pddl_sync_product_t *sp,
                       const pddl_strips_cross_ref_t *cref,
                       const pddl_sync_product_node_t *from,
                       const pddl_sync_product_node_t *to,
                       const bor_iset_t *del_ops,
-                      bor_iset_t *ops)
+                      bor_iset_t *ops,
+                      edge_ops_cache_t *cache)
 {
-    borISetEmpty(ops);
+    if (from->ldm_level == to->ldm_level && cache != NULL){
+        edgeOpsCache(cache, cref, from, to, del_ops, ops);
+        return;
 
-    if (from->ldm_level == to->ldm_level){
-        borISetUnion(ops, del_ops);
+    }else if (from->ldm_level == to->ldm_level){
+        borISetSet(ops, del_ops);
 
         /*
         if (sp->ldm_seq.ldm_size > 0
@@ -273,7 +403,7 @@ static void setAddOps(const pddl_sync_product_t *sp,
             // If the nodes differ only in the level use only the landmark
             // operators that will be later pruned to those that does not
             // touch any fact and are applicable in the node
-            borISetUnion(ops, sp->ldm_seq.ldm + from->ldm_level);
+            borISetSet(ops, sp->ldm_seq.ldm + from->ldm_level);
 
         }else{
             // If the nodes differ restrict the operator to only those that
@@ -289,22 +419,16 @@ static void setAddOps(const pddl_sync_product_t *sp,
         }
     }
 
-    for (int i = 0; i < sp->fact_size && borISetSize(ops) > 0; ++i){
-        if (from->fact[i] != to->fact[i]){
-            borISetIntersect(ops, &cref->fact[to->fact[i]].op_add);
-            borISetIntersect(ops, &cref->fact[from->fact[i]].op_del);
-        }else{
-            borISetMinus(ops, &cref->fact[to->fact[i]].op_del);
-            borISetMinus(ops, &cref->fact[to->fact[i]].op_pre_mutex);
-        }
-    }
+    for (int i = 0; i < sp->fact_size && borISetSize(ops) > 0; ++i)
+        setAddOpsStep(cref, from->fact[i], to->fact[i], ops, ops);
 }
 
 static void initEdgesTo(pddl_sync_product_t *sprod,
                         const pddl_strips_t *strips,
                         const pddl_strips_cross_ref_t *cref,
                         int from_node_id,
-                        const bor_iset_t *op_from)
+                        const bor_iset_t *op_from,
+                        edge_ops_cache_t *cache)
 {
     pddl_sync_product_node_t *from_node = sprod->node + from_node_id;
     BOR_ISET(ops);
@@ -315,7 +439,7 @@ static void initEdgesTo(pddl_sync_product_t *sprod,
         if (i == from_node_id)
             continue;
 
-        setAddOps(sprod, cref, from_node, node, op_from, &ops);
+        setAddOps(sprod, cref, from_node, node, op_from, &ops, cache);
 
         BOR_ISET_FOR_EACH(&ops, opi){
             pddl_sync_product_edge_t *next = from_node->next + i;
@@ -334,7 +458,9 @@ static void initEdges(pddl_sync_product_t *sprod,
                       const pddl_strips_cross_ref_t *cross_ref)
 {
     BOR_ISET(ops);
+    edge_ops_cache_t cache;
 
+    edgeOpsCacheInit(&cache, sprod);
     for (int i = 0; i < sprod->node_size; ++i){
         pddl_sync_product_node_t *node = sprod->node + i;
         for (int j = 0; j < sprod->node_size; ++j){
@@ -350,9 +476,10 @@ static void initEdges(pddl_sync_product_t *sprod,
         borISetEmpty(&ops);
         for (int j = 0; j < sprod->fact_size; ++j)
             borISetUnion(&ops, &cross_ref->fact[node->fact[j]].op_del);
-        initEdgesTo(sprod, strips, cross_ref, i, &ops);
+        initEdgesTo(sprod, strips, cross_ref, i, &ops, &cache);
     }
 
+    edgeOpsCacheFree(&cache);
     borISetFree(&ops);
 }
 
@@ -490,7 +617,7 @@ void pddlSyncProductEdgeOps(const pddl_sync_product_t *sprod,
 
     for (int j = 0; j < sprod->fact_size; ++j)
         borISetUnion(&del_ops, &cref->fact[nfrom->fact[j]].op_del);
-    setAddOps(sprod, cref, nfrom, nto, &del_ops, &ops);
+    setAddOps(sprod, cref, nfrom, nto, &del_ops, &ops, NULL);
 
     borISetUnion(ops_out, &ops);
     borISetFree(&ops);
