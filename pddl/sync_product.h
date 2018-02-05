@@ -96,6 +96,13 @@ int pddlSyncProductCanFitInMem(const bor_iset_t *mgroups,
                                size_t mem);
 
 /**
+ * Returns true if the synchronized product consisting of num_nodes nodes,
+ * each node having num_node_facts facts, can fit in the specified memory.
+ */
+int pddlSyncProductCanFitInMem2(size_t num_nodes, size_t num_node_facts,
+                                size_t mem);
+
+/**
  * TODO
  */
 int pddlSyncProductLdmCanFitInMem(const bor_iset_t *mgroups,
@@ -111,6 +118,15 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
                         const bor_iset_t *mgroups,
                         const pddl_strips_t *strips,
                         const pddl_strips_cross_ref_t *cross_ref);
+
+/**
+ * TODO
+ */
+int pddlSyncProductInitMaxNodes(pddl_sync_product_t *sprod,
+                                const bor_iset_t *mgroups,
+                                const pddl_strips_t *strips,
+                                const pddl_strips_cross_ref_t *cross_ref,
+                                int max_nodes);
 
 /**
  * TODO

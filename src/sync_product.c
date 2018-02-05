@@ -59,18 +59,23 @@ size_t pddlSyncProductMaxNodes(const bor_iset_t *mgroups,
     return maxNodes(mgroups, strips, 0);
 }
 
-static size_t requiredMem(const bor_iset_t *mgroups,
-                          const pddl_strips_t *strips,
-                          int num_landmarks)
+static size_t requiredMemNodes(size_t num_nodes, size_t num_node_facts)
 {
-    size_t num_nodes = maxNodes(mgroups, strips, num_landmarks);
     size_t req_mem;
 
     req_mem  = num_nodes * sizeof(pddl_sync_product_node_t);
     req_mem += num_nodes * num_nodes * sizeof(pddl_sync_product_edge_t);
     req_mem += num_nodes * num_nodes * sizeof(int);
-    req_mem += num_nodes * borISetSize(mgroups) * sizeof(int);
+    req_mem += num_nodes * num_node_facts * sizeof(int);
     return req_mem;
+}
+
+static size_t requiredMem(const bor_iset_t *mgroups,
+                          const pddl_strips_t *strips,
+                          int num_landmarks)
+{
+    size_t num_nodes = maxNodes(mgroups, strips, num_landmarks);
+    return requiredMemNodes(num_nodes, borISetSize(mgroups));
 }
 
 size_t pddlSyncProductRequiredMem(const bor_iset_t *mgroups,
@@ -84,6 +89,12 @@ int pddlSyncProductCanFitInMem(const bor_iset_t *mgroups,
                                size_t mem)
 {
     return pddlSyncProductLdmCanFitInMem(mgroups, strips, 0, mem);
+}
+
+int pddlSyncProductCanFitInMem2(size_t num_nodes, size_t num_node_facts,
+                                size_t mem)
+{
+    return requiredMemNodes(num_nodes, num_node_facts) <= mem;
 }
 
 int pddlSyncProductLdmCanFitInMem(const bor_iset_t *mgroups,
@@ -140,7 +151,6 @@ static void _initNodes(pddl_sync_product_t *sprod,
                        int *fact_arr)
 {
     const pddl_mgroup_t *mgroup;
-    int mgroups_size = borISetSize(mgroups);
     int fact = -1;
 
     mgroup = strips->mgroup.mgroup + borISetGet(mgroups, mgroup_idx);
@@ -547,7 +557,8 @@ int syncProductInit(pddl_sync_product_t *sprod,
                     const pddl_strips_t *strips,
                     const pddl_strips_cross_ref_t *cross_ref,
                     const bor_iset_t *mgroups,
-                    const pddl_landmark_seq_t *lseq)
+                    const pddl_landmark_seq_t *lseq,
+                    int max_nodes)
 {
     bzero(sprod, sizeof(*sprod));
 
@@ -555,7 +566,13 @@ int syncProductInit(pddl_sync_product_t *sprod,
     if (lseq != NULL)
         pddlLandmarkSeqCopy(&sprod->ldm_seq, lseq);
 
-    sprod->mem_size = requiredMem(mgroups, strips, sprod->ldm_seq.ldm_size);
+    if (max_nodes > 0){
+        if (sprod->ldm_seq.ldm_size > 0)
+            max_nodes *= sprod->ldm_seq.ldm_size;
+        sprod->mem_size = requiredMemNodes(max_nodes, borISetSize(mgroups));
+    }else{
+        sprod->mem_size = requiredMem(mgroups, strips, sprod->ldm_seq.ldm_size);
+    }
     sprod->mem = mmap(NULL, sprod->mem_size,
                       PROT_READ | PROT_WRITE,
                       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -569,7 +586,11 @@ int syncProductInit(pddl_sync_product_t *sprod,
 
     // Set up pointers so that the whole synchronized product fits into the
     // preallocated memory
-    setUpMemory(sprod, maxNodes(mgroups, strips, sprod->ldm_seq.ldm_size));
+    if (max_nodes > 0){
+        setUpMemory(sprod, max_nodes);
+    }else{
+        setUpMemory(sprod, maxNodes(mgroups, strips, sprod->ldm_seq.ldm_size));
+    }
 
     initNodes(sprod, mgroups, strips);
     if (sprod->ldm_seq.ldm_size > 0)
@@ -586,7 +607,16 @@ int pddlSyncProductInit(pddl_sync_product_t *sprod,
                         const pddl_strips_t *strips,
                         const pddl_strips_cross_ref_t *cross_ref)
 {
-    return syncProductInit(sprod, strips, cross_ref, mgroups, NULL);
+    return syncProductInit(sprod, strips, cross_ref, mgroups, NULL, 0);
+}
+
+int pddlSyncProductInitMaxNodes(pddl_sync_product_t *sprod,
+                                const bor_iset_t *mgroups,
+                                const pddl_strips_t *strips,
+                                const pddl_strips_cross_ref_t *cross_ref,
+                                int max_nodes)
+{
+    return syncProductInit(sprod, strips, cross_ref, mgroups, NULL, max_nodes);
 }
 
 int pddlSyncProductInitLdm(pddl_sync_product_t *sprod,
@@ -595,7 +625,7 @@ int pddlSyncProductInitLdm(pddl_sync_product_t *sprod,
                            const bor_iset_t *mgroups,
                            const pddl_landmark_seq_t *lseq)
 {
-    return syncProductInit(sprod, strips, cross_ref, mgroups, lseq);
+    return syncProductInit(sprod, strips, cross_ref, mgroups, lseq, 0);
 }
 
 void pddlSyncProductFree(pddl_sync_product_t *sprod)

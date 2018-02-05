@@ -38,6 +38,7 @@ typedef struct pddl_heur_mgroup_merge_value pddl_heur_mgroup_merge_value_t;
 
 struct pddl_heur_mgroup_merge_merge {
     bor_iset_t mgroup;
+    int max_nodes;
     pddl_heur_mgroup_merge_value_t *value;
     int value_size;
     int value_alloc;

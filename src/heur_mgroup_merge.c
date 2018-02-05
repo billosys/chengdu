@@ -19,6 +19,7 @@
 
 #include <boruvka/alloc.h>
 #include <boruvka/sort.h>
+#include "pddl/sync_product_prep.h"
 #include "pddl/heur_mgroup_merge.h"
 #include "pddl/mgroup_op_bipartite_graph.h"
 #include "pddl/sync_product.h"
@@ -28,192 +29,130 @@
 #define SCALE_LIMIT 10000
 #define SCALE_HARD_LIMIT 100000
 
-struct merge_candidate {
-    int mg[2];
-    int size;
+struct mgroup_sort_item {
+    int mgroup_id;
+    int eff;
+    int pre;
 };
-typedef struct merge_candidate merge_candidate_t;
+typedef struct mgroup_sort_item mgroup_sort_item_t;
 
-struct merge_candidates {
-    merge_candidate_t *candidate;
-    int candidate_size;
-    int *merge_map;
-};
-typedef struct merge_candidates merge_candidates_t;
-
-
-static int canMergeNodes(const pddl_mgroup_op_bipartite_graph_t *g,
-                         int n1, int n2,
-                         const pddl_strips_t *strips,
-                         size_t max_mem)
+static int mgroupSortItemCmp(const void *a, const void *b, void *_)
 {
-    BOR_ISET(mgs);
-    int can_fit;
-
-    borISetUnion(&mgs, &g->mgroup[n1].mgroup);
-    borISetUnion(&mgs, &g->mgroup[n2].mgroup);
-    can_fit = pddlSyncProductCanFitInMem(&mgs, strips, max_mem);
-    borISetFree(&mgs);
-    return can_fit;
+    const mgroup_sort_item_t *i1 = a;
+    const mgroup_sort_item_t *i2 = b;
+    int cmp = i2->eff - i1->eff;
+    if (cmp == 0)
+        cmp = i2->pre - i1->pre;
+    return cmp;
 }
 
-static int canMergeMGroups(const bor_iset_t *mgs1, const bor_iset_t *mgs2,
-                           const pddl_strips_t *strips,
-                           size_t max_mem)
+static void sortMGroupsForMerge(const bor_iset_t *mgroup,
+                                const bor_iset_t *mgroup_facts,
+                                const bor_iset_t *mgroup_ops_pre,
+                                const pddl_strips_t *strips,
+                                const pddl_strips_cross_ref_t *cref,
+                                mgroup_sort_item_t *list)
 {
-    BOR_ISET(mgs);
-    int can_fit;
-
-    borISetUnion(&mgs, mgs1);
-    borISetUnion(&mgs, mgs2);
-    can_fit = pddlSyncProductCanFitInMem(&mgs, strips, max_mem);
-    borISetFree(&mgs);
-    return can_fit;
-}
-
-
-static void makeMergeMap(const pddl_mgroup_op_bipartite_graph_t *g,
-                         int *map)
-{
-    bzero(map, sizeof(int) * g->mgroup_size * g->mgroup_size);
-    for (int i = 0; i < g->op_size; ++i){
-        const pddl_mgroup_op_bipartite_graph_op_t *op = g->op + i;
-        for (int j = 0; j < borISetSize(&op->mgroup); ++j){
-            int mg1 = borISetGet(&op->mgroup, j);
-            for (int k = j + 1; k < borISetSize(&op->mgroup); ++k){
-                int mg2 = borISetGet(&op->mgroup, k);
-                map[mg1 * g->mgroup_size + mg2] += borISetSize(&op->op);
-                map[mg2 * g->mgroup_size + mg1] += borISetSize(&op->op);
-            }
+    for (int i = 0; i < strips->mgroup.mgroup_size; ++i){
+        const pddl_mgroup_t *m = strips->mgroup.mgroup + i;
+        list[i].mgroup_id = i;
+        if (borISetIn(i, mgroup)){
+            list[i].eff = -1;
+            list[i].pre = -1;
+        }else{
+            list[i].eff = borISetIntersectionSize(mgroup_facts, &m->fact);
+            list[i].pre = borISetIntersectionSize(mgroup_ops_pre,
+                                                  &cref->mgroup[i].op_add);
         }
     }
+
+    borSort(list, strips->mgroup.mgroup_size, sizeof(*list),
+            mgroupSortItemCmp, NULL);
 }
 
-static void mergeCandidatesInit(merge_candidates_t *cand,
-                                const pddl_mgroup_op_bipartite_graph_t *g)
+static void addMerge(pddl_heur_mgroup_merge_t *h,
+                     const bor_iset_t *merge,
+                     int max_nodes)
 {
-    cand->candidate = BOR_ALLOC_ARR(merge_candidate_t,
-                                    g->mgroup_size * g->mgroup_size);
-    cand->merge_map = BOR_ALLOC_ARR(int, g->mgroup_size * g->mgroup_size);
-}
-
-static void mergeCandidatesFree(merge_candidates_t *cand)
-{
-    if (cand->candidate != NULL)
-        BOR_FREE(cand->candidate);
-    if (cand->merge_map != NULL)
-        BOR_FREE(cand->merge_map);
-}
-
-static int mergeCandidateCmp(const void *a, const void *b, void *_)
-{
-    const merge_candidate_t *c1 = a;
-    const merge_candidate_t *c2 = b;
-    return c2->size - c1->size;
-}
-
-static void mergeCandidatesReset(merge_candidates_t *cand,
-                                 const pddl_mgroup_op_bipartite_graph_t *g)
-{
-    makeMergeMap(g, cand->merge_map);
-    cand->candidate_size = 0;
-    for (int i = 0; i < g->mgroup_size; ++i){
-        for (int j = i + 1; j < g->mgroup_size; ++j){
-            int size = cand->merge_map[i * g->mgroup_size + j];
-            if (size == 0)
-                continue;
-            merge_candidate_t *c = cand->candidate + cand->candidate_size++;
-            c->mg[0] = i;
-            c->mg[1] = j;
-            c->size = size;
-        }
+    for (int i = 0; i < h->merge_size; ++i){
+        if (borISetEq(merge, &h->merge[i].mgroup))
+            return;
     }
-    borSort(cand->candidate, cand->candidate_size, sizeof(merge_candidate_t),
-            mergeCandidateCmp, NULL);
+
+    pddl_heur_mgroup_merge_merge_t *m = h->merge + h->merge_size++;
+    borISetUnion(&m->mgroup, merge);
+    m->max_nodes = max_nodes;
 }
 
-static void findMerges(pddl_heur_mgroup_merge_t *h,
-                       const pddl_strips_t *strips,
-                       const pddl_strips_cross_ref_t *cref)
+static void findMergesMGroup(pddl_heur_mgroup_merge_t *h,
+                             int mgroup_id,
+                             const pddl_strips_t *strips,
+                             const pddl_strips_cross_ref_t *cref)
 {
-    pddl_mgroup_op_bipartite_graph_t graph;
-    merge_candidates_t cands;
-    int change;
+    BOR_ISET(facts);
+    BOR_ISET(pre_ops);
+    mgroup_sort_item_t *mgroup_merge;
+    pddl_sync_product_prep_t sp;
+    int change = 1;
 
-    pddlMGroupOpBipartiteGraphInit(&graph, strips, cref);
-    mergeCandidatesInit(&cands, &graph);
+    borISetUnion(&facts, &strips->mgroup.mgroup[mgroup_id].fact);
+    borISetUnion(&pre_ops, &cref->mgroup[mgroup_id].op_pre);
+    pddlSyncProductPrepInit(&sp, mgroup_id, strips);
 
-    // Merge mgroup nodes so that it greedily minimizes number of common
-    // operators
-    change = 1;
+    mgroup_merge = BOR_ALLOC_ARR(mgroup_sort_item_t,
+                                 strips->mgroup.mgroup_size);
+
     while (change){
         change = 0;
+        sortMGroupsForMerge(&sp.mgroup, &facts, &pre_ops,
+                            strips, cref, mgroup_merge);
 
-        pddlMGroupOpBipartiteGraphMinimize(&graph);
-        mergeCandidatesReset(&cands, &graph);
-        for (int i = 0; i < cands.candidate_size; ++i){
-            const merge_candidate_t *c = cands.candidate + i;
-            int m1 = c->mg[0];
-            int m2 = c->mg[1];
-            if (!graph.mgroup[m1].is_goal && !graph.mgroup[m2].is_goal)
-                continue;
-            if (canMergeNodes(&graph, m1, m2, strips, h->max_mem)){
-                pddlMGroupOpBipartiteGraphMerge(&graph, m1, m2);
+        for (int i = 0; i < strips->mgroup.mgroup_size; ++i){
+            mgroup_sort_item_t *m = mgroup_merge + i;
+            if (m->eff < 0 || m->pre < 0)
+                break;
+            if (pddlSyncProductPrepExtend(&sp, m->mgroup_id,
+                                          strips, h->max_mem) == 0){
+                borISetUnion(&facts, &strips->mgroup.mgroup[m->mgroup_id].fact);
+                borISetUnion(&pre_ops, &cref->mgroup[m->mgroup_id].op_pre);
+                INFO("h-mgroup-merge:   Adding mgroup %d, num-nodes: %d",
+                     m->mgroup_id, sp.node_size);
                 change = 1;
                 break;
             }
         }
     }
 
-    // Prepare merges from the mgroup nodes of the bipartite graph
+    if (borISetSize(&sp.mgroup) > 1)
+        addMerge(h, &sp.mgroup, sp.node_size);
+
+    BOR_FREE(mgroup_merge);
+    pddlSyncProductPrepFree(&sp);
+    borISetFree(&facts);
+    borISetFree(&pre_ops);
+}
+
+static void findMerges(pddl_heur_mgroup_merge_t *h,
+                       const pddl_strips_t *strips,
+                       const pddl_strips_cross_ref_t *cref)
+{
+    int num_goal_mgroups = 0;
+
+    for (int mi = 0; mi < strips->mgroup.mgroup_size; ++mi){
+        if (strips->mgroup.mgroup[mi].is_goal)
+            ++num_goal_mgroups;
+    }
     h->merge = BOR_CALLOC_ARR(pddl_heur_mgroup_merge_merge_t,
-                              graph.mgroup_size);
-    h->merge_size = 0;
-    for (int i = 0; i < graph.mgroup_size; ++i){
-        const pddl_mgroup_op_bipartite_graph_mgroup_t *m = graph.mgroup + i;
-        if (m->is_goal && borISetSize(&m->mgroup) > 0){
-            borISetUnion(&h->merge[h->merge_size].mgroup, &m->mgroup);
-            ++h->merge_size;
+                              num_goal_mgroups);
+
+    for (int mi = 0; mi < strips->mgroup.mgroup_size; ++mi){
+        const pddl_mgroup_t *m = strips->mgroup.mgroup + mi;
+        if (m->is_goal){
+            INFO("h-mgroup-merge: Finding merge for mgroup %d (%d facts)",
+                 mi, borISetSize(&m->fact));
+            findMergesMGroup(h, mi, strips, cref);
         }
     }
-
-    // Try to extend the merges with mgroup nodes that are not goal nodes
-    for (int i = 0; i < graph.mgroup_size; ++i){
-        const pddl_mgroup_op_bipartite_graph_mgroup_t *m = graph.mgroup + i;
-        if (!m->is_goal && borISetSize(&m->mgroup) > 0){
-            for (int j = 0; j < h->merge_size; ++j){
-                if (canMergeMGroups(&h->merge[j].mgroup, &m->mgroup,
-                                    strips, h->max_mem)){
-                    borISetUnion(&h->merge[j].mgroup, &m->mgroup);
-                }
-            }
-        }
-    }
-
-    /*
-    pddlMGroupOpBipartiteGraphMinimize(&graph);
-    mergeCandidatesReset(&cands, &graph);
-    for (int i = 0; i < cands.candidate_size; ++i){
-        fprintf(stderr, "%d: %d + %d -- %d\n",
-                i, cands.candidate[i].mg[0],
-                cands.candidate[i].mg[1],
-                cands.candidate[i].size);
-    }
-
-    pddlMGroupOpBipartiteGraphMinimize(&graph);
-    pddlMGroupOpBipartiteGraphPrint(&graph, stderr);
-
-    for (int i = 0; i < h->merge_size; ++i){
-        int m;
-        fprintf(stderr, "Merge:");
-        BOR_ISET_FOR_EACH(&h->merge[i].mgroup, m)
-            fprintf(stderr, " %d", m);
-        fprintf(stderr, "\n");
-    }
-    */
-
-    mergeCandidatesFree(&cands);
-    pddlMGroupOpBipartiteGraphFree(&graph);
 }
 
 static void costPart(pddl_heur_mgroup_merge_t *h,
@@ -291,20 +230,17 @@ static void computeMerge(pddl_heur_mgroup_merge_t *h,
                 borISetSize(&h->strips->mgroup.mgroup[mi].fact));
     }
     fprintf(stderr, "\n");
-    pddlSyncProductInit(&sp, &merge->mgroup, h->strips, cref);
-    INFO("h-mgroup-merge: Computed sync product of %d mgroups,"
-         " nodes: %d, max-nodes: %lu, max-mem: %lu",
-         borISetSize(&merge->mgroup), sp.node_size,
-         (unsigned long)pddlSyncProductMaxNodes(&merge->mgroup, h->strips),
-         (unsigned long)pddlSyncProductRequiredMem(&merge->mgroup, h->strips));
+    pddlSyncProductInitMaxNodes(&sp, &merge->mgroup, h->strips, cref,
+                                merge->max_nodes);
+    INFO("h-mgroup-merge: Computed sync product of %d mgroups, nodes: %d",
+         borISetSize(&merge->mgroup), sp.node_size);
 
     pddlSyncProductGoalDistance(&sp, &dist);
     for (int i = 0; i < sp.node_size; ++i){
         const pddl_sync_product_node_t *n = sp.node + i;
         addValue(merge, &sp, n, borIArrGet(&dist, i));
     }
-    INFO("h-mgroup-merge: Goal Distances computed, values: %d",
-         merge->value_size);
+    INFO2("h-mgroup-merge: Goal Distances computed");
 
     pddlSyncProductFree(&sp);
     borIArrFree(&dist);

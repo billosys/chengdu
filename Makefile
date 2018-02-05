@@ -50,6 +50,7 @@ OBJS += heur_flow
 OBJS += heur_mgroup_merge
 OBJS += mgroup_ldm_pot
 OBJS += sync_product
+OBJS += sync_product_prep
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
