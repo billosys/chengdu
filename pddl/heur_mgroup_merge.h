@@ -25,6 +25,7 @@
 #include <pddl/common.h>
 #include <pddl/strips.h>
 #include <pddl/strips_cross_ref.h>
+#include <pddl/landmark.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +43,7 @@ struct pddl_heur_mgroup_merge_merge {
     pddl_heur_mgroup_merge_value_t *value;
     int value_size;
     int value_alloc;
+    pddl_landmark_seq_t ldm_seq;
 };
 typedef struct pddl_heur_mgroup_merge_merge pddl_heur_mgroup_merge_merge_t;
 

@@ -82,6 +82,7 @@ static void addMerge(pddl_heur_mgroup_merge_t *h,
     pddl_heur_mgroup_merge_merge_t *m = h->merge + h->merge_size++;
     borISetUnion(&m->mgroup, merge);
     m->max_nodes = max_nodes;
+    pddlLandmarkSeqInit(&m->ldm_seq);
 }
 
 static void findMergesMGroup(pddl_heur_mgroup_merge_t *h,
@@ -223,6 +224,7 @@ static void computeMerge(pddl_heur_mgroup_merge_t *h,
 {
     pddl_sync_product_t sp;
     BOR_IARR(dist);
+    int init_node;
 
     int mi;
     BOR_ISET_FOR_EACH(&merge->mgroup, mi){
@@ -241,6 +243,12 @@ static void computeMerge(pddl_heur_mgroup_merge_t *h,
         addValue(merge, &sp, n, borIArrGet(&dist, i));
     }
     INFO2("h-mgroup-merge: Goal Distances computed");
+
+    for (init_node = 0; !sp.node[init_node].is_init
+                && init_node < sp.node_size; ++init_node);
+    pddlSyncProductFindLandmarks(&sp, cref, init_node,
+                                 NULL, &merge->ldm_seq, NULL, NULL);
+    INFO2("h-mgroup-merge: Landmarks computed");
 
     pddlSyncProductFree(&sp);
     borIArrFree(&dist);
@@ -288,6 +296,7 @@ void pddlHeurMGroupMergeFree(pddl_heur_mgroup_merge_t *h)
             borISetFree(&h->merge[i].value[j].fact);
         if (h->merge[i].value != NULL)
             BOR_FREE(h->merge[i].value);
+        pddlLandmarkSeqFree(&h->merge[i].ldm_seq);
     }
     if (h->merge != NULL)
         BOR_FREE(h->merge);
