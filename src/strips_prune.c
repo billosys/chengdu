@@ -20,7 +20,6 @@
 #include "pddl/strips.h"
 #include "pddl/mgroup.h"
 #include "pddl/mutex.h"
-#include "pddl/mgroup_tg_ldm.h"
 #include "err.h"
 #include "assert.h"
 #include "profile.h"
