@@ -138,8 +138,11 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
     return updated;
 }
 
-int _pddlMutexesH2(const pddl_strips_t *strips, pddl_mutexes_t *ms,
-                   int *unreachable_ops)
+int _pddlMutexesH2(pddl_mutexes_t *ms,
+                   const pddl_strips_t *strips,
+                   int *unreachable_ops,
+                   size_t max_mem,
+                   float max_time)
 {
     h2_t h2;
     int updated;

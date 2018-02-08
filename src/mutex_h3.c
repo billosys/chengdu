@@ -171,27 +171,33 @@ _bor_inline void metaFactSet1(h3_t *h3, int fid)
 }
 
 static void h3Init(h3_t *h3, const pddl_strips_t *strips,
-                   const int *unreachable_op)
+                   const int *unreachable_op,
+                   size_t max_mem)
 {
     int f1, f2, f3;
+    size_t meta_fact3_size, op_fact1_size, op_fact2_size;
 
     bzero(h3, sizeof(*h3));
     h3->fact_size = strips->fact.fact_size;
     h3->meta_fact1 = BOR_CALLOC_ARR(char, h3->fact_size);
     h3->meta_fact2 = BOR_CALLOC_ARR(char, h3->fact_size * h3->fact_size);
-    // TODO: Parametrize
-    if (h3->fact_size < 1024){
-        int size = h3->fact_size * h3->fact_size * h3->fact_size;
-        h3->meta_fact3 = BOR_CALLOC_ARR(char, size);
+
+    meta_fact3_size  = h3->fact_size;
+    meta_fact3_size *= h3->fact_size;
+    meta_fact3_size *= h3->fact_size;
+    if (meta_fact3_size <= max_mem){
+        h3->meta_fact3 = BOR_CALLOC_ARR(char, meta_fact3_size);
+        max_mem -= meta_fact3_size;
+        INFO2("Using meta_fact3");
     }else{
         h3->meta_fact3_set = BOR_CALLOC_ARR(set_range_t,
                                             h3->fact_size * h3->fact_size);
     }
-    // TODO: Parametrize
-    if ((size_t)h3->fact_size * (size_t)strips->op.op_size
-            < 1024ul * 1024ul * 1024ul){
-        size_t size = (size_t)h3->fact_size * strips->op.op_size;
-        h3->op_fact1 = BOR_CALLOC_ARR(char, size);
+
+    op_fact1_size  = h3->fact_size;
+    op_fact1_size *= strips->op.op_size;
+    if (op_fact1_size <= max_mem){
+        h3->op_fact1 = BOR_CALLOC_ARR(char, op_fact1_size);
         for (int opi = 0; opi < strips->op.op_size; ++opi){
             int f;
             BOR_ISET_FOR_EACH(&strips->op.op[opi]->add_eff, f)
@@ -199,15 +205,19 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
             BOR_ISET_FOR_EACH(&strips->op.op[opi]->del_eff, f)
                 h3->op_fact1[opi * h3->fact_size + f] = -1;
         }
+        max_mem -= op_fact1_size;
+        INFO2("Using op_fact1");
     }
-    if ((size_t)h3->fact_size
-            * (size_t)h3->fact_size
-            * (size_t)strips->op.op_size
-                < 5024ul * 1024ul * 1024ul){
-        size_t size = (size_t)h3->fact_size * strips->op.op_size;
-        size *= h3->fact_size;
-        h3->op_fact2 = BOR_CALLOC_ARR(char, size);
+
+    op_fact2_size  = h3->fact_size;
+    op_fact2_size *= h3->fact_size;
+    op_fact2_size *= strips->op.op_size;
+    if (op_fact2_size <= max_mem){
+        h3->op_fact2 = BOR_CALLOC_ARR(char, op_fact2_size);
+        max_mem -= op_fact2_size;
+        INFO2("Using op_fact2");
     }
+
     h3->ext = BOR_ALLOC_ARR(int, h3->fact_size);
     h3->op_applied = BOR_CALLOC_ARR(int, strips->op.op_size);
     h3->op_unreachable = unreachable_op;
@@ -525,8 +535,11 @@ static int applyOp(const pddl_strips_op_t *op, h3_t *h3)
     return updated;
 }
 
-int _pddlMutexesH3(const pddl_strips_t *strips, pddl_mutexes_t *ms,
-                   int *unreachable_ops)
+int _pddlMutexesH3(pddl_mutexes_t *ms,
+                   const pddl_strips_t *strips,
+                   int *unreachable_ops,
+                   size_t max_mem,
+                   float max_time)
 {
 
     h3_t h3;
@@ -538,7 +551,7 @@ int _pddlMutexesH3(const pddl_strips_t *strips, pddl_mutexes_t *ms,
     if (strips->has_cond_eff)
         ERR_RET2(-1, "Conditional effects are not supported by h^3.");
 
-    h3Init(&h3, strips, unreachable_ops);
+    h3Init(&h3, strips, unreachable_ops, max_mem);
 
     do {
         updated = 0;

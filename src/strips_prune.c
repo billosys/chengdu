@@ -164,8 +164,11 @@ static int pruneHMutex(pddl_strips_t *strips,
 
     pddlMutexesFree(mutex);
     pddlMutexesInit(mutex);
-    if ((ret = pddlMutexesHm(cfg->h_mutex, strips, mutex, prune_op)) == 0)
+    // TODO: max-time, max-mem
+    if ((ret = pddlMutexesHm(mutex, cfg->h_mutex, strips, prune_op,
+                             cfg->max_mem, cfg->max_time)) == 0){
         change |= pruneOpArr(strips, prune_op);
+    }
 
     INFO("O: %d, F: %d :: h^%d mutexes (mutexes: %d, change: %d).",
          strips->op.op_size, strips->fact.fact_size, cfg->h_mutex,

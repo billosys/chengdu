@@ -109,10 +109,12 @@ pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m);
  *   - all unused (i.e., unreachable) operators are marked with true value
  * Does not work with conditional effects, but they can be compiled away.
  */
-int pddlMutexesHm(int m, const pddl_strips_t *strips, pddl_mutexes_t *ms,
-                  int *unreachable_ops);
-pddl_mutexes_t *pddlMutexesHmNew(int m, const pddl_strips_t *strips,
-                                 int *unreachable_ops);
+int pddlMutexesHm(pddl_mutexes_t *ms,
+                  int m,
+                  const pddl_strips_t *strips,
+                  int *unreachable_ops,
+                  size_t max_mem,
+                  float max_time);
 
 
 /**
