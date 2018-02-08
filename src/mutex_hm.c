@@ -23,33 +23,32 @@
 #include "err.h"
 
 /** Implemented in src/mutex_h2.c */
-int _pddlMutexesH2(const pddl_strips_t *strips, pddl_mutexes_t *ms,
-                   int *unreachable_ops);
+int _pddlMutexesH2(pddl_mutexes_t *ms,
+                   const pddl_strips_t *strips,
+                   int *unreachable_ops,
+                   size_t max_mem,
+                   float max_time);
 /** Implemented in src/mutex_h3.c */
-int _pddlMutexesH3(const pddl_strips_t *strips, pddl_mutexes_t *ms,
-                   int *unreachable_ops);
+int _pddlMutexesH3(pddl_mutexes_t *ms,
+                   const pddl_strips_t *strips,
+                   int *unreachable_ops,
+                   size_t max_mem,
+                   float max_time);
 
-int pddlMutexesHm(int m, const pddl_strips_t *strips, pddl_mutexes_t *ms,
-                  int *unreachable_ops)
+int pddlMutexesHm(pddl_mutexes_t *ms,
+                  int m,
+                  const pddl_strips_t *strips,
+                  int *unreachable_ops,
+                  size_t max_mem,
+                  float max_time)
 {
     if (m != 2 && m != 3)
         ERR_RET2(-1, "pddlMutexesHm() is implemented only for h^2 for now.");
     if (m == 2)
-        return _pddlMutexesH2(strips, ms, unreachable_ops);
+        return _pddlMutexesH2(ms, strips, unreachable_ops, max_mem, max_time);
     if (m == 3)
-        return _pddlMutexesH3(strips, ms, unreachable_ops);
+        return _pddlMutexesH3(ms, strips, unreachable_ops, max_mem, max_time);
     return -1;
-}
-
-pddl_mutexes_t *pddlMutexesHmNew(int m, const pddl_strips_t *strips,
-                                 int *unreachable_ops)
-{
-    pddl_mutexes_t *ms = pddlMutexesNew();
-    if (pddlMutexesHm(m, strips, ms, unreachable_ops) != 0){
-        pddlMutexesDel(ms);
-        TRACE_RET(NULL);
-    }
-    return ms;
 }
 
 void pddlMutexesHmLimit(pddl_mutexes_t *ms, int max_m)

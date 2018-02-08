@@ -71,6 +71,12 @@ struct pddl_strips_prune_config {
 
     /** TODO */
     int disambiguation;
+
+    /** Maximum allowed memory in bytes. Set to 0 to disable. Default: 4 GB */
+    size_t max_mem;
+
+    /** Maximum allowed time in seconds. Set to <0 to disable. Default: 300 s */
+    float max_time;
 };
 typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
 
@@ -85,6 +91,8 @@ typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
         1, /* fa_mgroup */ \
         1, /* fa_mgroup_dead_end */ \
         1, /* disambiguation */ \
+        4ul * 1024ul * 1024ul * 1024ul, /* max_mem */ \
+        300.f, /* max_time */ \
     }
 
 struct pddl_strips_config {

@@ -234,8 +234,8 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
     if (strips->cfg.h_mutex > 0){
         if (!strips->cfg.prune.enable
                 || strips->cfg.prune.h_mutex < strips->cfg.h_mutex){
-            if (pddlMutexesHm(strips->cfg.h_mutex, strips,
-                              &strips->mutex, NULL) != 0){
+            if (pddlMutexesHm(&strips->mutex, strips->cfg.h_mutex, strips,
+                              NULL, 0, -1.) != 0){
                 pddlStripsDel(strips);
                 TRACE_RET(NULL);
             }
