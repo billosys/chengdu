@@ -17,6 +17,7 @@
  * See the License for more information.
  */
 
+#include <boruvka/timer.h>
 #include "pddl/strips.h"
 #include "pddl/mgroup.h"
 #include "pddl/mutex.h"
@@ -28,6 +29,31 @@
  *  Implemented in strips_irrelevance.c */
 int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
                                const pddl_strips_prune_config_t *cfg);
+
+static int checkTimer(bor_timer_t *timer,
+                      const pddl_strips_prune_config_t *cfg)
+{
+    if (cfg->max_time <= 0.f)
+        return 1;
+
+    borTimerStop(timer);
+    if (borTimerElapsedInSF(timer) > cfg->max_time)
+        return 0;
+    return 1;
+}
+
+static float timerRemaining(bor_timer_t *timer,
+                            const pddl_strips_prune_config_t *cfg)
+{
+    if (cfg->max_time <= 0.f)
+        return cfg->max_time;
+
+    borTimerStop(timer);
+    float r = cfg->max_time - borTimerElapsedInSF(timer);
+    if (r > 0)
+        return r;
+    return 0.0001f;
+}
 
 
 static int pruneOpWithMGroup(const pddl_mgroup_t *mg,
@@ -153,7 +179,8 @@ static int pruneOpArr(pddl_strips_t *strips,
 static int pruneHMutex(pddl_strips_t *strips,
                        const pddl_strips_prune_config_t *cfg,
                        int *prune_op,
-                       int *change_out)
+                       int *change_out,
+                       float max_time)
 {
     pddl_mutexes_t *mutex = &strips->mutex;
     int ret;
@@ -166,13 +193,19 @@ static int pruneHMutex(pddl_strips_t *strips,
     pddlMutexesInit(mutex);
     // TODO: max-time, max-mem
     if ((ret = pddlMutexesHm(mutex, cfg->h_mutex, strips, prune_op,
-                             cfg->max_mem, cfg->max_time)) == 0){
+                             cfg->max_mem, max_time)) == 0){
         change |= pruneOpArr(strips, prune_op);
     }
 
-    INFO("O: %d, F: %d :: h^%d mutexes (mutexes: %d, change: %d).",
-         strips->op.op_size, strips->fact.fact_size, cfg->h_mutex,
-         strips->mutex.mutex_size, change);
+    if (ret == -2){
+        INFO("O: %d, F: %d :: h^%d aborted due to exceeded time-limit",
+             strips->op.op_size, strips->fact.fact_size, cfg->h_mutex);
+        ret = 0;
+    }else{
+        INFO("O: %d, F: %d :: h^%d mutexes (mutexes: %d, change: %d).",
+             strips->op.op_size, strips->fact.fact_size, cfg->h_mutex,
+             strips->mutex.mutex_size, change);
+    }
 
     *change_out |= change;
     return ret;
@@ -312,12 +345,14 @@ static int disambiguate(pddl_strips_t *strips,
 int pddlStripsPrune(pddl_strips_t *strips,
                     const pddl_strips_prune_config_t *cfg)
 {
+    bor_timer_t timer;
     int change;
     int *prune_op;
 
     if (strips->goal_is_unreachable)
         return 0;
 
+    borTimerStart(&timer);
     INFO("O: %d, F: %d :: Start pruning of the STRIPS problem.",
          strips->op.op_size, strips->fact.fact_size);
     prune_op = BOR_ALLOC_ARR(int, strips->op.op_size);
@@ -329,10 +364,17 @@ int pddlStripsPrune(pddl_strips_t *strips,
                 change |= _pddlStripsPruneIrrelevant(strips, cfg);
 
             if (cfg->h_mutex > 0){
-                if (pruneHMutex(strips, cfg, prune_op, &change) != 0){
+                if (pruneHMutex(strips, cfg, prune_op, &change,
+                                timerRemaining(&timer, cfg)) != 0){
                     BOR_FREE(prune_op);
                     TRACE_RET(-1);
                 }
+            }
+            if (!checkTimer(&timer, cfg)){
+                INFO("  == Time limit for pruning exceeded (%f/%f)"
+                     " --> finishing the current cycle ==",
+                        borTimerElapsedInSF(&timer), cfg->max_time);
+                break;
             }
         } while (change);
 
@@ -369,6 +411,12 @@ int pddlStripsPrune(pddl_strips_t *strips,
         }
         if (cfg->fixpoint && change)
             INFO2("  == Fixpoint not reached, continuing to prune... ==");
+
+        if (!checkTimer(&timer, cfg)){
+            INFO("  == Time limit for pruning exceeded (%f/%f)",
+                 borTimerElapsedInSF(&timer), cfg->max_time);
+            break;
+        }
     } while (cfg->fixpoint && change && !strips->goal_is_unreachable);
 
     BOR_FREE(prune_op);

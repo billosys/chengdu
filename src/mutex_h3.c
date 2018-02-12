@@ -19,6 +19,7 @@
 
 #include <boruvka/compiler.h>
 #include <boruvka/alloc.h>
+#include <boruvka/timer.h>
 #include "pddl/strips.h"
 #include "pddl/mutex.h"
 #include "err.h"
@@ -109,6 +110,17 @@ _bor_inline void setRangeSet(set_range_t *s, int v)
     ++s->size;
 }
 
+static int checkTimer(bor_timer_t *timer, float max_time)
+{
+    if (max_time <= 0.f)
+        return 1;
+
+    borTimerStop(timer);
+    if (borTimerElapsedInSF(timer) > max_time)
+        return 0;
+    return 1;
+}
+
 struct h3 {
     char *meta_fact1;
     char *meta_fact2;
@@ -188,7 +200,6 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
     if (meta_fact3_size <= max_mem){
         h3->meta_fact3 = BOR_CALLOC_ARR(char, meta_fact3_size);
         max_mem -= meta_fact3_size;
-        INFO2("Using meta_fact3");
     }else{
         h3->meta_fact3_set = BOR_CALLOC_ARR(set_range_t,
                                             h3->fact_size * h3->fact_size);
@@ -206,7 +217,6 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
                 h3->op_fact1[opi * h3->fact_size + f] = -1;
         }
         max_mem -= op_fact1_size;
-        INFO2("Using op_fact1");
     }
 
     op_fact2_size  = h3->fact_size;
@@ -215,7 +225,6 @@ static void h3Init(h3_t *h3, const pddl_strips_t *strips,
     if (op_fact2_size <= max_mem){
         h3->op_fact2 = BOR_CALLOC_ARR(char, op_fact2_size);
         max_mem -= op_fact2_size;
-        INFO2("Using op_fact2");
     }
 
     h3->ext = BOR_ALLOC_ARR(int, h3->fact_size);
@@ -541,9 +550,9 @@ int _pddlMutexesH3(pddl_mutexes_t *ms,
                    size_t max_mem,
                    float max_time)
 {
-
+    bor_timer_t timer;
     h3_t h3;
-    int updated;
+    int updated, ret = 0;
     const pddl_strips_op_t *op;
     pddl_mutex_t *m;
     bor_iset_t mgroup;
@@ -551,9 +560,15 @@ int _pddlMutexesH3(pddl_mutexes_t *ms,
     if (strips->has_cond_eff)
         ERR_RET2(-1, "Conditional effects are not supported by h^3.");
 
+    borTimerStart(&timer);
     h3Init(&h3, strips, unreachable_ops, max_mem);
 
     do {
+        if (!checkTimer(&timer, max_time)){
+            ret = -2;
+            goto mutex_h3_end;
+        }
+
         updated = 0;
         PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op)
             updated |= applyOp(op, &h3);
@@ -601,7 +616,8 @@ int _pddlMutexesH3(pddl_mutexes_t *ms,
         }
     }
 
+mutex_h3_end:
     h3Free(&h3);
 
-    return 0;
+    return ret;
 }

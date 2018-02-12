@@ -18,6 +18,7 @@
  */
 
 #include <boruvka/alloc.h>
+#include <boruvka/timer.h>
 #include "pddl/strips.h"
 #include "pddl/mutex.h"
 #include "err.h"
@@ -32,6 +33,17 @@ struct h2 {
     const int *op_unreachable;
 };
 typedef struct h2 h2_t;
+
+static int checkTimer(bor_timer_t *timer, float max_time)
+{
+    if (max_time <= 0.f)
+        return 1;
+
+    borTimerStop(timer);
+    if (borTimerElapsedInSF(timer) > max_time)
+        return 0;
+    return 1;
+}
 
 static void h2Init(h2_t *h2, const pddl_strips_t *strips,
                    const int *unreachable_op,
@@ -174,8 +186,9 @@ int _pddlMutexesH2(pddl_mutexes_t *ms,
                    size_t max_mem,
                    float max_time)
 {
+    bor_timer_t timer;
     h2_t h2;
-    int updated;
+    int updated, ret = 0;
     const pddl_strips_op_t *op;
     pddl_mutex_t *m;
     bor_iset_t mgroup;
@@ -183,13 +196,18 @@ int _pddlMutexesH2(pddl_mutexes_t *ms,
     if (strips->has_cond_eff)
         ERR_RET2(-1, "Conditional effects are not supported by h^2.");
 
+    borTimerStart(&timer);
     h2Init(&h2, strips, unreachable_ops, max_mem);
 
     do {
-        updated = 0;
-        PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op){
-            updated |= applyOp(op, &h2);
+        if (!checkTimer(&timer, max_time)){
+            ret = -2;
+            goto mutex_h2_end;
         }
+
+        updated = 0;
+        PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op)
+            updated |= applyOp(op, &h2);
     } while (updated);
 
     if (ms != NULL){
@@ -215,7 +233,8 @@ int _pddlMutexesH2(pddl_mutexes_t *ms,
         }
     }
 
+mutex_h2_end:
     h2Free(&h2);
 
-    return 0;
+    return ret;
 }
