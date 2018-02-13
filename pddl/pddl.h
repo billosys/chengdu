@@ -65,7 +65,7 @@ typedef struct pddl_config pddl_config_t;
       PDDL_STRIPS_CONFIG_INIT, /* strips_cfg */ \
       \
       0, /* fdr */ \
-      PDDL_FDR_VARS_LARGEST_FIRST, /* fdr_vars_flags */ \
+      PDDL_FDR_VARS_ESSENTIAL_FIRST, /* fdr_vars_flags */ \
     }
 
 struct pddl {

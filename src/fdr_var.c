@@ -94,25 +94,50 @@ struct create {
     int next_id; /*!< Next free ID for assignement */
     bor_iset_t *mgroup; /*!< Sorted mutex groups */
     int mgroup_size; /*< Number of non-empty mutex groups */
+    bor_iset_t essential_facts;
 };
 typedef struct create create_t;
 
-static int cmpMGroup(const void *a, const void *b, void *_)
+static void initEssentialFacts(create_t *c)
 {
+    int *fact_mgroups;
+
+    fact_mgroups = BOR_CALLOC_ARR(int, c->strips->fact.fact_size);
+    for (int i = 0; i < c->mgroup_size; ++i){
+        int fact;
+        BOR_ISET_FOR_EACH(&c->mgroup[i], fact)
+            ++fact_mgroups[fact];
+    }
+
+    for (int f = 0; f < c->strips->fact.fact_size; ++f){
+        if (fact_mgroups[f] == 1)
+            borISetAdd(&c->essential_facts, f);
+    }
+
+    BOR_FREE(fact_mgroups);
+}
+
+static int cmpMGroup(const void *a, const void *b, void *_c)
+{
+    const create_t *c = _c;
     const bor_iset_t *i1 = a;
     const bor_iset_t *i2 = b;
-    if (i1->size == i2->size){
+    int ess1 = (borISetIsDisjunct(a, &c->essential_facts) ? 0 : 1);
+    int ess2 = (borISetIsDisjunct(b, &c->essential_facts) ? 0 : 1);
+    int cmp = ess2 - ess1;
+    if (cmp == 0)
+        cmp = borISetSize(i2) - borISetSize(i1);
+    if (cmp == 0){
         for (int i = 0; i < i1->size; ++i){
             if (i1->s[i] != i2->s[i])
                 return i1->s[i] - i2->s[i];
         }
-        return 0;
     }
-    return i2->size - i1->size;
+    return cmp;
 }
 
 static void createInit(create_t *c, const pddl_strips_t *strips,
-                       const pddl_mgroups_t *mg)
+                       const pddl_mgroups_t *mg, unsigned flags)
 {
     bor_iset_t single_facts;
     bor_iset_t bin_facts;
@@ -163,8 +188,12 @@ static void createInit(create_t *c, const pddl_strips_t *strips,
     }
     borISetFree(&single_facts);
 
+    borISetInit(&c->essential_facts);
+    if (flags == PDDL_FDR_VARS_ESSENTIAL_FIRST)
+        initEssentialFacts(c);
+
     // Sort mutex groups in descending order in their size
-    borSort(c->mgroup, c->mgroup_size, sizeof(bor_iset_t), cmpMGroup, NULL);
+    borSort(c->mgroup, c->mgroup_size, sizeof(bor_iset_t), cmpMGroup, c);
 }
 
 static void createFree(create_t *c)
@@ -258,7 +287,7 @@ static void substractMGroup(create_t *c, const bor_iset_t *mg)
 {
     for (int i = 0; i < c->mgroup_size; ++i)
         borISetMinus(c->mgroup + i, mg);
-    borSort(c->mgroup, c->mgroup_size, sizeof(bor_iset_t), cmpMGroup, NULL);
+    borSort(c->mgroup, c->mgroup_size, sizeof(bor_iset_t), cmpMGroup, c);
 
     // Remove empty sets that appear at the end of the array
     for (; c->mgroup_size > 0 && c->mgroup[c->mgroup_size - 1].size == 0;
@@ -266,15 +295,16 @@ static void substractMGroup(create_t *c, const bor_iset_t *mg)
         borISetFree(c->mgroup + c->mgroup_size - 1);
 }
 
-static void initLargestFirst(pddl_fdr_vars_t *vars,
-                             const pddl_strips_t *strips,
-                             const pddl_mgroups_t *mg)
+static void init(pddl_fdr_vars_t *vars,
+                 const pddl_strips_t *strips,
+                 const pddl_mgroups_t *mg,
+                 unsigned flags)
 {
     bor_iset_t mgroup;
     create_t c;
 
     borISetInit(&mgroup);
-    createInit(&c, strips, mg);
+    createInit(&c, strips, mg, flags);
     while (c.mgroup_size > 0){
         borISetEmpty(&mgroup);
         borISetUnion(&mgroup, c.mgroup + 0);
@@ -291,7 +321,7 @@ void pddlFDRVarsInit(pddl_fdr_vars_t *vars, const pddl_strips_t *strips,
     bzero(vars, sizeof(*vars));
     vars->strips_fact_id_to_val = BOR_CALLOC_ARR(pddl_fdr_val_t *,
                                                  strips->fact.fact_size);
-    initLargestFirst(vars, strips, mg);
+    init(vars, strips, mg, flags);
 }
 
 void pddlFDRVarsFree(pddl_fdr_vars_t *vars)
