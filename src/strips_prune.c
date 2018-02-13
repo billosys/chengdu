@@ -30,31 +30,87 @@
 int _pddlStripsPruneIrrelevant(pddl_strips_t *strips,
                                const pddl_strips_prune_config_t *cfg);
 
-static int checkTimer(bor_timer_t *timer,
-                      const pddl_strips_prune_config_t *cfg)
-{
-    if (cfg->max_time <= 0.f)
-        return 1;
 
-    borTimerStop(timer);
-    if (borTimerElapsedInSF(timer) > cfg->max_time)
-        return 0;
-    return 1;
+struct prune;
+
+/** Should return:
+ *      1  - for successful pruning
+ *      0  - for successful run without pruning
+ *      -1 - error
+ *      -2 - abort due to time limit
+ */
+typedef int (*prune_alg_fn)(struct prune *prune);
+
+struct alg {
+    prune_alg_fn fn;
+    int run; /*!< True if this algorithm should be run */
+};
+typedef struct alg alg_t;
+
+struct prune {
+    const pddl_strips_prune_config_t *cfg;
+    pddl_strips_t *strips;
+
+    alg_t alg[5];
+    int alg_size;
+
+    int *op; /*!< Pre-allocated array for operators */
+    bor_timer_t timer;
+    float time_elapsed;
+    float time_remain;
+};
+typedef struct prune prune_t;
+
+static int pruneOpArr(prune_t *prune)
+{
+    int change = 0;
+
+    for (int i = 0; i < prune->strips->op.op_size; ++i){
+        if (prune->op[i]){
+            change = 1;
+            break;
+        }
+    }
+
+    if (change)
+        pddlStripsOpsDelOps(&prune->strips->op, prune->op);
+    return change;
 }
 
-static float timerRemaining(bor_timer_t *timer,
-                            const pddl_strips_prune_config_t *cfg)
+static int pruneIrrelevance(prune_t *prune)
 {
-    if (cfg->max_time <= 0.f)
-        return cfg->max_time;
+    int ret;
 
-    borTimerStop(timer);
-    float r = cfg->max_time - borTimerElapsedInSF(timer);
-    if (r > 0)
-        return r;
-    return 0.0001f;
+    ret = _pddlStripsPruneIrrelevant(prune->strips, prune->cfg);
+    if (ret > 0)
+        ret = 1;
+    return ret;
 }
 
+static int pruneHMutex(prune_t *prune)
+{
+    pddl_strips_t *strips = prune->strips;
+    pddl_mutexes_t *mutex = &strips->mutex;
+    int ret;
+
+    // Reuse array for operators
+    bzero(prune->op, sizeof(int) * strips->op.op_size);
+
+    pddlMutexesFree(mutex);
+    pddlMutexesInit(mutex);
+    ret = pddlMutexesHm(mutex, prune->cfg->h_mutex, strips, prune->op,
+                        prune->cfg->max_mem, prune->time_remain);
+
+    if (ret == 0){
+        if (pruneOpArr(prune))
+            ret = 1;
+        INFO("O: %d, F: %d :: h^%d mutexes (mutexes: %d, change: %d).",
+             strips->op.op_size, strips->fact.fact_size, prune->cfg->h_mutex,
+             strips->mutex.mutex_size, ret);
+    }
+
+    return ret;
+}
 
 static int pruneOpWithMGroup(const pddl_mgroup_t *mg,
                              const bor_iset_t *mpre,
@@ -90,6 +146,9 @@ static int pruneWithMGroups(pddl_strips_t *strips,
     int change = 0;
     const pddl_mgroup_t *mg;
     bor_iset_t mpre, mdel, mpredel, madd;
+
+    // Reuse array for operators
+    bzero(prune_op, sizeof(int) * strips->op.op_size);
 
     borISetInit(&mpre);
     borISetInit(&mdel);
@@ -133,84 +192,29 @@ static int pruneWithMGroups(pddl_strips_t *strips,
     return change;
 }
 
-static int pruneFAMGroup(pddl_strips_t *strips,
-                         const pddl_strips_prune_config_t *cfg,
-                         int *prune_op,
-                         int *change_out)
+static int pruneFAMGroup(prune_t *prune)
 {
+    pddl_strips_t *strips = prune->strips;
     pddl_mgroups_t *mgroup = &strips->mgroup;
     int ret;
-    int change = 0;
-
-    // Reuse array for operators
-    bzero(prune_op, sizeof(int) * strips->op.op_size);
 
     pddlMGroupsFree(mgroup);
     pddlMGroupsInit(mgroup);
-    if ((ret = pddlMGroupsFA(strips, mgroup)) == 0)
-        change |= pruneWithMGroups(strips, mgroup, cfg, prune_op);
+    ret = pddlMGroupsFA(strips, mgroup);
 
-    // TODO: Count dead-end operators
-    INFO("O: %d, F: %d :: fam-groups (mgroups: %d, change: %d).",
-         strips->op.op_size, strips->fact.fact_size,
-         strips->mgroup.mgroup_size, change);
+    if (ret == 0){
+        if (pruneWithMGroups(strips, mgroup, prune->cfg, prune->op))
+            ret = 1;
 
-    *change_out |= change;
+        // TODO: Count dead-end operators
+        INFO("O: %d, F: %d :: fam-groups (mgroups: %d, change: %d).",
+             strips->op.op_size, strips->fact.fact_size,
+             strips->mgroup.mgroup_size, ret);
+        pddlMGroupsFinalize(&strips->mgroup, strips);
+    }
+
     return ret;
 }
-
-static int pruneOpArr(pddl_strips_t *strips,
-                      const int *prune_op)
-{
-    int change = 0;
-
-    for (int i = 0; i < strips->op.op_size; ++i){
-        if (prune_op[i]){
-            change = 1;
-            break;
-        }
-    }
-
-    if (change)
-        pddlStripsOpsDelOps(&strips->op, prune_op);
-    return change;
-}
-
-static int pruneHMutex(pddl_strips_t *strips,
-                       const pddl_strips_prune_config_t *cfg,
-                       int *prune_op,
-                       int *change_out,
-                       float max_time)
-{
-    pddl_mutexes_t *mutex = &strips->mutex;
-    int ret;
-    int change = 0;
-
-    // Reuse array for operators
-    bzero(prune_op, sizeof(int) * strips->op.op_size);
-
-    pddlMutexesFree(mutex);
-    pddlMutexesInit(mutex);
-    // TODO: max-time, max-mem
-    if ((ret = pddlMutexesHm(mutex, cfg->h_mutex, strips, prune_op,
-                             cfg->max_mem, max_time)) == 0){
-        change |= pruneOpArr(strips, prune_op);
-    }
-
-    if (ret == -2){
-        INFO("O: %d, F: %d :: h^%d aborted due to exceeded time-limit",
-             strips->op.op_size, strips->fact.fact_size, cfg->h_mutex);
-        ret = 0;
-    }else{
-        INFO("O: %d, F: %d :: h^%d mutexes (mutexes: %d, change: %d).",
-             strips->op.op_size, strips->fact.fact_size, cfg->h_mutex,
-             strips->mutex.mutex_size, change);
-    }
-
-    *change_out |= change;
-    return ret;
-}
-
 
 static bor_iset_t *mutexTableNew(const pddl_strips_t *strips)
 {
@@ -309,10 +313,9 @@ static int disambiguatePre(pddl_strips_op_t *op,
     return change;
 }
 
-static int disambiguate(pddl_strips_t *strips,
-                        const pddl_strips_prune_config_t *cfg,
-                        int *change_out)
+static int pruneDisambiguation(prune_t *prune)
 {
+    pddl_strips_t *strips = prune->strips;
     bor_iset_t *mutex;
     int ret;
     int change = 0;
@@ -329,101 +332,126 @@ static int disambiguate(pddl_strips_t *strips,
     ret = disambiguateSet(&strips->goal, mutex, &strips->mgroup);
     if (ret < 0){
         strips->goal_is_unreachable = 1;
-        change = 1;
+        ret = 0;
+        INFO("O: %d, F: %d :: Disambiguation done -- goal is unreachable.",
+             strips->op.op_size, strips->fact.fact_size);
     }else{
-        change |= ret;
+        ret |= change;
+        INFO("O: %d, F: %d :: Disambiguation done (change: %d).",
+             strips->op.op_size, strips->fact.fact_size, ret);
     }
 
-    INFO("O: %d, F: %d :: Disambiguation done (change: %d).",
-         strips->op.op_size, strips->fact.fact_size, change);
-
     mutexTableDel(mutex, strips);
-    *change_out |= change;
+    return ret;
+}
+
+static void updateTimer(prune_t *prune)
+{
+    borTimerStop(&prune->timer);
+    prune->time_elapsed = borTimerElapsedInSF(&prune->timer);
+
+    if (prune->cfg->max_time <= 0.f){
+        prune->time_remain = 1E10;
+    }else{
+        prune->time_remain = prune->cfg->max_time - prune->time_elapsed;
+    }
+}
+
+static void enableAlgs(prune_t *prune, int except)
+{
+    for (int i = 0; i < prune->alg_size; ++i){
+        if (i != except)
+            prune->alg[i].run = 1;
+    }
+}
+
+static void disableAllAlgs(prune_t *prune)
+{
+    for (int i = 0; i < prune->alg_size; ++i)
+        prune->alg[i].run = 0;
+}
+
+static void checkTimer(prune_t *prune)
+{
+    updateTimer(prune);
+
+    if (prune->time_remain < 0.f){
+        disableAllAlgs(prune);
+        INFO("  == Time limit for pruning was exceeded (%f/%f)",
+             prune->time_elapsed, prune->cfg->max_time);
+    }
+}
+
+static int pruneAlg(prune_t *prune, int alg_id)
+{
+    alg_t *alg = prune->alg + alg_id;
+    int ret;
+
+    updateTimer(prune);
+
+    alg->run = 0;
+    ret = alg->fn(prune);
+    if (ret == 1){
+        enableAlgs(prune, alg_id);
+
+    }else if (ret == -1){
+        TRACE_RET(-1);
+
+    }else if (ret == -2){
+        disableAllAlgs(prune);
+    }
+
+    checkTimer(prune);
+
     return 0;
 }
 
 int pddlStripsPrune(pddl_strips_t *strips,
                     const pddl_strips_prune_config_t *cfg)
 {
-    bor_timer_t timer;
-    int change;
-    int *prune_op;
+    prune_t prune;
+    int cont, ret = 0;
 
     if (strips->goal_is_unreachable)
         return 0;
 
-    borTimerStart(&timer);
-    INFO("O: %d, F: %d :: Start pruning of the STRIPS problem.",
-         strips->op.op_size, strips->fact.fact_size);
-    prune_op = BOR_ALLOC_ARR(int, strips->op.op_size);
+    prune.cfg = cfg;
+    prune.strips = strips;
+
+    prune.alg_size = 0;
+    if (cfg->irrelevance || cfg->static_facts)
+        prune.alg[prune.alg_size++].fn = pruneIrrelevance;
+    if (cfg->h_mutex > 0)
+        prune.alg[prune.alg_size++].fn = pruneHMutex;
+    if (cfg->fa_mgroup)
+        prune.alg[prune.alg_size++].fn = pruneFAMGroup;
+    if (cfg->disambiguation && cfg->fa_mgroup)
+        prune.alg[prune.alg_size++].fn = pruneDisambiguation;
+
+    for (int i = 0; i < prune.alg_size; ++i)
+        prune.alg[i].run = 1;
+
+    prune.op = BOR_ALLOC_ARR(int, strips->op.op_size);
+    borTimerStart(&prune.timer);
+    updateTimer(&prune);
 
     do {
-        do {
-            change = 0;
-            if (cfg->irrelevance || cfg->static_facts)
-                change |= _pddlStripsPruneIrrelevant(strips, cfg);
-
-            if (cfg->h_mutex > 0){
-                if (pruneHMutex(strips, cfg, prune_op, &change,
-                                timerRemaining(&timer, cfg)) != 0){
-                    BOR_FREE(prune_op);
-                    TRACE_RET(-1);
+        cont = 0;
+        for (int i = 0; i < prune.alg_size; ++i){
+            if (prune.alg[i].run){
+                if ((ret = pruneAlg(&prune, i)) != 0){
+                    cont = 0;
+                    break;
                 }
-            }
-            if (!checkTimer(&timer, cfg)){
-                INFO("  == Time limit for pruning exceeded (%f/%f)"
-                     " --> finishing the current cycle ==",
-                        borTimerElapsedInSF(&timer), cfg->max_time);
-                break;
-            }
-        } while (change);
-
-        // TODO: Disable this for now
-#if 0
-        if (cfg->h_mutex_bw > 0){
-            pddl_strips_t *dual = pddlStripsDual(strips);
-            bzero(prune_op, sizeof(int) * strips->op.op_size);
-            if (pddlMutexesHm(cfg->h_mutex_bw, dual, NULL, prune_op) != 0){
-                pddlMutexesFree(&mutex);
-                pddlMGroupsFree(&mgroup);
-                BOR_FREE(prune_op);
-                TRACE_RET(-1);
-            }
-            pddlStripsDel(dual);
-
-            pddlStripsOpsDelOps(&strips->op, prune_op);
-        }
-#endif
-
-        if (cfg->fa_mgroup){
-            if (pruneFAMGroup(strips, cfg, prune_op, &change) != 0){
-                BOR_FREE(prune_op);
-                TRACE_RET(-1);
-            }
-            pddlMGroupsFinalize(&strips->mgroup, strips);
-        }
-
-        if (cfg->disambiguation && cfg->fa_mgroup){
-            if (disambiguate(strips, cfg, &change) != 0){
-                BOR_FREE(prune_op);
-                TRACE_RET(-1);
+                cont = 1;
             }
         }
-        if (cfg->fixpoint && change)
-            INFO2("  == Fixpoint not reached, continuing to prune... ==");
+    } while (cfg->fixpoint && cont && !strips->goal_is_unreachable);
 
-        if (!checkTimer(&timer, cfg)){
-            INFO("  == Time limit for pruning exceeded (%f/%f)",
-                 borTimerElapsedInSF(&timer), cfg->max_time);
-            break;
-        }
-    } while (cfg->fixpoint && change && !strips->goal_is_unreachable);
+    if (ret == 0)
+        INFO2("The STRIPS problem is pruned.");
 
-    BOR_FREE(prune_op);
-
-    // TODO: remove identical/dominated operators
-    //       (don't forget to keep the one with the minimal cost)
-
-    INFO2("The STRIPS problem is pruned.");
-    return 0;
+    BOR_FREE(prune.op);
+    return ret;
 }
+
