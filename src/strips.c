@@ -328,6 +328,51 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
     return dual;
 }
 
+pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips)
+{
+    pddl_strips_t *bw = stripsNew();
+    pddl_strips_op_t op;
+    BOR_ISET(fset);
+
+    copyBasicInfo(bw, strips);
+    pddlFactsCopy(&bw->fact, &strips->fact);
+
+    // Keep goal specification and delete effects empty.
+
+    // Construct initial state as all facts minus the unreachable ones and
+    // minus mutexes with strips->goal.
+    for (int f = 0; f < bw->fact.fact_size; ++f){
+        BOR_ISET_SET(&fset, f);
+        if (pddlMutexesIsMutex(&strips->mutex, &fset))
+            continue;
+        if (!pddlMutexesIsMutexWithFact(&strips->mutex, f, &strips->goal))
+            borISetAdd(&bw->init, f);
+    }
+
+    // Create operators
+    for (int opi = 0; opi < strips->op.op_size; ++opi){
+        const pddl_strips_op_t *sop = strips->op.op[opi];
+        pddlStripsOpInit(&op);
+        pddlStripsOpCopy(&op, sop);
+
+        // Set precondition as prevail + add effect from sop
+        borISetMinus2(&fset, &sop->pre, &sop->del_eff);
+        borISetUnion2(&op.pre, &fset, &sop->add_eff);
+
+        // Set add effects as delete effects
+        borISetSet(&op.add_eff, &sop->del_eff);
+
+        // And set delete effects empty
+        borISetEmpty(&op.del_eff);
+
+        pddlStripsOpNormalize(&op);
+        pddlStripsOpsAdd(&bw->op, &op);
+        pddlStripsOpFree(&op);
+    }
+
+    return bw;
+}
+
 pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)
 {
     pddl_strips_t *s = stripsNew();

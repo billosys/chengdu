@@ -149,6 +149,11 @@ pddl_strips_t *pddlStripsClone(const pddl_strips_t *src);
 pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips);
 
 /**
+ * Creates a relaxed STRIPS for backward search.
+ */
+pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips);
+
+/**
  * Compile out conditional effects by making each conditional effect a
  * separate operator, i.e., the compilation is linear.
  * This transformation can be useful for a reachability analysis.
