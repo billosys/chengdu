@@ -212,6 +212,18 @@ int pddlMutexesIsMutexWithFact(const pddl_mutexes_t *ms,
     return isMutex2WithFact(ms, fact, f);
 }
 
+int pddlMutexesIsMutexPair(const pddl_mutexes_t *ms, int fact1, int fact2)
+{
+    if (fact1 >= ms->mutex2_map_fact_size)
+        return 0;
+    if (fact2 >= ms->mutex2_map_fact_size)
+        return 0;
+
+    if (ms->mutex2_map[fact1 * ms->mutex2_map_fact_size + fact2])
+        return 1;
+    return 0;
+}
+
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)
 {
     if (ms->mutex_size >= ms->mutex_alloc){
