@@ -151,7 +151,8 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips);
 /**
  * Creates a relaxed STRIPS for backward search.
  */
-pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips);
+pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips,
+                                         const pddl_mutexes_t *mutex);
 
 /**
  * Compile out conditional effects by making each conditional effect a

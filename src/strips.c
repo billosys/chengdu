@@ -443,12 +443,16 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
     return dual;
 }
 
-pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips)
+pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips,
+                                         const pddl_mutexes_t *mutex)
 {
     pddl_strips_t *bw = stripsNew();
     pddl_strips_op_t op;
     BOR_ISET(fset);
     int fact;
+
+    if (mutex == NULL)
+        mutex = &strips->mutex;
 
     copyBasicInfo(bw, strips);
     pddlFactsCopy(&bw->fact, &strips->fact);
@@ -459,9 +463,9 @@ pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips)
     // minus mutexes with strips->goal.
     for (int f = 0; f < bw->fact.fact_size; ++f){
         BOR_ISET_SET(&fset, f);
-        if (pddlMutexesIsMutex(&strips->mutex, &fset))
+        if (pddlMutexesIsMutex(mutex, &fset))
             continue;
-        if (!pddlMutexesIsMutexWithFact(&strips->mutex, f, &strips->goal))
+        if (!pddlMutexesIsMutexWithFact(mutex, f, &strips->goal))
             borISetAdd(&bw->init, f);
     }
 
@@ -485,7 +489,7 @@ pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips)
         borISetEmpty(&op.del_eff);
         BOR_ISET_FOR_EACH(&fset, fact){
             for (int f = 0; f < strips->fact.fact_size; ++f){
-                if (pddlMutexesIsMutexPair(&strips->mutex, fact, f))
+                if (pddlMutexesIsMutexPair(mutex, fact, f))
                     borISetAdd(&op.del_eff, f);
             }
         }
