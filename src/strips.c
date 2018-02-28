@@ -183,6 +183,121 @@ void pddlStripsCompleteMGroups(pddl_strips_t *strips)
     borISetFree(&all);
 }
 
+static bor_iset_t *mutexTableNew(int fact_size, const pddl_mutexes_t *mutex)
+{
+    bor_iset_t *table;
+    const pddl_mutex_t *m;
+
+    table = BOR_CALLOC_ARR(bor_iset_t, fact_size);
+    PDDL_MUTEXES_FOR_EACH(mutex, m){
+        const bor_iset_t *f = &m->fact;
+        if (borISetSize(f) == 2){
+            borISetAdd(&table[borISetGet(f, 0)], borISetGet(f, 1));
+            borISetAdd(&table[borISetGet(f, 1)], borISetGet(f, 0));
+        }
+    }
+
+    return table;
+}
+
+static void mutexTableDel(bor_iset_t *t, int fact_size)
+{
+    for (int i = 0; i < fact_size; ++i)
+        borISetFree(t + i);
+    if (t != NULL)
+        BOR_FREE(t);
+}
+
+static int disambiguateSet(bor_iset_t *set,
+                           const bor_iset_t *mutex,
+                           const pddl_mgroups_t *mgroups)
+{
+    bor_iset_t mutex_facts;
+    bor_iset_t remain;
+    int fact_id;
+    int change = 0, local_change;
+    const pddl_mgroup_t *mg;
+
+    borISetInit(&mutex_facts);
+    BOR_ISET_FOR_EACH(set, fact_id)
+        borISetUnion(&mutex_facts, &mutex[fact_id]);
+
+    borISetInit(&remain);
+    do {
+        local_change = 0;
+        PDDL_MGROUPS_FOR_EACH(mgroups, mg){
+            if (!mg->is_exactly_1)
+                continue;
+            borISetMinus2(&remain, &mg->fact, &mutex_facts);
+            if (borISetSize(&remain) == 0){
+                borISetFree(&remain);
+                borISetFree(&mutex_facts);
+                return -1;
+            }
+            if (borISetSize(&remain) == 1
+                    && !borISetIn(borISetGet(&remain, 0), set)){
+                borISetAdd(set, borISetGet(&remain, 0));
+                borISetUnion(&mutex_facts, &mutex[borISetGet(&remain, 0)]);
+                change = local_change = 1;
+            }
+        }
+    } while (local_change);
+
+
+    borISetFree(&remain);
+    borISetFree(&mutex_facts);
+
+    return change;
+}
+
+static int disambiguatePre(pddl_strips_op_t *op,
+                           const bor_iset_t *mutex,
+                           const pddl_mgroups_t *mgroups)
+{
+    int change;
+
+    change = disambiguateSet(&op->pre, mutex, mgroups);
+    ASSERT(change >= 0);
+    if (change)
+        pddlStripsOpNormalize(op);
+
+    return change;
+}
+
+int pddlStripsDisambiguate(pddl_strips_t *strips,
+                           const pddl_mutexes_t *mutexes,
+                           const pddl_mgroups_t *mgroups)
+{
+    bor_iset_t *mutex_table;
+    int ret;
+    int change = 0;
+
+    if (mgroups->mgroup_size == 0)
+        return 0;
+
+    // TODO
+    mutex_table = mutexTableNew(strips->fact.fact_size, mutexes);
+    for (int oi = 0; oi < strips->op.op_size; ++oi){
+        pddl_strips_op_t *op = strips->op.op[oi];
+        change |= disambiguatePre(op, mutex_table, mgroups);
+    }
+
+    ret = disambiguateSet(&strips->goal, mutex_table, mgroups);
+    if (ret < 0){
+        strips->goal_is_unreachable = 1;
+        ret = 0;
+        INFO("O: %d, F: %d :: Disambiguation done -- goal is unreachable.",
+             strips->op.op_size, strips->fact.fact_size);
+    }else{
+        ret |= change;
+        INFO("O: %d, F: %d :: Disambiguation done (change: %d).",
+             strips->op.op_size, strips->fact.fact_size, ret);
+    }
+
+    mutexTableDel(mutex_table, strips->fact.fact_size);
+    return ret;
+}
+
 pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
                              const pddl_strips_config_t *cfg)
 {

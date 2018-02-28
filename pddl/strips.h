@@ -181,6 +181,20 @@ int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips);
 void pddlStripsCompleteMGroups(pddl_strips_t *strips);
 
 /**
+ * Disambiguate operators using mutexes and mutex groups (mutex groups are
+ * used instead of domains in FDR).
+ * Returns true if any disambiguation happened.
+ *
+ * Alcázar, V., Borrajo, D., Fernández, S., & Fuentetaja, R. (2013).
+ * Revisiting regression in planning. In Proceedings of the Twenty-Third
+ * International Joint Conference on Artificial Intelligence (IJCAI), pp.
+ * 2254–2260.
+ */
+int pddlStripsDisambiguate(pddl_strips_t *strips,
+                           const pddl_mutexes_t *mutex,
+                           const pddl_mgroups_t *mgroup);
+
+/**
  * Writes IDs of operators to the corresponding fact elements.
  * fact_arr is a beggining of the array containing structures containing
  * bor_iset_t elements where IDs are written.
