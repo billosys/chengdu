@@ -192,7 +192,7 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
         // applied.
         BOR_ISET_FOR_EACH(&op->add_eff, f1){
             BOR_ISET_FOR_EACH(&op->add_eff, f2){
-                updated = setReached(h2, f1, f2);
+                updated |= setReached(h2, f1, f2);
             }
         }
         // This needs to be set here because isApplicable2 depends on it
@@ -208,7 +208,7 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
             if (op_fact != NULL)
                 op_fact[fact_id] = 1;
             BOR_ISET_FOR_EACH(&op->add_eff, f1)
-                updated = setReached(h2, f1, fact_id);
+                updated |= setReached(h2, f1, fact_id);
         }
     }
 
