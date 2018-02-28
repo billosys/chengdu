@@ -333,6 +333,7 @@ pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips)
     pddl_strips_t *bw = stripsNew();
     pddl_strips_op_t op;
     BOR_ISET(fset);
+    int fact;
 
     copyBasicInfo(bw, strips);
     pddlFactsCopy(&bw->fact, &strips->fact);
@@ -362,8 +363,17 @@ pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips)
         // Set add effects as delete effects
         borISetSet(&op.add_eff, &sop->del_eff);
 
-        // And set delete effects empty
+        // Set delete effect as facts that are e-deleted by prevails and
+        // and add effects
+        borISetMinus2(&fset, &sop->pre, &sop->del_eff);
+        borISetUnion(&fset, &op.add_eff);
         borISetEmpty(&op.del_eff);
+        BOR_ISET_FOR_EACH(&fset, fact){
+            for (int f = 0; f < strips->fact.fact_size; ++f){
+                if (pddlMutexesIsMutexBetweenTwoFacts(&strips->mutex, fact, f))
+                    borISetAdd(&op.del_eff, f);
+            }
+        }
 
         pddlStripsOpNormalize(&op);
         pddlStripsOpsAdd(&bw->op, &op);
