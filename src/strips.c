@@ -485,7 +485,7 @@ pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips)
         borISetEmpty(&op.del_eff);
         BOR_ISET_FOR_EACH(&fset, fact){
             for (int f = 0; f < strips->fact.fact_size; ++f){
-                if (pddlMutexesIsMutexBetweenTwoFacts(&strips->mutex, fact, f))
+                if (pddlMutexesIsMutexPair(&strips->mutex, fact, f))
                     borISetAdd(&op.del_eff, f);
             }
         }
