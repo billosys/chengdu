@@ -272,6 +272,11 @@ int pddlStripsDisambiguate(pddl_strips_t *strips,
     int ret;
     int change = 0;
 
+    if (mutexes == NULL)
+        mutexes = &strips->mutex;
+    if (mgroups == NULL)
+        mgroups = &strips->mgroup;
+
     if (mgroups->mgroup_size == 0)
         return 0;
 
@@ -384,21 +389,10 @@ void pddlStripsDel(pddl_strips_t *strips)
 
 pddl_strips_t *pddlStripsClone(const pddl_strips_t *src)
 {
-    pddl_strips_t *dst;
-    dst = BOR_ALLOC(pddl_strips_t);
+    pddl_strips_t *dst = stripsNew();
 
-    bzero(dst, sizeof(*dst));
+    copyBasicInfo(dst, src);
     dst->cfg = src->cfg;
-    if (src->domain_name != NULL)
-        dst->domain_name = BOR_STRDUP(src->domain_name);
-    if (src->problem_name != NULL)
-        dst->problem_name = BOR_STRDUP(src->problem_name);
-    if (src->domain_file != NULL)
-        dst->domain_file = BOR_STRDUP(src->domain_file);
-    if (src->problem_file != NULL)
-        dst->problem_file = BOR_STRDUP(src->problem_file);
-    pddlFactsInit(&dst->fact);
-    pddlStripsOpsInit(&dst->op);
 
     pddlFactsCopy(&dst->fact, &src->fact);
     pddlStripsOpsCopy(&dst->op, &src->op);
@@ -443,8 +437,8 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
     return dual;
 }
 
-pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips,
-                                         const pddl_mutexes_t *mutex)
+pddl_strips_t *pddlStripsBackward(const pddl_strips_t *strips,
+                                  const pddl_mutexes_t *mutex)
 {
     pddl_strips_t *bw = stripsNew();
     pddl_strips_op_t op;
@@ -456,6 +450,8 @@ pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips,
 
     copyBasicInfo(bw, strips);
     pddlFactsCopy(&bw->fact, &strips->fact);
+    pddlMutexesCopy(&bw->mutex, &strips->mutex);
+    pddlMGroupsCopy(&bw->mgroup, &strips->mgroup);
 
     // Keep goal specification and delete effects empty.
 
@@ -498,6 +494,8 @@ pddl_strips_t *pddlStripsRelaxedBackward(const pddl_strips_t *strips,
         pddlStripsOpsAdd(&bw->op, &op);
         pddlStripsOpFree(&op);
     }
+
+    borISetFree(&fset);
 
     return bw;
 }
