@@ -296,7 +296,6 @@ void pddlMGroupsCopy(pddl_mgroups_t *dst, const pddl_mgroups_t *src)
     const pddl_mgroup_t *sm;
     pddl_mgroup_t *dm;
 
-    pddlMGroupsInit(dst);
     PDDL_MGROUPS_FOR_EACH(src, sm){
         dm = pddlMGroupsAdd(dst, &sm->fact);
         dm->none_of_those = sm->none_of_those;
