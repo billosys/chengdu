@@ -280,7 +280,6 @@ int pddlStripsDisambiguate(pddl_strips_t *strips,
     if (mgroups->mgroup_size == 0)
         return 0;
 
-    // TODO
     mutex_table = mutexTableNew(strips->fact.fact_size, mutexes);
     for (int oi = 0; oi < strips->op.op_size; ++oi){
         pddl_strips_op_t *op = strips->op.op[oi];
