@@ -23,7 +23,9 @@
 #include "pddl/mutex.h"
 #include "err.h"
 
-#define FACT(h2, x, y) ((h2)->fact[(x) * (h2)->fact_size + (y)])
+#define REACHED 1
+#define MUTEX -1
+#define _FACT(h2, x, y) ((h2)->fact[(x) * (h2)->fact_size + (y)])
 
 struct h2 {
     char *fact;
@@ -33,6 +35,30 @@ struct h2 {
     const int *op_unreachable;
 };
 typedef struct h2 h2_t;
+
+_bor_inline int setReached(h2_t *h2, int f1, int f2)
+{
+    if (_FACT(h2, f1, f2) == 0){
+        _FACT(h2, f1, f2) = _FACT(h2, f2, f1) = REACHED;
+        return 1;
+    }
+    return 0;
+}
+
+_bor_inline void setMutex(h2_t *h2, int f1, int f2)
+{
+    _FACT(h2, f1, f2) = _FACT(h2, f2, f1) = MUTEX;
+}
+
+_bor_inline int isReached(const h2_t *h2, int f1, int f2)
+{
+    return _FACT(h2, f1, f2) == REACHED;
+}
+
+_bor_inline int isMutex(const h2_t *h2, int f1, int f2)
+{
+    return _FACT(h2, f1, f2) == MUTEX;
+}
 
 static int checkTimer(bor_timer_t *timer, float max_time)
 {
@@ -45,12 +71,15 @@ static int checkTimer(bor_timer_t *timer, float max_time)
     return 1;
 }
 
-static void h2Init(h2_t *h2, const pddl_strips_t *strips,
+static void h2Init(h2_t *h2,
+                   const pddl_strips_t *strips,
+                   const pddl_mutexes_t *mutexes,
                    const int *unreachable_op,
                    size_t max_mem)
 {
     int f1, f2;
     size_t op_fact_size;
+    const pddl_mutex_t *mutex;
 
     bzero(h2, sizeof(*h2));
     h2->fact_size = strips->fact.fact_size;
@@ -76,9 +105,22 @@ static void h2Init(h2_t *h2, const pddl_strips_t *strips,
         }
     }
 
+    // Copy mutexes into the table
+    PDDL_MUTEXES_FOR_EACH(mutexes, mutex){
+        if (borISetSize(&mutex->fact) == 1){
+            f1 = borISetGet(&mutex->fact, 0);
+            setMutex(h2, f1, f1);
+        }else if (borISetSize(&mutex->fact) == 2){
+            f1 = borISetGet(&mutex->fact, 0);
+            f2 = borISetGet(&mutex->fact, 1);
+            setMutex(h2, f1, f2);
+        }
+    }
+
+    // Set up initial state
     BOR_ISET_FOR_EACH(&strips->init, f1){
         BOR_ISET_FOR_EACH(&strips->init, f2){
-            FACT(h2, f1, f2) = 1;
+            setReached(h2, f1, f2);
         }
     }
 }
@@ -105,7 +147,7 @@ static int isApplicable(const pddl_strips_op_t *op, h2_t *h2)
 
     BOR_ISET_FOR_EACH(&op->pre, f1){
         BOR_ISET_FOR_EACH(&op->pre, f2){
-            if (!FACT(h2, f1, f2))
+            if (!isReached(h2, f1, f2))
                 return 0;
         }
     }
@@ -122,13 +164,13 @@ static int isApplicable2(const pddl_strips_op_t *op, int fact_id, h2_t *h2)
         return 0;
     if (!h2->op_applied[op->id])
         return 0;
-    if (!FACT(h2, fact_id, fact_id))
+    if (!isReached(h2, fact_id, fact_id))
         return 0;
     if (borISetHas(&op->add_eff, fact_id) || borISetHas(&op->del_eff, fact_id))
         return 0;
 
     BOR_ISET_FOR_EACH(&op->pre, f1){
-        if (!FACT(h2, f1, fact_id))
+        if (!isReached(h2, f1, fact_id))
             return 0;
     }
 
@@ -150,15 +192,12 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
         // applied.
         BOR_ISET_FOR_EACH(&op->add_eff, f1){
             BOR_ISET_FOR_EACH(&op->add_eff, f2){
-                if (!FACT(h2, f1, f2)){
-                    FACT(h2, f1, f2) = FACT(h2, f2, f1) = 1;
-                    updated = 1;
-                }
+                updated |= setReached(h2, f1, f2);
             }
         }
+        // This needs to be set here because isApplicable2 depends on it
+        h2->op_applied[op->id] = 1;
     }
-    // This needs to be set here because isApplicable2 depends on it
-    h2->op_applied[op->id] = 1;
 
     for (int fact_id = 0; fact_id < h2->fact_size; ++fact_id){
         if (h2->op_fact != NULL)
@@ -168,12 +207,8 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
         if (isApplicable2(op, fact_id, h2)){
             if (op_fact != NULL)
                 op_fact[fact_id] = 1;
-            BOR_ISET_FOR_EACH(&op->add_eff, f1){
-                if (!FACT(h2, f1, fact_id)){
-                    FACT(h2, f1, fact_id) = FACT(h2, fact_id, f1) = 1;
-                    updated = 1;
-                }
-            }
+            BOR_ISET_FOR_EACH(&op->add_eff, f1)
+                updated |= setReached(h2, f1, fact_id);
         }
     }
 
@@ -197,7 +232,7 @@ int _pddlMutexesH2(pddl_mutexes_t *ms,
         ERR_RET2(-1, "Conditional effects are not supported by h^2.");
 
     borTimerStart(&timer);
-    h2Init(&h2, strips, unreachable_ops, max_mem);
+    h2Init(&h2, strips, ms, unreachable_ops, max_mem);
 
     do {
         if (!checkTimer(&timer, max_time)){
@@ -214,7 +249,7 @@ int _pddlMutexesH2(pddl_mutexes_t *ms,
         borISetInit(&mgroup);
         for (int f1 = 0; f1 < h2.fact_size; ++f1){
             for (int f2 = f1; f2 < h2.fact_size; ++f2){
-                if (!FACT(&h2, f1, f2)){
+                if (!isReached(&h2, f1, f2) && !isMutex(&h2, f1, f2)){
                     borISetEmpty(&mgroup);
                     borISetAdd(&mgroup, f1);
                     borISetAdd(&mgroup, f2);

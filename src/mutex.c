@@ -114,21 +114,11 @@ void pddlMutexesCopy(pddl_mutexes_t *dst, const pddl_mutexes_t *src)
 {
     const pddl_mutex_t *sm;
     pddl_mutex_t *dm;
-    int size;
-
-    pddlMutexesInit(dst);
 
     PDDL_MUTEXES_FOR_EACH(src, sm){
         dm = pddlMutexesAdd(dst, &sm->fact);
         dm->hm = sm->hm;
     }
-
-    dst->has_3 = src->has_3;
-    dst->mutex2_map_fact_size = src->mutex2_map_fact_size;
-    size = dst->mutex2_map_fact_size * dst->mutex2_map_fact_size;
-    dst->mutex2_map = BOR_ALLOC_ARR(char, size);
-    for (int i = 0; i < size; ++i)
-        dst->mutex2_map[i] = src->mutex2_map[i];
 }
 
 static int isMutex3(const pddl_mutexes_t *ms, const bor_iset_t *facts)
@@ -210,6 +200,18 @@ int pddlMutexesIsMutexWithFact(const pddl_mutexes_t *ms,
                                int fact, const bor_iset_t *f)
 {
     return isMutex2WithFact(ms, fact, f);
+}
+
+int pddlMutexesIsMutexPair(const pddl_mutexes_t *ms, int fact1, int fact2)
+{
+    if (fact1 >= ms->mutex2_map_fact_size)
+        return 0;
+    if (fact2 >= ms->mutex2_map_fact_size)
+        return 0;
+
+    if (ms->mutex2_map[fact1 * ms->mutex2_map_fact_size + fact2])
+        return 1;
+    return 0;
 }
 
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m)

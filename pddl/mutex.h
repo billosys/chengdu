@@ -98,13 +98,18 @@ int pddlMutexesIsMutexWithFact(const pddl_mutexes_t *ms,
                                int fact, const bor_iset_t *f);
 
 /**
+ * Returns true if {fact1, fact2} is a mutex.
+ */
+int pddlMutexesIsMutexPair(const pddl_mutexes_t *ms, int fact1, int fact2);
+
+/**
  * Adds a new mutex consisting of the given facts.
  */
 pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m);
 
 /**
  * Finds h^m mutexes and store them in ms.
- * In unreachable_ops is non-NULL it is used as in/out map of operators:
+ * If unreachable_ops is non-NULL it is used as in/out map of operators:
  *   - only the operators with the false value are used
  *   - all unused (i.e., unreachable) operators are marked with true value
  * Does not work with conditional effects, but they can be compiled away.
@@ -115,7 +120,6 @@ int pddlMutexesHm(pddl_mutexes_t *ms,
                   int *unreachable_ops,
                   size_t max_mem,
                   float max_time);
-
 
 /**
  * Remove h^m mutexes larger than max_m.

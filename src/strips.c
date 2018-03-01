@@ -183,6 +183,125 @@ void pddlStripsCompleteMGroups(pddl_strips_t *strips)
     borISetFree(&all);
 }
 
+static bor_iset_t *mutexTableNew(int fact_size, const pddl_mutexes_t *mutex)
+{
+    bor_iset_t *table;
+    const pddl_mutex_t *m;
+
+    table = BOR_CALLOC_ARR(bor_iset_t, fact_size);
+    PDDL_MUTEXES_FOR_EACH(mutex, m){
+        const bor_iset_t *f = &m->fact;
+        if (borISetSize(f) == 2){
+            borISetAdd(&table[borISetGet(f, 0)], borISetGet(f, 1));
+            borISetAdd(&table[borISetGet(f, 1)], borISetGet(f, 0));
+        }
+    }
+
+    return table;
+}
+
+static void mutexTableDel(bor_iset_t *t, int fact_size)
+{
+    for (int i = 0; i < fact_size; ++i)
+        borISetFree(t + i);
+    if (t != NULL)
+        BOR_FREE(t);
+}
+
+static int disambiguateSet(bor_iset_t *set,
+                           const bor_iset_t *mutex,
+                           const pddl_mgroups_t *mgroups)
+{
+    bor_iset_t mutex_facts;
+    bor_iset_t remain;
+    int fact_id;
+    int change = 0, local_change;
+    const pddl_mgroup_t *mg;
+
+    borISetInit(&mutex_facts);
+    BOR_ISET_FOR_EACH(set, fact_id)
+        borISetUnion(&mutex_facts, &mutex[fact_id]);
+
+    borISetInit(&remain);
+    do {
+        local_change = 0;
+        PDDL_MGROUPS_FOR_EACH(mgroups, mg){
+            if (!mg->is_exactly_1)
+                continue;
+            borISetMinus2(&remain, &mg->fact, &mutex_facts);
+            if (borISetSize(&remain) == 0){
+                borISetFree(&remain);
+                borISetFree(&mutex_facts);
+                return -1;
+            }
+            if (borISetSize(&remain) == 1
+                    && !borISetIn(borISetGet(&remain, 0), set)){
+                borISetAdd(set, borISetGet(&remain, 0));
+                borISetUnion(&mutex_facts, &mutex[borISetGet(&remain, 0)]);
+                change = local_change = 1;
+            }
+        }
+    } while (local_change);
+
+
+    borISetFree(&remain);
+    borISetFree(&mutex_facts);
+
+    return change;
+}
+
+static int disambiguatePre(pddl_strips_op_t *op,
+                           const bor_iset_t *mutex,
+                           const pddl_mgroups_t *mgroups)
+{
+    int change;
+
+    change = disambiguateSet(&op->pre, mutex, mgroups);
+    ASSERT(change >= 0);
+    if (change)
+        pddlStripsOpNormalize(op);
+
+    return change;
+}
+
+int pddlStripsDisambiguate(pddl_strips_t *strips,
+                           const pddl_mutexes_t *mutexes,
+                           const pddl_mgroups_t *mgroups)
+{
+    bor_iset_t *mutex_table;
+    int ret;
+    int change = 0;
+
+    if (mutexes == NULL)
+        mutexes = &strips->mutex;
+    if (mgroups == NULL)
+        mgroups = &strips->mgroup;
+
+    if (mgroups->mgroup_size == 0)
+        return 0;
+
+    mutex_table = mutexTableNew(strips->fact.fact_size, mutexes);
+    for (int oi = 0; oi < strips->op.op_size; ++oi){
+        pddl_strips_op_t *op = strips->op.op[oi];
+        change |= disambiguatePre(op, mutex_table, mgroups);
+    }
+
+    ret = disambiguateSet(&strips->goal, mutex_table, mgroups);
+    if (ret < 0){
+        strips->goal_is_unreachable = 1;
+        ret = 0;
+        INFO("O: %d, F: %d :: Disambiguation done -- goal is unreachable.",
+             strips->op.op_size, strips->fact.fact_size);
+    }else{
+        ret |= change;
+        INFO("O: %d, F: %d :: Disambiguation done (change: %d).",
+             strips->op.op_size, strips->fact.fact_size, ret);
+    }
+
+    mutexTableDel(mutex_table, strips->fact.fact_size);
+    return ret;
+}
+
 pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
                              const pddl_strips_config_t *cfg)
 {
@@ -269,21 +388,10 @@ void pddlStripsDel(pddl_strips_t *strips)
 
 pddl_strips_t *pddlStripsClone(const pddl_strips_t *src)
 {
-    pddl_strips_t *dst;
-    dst = BOR_ALLOC(pddl_strips_t);
+    pddl_strips_t *dst = stripsNew();
 
-    bzero(dst, sizeof(*dst));
+    copyBasicInfo(dst, src);
     dst->cfg = src->cfg;
-    if (src->domain_name != NULL)
-        dst->domain_name = BOR_STRDUP(src->domain_name);
-    if (src->problem_name != NULL)
-        dst->problem_name = BOR_STRDUP(src->problem_name);
-    if (src->domain_file != NULL)
-        dst->domain_file = BOR_STRDUP(src->domain_file);
-    if (src->problem_file != NULL)
-        dst->problem_file = BOR_STRDUP(src->problem_file);
-    pddlFactsInit(&dst->fact);
-    pddlStripsOpsInit(&dst->op);
 
     pddlFactsCopy(&dst->fact, &src->fact);
     pddlStripsOpsCopy(&dst->op, &src->op);
@@ -326,6 +434,69 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
     dual->has_cond_eff = strips->has_cond_eff;
 
     return dual;
+}
+
+pddl_strips_t *pddlStripsBackward(const pddl_strips_t *strips,
+                                  const pddl_mutexes_t *mutex)
+{
+    pddl_strips_t *bw = stripsNew();
+    pddl_strips_op_t op;
+    BOR_ISET(fset);
+    int fact;
+
+    if (mutex == NULL)
+        mutex = &strips->mutex;
+
+    copyBasicInfo(bw, strips);
+    pddlFactsCopy(&bw->fact, &strips->fact);
+    pddlMutexesCopy(&bw->mutex, &strips->mutex);
+    pddlMGroupsCopy(&bw->mgroup, &strips->mgroup);
+
+    // Keep goal specification and delete effects empty.
+
+    // Construct initial state as all facts minus the unreachable ones and
+    // minus mutexes with strips->goal.
+    for (int f = 0; f < bw->fact.fact_size; ++f){
+        BOR_ISET_SET(&fset, f);
+        if (pddlMutexesIsMutex(mutex, &fset))
+            continue;
+        if (!pddlMutexesIsMutexWithFact(mutex, f, &strips->goal))
+            borISetAdd(&bw->init, f);
+    }
+
+    // Create operators
+    for (int opi = 0; opi < strips->op.op_size; ++opi){
+        const pddl_strips_op_t *sop = strips->op.op[opi];
+        pddlStripsOpInit(&op);
+        pddlStripsOpCopy(&op, sop);
+
+        // Set precondition as prevail + add effect from sop
+        borISetMinus2(&fset, &sop->pre, &sop->del_eff);
+        borISetUnion2(&op.pre, &fset, &sop->add_eff);
+
+        // Set add effects as delete effects
+        borISetSet(&op.add_eff, &sop->del_eff);
+
+        // Set delete effect as facts that are e-deleted by prevails and
+        // and add effects
+        borISetMinus2(&fset, &sop->pre, &sop->del_eff);
+        borISetUnion(&fset, &op.add_eff);
+        borISetEmpty(&op.del_eff);
+        BOR_ISET_FOR_EACH(&fset, fact){
+            for (int f = 0; f < strips->fact.fact_size; ++f){
+                if (pddlMutexesIsMutexPair(mutex, fact, f))
+                    borISetAdd(&op.del_eff, f);
+            }
+        }
+
+        pddlStripsOpNormalize(&op);
+        pddlStripsOpsAdd(&bw->op, &op);
+        pddlStripsOpFree(&op);
+    }
+
+    borISetFree(&fset);
+
+    return bw;
 }
 
 pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)
