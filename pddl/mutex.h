@@ -109,12 +109,19 @@ pddl_mutex_t *pddlMutexesAdd(pddl_mutexes_t *ms, const bor_iset_t *m);
 
 /**
  * Finds h^m mutexes and store them in ms.
- * If unreachable_ops is non-NULL it is used as in/out map of operators:
- *   - only the operators with the false value are used
- *   - all unused (i.e., unreachable) operators are marked with true value
+ *   - mutexes: in/out parameter, the stored mutexes are used for
+ *              initialization and the newly inferred mutexes are
+ *              stored there.
+ *   - m: parameter in h^m, currently supported only 2 and 3
+ *   - strips: STRIPS problem
+ *   - unreachable_ops: in/out parameter; if set to non-NULL, then only the
+ *                      operators with the value set to false are used and
+ *                      the operators that were not used are at the end set
+ *                      to true.
+ *   - max_mem/max_time: memory and time limits.
  * Does not work with conditional effects, but they can be compiled away.
  */
-int pddlMutexesHm(pddl_mutexes_t *ms,
+int pddlMutexesHm(pddl_mutexes_t *mutexes,
                   int m,
                   const pddl_strips_t *strips,
                   int *unreachable_ops,
