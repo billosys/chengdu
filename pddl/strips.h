@@ -92,7 +92,7 @@ typedef struct pddl_strips_prune_config pddl_strips_prune_config_t;
         1, /* fa_mgroup_dead_end */ \
         1, /* disambiguation */ \
         4ul * 1024ul * 1024ul * 1024ul, /* max_mem */ \
-        300.f, /* max_time */ \
+        -1.f, /* max_time */ \
     }
 
 struct pddl_strips_config {
