@@ -523,7 +523,7 @@ void pddlNormalize(pddl_t *pddl)
         pddlActionNormalize(pddl->action.action + i, pddl);
 
     for (i = 0; i < pddl->action.size; ++i)
-        pddlActionSplit(pddl->action.action + i, &pddl->action);
+        pddlActionSplit(pddl->action.action + i, pddl);
 
     removeIrrelevantActions(pddl);
 
@@ -547,6 +547,8 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
     int change;
 
     do {
+        INFO("Compiling away conditional effects (actions: %d)",
+             pddl->action.size);
         change = 0;
         pddlNormalize(pddl);
 
@@ -589,6 +591,7 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
             }
         }
     } while (change);
+    INFO("Conditional effects compiled away (actions: %d).", pddl->action.size);
 }
 
 int pddlPredFuncMaxParamSize(const pddl_t *pddl)

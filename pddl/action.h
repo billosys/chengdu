@@ -85,7 +85,7 @@ pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
 /**
  * Split all actions by disjunctions in .pre assuming all .pre are in DNF.
  */
-void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as);
+void pddlActionSplit(pddl_action_t *a, pddl_t *pddl);
 
 /**
  * Check that all actions has only a flat conjuction as its precondition.

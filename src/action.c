@@ -190,8 +190,9 @@ void pddlActionsFree(pddl_actions_t *actions)
         BOR_FREE(actions->action);
 }
 
-void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as)
+void pddlActionSplit(pddl_action_t *a, pddl_t *pddl)
 {
+    pddl_actions_t *as = &pddl->action;
     pddl_action_t *newa;
     pddl_cond_part_t *pre;
     pddl_cond_t *first_cond, *cond;
@@ -217,8 +218,10 @@ void pddlActionSplit(pddl_action_t *a, pddl_actions_t *as)
         newa = pddlActionsAdd(as);
         pddlActionCopy(newa, as->action + aidx);
         newa->pre = cond;
+        pddlActionNormalize(newa, pddl);
     }
     as->action[aidx].pre = first_cond;
+    pddlActionNormalize(as->action + aidx, pddl);
 
     pddlCondDel(&pre->cls);
 }
