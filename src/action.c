@@ -64,6 +64,16 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
                 TRACE_RET(-1);
 
         }else if (root->child[i].kw == PDDL_KW_PRE){
+            // Skip empty preconditions, i.e., () or (and)
+            //      -- it will be set to the empty conjunction later anyway.
+            if (n->child_size == 0
+                    || (n->child_size == 1
+                            && n->child[0].child_size == 0
+                            && n->child[0].value != NULL
+                            && strcmp(n->child[0].value, "and") == 0)){
+                continue;
+            }
+
             snprintf(err_prefix, ERR_PREFIX_MAXSIZE,
                      "Precondition of the action `%s': ", a->name);
             a->pre = pddlCondParse(n, pddl, &a->param, err_prefix);
