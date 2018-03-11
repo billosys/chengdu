@@ -1,5 +1,6 @@
 #!/bin/bash
 
+make mrproper
 make boruvka
 make opts
 make
