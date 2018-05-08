@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    pddlNormalize(&pddl);
     strips = pddlStripsNew(&pddl, &strips_cfg);
     if (strips == NULL){
         pddlErrPrintWithTraceback();
