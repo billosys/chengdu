@@ -67,12 +67,16 @@ struct pddl {
  * Initialize pddl structure from the domain/problem PDDL files.
  */
 int pddlInit(pddl_t *pddl, const char *domain_fn, const char *problem_fn,
-              const pddl_config_t *cfg);
+             const pddl_config_t *cfg);
 
 /**
  * Frees allocated memory.
  */
 void pddlFree(pddl_t *pddl);
+
+pddl_t *pddlew(const char *domain_fn, const char *problem_fn,
+               const pddl_config_t *cfg);
+void pddlDel(pddl_t *pddl);
 
 /**
  * Creates a (deep) copy of the pddl structure.

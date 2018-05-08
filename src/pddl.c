@@ -214,96 +214,24 @@ void pddlCopy(pddl_t *dst, const pddl_t *src)
     dst->normalized = src->normalized;
 }
 
-/*
-pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
-                const pddl_config_t *cfg)
+pddl_t *pddlew(const char *domain_fn, const char *problem_fn,
+               const pddl_config_t *cfg)
 {
-    pddl_t *pddl;
-    pddl_lisp_t *domain_lisp, *problem_lisp;
+    pddl_t *pddl = BOR_ALLOC(pddl_t);
 
-    INFO("Translation of %s and %s.", domain_fn, problem_fn);
-
-    if (!checkConfig(cfg))
-        TRACE_RET(NULL);
-
-    INFO2("Parsing domain lisp file...");
-    domain_lisp = pddlLispParse(domain_fn);
-    if (domain_lisp == NULL)
-        TRACE_RET(NULL);
-
-    INFO2("Parsing problem lisp file...");
-    problem_lisp = pddlLispParse(problem_fn);
-    if (problem_lisp == NULL){
-        if (domain_lisp)
-            pddlLispDel(domain_lisp);
-        TRACE_RET(NULL);
-    }
-
-    pddl = BOR_ALLOC(pddl_t);
-    bzero(pddl, sizeof(*pddl));
-
-    pddl->cfg = *cfg;
-    // FDR requires mutex groups so enable it if not already enabled
-    if (pddl->cfg.fdr)
-        pddl->cfg.strips_cfg.fa_mgroup = 1;
-
-    INFO2("Parsing entire contents of domain/problem PDDL...");
-    pddl->domain_lisp = domain_lisp;
-    pddl->problem_lisp = problem_lisp;
-    pddl->domain_name = parseDomainName(domain_lisp);
-    if (pddl->domain_name == NULL)
-        goto pddl_fail;
-
-    pddl->problem_name = parseProblemName(problem_lisp);
-    if (pddl->domain_name == NULL)
-        goto pddl_fail;
-
-
-    if (checkDomainName(pddl) != 0
-            || pddlRequireParse(pddl) != 0
-            || pddlTypesParse(pddl) != 0
-            || pddlObjsParse(pddl) != 0
-            || pddlPredsParse(pddl) != 0
-            || pddlFuncsParse(pddl) != 0
-            || parseInit(pddl) != 0
-            || parseGoal(pddl) != 0
-            || pddlActionsParse(pddl) != 0
-            || parseMetric(pddl, problem_lisp) != 0){
-        goto pddl_fail;
-    }
-    INFO2("PDDL content parsed.");
-
-    if (pddl->cfg.compile_away_cond_eff){
-        // It does normalization so we can skip pddlNormalize().
-        pddlCompileAwayCondEff(pddl);
-        INFO2("Conditional effects compiled away.");
-
-    }else if (pddl->cfg.normalize){
-        pddlNormalize(pddl);
-        INFO2("PDDL problem is normalized.");
-    }
-
-    if (pddl->cfg.strips){
-        pddl->strips = pddlStripsNew(pddl, &pddl->cfg.strips_cfg);
-        if (pddl->strips == NULL)
-            goto pddl_fail;
-    }
-
-    if (pddl->cfg.fdr){
-        pddl->fdr = pddlFDRFromStrips(pddl->strips, &pddl->strips->mgroup,
-                                      pddl->cfg.fdr_vars_flags);
-        if (pddl->fdr == NULL)
-            goto pddl_fail;
+    if (pddlInit(pddl, domain_fn, problem_fn, cfg) != 0){
+        BOR_FREE(pddl);
+        return NULL;
     }
 
     return pddl;
-
-pddl_fail:
-    if (pddl != NULL)
-        pddlDel(pddl);
-    TRACE_RET(NULL);
 }
-*/
+
+void pddlDel(pddl_t *pddl)
+{
+    pddlFree(pddl);
+    BOR_FREE(pddl);
+}
 
 void pddlFree(pddl_t *pddl)
 {
