@@ -48,8 +48,6 @@ static pddl_strips_t *stripsNew(void)
     pddlStripsOpsInit(&strips->op);
     borISetInit(&strips->init);
     borISetInit(&strips->goal);
-    pddlMutexesInit(&strips->mutex);
-    pddlMGroupsInit(&strips->mgroup);
     return strips;
 }
 
@@ -75,232 +73,8 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     for (int i = strips->fact.fact_size - 1; i >= 1; --i)
         pddlFactsDelFact(&strips->fact, i);
     strips->fact.fact_size = 1;
-
-    pddlMutexesFree(&strips->mutex);
-    pddlMutexesInit(&strips->mutex);
-
-    pddlMGroupsFree(&strips->mgroup);
-    pddlMGroupsInit(&strips->mgroup);
 }
 
-static void makeExactlyOneExtendGoal(pddl_strips_t *strips,
-                                     pddl_mgroup_t *mg,
-                                     int none_of_those)
-{
-    int fact;
-
-    BOR_ISET_FOR_EACH(&mg->fact, fact){
-        if (!pddlMutexesIsMutexWithFact(&strips->mutex, fact, &strips->goal))
-            return;
-    }
-    mg->is_goal = 1;
-    borISetAdd(&strips->goal, none_of_those);
-}
-
-static int makeExactlyOneMGroup(pddl_strips_t *strips,
-                                int mgroup_id,
-                                pddl_mgroup_t *mg)
-{
-    pddl_fact_t fact;
-    int none_of_those;
-    char name[1024], *s;
-    BOR_ISET(mutex);
-    int fact_id;
-
-    // Create an artificial fact "none-of-those"
-    s = name;
-    s += sprintf(s, "NOT");
-    BOR_ISET_FOR_EACH(&mg->fact, fact_id)
-        s += sprintf(s, ":%s", strips->fact.fact[fact_id]->name);
-    pddlFactInit(&fact);
-    fact.name = BOR_STRDUP(name);
-    none_of_those = pddlFactsAdd(&strips->fact, &fact);
-    pddlFactFree(&fact);
-
-    // Add none-of-those to init if necessary
-    if (borISetIsDisjunct(&strips->init, &mg->fact)){
-        borISetAdd(&strips->init, none_of_those);
-        mg->is_init = 1;
-    }
-
-    // Add none-of-those to the goal if possible
-    makeExactlyOneExtendGoal(strips, mg, none_of_those);
-
-    // Add mutexes between none-of-those and all other facts
-    BOR_ISET_FOR_EACH(&mg->fact, fact_id){
-        borISetEmpty(&mutex);
-        borISetAdd(&mutex, fact_id);
-        borISetAdd(&mutex, none_of_those);
-        pddlMutexesAdd(&strips->mutex, &mutex);
-    }
-
-    // Add none-of-those to the mutex group
-    borISetAdd(&mg->fact, none_of_those);
-    mg->none_of_those = none_of_those;
-    mg->is_exactly_1 = 1;
-
-    borISetFree(&mutex);
-
-    return 0;
-}
-
-int pddlStripsMakeExactlyOneMGroups(pddl_strips_t *strips)
-{
-    for (int i = 0; i < strips->mgroup.mgroup_size; ++i){
-        pddl_mgroup_t *mg = strips->mgroup.mgroup + i;
-        if (!mg->is_exactly_1){
-            if (makeExactlyOneMGroup(strips, i, mg) != 0)
-                TRACE_RET(-1);
-        }
-    }
-    return 0;
-}
-
-void pddlStripsCompleteMGroups(pddl_strips_t *strips)
-{
-    pddl_mgroup_t *mg;
-    BOR_ISET(all);
-    BOR_ISET(mgset);
-    int fact;
-
-    for (int i = 0; i < strips->fact.fact_size; ++i)
-        borISetAdd(&all, i);
-    for (int i = 0; i < strips->mgroup.mgroup_size; ++i)
-        borISetMinus(&all, &strips->mgroup.mgroup[i].fact);
-
-    BOR_ISET_FOR_EACH(&all, fact){
-        borISetEmpty(&mgset);
-        borISetAdd(&mgset, fact);
-        mg = pddlMGroupsAdd(&strips->mgroup, &mgset);
-        if (borISetIn(fact, &strips->init))
-            mg->is_init = 1;
-        if (borISetIn(fact, &strips->goal))
-            mg->is_goal = 1;
-    }
-    INFO("Added %d single-fact mgroups.", borISetSize(&all));
-
-    borISetFree(&mgset);
-    borISetFree(&all);
-}
-
-static bor_iset_t *mutexTableNew(int fact_size, const pddl_mutexes_t *mutex)
-{
-    bor_iset_t *table;
-    const pddl_mutex_t *m;
-
-    table = BOR_CALLOC_ARR(bor_iset_t, fact_size);
-    PDDL_MUTEXES_FOR_EACH(mutex, m){
-        const bor_iset_t *f = &m->fact;
-        if (borISetSize(f) == 2){
-            borISetAdd(&table[borISetGet(f, 0)], borISetGet(f, 1));
-            borISetAdd(&table[borISetGet(f, 1)], borISetGet(f, 0));
-        }
-    }
-
-    return table;
-}
-
-static void mutexTableDel(bor_iset_t *t, int fact_size)
-{
-    for (int i = 0; i < fact_size; ++i)
-        borISetFree(t + i);
-    if (t != NULL)
-        BOR_FREE(t);
-}
-
-static int disambiguateSet(bor_iset_t *set,
-                           const bor_iset_t *mutex,
-                           const pddl_mgroups_t *mgroups)
-{
-    bor_iset_t mutex_facts;
-    bor_iset_t remain;
-    int fact_id;
-    int change = 0, local_change;
-    const pddl_mgroup_t *mg;
-
-    borISetInit(&mutex_facts);
-    BOR_ISET_FOR_EACH(set, fact_id)
-        borISetUnion(&mutex_facts, &mutex[fact_id]);
-
-    borISetInit(&remain);
-    do {
-        local_change = 0;
-        PDDL_MGROUPS_FOR_EACH(mgroups, mg){
-            if (!mg->is_exactly_1)
-                continue;
-            borISetMinus2(&remain, &mg->fact, &mutex_facts);
-            if (borISetSize(&remain) == 0){
-                borISetFree(&remain);
-                borISetFree(&mutex_facts);
-                return -1;
-            }
-            if (borISetSize(&remain) == 1
-                    && !borISetIn(borISetGet(&remain, 0), set)){
-                borISetAdd(set, borISetGet(&remain, 0));
-                borISetUnion(&mutex_facts, &mutex[borISetGet(&remain, 0)]);
-                change = local_change = 1;
-            }
-        }
-    } while (local_change);
-
-
-    borISetFree(&remain);
-    borISetFree(&mutex_facts);
-
-    return change;
-}
-
-static int disambiguatePre(pddl_strips_op_t *op,
-                           const bor_iset_t *mutex,
-                           const pddl_mgroups_t *mgroups)
-{
-    int change;
-
-    change = disambiguateSet(&op->pre, mutex, mgroups);
-    ASSERT(change >= 0);
-    if (change)
-        pddlStripsOpNormalize(op);
-
-    return change;
-}
-
-int pddlStripsDisambiguate(pddl_strips_t *strips,
-                           const pddl_mutexes_t *mutexes,
-                           const pddl_mgroups_t *mgroups)
-{
-    bor_iset_t *mutex_table;
-    int ret;
-    int change = 0;
-
-    if (mutexes == NULL)
-        mutexes = &strips->mutex;
-    if (mgroups == NULL)
-        mgroups = &strips->mgroup;
-
-    if (mgroups->mgroup_size == 0)
-        return 0;
-
-    mutex_table = mutexTableNew(strips->fact.fact_size, mutexes);
-    for (int oi = 0; oi < strips->op.op_size; ++oi){
-        pddl_strips_op_t *op = strips->op.op[oi];
-        change |= disambiguatePre(op, mutex_table, mgroups);
-    }
-
-    ret = disambiguateSet(&strips->goal, mutex_table, mgroups);
-    if (ret < 0){
-        strips->goal_is_unreachable = 1;
-        ret = 0;
-        INFO("O: %d, F: %d :: Disambiguation done -- goal is unreachable.",
-             strips->op.op_size, strips->fact.fact_size);
-    }else{
-        ret |= change;
-        INFO("O: %d, F: %d :: Disambiguation done (change: %d).",
-             strips->op.op_size, strips->fact.fact_size, ret);
-    }
-
-    mutexTableDel(mutex_table, strips->fact.fact_size);
-    return ret;
-}
 
 pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
                              const pddl_strips_config_t *cfg)
@@ -326,42 +100,9 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
     // TODO: remove identical/dominated operators
     //       (don't forget to keep the one with the minimal cost)
 
-    if (strips->cfg.prune.enable){
-        if (pddlStripsPrune(strips, &strips->cfg.prune) != 0){
-            pddlStripsDel(strips);
-            TRACE_RET(NULL);
-        }
-    }
-
     if (strips->goal_is_unreachable){
         pddlStripsMakeUnsolvable(strips);
         return strips;
-    }
-
-    // Infer fa mutex groups only if they were not already infered during
-    // pruning.
-    if (strips->cfg.fa_mgroup &&
-            (!strips->cfg.prune.enable || !strips->cfg.prune.fa_mgroup)){
-        if (pddlMGroupsFA(strips, &strips->mgroup) != 0){
-            pddlStripsDel(strips);
-            TRACE_RET(NULL);
-        }
-        pddlMGroupsFinalize(&strips->mgroup, strips);
-        INFO2("Fact-alternating mutex groups are infered.");
-    }
-
-    if (strips->cfg.h_mutex > 0){
-        if (!strips->cfg.prune.enable
-                || strips->cfg.prune.h_mutex < strips->cfg.h_mutex){
-            if (pddlMutexesHm(&strips->mutex, strips->cfg.h_mutex, strips,
-                              NULL, 0, -1.) != 0){
-                pddlStripsDel(strips);
-                TRACE_RET(NULL);
-            }
-            INFO("h^%d mutexes are infered.", strips->cfg.h_mutex);
-        }else{
-            pddlMutexesHmLimit(&strips->mutex, strips->cfg.h_mutex);
-        }
     }
 
     return strips;
@@ -381,8 +122,6 @@ void pddlStripsDel(pddl_strips_t *strips)
     pddlStripsOpsFree(&strips->op);
     borISetFree(&strips->init);
     borISetFree(&strips->goal);
-    pddlMutexesFree(&strips->mutex);
-    pddlMGroupsFree(&strips->mgroup);
     BOR_FREE(strips);
 }
 
@@ -397,8 +136,6 @@ pddl_strips_t *pddlStripsClone(const pddl_strips_t *src)
     pddlStripsOpsCopy(&dst->op, &src->op);
     borISetUnion(&dst->init, &src->init);
     borISetUnion(&dst->goal, &src->goal);
-    pddlMutexesCopy(&dst->mutex, &src->mutex);
-    pddlMGroupsCopy(&dst->mgroup, &src->mgroup);
     dst->goal_is_unreachable = src->goal_is_unreachable;
     dst->has_cond_eff = src->has_cond_eff;
 
@@ -434,69 +171,6 @@ pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips)
     dual->has_cond_eff = strips->has_cond_eff;
 
     return dual;
-}
-
-pddl_strips_t *pddlStripsBackward(const pddl_strips_t *strips,
-                                  const pddl_mutexes_t *mutex)
-{
-    pddl_strips_t *bw = stripsNew();
-    pddl_strips_op_t op;
-    BOR_ISET(fset);
-    int fact;
-
-    if (mutex == NULL)
-        mutex = &strips->mutex;
-
-    copyBasicInfo(bw, strips);
-    pddlFactsCopy(&bw->fact, &strips->fact);
-    pddlMutexesCopy(&bw->mutex, &strips->mutex);
-    pddlMGroupsCopy(&bw->mgroup, &strips->mgroup);
-
-    // Keep goal specification and delete effects empty.
-
-    // Construct initial state as all facts minus the unreachable ones and
-    // minus mutexes with strips->goal.
-    for (int f = 0; f < bw->fact.fact_size; ++f){
-        BOR_ISET_SET(&fset, f);
-        if (pddlMutexesIsMutex(mutex, &fset))
-            continue;
-        if (!pddlMutexesIsMutexWithFact(mutex, f, &strips->goal))
-            borISetAdd(&bw->init, f);
-    }
-
-    // Create operators
-    for (int opi = 0; opi < strips->op.op_size; ++opi){
-        const pddl_strips_op_t *sop = strips->op.op[opi];
-        pddlStripsOpInit(&op);
-        pddlStripsOpCopy(&op, sop);
-
-        // Set precondition as prevail + add effect from sop
-        borISetMinus2(&fset, &sop->pre, &sop->del_eff);
-        borISetUnion2(&op.pre, &fset, &sop->add_eff);
-
-        // Set add effects as delete effects
-        borISetSet(&op.add_eff, &sop->del_eff);
-
-        // Set delete effect as facts that are e-deleted by prevails and
-        // and add effects
-        borISetMinus2(&fset, &sop->pre, &sop->del_eff);
-        borISetUnion(&fset, &op.add_eff);
-        borISetEmpty(&op.del_eff);
-        BOR_ISET_FOR_EACH(&fset, fact){
-            for (int f = 0; f < strips->fact.fact_size; ++f){
-                if (pddlMutexesIsMutexPair(mutex, fact, f))
-                    borISetAdd(&op.del_eff, f);
-            }
-        }
-
-        pddlStripsOpNormalize(&op);
-        pddlStripsOpsAdd(&bw->op, &op);
-        pddlStripsOpFree(&op);
-    }
-
-    borISetFree(&fset);
-
-    return bw;
 }
 
 pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips)
@@ -655,14 +329,6 @@ void pddlStripsPrintPython(const pddl_strips_t *strips, FILE *fout)
     BOR_ISET_FOR_EACH(&strips->goal, f)
         fprintf(fout, "%d, ", f);
     fprintf(fout, "],\n");
-
-    fprintf(fout, "'mgroup' : ");
-    pddlMGroupsPrintPython(&strips->mgroup, fout);
-    fprintf(fout, ",\n");
-
-    fprintf(fout, "'mutex' : ");
-    pddlMutexesPrintPython(&strips->mutex, fout);
-    fprintf(fout, ",\n");
 
     fprintf(fout, "'goal_is_unreachable' : %s,\n",
             (strips->goal_is_unreachable ? "True" : "False" ));
