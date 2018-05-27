@@ -15,11 +15,13 @@ ifeq '$(BIN_STATIC)' 'yes'
   LDFLAGS += -static
 endif
 
-TARGETS = pddl-check
+TARGETS = pddl-check pddl-strips
 
 all: $(TARGETS)
 
 pddl-check: check.c ../libpddl.a
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+pddl-strips: strips.c ../libpddl.a
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 %.o: %.c %.h
