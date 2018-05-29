@@ -287,6 +287,10 @@ static void findNonStaticPredInNegPre(pddl_t *pddl, int *np)
         pddlCondTraverse(pddl->action.action[i].pre, markNegPre, NULL, np);
         pddlCondTraverse(pddl->action.action[i].eff, markNegPreWhen, NULL, np);
     }
+    // Also, check the goal
+    if (pddl->goal)
+        pddlCondTraverse(pddl->goal, markNegPre, NULL, np);
+
     for (i = 0; i < pddl->pred.size; ++i){
         if (pddlPredIsStatic(pddl->pred.pred + i))
             np[i] = 0;
@@ -392,6 +396,11 @@ static void compileOutNegPre(pddl_t *pddl, int pos, int neg)
 
     for (i = 0; i < pddl->action.size; ++i)
         compileOutNegPreInAction(pddl, pos, neg, pddl->action.action + i);
+
+    if (pddl->goal){
+        int ids[2] = { pos, neg };
+        pddlCondRebuild(&pddl->goal, NULL, replaceNegPre, ids);
+    }
 }
 
 static int initHasFact(const pddl_t *pddl, int pred,
