@@ -35,6 +35,7 @@ struct action_ctx {
     const pddl_t *pddl;
     const pddl_action_t *action;
     int failed;
+    bor_err_t *err;
 };
 typedef struct action_ctx action_ctx_t;
 
@@ -60,8 +61,8 @@ static int actionInitPre(pddl_cond_t *c, void *ud)
     }else if (c->type == PDDL_COND_AND){
         return 0;
     }else{
-        ERR2("Precondition is not a simple conjuction."
-             " It seems it was not normalized.");
+        BOR_ERR2(ctx->err, "Precondition is not a simple conjuction."
+                 " It seems it was not normalized.");
         ctx->failed = 1;
         return -2;
     }
@@ -83,7 +84,7 @@ static int actionInitEff(pddl_cond_t *c, void *ud)
         return 0;
 
     }else if (c->type == PDDL_COND_ASSIGN){
-        ERR2("(= ...) is not supported in operators' effects.");
+        BOR_ERR2(ctx->err, "(= ...) is not supported in operators' effects.");
         ctx->failed = 1;
         return -2;
 
@@ -98,9 +99,9 @@ static int actionInitEff(pddl_cond_t *c, void *ud)
     }else if (c->type == PDDL_COND_AND){
         return 0;
     }else{
-        ERR2("Effect is not a simple conjuction (possibly containing"
-             "conditional effects and function assignement)."
-             " It seems it was not normalized.");
+        BOR_ERR2(ctx-> err, "Effect is not a simple conjuction"
+                 " (possibly containingconditional effects and function"
+                 " assignement). It seems it was not normalized.");
         ctx->failed = 1;
         return -2;
     }
@@ -110,12 +111,14 @@ static int actionInit2(pddl_prep_action_t *a,
                        const pddl_t *pddl,
                        const pddl_action_t *action,
                        pddl_cond_t *pre,
-                       pddl_cond_t *eff)
+                       pddl_cond_t *eff,
+                       bor_err_t *err)
 {
     action_ctx_t ctx;
     ctx.a = a;
     ctx.pddl = pddl;
     ctx.failed = 0;
+    ctx.err = err;
 
     bzero(a, sizeof(*a));
     a->action = action;
@@ -128,14 +131,14 @@ static int actionInit2(pddl_prep_action_t *a,
 
     pddlCondTraverse(pre, actionInitPre, NULL, &ctx);
     if (ctx.failed){
-        TRACE_UPDATE_RET(-1, "Prepapration of action %s failed: ",
-                         action->name);
+        BOR_TRACE_PREPEND_RET(err, -1, "Prepapration of action %s failed: ",
+                              action->name);
     }
 
     pddlCondTraverse(eff, actionInitEff, NULL, &ctx);
     if (ctx.failed){
-        TRACE_UPDATE_RET(-1, "Prepapration of action %s failed: ",
-                         action->name);
+        BOR_TRACE_PREPEND_RET(err, -1, "Prepapration of action %s failed: ",
+                              action->name);
     }
 
     return 0;
@@ -143,14 +146,16 @@ static int actionInit2(pddl_prep_action_t *a,
 
 static int actionInit(pddl_prep_action_t *a,
                       const pddl_t *pddl,
-                      const pddl_action_t *action)
+                      const pddl_action_t *action,
+                      bor_err_t *err)
 {
     int ret;
     ret = actionInit2(a, pddl, action,
                       (pddl_cond_t *)action->pre,
-                      (pddl_cond_t *)action->eff);
+                      (pddl_cond_t *)action->eff,
+                      err);
     if (ret != 0)
-        TRACE;
+        BOR_TRACE(err);
     return ret;
 }
 
@@ -188,14 +193,15 @@ static int actionInitCondEff(pddl_cond_t *c, void *ud)
         a = ctx->as->action + ctx->as->size++;
 
         // Parse preconditions and effects of (when ) element
-        if (actionInit2(a, ctx->pddl, ctx->action, when->pre, when->eff) != 0){
-            TRACE;
+        if (actionInit2(a, ctx->pddl, ctx->action,
+                        when->pre, when->eff, ctx->err) != 0){
+            BOR_TRACE(ctx->err);
             ctx->failed = 1;
             return -2;
         }
         if (a->cond_eff_size > 0){
-            ERR("Preparation of the action %s failed:"
-                " Nested conditional effects are not supported.",
+            BOR_ERR(ctx->err, "Preparation of the action %s failed:"
+                    " Nested conditional effects are not supported.",
                 ctx->action->name);
             ctx->failed = 1;
             return -2;
@@ -221,7 +227,7 @@ static int actionInitCondEff(pddl_cond_t *c, void *ud)
 }
 
 static int actionsAddCondEff(pddl_prep_actions_t *as, int aid,
-                             const pddl_t *pddl)
+                             const pddl_t *pddl, bor_err_t *err)
 {
     action_ctx_t ctx;
     ctx.as = as;
@@ -229,15 +235,17 @@ static int actionsAddCondEff(pddl_prep_actions_t *as, int aid,
     ctx.pddl = pddl;
     ctx.action = as->action[aid].action;
     ctx.failed = 0;
+    ctx.err = err;
 
     pddlCondTraverse((pddl_cond_t *)ctx.action->eff,
                      actionInitCondEff, NULL, &ctx);
     if (ctx.failed)
-        TRACE_RET(-1);
+        BOR_TRACE_RET(err, -1);
     return 0;
 }
 
-int pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as)
+int pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as,
+                        bor_err_t *err)
 {
     const pddl_action_t *action;
     int i;
@@ -249,18 +257,18 @@ int pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as)
     for (i = 0; i < pddl->action.size; ++i){
         actionsReserve(as);
         action = pddl->action.action + i;
-        if (actionInit(as->action + as->size, pddl, action) != 0){
+        if (actionInit(as->action + as->size, pddl, action, err) != 0){
             pddlPrepActionsFree(as);
-            TRACE_RET(-1);
+            BOR_TRACE_RET(err, -1);
         }
         ++as->size;
     }
 
     for (i = 0; i < pddl->action.size; ++i){
         if (as->action[i].cond_eff_size > 0){
-            if (actionsAddCondEff(as, i, pddl) != 0){
+            if (actionsAddCondEff(as, i, pddl, err) != 0){
                 pddlPrepActionsFree(as);
-                TRACE_RET(-1);
+                BOR_TRACE_RET(err, -1);
             }
         }
     }

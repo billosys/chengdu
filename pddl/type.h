@@ -55,7 +55,7 @@ typedef struct pddl_types pddl_types_t;
 /**
  * Parses :types into type array.
  */
-int pddlTypesParse(pddl_t *pddl);
+int pddlTypesParse(pddl_t *pddl, bor_err_t *err);
 
 /**
  * Frees allocated resources.
@@ -91,7 +91,8 @@ int pddlTypesObjHasType(const pddl_types_t *ts, int type, int obj);
  * Returns type ID from the lisp node or -1 if error occured.
  * (either ...) types are created if necessary.
  */
-int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node);
+int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
+                         bor_err_t *err);
 
 
 /**

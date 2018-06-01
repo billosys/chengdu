@@ -20,7 +20,6 @@
 
 #include <boruvka/alloc.h>
 #include "pddl/pddl_struct.h"
-#include "pddl/err.h"
 #include "err.h"
 
 static int checkConfig(const pddl_config_t *cfg)
@@ -29,54 +28,54 @@ static int checkConfig(const pddl_config_t *cfg)
 }
 
 static const char *parseName(pddl_lisp_t *lisp, int kw,
-                             const char *err_name)
+                             const char *err_name, bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
 
     n = pddlLispFindNode(&lisp->root, kw);
     if (n == NULL){
         // TODO: Configure warn/err
-        ERR_RET(NULL, "Could not find %s name definition in %s.",
-                err_name, lisp->filename);
+        BOR_ERR_RET(err, NULL, "Could not find %s name definition in %s.",
+                    err_name, lisp->filename);
     }
 
     if (n->child_size != 2 || n->child[1].value == NULL){
-        ERR_RET(NULL, "Invalid %s name definition in %s.",
-                err_name, lisp->filename);
+        BOR_ERR_RET(err, NULL, "Invalid %s name definition in %s.",
+                    err_name, lisp->filename);
     }
 
     return n->child[1].value;
 }
 
-static const char *parseDomainName(pddl_lisp_t *lisp)
+static const char *parseDomainName(pddl_lisp_t *lisp, bor_err_t *err)
 {
-    return parseName(lisp, PDDL_KW_DOMAIN, "domain");
+    return parseName(lisp, PDDL_KW_DOMAIN, "domain", err);
 }
 
-static const char *parseProblemName(pddl_lisp_t *lisp)
+static const char *parseProblemName(pddl_lisp_t *lisp, bor_err_t *err)
 {
-    return parseName(lisp, PDDL_KW_PROBLEM, "problem");
+    return parseName(lisp, PDDL_KW_PROBLEM, "problem", err);
 }
 
-static int checkDomainName(pddl_t *pddl)
+static int checkDomainName(pddl_t *pddl, bor_err_t *err)
 {
     const char *problem_domain_name;
 
     // TODO: Configure err/warn/nothing
     problem_domain_name = parseName(pddl->problem_lisp,
-                                    PDDL_KW_DOMAIN2, ":domain");
+                                    PDDL_KW_DOMAIN2, ":domain", err);
     if (problem_domain_name == NULL)
-        TRACE_RET(0);
+        BOR_TRACE_RET(err, 0);
 
     if (strcmp(problem_domain_name, pddl->domain_name) != 0){
-        WARN("Domain names does not match: `%s' x `%s'",
-             pddl->domain_name, problem_domain_name);
+        BOR_WARN(err, "Domain names does not match: `%s' x `%s'",
+                 pddl->domain_name, problem_domain_name);
         return 0;
     }
     return 0;
 }
 
-static int parseMetric(pddl_t *pddl, const pddl_lisp_t *lisp)
+static int parseMetric(pddl_t *pddl, const pddl_lisp_t *lisp, bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
 
@@ -90,7 +89,7 @@ static int parseMetric(pddl_t *pddl, const pddl_lisp_t *lisp)
             || n->child[2].value != NULL
             || n->child[2].child_size != 1
             || strcmp(n->child[2].child[0].value, "total-cost") != 0){
-        ERR_RET(-1, "Only (:metric minimize (total-cost)) is supported"
+        BOR_ERR_RET(err, -1, "Only (:metric minimize (total-cost)) is supported"
                     " (line %d in %s).", n->lineno, lisp->filename);
     }
 
@@ -98,97 +97,99 @@ static int parseMetric(pddl_t *pddl, const pddl_lisp_t *lisp)
     return 0;
 }
 
-static int parseInit(pddl_t *pddl)
+static int parseInit(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *ninit;
 
     ninit = pddlLispFindNode(&pddl->problem_lisp->root, PDDL_KW_INIT);
-    if (ninit == NULL)
-        ERR_RET(-1, "Missing :init in %s.", pddl->problem_lisp->filename);
+    if (ninit == NULL){
+        BOR_ERR_RET(err, -1, "Missing :init in %s.",
+                    pddl->problem_lisp->filename);
+    }
 
-    pddl->init = pddlCondParseInit(ninit, pddl);
+    pddl->init = pddlCondParseInit(ninit, pddl, err);
     if (pddl->init == NULL){
-        TRACE_UPDATE_RET(-1, "While parsing :init specification in %s: ",
-                         pddl->problem_lisp->filename);
+        BOR_TRACE_PREPEND_RET(err, -1, "While parsing :init specification"
+                              " in %s: ", pddl->problem_lisp->filename);
     }
     return 0;
 }
 
-static int parseGoal(pddl_t *pddl)
+static int parseGoal(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *ngoal;
 
     ngoal = pddlLispFindNode(&pddl->problem_lisp->root, PDDL_KW_GOAL);
     if (ngoal == NULL)
-        ERR_RET(-1, "Missing :goal in %s.", pddl->problem_lisp->filename);
+        BOR_ERR_RET(err, -1, "Missing :goal in %s.", pddl->problem_lisp->filename);
 
     if (ngoal->child_size != 2 || ngoal->child[1].value != NULL){
-        ERR_RET(-1, "Invalid definition of :goal in %s (line %d).",
-                pddl->problem_lisp->filename, ngoal->lineno);
+        BOR_ERR_RET(err, -1, "Invalid definition of :goal in %s (line %d).",
+                    pddl->problem_lisp->filename, ngoal->lineno);
     }
 
-    pddl->goal = pddlCondParse(ngoal->child + 1, pddl, NULL, "");
+    pddl->goal = pddlCondParse(ngoal->child + 1, pddl, NULL, "", err);
     if (pddl->goal == NULL){
-        TRACE_UPDATE_RET(-1, "While parsing :goal specification in %s: ",
-                         pddl->problem_lisp->filename);
+        BOR_TRACE_PREPEND_RET(err, -1, "While parsing :goal specification"
+                              " in %s: ", pddl->problem_lisp->filename);
     }
     return 0;
 }
 
 int pddlInit(pddl_t *pddl, const char *domain_fn, const char *problem_fn,
-             const pddl_config_t *cfg)
+             const pddl_config_t *cfg, bor_err_t *err)
 {
     bzero(pddl, sizeof(*pddl));
     pddl->cfg = *cfg;
 
-    INFO("Translation of %s and %s.", domain_fn, problem_fn);
+    BOR_INFO(err, "Translation of %s and %s.", domain_fn, problem_fn);
 
     if (!checkConfig(cfg))
-        TRACE_RET(-1);
+        BOR_TRACE_RET(err, -1);
 
-    INFO2("Parsing domain lisp file...");
-    pddl->domain_lisp = pddlLispParse(domain_fn);
+    BOR_INFO2(err, "Parsing domain lisp file...");
+    pddl->domain_lisp = pddlLispParse(domain_fn, err);
     if (pddl->domain_lisp == NULL)
-        TRACE_RET(-1);
+        BOR_TRACE_RET(err, -1);
 
-    INFO2("Parsing problem lisp file...");
-    pddl->problem_lisp = pddlLispParse(problem_fn);
+    BOR_INFO2(err, "Parsing problem lisp file...");
+    pddl->problem_lisp = pddlLispParse(problem_fn, err);
     if (pddl->problem_lisp == NULL){
         if (pddl->domain_lisp)
             pddlLispDel(pddl->domain_lisp);
-        TRACE_RET(-1);
+        BOR_TRACE_RET(err, -1);
     }
 
-    INFO2("Parsing entire contents of domain/problem PDDL...");
-    pddl->domain_name = parseDomainName(pddl->domain_lisp);
+    BOR_INFO2(err, "Parsing entire contents of domain/problem PDDL...");
+    pddl->domain_name = parseDomainName(pddl->domain_lisp, err);
     if (pddl->domain_name == NULL)
         goto pddl_fail;
 
-    pddl->problem_name = parseProblemName(pddl->problem_lisp);
+    pddl->problem_name = parseProblemName(pddl->problem_lisp, err);
     if (pddl->domain_name == NULL)
         goto pddl_fail;
 
 
-    if (checkDomainName(pddl) != 0
-            || pddlRequireParse(pddl) != 0
-            || pddlTypesParse(pddl) != 0
-            || pddlObjsParse(pddl) != 0
-            || pddlPredsParse(pddl) != 0
-            || pddlFuncsParse(pddl) != 0
-            || parseInit(pddl) != 0
-            || parseGoal(pddl) != 0
-            || pddlActionsParse(pddl) != 0
-            || parseMetric(pddl, pddl->problem_lisp) != 0){
+    if (checkDomainName(pddl, err) != 0
+            || pddlRequireParse(pddl, err) != 0
+            || pddlTypesParse(pddl, err) != 0
+            || pddlObjsParse(pddl, err) != 0
+            || pddlPredsParse(pddl, err) != 0
+            || pddlFuncsParse(pddl, err) != 0
+            || parseInit(pddl, err) != 0
+            || parseGoal(pddl, err) != 0
+            || pddlActionsParse(pddl, err) != 0
+            || parseMetric(pddl, pddl->problem_lisp, err) != 0){
         goto pddl_fail;
     }
-    INFO2("PDDL content parsed.");
+    BOR_INFO2(err, "PDDL content parsed.");
 
     return 0;
 
 pddl_fail:
     if (pddl != NULL)
         pddlFree(pddl);
-    TRACE_RET(-1);
+    BOR_TRACE_RET(err, -1);
 }
 
 void pddlCopy(pddl_t *dst, const pddl_t *src)
@@ -214,12 +215,12 @@ void pddlCopy(pddl_t *dst, const pddl_t *src)
     dst->normalized = src->normalized;
 }
 
-pddl_t *pddlew(const char *domain_fn, const char *problem_fn,
-               const pddl_config_t *cfg)
+pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
+                const pddl_config_t *cfg, bor_err_t *err)
 {
     pddl_t *pddl = BOR_ALLOC(pddl_t);
 
-    if (pddlInit(pddl, domain_fn, problem_fn, cfg) != 0){
+    if (pddlInit(pddl, domain_fn, problem_fn, cfg, err) != 0){
         BOR_FREE(pddl);
         return NULL;
     }
@@ -544,8 +545,6 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
     int change;
 
     do {
-        INFO("Compiling away conditional effects (actions: %d)",
-             pddl->action.size);
         change = 0;
         pddlNormalize(pddl);
 
@@ -569,12 +568,8 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
                 if ((neg_pre = pddlCondNegate(w->pre, pddl)) == NULL){
                     // This shoud never fail, because we force
                     // normalization before this.
-                    TRACE;
-                    fprintf(stderr, "Fatal Error: Encountered problem in"
-                            " the normalization.\n");
-                    pddlErrPrint();
-                    pddlErrPrintTraceback();
-                    exit(-1);
+                    BOR_FATAL2("Fatal Error: Encountered problem in"
+                               " the normalization.");
                 }
                 a->pre = pddlCondNewAnd2(a->pre, neg_pre);
 
@@ -588,7 +583,6 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
             }
         }
     } while (change);
-    INFO("Conditional effects compiled away (actions: %d).", pddl->action.size);
 }
 
 int pddlPredFuncMaxParamSize(const pddl_t *pddl)

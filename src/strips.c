@@ -24,7 +24,8 @@
 #include "assert.h"
 
 /** Implemented in strips_ground.c */
-int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl);
+int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl,
+                      bor_err_t *err);
 
 static void copyBasicInfo(pddl_strips_t *dst, const pddl_strips_t *src)
 {
@@ -56,15 +57,14 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     // Remove all operators, empty the initial state and make sure that the
     // goal is non-empty.
 
-    INFO2("The problem is not solvable -- generating a dummy problem.");
     pddlStripsOpsFree(&strips->op);
     pddlStripsOpsInit(&strips->op);
     borISetEmpty(&strips->init);
     if (strips->fact.fact_size == 0){
         // TODO
-        FATAL2("STRIPS problem does not contain any fact."
-                " Making unsolvable problem for this case is not yet"
-                " implemented.");
+        BOR_FATAL2("STRIPS problem does not contain any fact."
+                   " Making unsolvable problem for this case is not yet"
+                   " implemented.");
     }
     borISetEmpty(&strips->goal);
     borISetAdd(&strips->goal, 0);
@@ -77,7 +77,8 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
 
 
 pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
-                             const pddl_strips_config_t *cfg)
+                             const pddl_strips_config_t *cfg,
+                             bor_err_t *err)
 {
     pddl_strips_t *strips = stripsNew();
 
@@ -92,9 +93,9 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
     if (pddl->problem_lisp->filename)
         strips->problem_file = BOR_STRDUP(pddl->problem_lisp->filename);
 
-    if (_pddlStripsGround(strips, pddl) != 0){
+    if (_pddlStripsGround(strips, pddl, err) != 0){
         pddlStripsDel(strips);
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(err, NULL);
     }
 
     // TODO: remove identical/dominated operators

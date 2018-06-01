@@ -22,7 +22,7 @@
 #include "pddl/pddl.h"
 #include "pddl/obj.h"
 #include "pddl/require.h"
-#include "err.h"
+#include "lisp_err.h"
 
 struct obj_key {
     int obj_id;
@@ -53,7 +53,8 @@ struct _set_t {
 typedef struct _set_t set_t;
 
 static int setCB(const pddl_lisp_node_t *root,
-                 int child_from, int child_to, int child_type, void *ud)
+                 int child_from, int child_to, int child_type, void *ud,
+                 bor_err_t *err)
 {
     pddl_objs_t *objs = ((set_t *)ud)->objs;
     pddl_obj_t *o;
@@ -63,12 +64,14 @@ static int setCB(const pddl_lisp_node_t *root,
 
     tid = 0;
     if (child_type >= 0){
-        if (root->child[child_type].value == NULL)
-            ERR_LISP_RET2(-1, root->child + child_type, "Expecting type name");
+        if (root->child[child_type].value == NULL){
+            ERR_LISP_RET2(err, -1, root->child + child_type,
+                          "Expecting type name");
+        }
 
         tid = pddlTypesGet(types, root->child[child_type].value);
         if (tid < 0){
-            ERR_LISP_RET(-1, root->child + child_type, "Invalid type `%s'",
+            ERR_LISP_RET(err, -1, root->child + child_type, "Invalid type `%s'",
                          root->child[child_type].value);
         }
     }
@@ -78,7 +81,7 @@ static int setCB(const pddl_lisp_node_t *root,
         o = pddlObjsAdd(objs, root->child[i].value);
         if (o == NULL){
             // TODO: Configure warn/err
-            ERR_LISP_RET(-1, root->child + i, "Duplicate object `%s'",
+            ERR_LISP_RET(err, -1, root->child + i, "Duplicate object `%s'",
                          root->child[i].value);
         }
 
@@ -92,7 +95,9 @@ static int setCB(const pddl_lisp_node_t *root,
     return 0;
 }
 
-static int parse(pddl_t *pddl, const pddl_lisp_t *lisp, int kw, int is_const)
+static int parse(pddl_t *pddl, const pddl_lisp_t *lisp, int kw, int is_const,
+                 bor_err_t *err)
+
 {
     const pddl_lisp_node_t *n;
     int to;
@@ -115,13 +120,13 @@ static int parse(pddl_t *pddl, const pddl_lisp_t *lisp, int kw, int is_const)
     set.objs = &pddl->obj;
     set.types = &pddl->type;
     set.is_const = is_const;
-    if (pddlLispParseTypedList(n, 1, to, setCB, &set) != 0){
+    if (pddlLispParseTypedList(n, 1, to, setCB, &set, err) != 0){
         if (is_const){
-            TRACE_UPDATE("Invalid definition of :constants in %s: ",
-                         lisp->filename);
+            BOR_TRACE_PREPEND(err, "Invalid definition of :constants in %s: ",
+                              lisp->filename);
         }else{
-            TRACE_UPDATE("Invalid definition of :objects in %s: ",
-                         lisp->filename);
+            BOR_TRACE_PREPEND(err, "Invalid definition of :objects in %s: ",
+                              lisp->filename);
         }
         return -1;
     }
@@ -129,7 +134,7 @@ static int parse(pddl_t *pddl, const pddl_lisp_t *lisp, int kw, int is_const)
     return 0;
 }
 
-static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp)
+static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp, bor_err_t *err)
 {
     const pddl_lisp_node_t *n, *p;
     int i, factor, pi, owner, parse_from;
@@ -153,8 +158,9 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp)
             continue;
 
         pi = pddl->obj.size;
-        if (pddlLispParseTypedList(p, parse_from, p->child_size, setCB, &set) != 0){
-            ERR_LISP_RET(-1, n->child + i, "Invalid definition of :private"
+        if (pddlLispParseTypedList(p, parse_from, p->child_size,
+                                   setCB, &set, err) != 0){
+            ERR_LISP_RET(err, -1, n->child + i, "Invalid definition of :private"
                          " :objects in %s.", lisp->filename);
         }
 
@@ -162,8 +168,8 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp)
         if (!factor){
             owner = pddlObjsGet(&pddl->obj, p->child[1].value);
             if (owner < 0){
-                ERR_LISP_RET(-1, n->child + i, "Invalid definition of :private"
-                             " :objects in %s. Unknown owner `%s'.",
+                ERR_LISP_RET(err, -1, n->child + i, "Invalid definition of"
+                             " :private :objects in %s. Unknown owner `%s'.",
                              lisp->filename, p->child[1].value);
             }
             pddl->obj.obj[owner].is_agent = 1;
@@ -178,22 +184,22 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp)
     return 0;
 }
 
-int pddlObjsParse(pddl_t *pddl)
+int pddlObjsParse(pddl_t *pddl, bor_err_t *err)
 {
     int i;
 
     bzero(&pddl->obj, sizeof(pddl->obj));
     pddl->obj.htable = borHTableNew(objHash, objEq, NULL);
 
-    if (parse(pddl, pddl->domain_lisp, PDDL_KW_CONSTANTS, 1) != 0
-            || parse(pddl, pddl->problem_lisp, PDDL_KW_OBJECTS, 0) != 0)
-        TRACE_RET(-1);
+    if (parse(pddl, pddl->domain_lisp, PDDL_KW_CONSTANTS, 1, err) != 0
+            || parse(pddl, pddl->problem_lisp, PDDL_KW_OBJECTS, 0, err) != 0)
+        BOR_TRACE_RET(err, -1);
 
     if (((pddl->require & PDDL_REQUIRE_MULTI_AGENT)
                 && (pddl->require & PDDL_REQUIRE_UNFACTORED_PRIVACY))
             || (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY)){
-        if (parsePrivate(pddl, pddl->problem_lisp) != 0)
-            TRACE_RET(-1);
+        if (parsePrivate(pddl, pddl->problem_lisp, err) != 0)
+            BOR_TRACE_RET(err, -1);
     }
 
     for (i = 0; i < pddl->obj.size; ++i)

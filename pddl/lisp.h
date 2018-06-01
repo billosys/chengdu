@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <boruvka/compiler.h>
+#include <boruvka/err.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -110,7 +111,7 @@ typedef struct pddl_lisp pddl_lisp_t;
 /**
  * Parses the input file and returns the parsed pddl-lisp object.
  */
-pddl_lisp_t *pddlLispParse(const char *fn);
+pddl_lisp_t *pddlLispParse(const char *fn, bor_err_t *err);
 
 /**
  * Deletes pddl-lisp object.
@@ -134,14 +135,17 @@ const pddl_lisp_node_t *pddlLispFindNode(
  */
 typedef int (*pddl_lisp_parse_typed_list_fn)(
                 const pddl_lisp_node_t *root,
-                int child_from, int child_to, int child_type, void *ud);
+                int child_from, int child_to, int child_type, void *ud,
+                bor_err_t *err);
 
 /**
  * Parse typed list.
  */
 int pddlLispParseTypedList(const pddl_lisp_node_t *root,
                            int child_from, int child_to,
-                           pddl_lisp_parse_typed_list_fn cb, void *ud);
+                           pddl_lisp_parse_typed_list_fn cb,
+                           void *ud,
+                           bor_err_t *err);
 
 /**
  * Copy pddl-lisp-node from src to dst.

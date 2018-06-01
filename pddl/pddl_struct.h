@@ -28,7 +28,6 @@
 #include <pddl/pred.h>
 #include <pddl/fact.h>
 #include <pddl/action.h>
-#include <pddl/err.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,15 +66,15 @@ struct pddl {
  * Initialize pddl structure from the domain/problem PDDL files.
  */
 int pddlInit(pddl_t *pddl, const char *domain_fn, const char *problem_fn,
-             const pddl_config_t *cfg);
+             const pddl_config_t *cfg, bor_err_t *err);
 
 /**
  * Frees allocated memory.
  */
 void pddlFree(pddl_t *pddl);
 
-pddl_t *pddlew(const char *domain_fn, const char *problem_fn,
-               const pddl_config_t *cfg);
+pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
+                const pddl_config_t *cfg, bor_err_t *err);
 void pddlDel(pddl_t *pddl);
 
 /**

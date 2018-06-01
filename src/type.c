@@ -20,7 +20,7 @@
 #include <boruvka/alloc.h>
 #include "pddl/pddl.h"
 #include "pddl/type.h"
-#include "err.h"
+#include "lisp_err.h"
 #include "assert.h"
 
 static const char *object_name = "object";
@@ -55,7 +55,8 @@ static int add(pddl_types_t *t, const char *name)
 }
 
 static int setCB(const pddl_lisp_node_t *root,
-                 int child_from, int child_to, int child_type, void *ud)
+                 int child_from, int child_to, int child_type, void *ud,
+                 bor_err_t *err)
 {
     pddl_types_t *t = ud;
     int i, tid, pid;
@@ -63,7 +64,7 @@ static int setCB(const pddl_lisp_node_t *root,
     pid = 0;
     if (child_type >= 0){
         if (root->child[child_type].value == NULL){
-            ERR_LISP_RET2(-1, root->child + child_type,
+            ERR_LISP_RET2(err, -1, root->child + child_type,
                           "Invalid typed list. Unexpected expression");
         }
         pid = add(t, root->child[child_type].value);
@@ -73,7 +74,7 @@ static int setCB(const pddl_lisp_node_t *root,
         // This is checked in pddlLispParseTypedList()
         ASSERT(root->child[i].value != NULL);
         if (root->child[i].value == NULL)
-            ERR_LISP_RET2(-1, root->child + i, "Unexpected expression");
+            ERR_LISP_RET2(err, -1, root->child + i, "Unexpected expression");
 
         tid = add(t, root->child[i].value);
         if (tid != 0)
@@ -83,7 +84,7 @@ static int setCB(const pddl_lisp_node_t *root,
     return 0;
 }
 
-int pddlTypesParse(pddl_t *pddl)
+int pddlTypesParse(pddl_t *pddl, bor_err_t *e)
 {
     pddl_types_t *types;
     const pddl_lisp_node_t *n;
@@ -99,9 +100,9 @@ int pddlTypesParse(pddl_t *pddl)
 
     n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_TYPES);
     if (n != NULL){
-        if (pddlLispParseTypedList(n, 1, n->child_size, setCB, types) != 0){
-            TRACE_UPDATE_RET(-1, "Invalid definition of :types in %s: ",
-                             pddl->domain_lisp->filename);
+        if (pddlLispParseTypedList(n, 1, n->child_size, setCB, types, e) != 0){
+            BOR_TRACE_PREPEND_RET(e, -1, "Invalid definition of :types in %s: ",
+                                  pddl->domain_lisp->filename);
         }
     }
 
@@ -263,7 +264,8 @@ static int cmpInt(const void *a, const void *b)
     return ia - ib;
 }
 
-int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node)
+int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
+                         bor_err_t *err)
 {
     int *either;
     int either_size;
@@ -272,26 +274,26 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node)
     if (node->value != NULL){
         tid = pddlTypesGet(ts, node->value);
         if (tid < 0)
-            ERR_LISP_RET(-1, node, "Unkown type `%s'", node->value);
+            ERR_LISP_RET(err, -1, node, "Unkown type `%s'", node->value);
         return tid;
     }
 
     if (node->child_size < 2 || node->child[0].kw != PDDL_KW_EITHER)
-        ERR_LISP_RET2(-1, node, "Unknown expression");
+        ERR_LISP_RET2(err, -1, node, "Unknown expression");
 
     if (node->child_size == 2 && node->child[1].value != NULL)
-        return pddlTypeFromLispNode(ts, node->child + 1);
+        return pddlTypeFromLispNode(ts, node->child + 1, err);
 
     either_size = node->child_size - 1;
     either = alloca(sizeof(int) * either_size);
     for (i = 1; i < node->child_size; ++i){
         if (node->child[i].value == NULL){
-            ERR_LISP_RET2(-1, node->child + i,
+            ERR_LISP_RET2(err, -1, node->child + i,
                           "Invalid (either ...) expression");
         }
         tid = pddlTypesGet(ts, node->child[i].value);
         if (tid < 0){
-            ERR_LISP_RET(-1, node->child + i, "Unkown type `%s'",
+            ERR_LISP_RET(err, -1, node->child + i, "Unkown type `%s'",
                          node->child[i].value);
         }
 

@@ -20,7 +20,7 @@
 #include <boruvka/alloc.h>
 #include "pddl/pddl.h"
 #include "pddl/pred.h"
-#include "err.h"
+#include "lisp_err.h"
 
 void pddlPredCopy(pddl_pred_t *dst, const pddl_pred_t *src)
 {
@@ -45,7 +45,8 @@ typedef struct _set_t set_t;
 static const char *eq_name = "=";
 
 static int setCB(const pddl_lisp_node_t *root,
-                 int child_from, int child_to, int child_type, void *ud)
+                 int child_from, int child_to, int child_type, void *ud,
+                 bor_err_t *err)
 {
     pddl_pred_t *pred = ((set_t *)ud)->pred;
     pddl_types_t *types = ((set_t *)ud)->types;
@@ -54,7 +55,8 @@ static int setCB(const pddl_lisp_node_t *root,
 
     tid = 0;
     if (child_type >= 0){
-        if ((tid = pddlTypeFromLispNode(types, root->child + child_type)) < 0)
+        const pddl_lisp_node_t *node = root->child + child_type;
+        if ((tid = pddlTypeFromLispNode(types, node, err)) < 0)
             return -1;
     }
 
@@ -85,26 +87,28 @@ static int parsePred(pddl_t *pddl,
                      const pddl_lisp_node_t *n,
                      const char *owner_var,
                      const char *errname,
-                     pddl_preds_t *ps)
+                     pddl_preds_t *ps,
+                     bor_err_t *err)
 {
     pddl_pred_t *p;
     set_t set;
 
     if (n->child_size < 1 || n->child[0].value == NULL)
-        ERR_LISP_RET(-1, n, "Invalid %s", errname);
+        ERR_LISP_RET(err, -1, n, "Invalid %s", errname);
 
     if (checkDuplicate(ps, n->child[0].value)){
         // TODO: err/warn
-        ERR_LISP_RET(-1, n, "Duplicate %s `%s'", errname, n->child[0].value);
+        ERR_LISP_RET(err, -1, n, "Duplicate %s `%s'",
+                     errname, n->child[0].value);
     }
 
     p = pddlPredsAdd(ps);
     set.pred = p;
     set.types = &pddl->type;
     set.owner_var = owner_var;
-    if (pddlLispParseTypedList(n, 1, n->child_size, setCB, &set) != 0){
+    if (pddlLispParseTypedList(n, 1, n->child_size, setCB, &set, err) != 0){
         pddlPredsRemoveLast(ps);
-        TRACE_UPDATE_RET(-1, "%s `%s': ", errname, n->child[0].value);
+        BOR_TRACE_PREPEND_RET(err, -1, "%s `%s': ", errname, n->child[0].value);
     }
 
     p->name = n->child[0].value;
@@ -113,7 +117,8 @@ static int parsePred(pddl_t *pddl,
 
 static int parsePrivatePreds(pddl_t *pddl,
                              const pddl_lisp_node_t *n,
-                             pddl_preds_t *ps)
+                             pddl_preds_t *ps,
+                             bor_err_t *err)
 {
     const char *owner_var;
     int factor, i, from;
@@ -121,8 +126,10 @@ static int parsePrivatePreds(pddl_t *pddl,
     factor = (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
 
     if (factor){
-        if (n->child_size < 2 || n->child[0].kw != PDDL_KW_PRIVATE)
-            ERR_LISP_RET2(-1, n, "Invalid definition of :private predicate");
+        if (n->child_size < 2 || n->child[0].kw != PDDL_KW_PRIVATE){
+            ERR_LISP_RET2(err, -1, n,
+                          "Invalid definition of :private predicate");
+        }
 
         owner_var = NULL;
         from = 1;
@@ -133,7 +140,8 @@ static int parsePrivatePreds(pddl_t *pddl,
                 || n->child[1].value == NULL
                 || n->child[1].value[0] != '?'
                 || (n->child[2].value != NULL && n->child_size < 5)){
-            ERR_LISP_RET2(-1, n, "Invalid definition of :private predicate");
+            ERR_LISP_RET2(err, -1, n,
+                          "Invalid definition of :private predicate");
         }
 
         owner_var = n->child[1].value;
@@ -147,8 +155,8 @@ static int parsePrivatePreds(pddl_t *pddl,
 
     for (i = from; i < n->child_size; ++i){
         if (parsePred(pddl, n->child + i, owner_var,
-                      "private predicate", ps) != 0){
-            TRACE_RET(-1);
+                      "private predicate", ps, err) != 0){
+            BOR_TRACE_RET(err, -1);
         }
 
         ps->pred[ps->size - 1].is_private = 1;
@@ -168,7 +176,7 @@ static void addEqPredicate(pddl_preds_t *ps)
     ps->eq_pred = ps->size - 1;
 }
 
-int pddlPredsParse(pddl_t *pddl)
+int pddlPredsParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
     int i, to, private;
@@ -197,24 +205,26 @@ int pddlPredsParse(pddl_t *pddl)
 
     // Parse non :private predicates
     for (i = 1; i < to; ++i){
-        if (parsePred(pddl, n->child + i, NULL, "predicate", &pddl->pred) != 0)
-            TRACE_UPDATE_RET(-1, "While parsing :predicates in %s: ",
-                             pddl->domain_lisp->filename);
+        if (parsePred(pddl, n->child + i, NULL, "predicate", &pddl->pred,
+                      err) != 0)
+            BOR_TRACE_PREPEND_RET(err, -1, "While parsing :predicates in %s: ",
+                                  pddl->domain_lisp->filename);
     }
 
     if (private){
         // Parse :private predicates
         for (i = to; i < n->child_size; ++i){
-            if (parsePrivatePreds(pddl, n->child + i, &pddl->pred) != 0)
-                TRACE_UPDATE_RET(-1, "While parsing private :predicates in"
-                                 " %s: ", pddl->domain_lisp->filename);
+            if (parsePrivatePreds(pddl, n->child + i, &pddl->pred, err) != 0)
+                BOR_TRACE_PREPEND_RET(err, -1, "While parsing private"
+                                      " :predicates in %s: ",
+                                      pddl->domain_lisp->filename);
         }
     }
 
     return 0;
 }
 
-int pddlFuncsParse(pddl_t *pddl)
+int pddlFuncsParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
     int i;
@@ -224,16 +234,18 @@ int pddlFuncsParse(pddl_t *pddl)
         return 0;
 
     for (i = 1; i < n->child_size; ++i){
-        if (parsePred(pddl, n->child + i, NULL, "function", &pddl->func) != 0)
-            TRACE_UPDATE_RET(-1, "While parsing :functions in %s: ",
-                             pddl->domain_lisp->filename);
+        if (parsePred(pddl, n->child + i, NULL, "function",
+                      &pddl->func, err) != 0){
+            BOR_TRACE_PREPEND_RET(err, -1, "While parsing :functions in %s: ",
+                                  pddl->domain_lisp->filename);
+        }
 
         if (i + 2 < n->child_size
                 && n->child[i + 1].value != NULL
                 && strcmp(n->child[i + 1].value, "-") == 0){
             if (n->child[i + 2].value == NULL
                     || strcmp(n->child[i + 2].value, "number") != 0){
-                ERR_RET(-1, "While parsing :functions in %s: Only number"
+                BOR_ERR_RET(err, -1, "While parsing :functions in %s: Only number"
                             " functions are supported (line %d).",
                         pddl->domain_lisp->filename, n->child[i + 2].lineno);
             }

@@ -59,12 +59,12 @@ typedef struct pddl_preds pddl_preds_t;
 /**
  * Parse :predicates from domain PDDL.
  */
-int pddlPredsParse(pddl_t *pddl);
+int pddlPredsParse(pddl_t *pddl, bor_err_t *err);
 
 /**
  * Parse :functions from domain PDDL.
  */
-int pddlFuncsParse(pddl_t *pddl);
+int pddlFuncsParse(pddl_t *pddl, bor_err_t *err);
 
 /**
  * Frees allocated resources.

@@ -70,7 +70,7 @@ void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl);
 /**
  * Parses actions from domain PDDL.
  */
-int pddlActionsParse(pddl_t *pddl);
+int pddlActionsParse(pddl_t *pddl, bor_err_t *err);
 
 /**
  * Free allocated memory.

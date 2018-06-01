@@ -58,7 +58,8 @@ struct pddl_strips {
  * Grounds pddl into strips.
  */
 pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
-                             const pddl_strips_config_t *cfg);
+                             const pddl_strips_config_t *cfg,
+                             bor_err_t *err);
 
 /**
  * Deletes allocated memory.
