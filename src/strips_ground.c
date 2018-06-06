@@ -1082,6 +1082,8 @@ int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl,
         BOR_TRACE_RET(err, -1);
     }
 
+    pddlStripsOpsDeduplicate(&strips->op);
+
     groundFree(&g);
     BOR_INFO(err, "PDDL grounded to STRIPS (domain: %s, problem: %s).",
              pddl->domain_lisp->filename,

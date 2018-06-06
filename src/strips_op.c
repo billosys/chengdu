@@ -17,36 +17,13 @@
  * See the License for more information.
  */
 
-#include <boruvka/hfunc.h>
+#include <limits.h>
 #include <boruvka/sort.h>
+#include <boruvka/iarr.h>
+#include <boruvka/hfunc.h>
 #include "pddl/pddl.h"
 #include "pddl/strips_op.h"
 #include "assert.h"
-
-static bor_htable_key_t htableKey(const bor_list_t *key, void *_)
-{
-    pddl_strips_op_t *op = BOR_LIST_ENTRY(key, pddl_strips_op_t, htable);
-    return op->hash;
-}
-
-static int htableEq(const bor_list_t *k1,
-                    const bor_list_t *k2, void *_)
-{
-    pddl_strips_op_t *o1 = BOR_LIST_ENTRY(k1, pddl_strips_op_t, htable);
-    pddl_strips_op_t *o2 = BOR_LIST_ENTRY(k2, pddl_strips_op_t, htable);
-
-    return o1->hash == o2->hash
-            && strcmp(o1->name, o2->name) == 0
-            && borISetEq(&o1->pre, &o2->pre)
-            && borISetEq(&o1->add_eff, &o2->add_eff)
-            && borISetEq(&o1->del_eff, &o2->del_eff)
-            && o1->cost == o2->cost;
-}
-
-_bor_inline uint64_t nameHash(const char *name)
-{
-    return borHashDJB2(name);
-}
 
 void pddlStripsOpInit(pddl_strips_op_t *op)
 {
@@ -124,7 +101,6 @@ void pddlStripsOpNormalize(pddl_strips_op_t *op)
 int pddlStripsOpFinalize(pddl_strips_op_t *op, char *name)
 {
     op->name = name;
-    op->hash = nameHash(name);
     pddlStripsOpNormalize(op);
     if (op->add_eff.size == 0 && op->del_eff.size == 0)
         return -1;
@@ -157,7 +133,6 @@ void pddlStripsOpCopyWithoutCondEff(pddl_strips_op_t *dst,
                                     const pddl_strips_op_t *src)
 {
     dst->name = BOR_STRDUP(src->name);
-    dst->hash = src->hash;
     dst->cost = src->cost;
     borISetUnion(&dst->pre, &src->pre);
     borISetUnion(&dst->add_eff, &src->add_eff);
@@ -180,7 +155,6 @@ void pddlStripsOpCopyDual(pddl_strips_op_t *dst, const pddl_strips_op_t *src)
         borISetUnion(&ce->add_eff, &f->add_eff);
         borISetUnion(&ce->del_eff, &f->pre);
     }
-    dst->hash = src->hash;
 }
 
 void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap)
@@ -196,6 +170,147 @@ void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap)
         borISetRemap(&ce->add_eff, remap);
         borISetRemap(&ce->del_eff, remap);
     }
+}
+
+static void iarrAppendISet(bor_iarr_t *arr, const bor_iset_t *set)
+{
+    int fact;
+    BOR_ISET_FOR_EACH(set, fact)
+        borIArrAdd(arr, fact);
+}
+
+static uint64_t opHash(const pddl_strips_op_t *op)
+{
+    const int delim = INT_MAX;
+    BOR_IARR(buf);
+    uint64_t hash;
+
+    iarrAppendISet(&buf, &op->pre);
+    borIArrAdd(&buf, delim);
+    iarrAppendISet(&buf, &op->add_eff);
+    borIArrAdd(&buf, delim);
+    iarrAppendISet(&buf, &op->del_eff);
+    borIArrAdd(&buf, delim);
+
+    for (int cei = 0; cei < op->cond_eff_size; ++cei){
+        const pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+        iarrAppendISet(&buf, &ce->pre);
+        borIArrAdd(&buf, delim);
+        iarrAppendISet(&buf, &ce->add_eff);
+        borIArrAdd(&buf, delim);
+        iarrAppendISet(&buf, &ce->del_eff);
+        borIArrAdd(&buf, delim);
+    }
+
+    hash = borCityHash_64(buf.arr, buf.size);
+    borIArrFree(&buf);
+
+    return hash;
+}
+
+static uint64_t opEq(const pddl_strips_op_t *op1,
+                     const pddl_strips_op_t *op2)
+{
+    if (op1->cond_eff_size != op2->cond_eff_size)
+        return 0;
+
+    if (!borISetEq(&op1->pre, &op2->pre)
+            || !borISetEq(&op1->add_eff, &op2->add_eff)
+            || !borISetEq(&op2->del_eff, &op2->del_eff))
+        return 0;
+
+    for (int cei = 0; cei < op1->cond_eff_size; ++cei){
+        const pddl_strips_op_cond_eff_t *ce1 = op1->cond_eff + cei;
+        const pddl_strips_op_cond_eff_t *ce2 = op2->cond_eff + cei;
+        if (!borISetEq(&ce1->pre, &ce2->pre)
+                || !borISetEq(&ce1->add_eff, &ce2->add_eff)
+                || !borISetEq(&ce1->del_eff, &ce2->del_eff))
+            return 0;
+    }
+    return 1;
+}
+
+struct deduplicate {
+    int id;
+    int cost;
+    uint64_t hash;
+};
+typedef struct deduplicate deduplicate_t;
+
+static int opDeduplicateHashCmp(const void *_a, const void *_b, void *_)
+{
+    const deduplicate_t *a = _a;
+    const deduplicate_t *b = _b;
+    if (a->hash < b->hash)
+        return -1;
+    if (a->hash > b->hash)
+        return 1;
+    return a->cost - b->cost;
+}
+
+static int deduplicateRange(const pddl_strips_ops_t *ops,
+                            deduplicate_t *dedup,
+                            int start,
+                            int end,
+                            int *remove)
+{
+    int change = 0;
+
+    for (int di = start; di < end; ++di){
+        const deduplicate_t *d1 = dedup + di;
+        if (d1->id < 0)
+            continue;
+
+        for (int di2 = di + 1; di2 < end; ++di2){
+            deduplicate_t *d2 = dedup + di2;
+            if (d2->id < 0)
+                continue;
+
+            if (opEq(ops->op[d1->id], ops->op[d2->id])){
+                // dedup is sorted by the cost so it always holds that
+                // d1->cost <= d2->cost
+                remove[d2->id] = 1;
+                change = 1;
+                d2->id = -1;
+            }
+        }
+    }
+
+    return change;
+}
+
+void pddlStripsOpsDeduplicate(pddl_strips_ops_t *ops)
+{
+    deduplicate_t *dedup;
+    int *remove;
+    int change = 0;
+
+    remove = BOR_CALLOC_ARR(int, ops->op_size);
+    dedup = BOR_CALLOC_ARR(deduplicate_t, ops->op_size);
+    for (int op_id = 0; op_id < ops->op_size; ++op_id){
+        dedup[op_id].id = op_id;
+        dedup[op_id].cost = ops->op[op_id]->cost;
+        dedup[op_id].hash = opHash(ops->op[op_id]);
+    }
+
+    borSort(dedup, ops->op_size, sizeof(deduplicate_t),
+            opDeduplicateHashCmp, NULL);
+
+    int start, cur;
+    for (start = 0, cur = 1; cur < ops->op_size; ++cur){
+        if (dedup[cur].hash != dedup[start].hash){
+            if (start < cur - 1)
+                change |= deduplicateRange(ops, dedup, start, cur, remove);
+            start = cur;
+        }
+    }
+    if (start < cur - 1)
+        change |= deduplicateRange(ops, dedup, start, cur, remove);
+
+    if (change)
+        pddlStripsOpsDelOps(ops, remove);
+    BOR_FREE(dedup);
+    BOR_FREE(remove);
 }
 
 static int opCmp(const void *a, const void *b, void *_)
@@ -253,12 +368,10 @@ void pddlStripsOpsInit(pddl_strips_ops_t *ops)
     bzero(ops, sizeof(*ops));
     ops->op_alloc = 4;
     ops->op = BOR_ALLOC_ARR(pddl_strips_op_t *, ops->op_alloc);
-    ops->htable = borHTableNew(htableKey, htableEq, NULL);
 }
 
 void pddlStripsOpsFree(pddl_strips_ops_t *ops)
 {
-    borHTableDel(ops->htable);
     for (int i = 0; i < ops->op_size; ++i){
         if (ops->op[i])
             pddlStripsOpDel(ops->op[i]);
@@ -291,20 +404,9 @@ static pddl_strips_op_t *nextNewOp(pddl_strips_ops_t *ops)
 
 int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add)
 {
-    pddl_strips_op_t op_find, *op;
-    bor_list_t *lfound;
-
-    op_find = *add;
-    op_find.hash = nameHash(op_find.name);
-    if ((lfound = borHTableFind(ops->htable, &op_find.htable)) != NULL){
-        op = bor_container_of(lfound, pddl_strips_op_t, htable);
-        return op->id;
-    }
-
+    pddl_strips_op_t *op;
     op = nextNewOp(ops);
     pddlStripsOpCopy(op, add);
-    op->hash = op_find.hash;
-    borHTableInsert(ops->htable, &op->htable);
     return op->id;
 }
 
@@ -313,9 +415,7 @@ void pddlStripsOpsDelOps(pddl_strips_ops_t *ops, const int *m)
     int ins = 0;
     for (int op_id = 0; op_id < ops->op_size; ++op_id){
         if (m[op_id]){
-            borHTableErase(ops->htable, &ops->op[op_id]->htable);
             pddlStripsOpDel(ops->op[op_id]);
-
         }else{
             ops->op[op_id]->id = ins;
             ops->op[ins++] = ops->op[op_id];

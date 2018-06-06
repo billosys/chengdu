@@ -20,7 +20,6 @@
 #ifndef __PDDL_STRIPS_OP_H__
 #define __PDDL_STRIPS_OP_H__
 
-#include <boruvka/htable.h>
 #include <boruvka/iset.h>
 
 #include <pddl/common.h>
@@ -48,8 +47,6 @@ struct pddl_strips_op {
     int cond_eff_alloc;
 
     int id;
-    uint64_t hash;
-    bor_list_t htable;
 };
 typedef struct pddl_strips_op pddl_strips_op_t;
 
@@ -162,7 +159,6 @@ struct pddl_strips_ops {
     pddl_strips_op_t **op;
     int op_size;
     int op_alloc;
-    bor_htable_t *htable;
 };
 typedef struct pddl_strips_ops pddl_strips_ops_t;
 
@@ -194,6 +190,11 @@ void pddlStripsOpsDelOps(pddl_strips_ops_t *ops, const int *m);
  * Calls pddlStripsOpRemapFacts for each operator.
  */
 void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap);
+
+/**
+ * Removes duplicate operators, keeps the ones with the lowest cost.
+ */
+void pddlStripsOpsDeduplicate(pddl_strips_ops_t *ops);
 
 /**
  * Sort operators by name.
