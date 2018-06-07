@@ -72,17 +72,8 @@ void pddlStripsDel(pddl_strips_t *strips);
 pddl_strips_t *pddlStripsClone(const pddl_strips_t *src);
 
 /**
- * Construct a dual strips problem.
+ * Make the STRIPS problem artificially unsolvable.
  */
-pddl_strips_t *pddlStripsDual(const pddl_strips_t *strips);
-
-/**
- * Compile out conditional effects by making each conditional effect a
- * separate operator, i.e., the compilation is linear.
- * This transformation can be useful for a reachability analysis.
- */
-pddl_strips_t *pddlStripsCompileAwayCondEffRelaxed(const pddl_strips_t *strips);
-
 void pddlStripsMakeUnsolvable(pddl_strips_t *strips);
 
 /**
