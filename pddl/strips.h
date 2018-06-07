@@ -30,17 +30,17 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct pddl_strips_config {
+struct pddl_ground_config {
     int dummy;
 };
-typedef struct pddl_strips_config pddl_strips_config_t;
+typedef struct pddl_ground_config pddl_ground_config_t;
 
-#define PDDL_STRIPS_CONFIG_INIT { \
+#define PDDL_GROUND_CONFIG_INIT { \
         0, /* dummy */ \
     }
 
 struct pddl_strips {
-    pddl_strips_config_t cfg;
+    pddl_ground_config_t cfg;
     char *domain_name;
     char *problem_name;
     char *domain_file;
@@ -55,21 +55,22 @@ struct pddl_strips {
 };
 
 /**
- * Grounds pddl into strips.
+ * Ground PDDL into STRIPS.
  */
-pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
-                             const pddl_strips_config_t *cfg,
-                             bor_err_t *err);
+int pddlStripsGround(pddl_strips_t *strips,
+                     pddl_t *pddl,
+                     const pddl_ground_config_t *cfg,
+                     bor_err_t *err);
 
 /**
- * Deletes allocated memory.
+ * Free allocated memory.
  */
-void pddlStripsDel(pddl_strips_t *strips);
+void pddlStripsFree(pddl_strips_t *strips);
 
 /**
- * Clone the strips structure.
+ * Copy the strips structure.
  */
-pddl_strips_t *pddlStripsClone(const pddl_strips_t *src);
+void pddlStripsCopy(pddl_strips_t *dst, const pddl_strips_t *src);
 
 /**
  * Make the STRIPS problem artificially unsolvable.

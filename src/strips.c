@@ -39,17 +39,13 @@ static void copyBasicInfo(pddl_strips_t *dst, const pddl_strips_t *src)
         dst->problem_file = BOR_STRDUP(src->problem_file);
 }
 
-static pddl_strips_t *stripsNew(void)
+static void stripsInit(pddl_strips_t *strips)
 {
-    pddl_strips_t *strips;
-
-    strips = BOR_ALLOC(pddl_strips_t);
     bzero(strips, sizeof(*strips));
     pddlFactsInit(&strips->fact);
     pddlStripsOpsInit(&strips->op);
     borISetInit(&strips->init);
     borISetInit(&strips->goal);
-    return strips;
 }
 
 void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
@@ -75,12 +71,12 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     strips->fact.fact_size = 1;
 }
 
-
-pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
-                             const pddl_strips_config_t *cfg,
-                             bor_err_t *err)
+int pddlStripsGround(pddl_strips_t *strips,
+                     pddl_t *pddl,
+                     const pddl_ground_config_t *cfg,
+                     bor_err_t *err)
 {
-    pddl_strips_t *strips = stripsNew();
+    stripsInit(strips);
 
     strips->cfg = *cfg;
 
@@ -94,22 +90,17 @@ pddl_strips_t *pddlStripsNew(const pddl_t *pddl,
         strips->problem_file = BOR_STRDUP(pddl->problem_lisp->filename);
 
     if (_pddlStripsGround(strips, pddl, err) != 0){
-        pddlStripsDel(strips);
-        BOR_TRACE_RET(err, NULL);
+        pddlStripsFree(strips);
+        BOR_TRACE_RET(err, -1);
     }
 
-    // TODO: remove identical/dominated operators
-    //       (don't forget to keep the one with the minimal cost)
-
-    if (strips->goal_is_unreachable){
+    if (strips->goal_is_unreachable)
         pddlStripsMakeUnsolvable(strips);
-        return strips;
-    }
 
-    return strips;
+    return 0;
 }
 
-void pddlStripsDel(pddl_strips_t *strips)
+void pddlStripsFree(pddl_strips_t *strips)
 {
     if (strips->domain_name)
         BOR_FREE(strips->domain_name);
@@ -123,13 +114,12 @@ void pddlStripsDel(pddl_strips_t *strips)
     pddlStripsOpsFree(&strips->op);
     borISetFree(&strips->init);
     borISetFree(&strips->goal);
-    BOR_FREE(strips);
+    bzero(strips, sizeof(*strips));
 }
 
-pddl_strips_t *pddlStripsClone(const pddl_strips_t *src)
+void pddlStripsCopy(pddl_strips_t *dst, const pddl_strips_t *src)
 {
-    pddl_strips_t *dst = stripsNew();
-
+    stripsInit(dst);
     copyBasicInfo(dst, src);
     dst->cfg = src->cfg;
 
@@ -139,8 +129,6 @@ pddl_strips_t *pddlStripsClone(const pddl_strips_t *src)
     borISetUnion(&dst->goal, &src->goal);
     dst->goal_is_unreachable = src->goal_is_unreachable;
     dst->has_cond_eff = src->has_cond_eff;
-
-    return dst;
 }
 
 void pddlStripsCrossRefFactsOps(const pddl_strips_t *strips,
