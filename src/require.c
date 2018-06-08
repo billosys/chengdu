@@ -83,7 +83,7 @@ static unsigned requireMask(int kw)
     return 0u;
 }
 
-int pddlRequireParse(pddl_t *pddl)
+int pddlRequireParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *req_node, *n;
     unsigned m;
@@ -103,11 +103,11 @@ int pddlRequireParse(pddl_t *pddl)
     for (i = 1; i < req_node->child_size; ++i){
         n = req_node->child + i;
         if (n->value == NULL){
-            ERR_RET(-1, "Invalid :requirements definition in %s on line %d.",
+            BOR_ERR_RET(err, -1, "Invalid :requirements definition in %s on line %d.",
                     pddl->domain_lisp->filename, n->lineno);
         }
         if ((m = requireMask(n->kw)) == 0u){
-            ERR_RET(-1, "Invalid :requirements definition in %s on line %d."
+            BOR_ERR_RET(err, -1, "Invalid :requirements definition in %s on line %d."
                         " Unknown keyword `%s'.",
                     pddl->domain_lisp->filename, n->lineno, n->value);
         }

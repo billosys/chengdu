@@ -21,7 +21,7 @@
 #include "pddl/config.h"
 #include "pddl/pddl.h"
 #include "pddl/action.h"
-#include "err.h"
+#include "lisp_err.h"
 
 
 #define PDDL_ACTIONS_ALLOC_INIT 4
@@ -29,7 +29,8 @@
 #define ERR_PREFIX_MAXSIZE 128
 
 
-static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
+static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root,
+                       bor_err_t *err)
 {
     char err_prefix[ERR_PREFIX_MAXSIZE];
     const pddl_lisp_node_t *n;
@@ -39,7 +40,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
     if (root->child_size < 4
             || root->child_size / 2 == 1
             || root->child[1].value == NULL){
-        ERR_RET2(-1, "Invalid definition.");
+        BOR_ERR_RET2(err, -1, "Invalid definition.");
     }
 
     a = pddlActionsAdd(&pddl->action);
@@ -49,19 +50,19 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
         if (root->child[i].kw == PDDL_KW_AGENT){
             if (!(pddl->require & PDDL_REQUIRE_MULTI_AGENT)){
                 // TODO: err/warn
-                ERR_LISP_RET2(-1, root->child + i,
+                ERR_LISP_RET2(err, -1, root->child + i,
                               ":agent is allowed only with :multi-agent"
-                              " requirement;");
+                              " requirement");
             }
 
-            ret = pddlParamsParseAgent(&a->param, root, i, &pddl->type);
+            ret = pddlParamsParseAgent(&a->param, root, i, &pddl->type, err);
             if (ret < 0)
-                TRACE_RET(-1);
+                BOR_TRACE_RET(err, -1);
             i = ret - 2;
 
         }else if (root->child[i].kw == PDDL_KW_PARAMETERS){
-            if (pddlParamsParse(&a->param, n, &pddl->type) != 0)
-                TRACE_RET(-1);
+            if (pddlParamsParse(&a->param, n, &pddl->type, err) != 0)
+                BOR_TRACE_RET(err, -1);
 
         }else if (root->child[i].kw == PDDL_KW_PRE){
             // Skip empty preconditions, i.e., () or (and)
@@ -76,25 +77,25 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
 
             snprintf(err_prefix, ERR_PREFIX_MAXSIZE,
                      "Precondition of the action `%s': ", a->name);
-            a->pre = pddlCondParse(n, pddl, &a->param, err_prefix);
+            a->pre = pddlCondParse(n, pddl, &a->param, err_prefix, err);
             if (a->pre == NULL)
-                TRACE_RET(-1);
-            if (pddlCondCheckPre(a->pre, pddl->require, 1) != 0)
-                TRACE_RET(-1);
+                BOR_TRACE_RET(err, -1);
+            if (pddlCondCheckPre(a->pre, pddl->require, err) != 0)
+                BOR_TRACE_RET(err, -1);
             pddlCondSetPredRead(a->pre, &pddl->pred);
 
         }else if (root->child[i].kw == PDDL_KW_EFF){
             snprintf(err_prefix, ERR_PREFIX_MAXSIZE,
                      "Effect of the action `%s': ", a->name);
-            a->eff = pddlCondParse(n, pddl, &a->param, err_prefix);
+            a->eff = pddlCondParse(n, pddl, &a->param, err_prefix, err);
             if (a->eff == NULL)
-                TRACE_RET(-1);
-            if (pddlCondCheckEff(a->eff, pddl->require, 1) != 0)
-                TRACE_RET(-1);
+                BOR_TRACE_RET(err, -1);
+            if (pddlCondCheckEff(a->eff, pddl->require, err) != 0)
+                BOR_TRACE_RET(err, -1);
             pddlCondSetPredReadWriteEff(a->eff, &pddl->pred);
 
         }else{
-            ERR_LISP_RET(-1, root->child + i, "Unexpected token: %s",
+            ERR_LISP_RET(err, -1, root->child + i, "Unexpected token: %s",
                          root->child[i].value);
         }
     }
@@ -111,7 +112,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root)
     return 0;
 }
 
-int pddlActionsParse(pddl_t *pddl)
+int pddlActionsParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *root = &pddl->domain_lisp->root;
     const pddl_lisp_node_t *n;
@@ -120,9 +121,10 @@ int pddlActionsParse(pddl_t *pddl)
     for (i = 0; i < root->child_size; ++i){
         n = root->child + i;
         if (pddlLispNodeHeadKw(n) == PDDL_KW_ACTION){
-            if (parseAction(pddl, n) != 0){
-                TRACE_UPDATE_RET(-1, "While parsing :action in %s on line %d: ",
-                                 pddl->domain_lisp->filename, n->lineno);
+            if (parseAction(pddl, n, err) != 0){
+                BOR_TRACE_PREPEND_RET(err, -1, "While parsing :action in %s"
+                                      " on line %d: ",
+                                      pddl->domain_lisp->filename, n->lineno);
             }
         }
     }

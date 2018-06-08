@@ -15,25 +15,13 @@ ifeq '$(BIN_STATIC)' 'yes'
   LDFLAGS += -static
 endif
 
-TRANSLATE_OBJS  = translate.o
-TRANSLATE_OBJS += options.o
-
-TARGETS = pddl-translate pddl-check
+TARGETS = pddl-check pddl-strips
 
 all: $(TARGETS)
 
-
-search: ../libpddl.a $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
-
-pddl-translate: $(TRANSLATE_OBJS) ../libpddl.a
-	$(CC) $(CFLAGS) -o $@ $(TRANSLATE_OBJS) $(LDFLAGS)
-pddl-ldm: ldm.c ../libpddl.a
-	$(CC) $(CFLAGS) -o $@ ldm.c $(LDFLAGS)
 pddl-check: check.c ../libpddl.a
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
-
-pddl-%: %.c ../libpddl.a
+pddl-strips: strips.c ../libpddl.a
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 %.o: %.c %.h

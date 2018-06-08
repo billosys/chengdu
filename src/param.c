@@ -20,7 +20,7 @@
 #include <boruvka/alloc.h>
 
 #include "pddl/param.h"
-#include "err.h"
+#include "lisp_err.h"
 #include "assert.h"
 
 void pddlParamInit(pddl_param_t *param)
@@ -91,7 +91,8 @@ struct _set_param_t {
 typedef struct _set_param_t set_param_t;
 
 static int setParams(const pddl_lisp_node_t *root,
-                     int child_from, int child_to, int child_type, void *ud)
+                     int child_from, int child_to, int child_type, void *ud,
+                     bor_err_t *err)
 {
     pddl_params_t *params = ((set_param_t *)ud)->param;
     pddl_types_t *types = ((set_param_t *)ud)->types;
@@ -100,18 +101,19 @@ static int setParams(const pddl_lisp_node_t *root,
 
     tid = 0;
     if (child_type >= 0){
-        if ((tid = pddlTypeFromLispNode(types, root->child + child_type)) < 0)
+        const pddl_lisp_node_t *node = root->child + child_type;
+        if ((tid = pddlTypeFromLispNode(types, node, err)) < 0)
             return -1;
     }
 
     for (i = child_from; i < child_to; ++i){
         ASSERT(root->child[i].value != NULL);
         if (root->child[i].value == NULL)
-            ERR_LISP_RET2(-1, root->child + i, "Unexpected expression");
+            ERR_LISP_RET2(err, -1, root->child + i, "Unexpected expression");
 
         if (root->child[i].value[0] != '?'){
-            ERR_LISP_RET(-1, root->child + i, "Expected variable, got `%s'.",
-                         root->child[i].value);
+            ERR_LISP_RET(err, -1, root->child + i,
+                         "Expected variable, got `%s'.", root->child[i].value);
         }
 
         param = pddlParamsAdd(params);
@@ -125,21 +127,23 @@ static int setParams(const pddl_lisp_node_t *root,
 
 int pddlParamsParse(pddl_params_t *params,
                     const pddl_lisp_node_t *root,
-                    pddl_types_t *types)
+                    pddl_types_t *types,
+                    bor_err_t *err)
 {
     set_param_t set_param;
     set_param.param = params;
     set_param.types = types;
     if (pddlLispParseTypedList(root, 0, root->child_size,
-                                setParams, &set_param) != 0)
-        TRACE_RET(-1);
+                                setParams, &set_param, err) != 0)
+        BOR_TRACE_RET(err, -1);
     return 0;
 }
 
 int pddlParamsParseAgent(pddl_params_t *params,
                          const pddl_lisp_node_t *n,
                          int nid,
-                         pddl_types_t *types)
+                         pddl_types_t *types,
+                         bor_err_t *err)
 {
     set_param_t set_param;
     int to;
@@ -154,8 +158,8 @@ int pddlParamsParseAgent(pddl_params_t *params,
 
     set_param.param = params;
     set_param.types = types;
-    if (pddlLispParseTypedList(n, nid + 1, to, setParams, &set_param) != 0)
-        TRACE_RET(-1);
+    if (pddlLispParseTypedList(n, nid + 1, to, setParams, &set_param, err) != 0)
+        BOR_TRACE_RET(err, -1);
 
     params->param[params->size - 1].is_agent = 1;
     return to;

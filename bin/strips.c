@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 
     borErrWarnEnable(&err, stderr);
     borErrInfoEnable(&err, stderr);
-    cfg.force_adl = 0; // TODO: parametrize
+    cfg.force_adl = 1; // TODO: parametrize
     if (pddlInit(&pddl, argv[1], argv[2], &cfg, &err) != 0){
         borErrPrint(&err, 1, stderr);
         return -1;
@@ -28,7 +28,10 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    pddlStripsPrintDebug(&strips, stdout);
+
     pddlStripsFree(&strips);
     pddlFree(&pddl);
     return 0;
 }
+

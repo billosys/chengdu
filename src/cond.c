@@ -22,7 +22,7 @@
 
 #include "pddl/pddl.h"
 #include "pddl/cond.h"
-#include "err.h"
+#include "lisp_err.h"
 #include "assert.h"
 
 static char *type_names[PDDL_COND_NUM_TYPES] = {
@@ -100,7 +100,8 @@ struct parse_ctx {
     const pddl_preds_t *preds;
     const pddl_preds_t *funcs;
     const pddl_params_t *params;
-    const char *err;
+    const char *err_prefix;
+    bor_err_t *err;
 };
 typedef struct parse_ctx parse_ctx_t;
 
@@ -1049,14 +1050,14 @@ static int parseAtomArg(pddl_cond_atom_arg_t *arg,
 
     if (root->value[0] == '?'){
         if (ctx->params == NULL){
-            ERR_LISP_RET(-1, root, "%sUnexpected variable `%s'",
-                         ctx->err, root->value);
+            ERR_LISP_RET(ctx->err, -1, root, "%sUnexpected variable `%s'",
+                         ctx->err_prefix, root->value);
         }
 
         v = pddlParamsGetId(ctx->params, root->value);
         if (v < 0){
-            ERR_LISP_RET(-1, root, "%sUnkown variable `%s'",
-                         ctx->err, root->value);
+            ERR_LISP_RET(ctx->err, -1, root, "%sUnkown variable `%s'",
+                         ctx->err_prefix, root->value);
         }
         arg->param = v;
         arg->obj = -1;
@@ -1064,8 +1065,8 @@ static int parseAtomArg(pddl_cond_atom_arg_t *arg,
     }else{
         v = pddlObjsGet(ctx->objs, root->value);
         if (v < 0){
-            ERR_LISP_RET(-1, root, "%sUnkown constant/object `%s'",
-                         ctx->err, root->value);
+            ERR_LISP_RET(ctx->err, -1, root, "%sUnkown constant/object `%s'",
+                         ctx->err_prefix, root->value);
         }
         arg->param = -1;
         arg->obj = v;
@@ -1084,27 +1085,31 @@ static pddl_cond_t *parseAtom(const pddl_lisp_node_t *root,
 
     // Get predicate name
     name = pddlLispNodeHead(root);
-    if (name == NULL)
-        ERR_LISP_RET(NULL, root, "%sMissing head of the expression", ctx->err);
+    if (name == NULL){
+        ERR_LISP_RET(ctx->err, NULL, root,
+                     "%sMissing head of the expression", ctx->err_prefix);
+    }
 
     // And resolve it against known predicates
     pred = pddlPredsGet(ctx->preds, name);
-    if (pred == -1)
-        ERR_LISP_RET(NULL, root, "%sUnkown predicate `%s'", ctx->err, name);
+    if (pred == -1){
+        ERR_LISP_RET(ctx->err, NULL, root,
+                     "%sUnkown predicate `%s'", ctx->err_prefix, name);
+    }
 
     // Check correct number of predicates
     if (root->child_size - 1 != ctx->preds->pred[pred].param_size){
-        ERR_LISP_RET(NULL, root,
+        ERR_LISP_RET(ctx->err, NULL, root,
                      "%sInvalid number of arguments of the predicate `%s'",
-                     ctx->err, name);
+                     ctx->err_prefix, name);
     }
 
     // Check that all children are terminals
     for (i = 1; i < root->child_size; ++i){
         if (root->child[i].value == NULL){
-            ERR_LISP_RET(NULL, root->child + i,
+            ERR_LISP_RET(ctx->err, NULL, root->child + i,
                          "%sInvalid %d'th argument of the predicate `%s'",
-                         ctx->err, i, name);
+                         ctx->err_prefix, i, name);
         }
     }
 
@@ -1115,7 +1120,7 @@ static pddl_cond_t *parseAtom(const pddl_lisp_node_t *root,
     for (i = 0; i < atom->arg_size; ++i){
         if (parseAtomArg(atom->arg + i, root->child + i + 1, ctx) != 0){
             condAtomDel(atom);
-            TRACE_RET(NULL);
+            BOR_TRACE_RET(ctx->err, NULL);
         }
     }
     atom->neg = negated;
@@ -1137,24 +1142,24 @@ static pddl_cond_t *parseAssign(const pddl_lisp_node_t *root,
     if (head == NULL
             || strcmp(head, "=") != 0
             || root->child_size != 3){
-        ERR_LISP_RET2(NULL, root, "Invalid (= ...) expression.");
+        ERR_LISP_RET2(ctx->err, NULL, root, "Invalid (= ...) expression.");
     }
 
     nfunc = root->child + 1;
     nval = root->child + 2;
 
     if (nfunc->child_size < 1 || nfunc->child[0].value == NULL)
-        ERR_LISP_RET2(NULL, root, "Invalid function in (= ...).");
+        ERR_LISP_RET2(ctx->err, NULL, root, "Invalid function in (= ...).");
     if (nval->value == NULL){
-        ERR_LISP_RET2(NULL, root, "Only (= ... N) expressions where N is a"
-                                  " number are supported.");
+        ERR_LISP_RET2(ctx->err, NULL, root, "Only (= ... N) expressions where"
+                                            " N is a number are supported.");
     }
 
     sub_ctx = *ctx;
     sub_ctx.preds = sub_ctx.funcs;
     lvalue = parseAtom(nfunc, &sub_ctx, negated);
     if (lvalue == NULL)
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(ctx->err, NULL);
 
     assign = condFuncOpNew(PDDL_COND_ASSIGN);
     assign->value = atoi(nval->value);
@@ -1175,18 +1180,18 @@ static pddl_cond_t *parseIncrease(const pddl_lisp_node_t *root,
             || root->child[1].child_size != 1
             || root->child[1].child[0].value == NULL
             || strcmp(root->child[1].child[0].value, "total-cost") != 0){
-        ERR_LISP_RET(NULL, root,
+        ERR_LISP_RET(ctx->err, NULL, root,
                      "%sOnly (increase (total-cost) int-value) is supported;",
-                     ctx->err);
+                     ctx->err_prefix);
     }
 
     if (root->child[2].value != NULL){
         inc = condFuncOpNew(PDDL_COND_INCREASE);
         inc->value = atoi(root->child[2].value);
         if (inc->value < 0){
-            ERR_LISP_RET(NULL, root,
+            ERR_LISP_RET(ctx->err, NULL, root,
                          "%sOnly non-negative actions costs are supported;",
-                         ctx->err);
+                         ctx->err_prefix);
         }
 
     }else{
@@ -1194,7 +1199,7 @@ static pddl_cond_t *parseIncrease(const pddl_lisp_node_t *root,
         sub_ctx.preds = sub_ctx.funcs;
         fvalue = parseAtom(root->child + 2, &sub_ctx, negated);
         if (fvalue == NULL)
-            TRACE_RET(NULL);
+            BOR_TRACE_RET(ctx->err, NULL);
         inc = condFuncOpNew(PDDL_COND_INCREASE);
         inc->fvalue = (pddl_cond_atom_t *)fvalue;
     }
@@ -1216,7 +1221,7 @@ static pddl_cond_t *parsePart(int part_type,
         cond = parse(root->child + i, ctx, negated);
         if (cond == NULL){
             condPartDel(part);
-            TRACE_RET(NULL);
+            BOR_TRACE_RET(ctx->err, NULL);
         }
         borListAppend(&part->part, &cond->conn);
     }
@@ -1235,11 +1240,11 @@ static pddl_cond_t *parseImply(const pddl_lisp_node_t *left,
 
     if (negated){
         if ((cleft = parse(left, ctx, 0)) == NULL)
-            TRACE_RET(NULL);
+            BOR_TRACE_RET(ctx->err, NULL);
 
         if ((cright = parse(right, ctx, 1)) == NULL){
             pddlCondDel(cleft);
-            TRACE_RET(NULL);
+            BOR_TRACE_RET(ctx->err, NULL);
         }
 
         part = condPartNew(PDDL_COND_AND);
@@ -1249,11 +1254,11 @@ static pddl_cond_t *parseImply(const pddl_lisp_node_t *left,
 
     }else{
         if ((cleft = parse(left, ctx, 0)) == NULL)
-            TRACE_RET(NULL);
+            BOR_TRACE_RET(ctx->err, NULL);
 
         if ((cright = parse(right, ctx, 0)) == NULL){
             pddlCondDel(cleft);
-            TRACE_RET(NULL);
+            BOR_TRACE_RET(ctx->err, NULL);
         }
 
         imp = condImplyNew();
@@ -1273,9 +1278,9 @@ static int parseQuantParams(pddl_params_t *params,
     pddlParamsInit(params);
 
     // Parse all parameters of the quantifier
-    if (pddlParamsParse(params, root, ctx->types) != 0){
+    if (pddlParamsParse(params, root, ctx->types, ctx->err) != 0){
         pddlParamsFree(params);
-        TRACE_RET(-1);
+        BOR_TRACE_RET(ctx->err, -1);
     }
 
     // And also add all global parameters that are not shadowed
@@ -1312,20 +1317,23 @@ static pddl_cond_t *parseQuant(int quant_type,
             || root->child[1].value != NULL
             || root->child[2].value != NULL){
         if (quant_type == PDDL_COND_FORALL){
-            ERR_LISP(root, "%sInvalid (forall ...) condition", ctx->err);
+            ERR_LISP(ctx->err, root,
+                     "%sInvalid (forall ...) condition", ctx->err_prefix);
         }else{
-            ERR_LISP(root, "%sInvalid (exists ...) condition", ctx->err);
+            ERR_LISP(ctx->err, root,
+                     "%sInvalid (exists ...) condition", ctx->err_prefix);
         }
         return NULL;
     }
 
     if (parseQuantParams(&params, root->child + 1, ctx) != 0)
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(ctx->err, NULL);
 
     if (params.size == 0){
         pddlParamsFree(&params);
-        ERR_LISP_RET(NULL, root, "%sMissing variables in the quantifier",
-                     ctx->err);
+        ERR_LISP_RET(ctx->err, NULL, root,
+                     "%sMissing variables in the quantifier",
+                     ctx->err_prefix);
     }
 
     sub_ctx = *ctx;
@@ -1333,7 +1341,7 @@ static pddl_cond_t *parseQuant(int quant_type,
     cond = parse(root->child + 2, &sub_ctx, negated);
     if (cond == NULL){
         pddlParamsFree(&params);
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(ctx->err, NULL);
     }
 
     q = condQuantNew(quant_type);
@@ -1352,15 +1360,16 @@ static pddl_cond_t *parseWhen(const pddl_lisp_node_t *root,
     if (root->child_size != 3
             || root->child[1].value != NULL
             || root->child[2].value != NULL){
-        ERR_LISP_RET(NULL, root, "%sInvalid (when ...)", ctx->err);
+        ERR_LISP_RET(ctx->err, NULL, root,
+                     "%sInvalid (when ...)", ctx->err_prefix);
     }
 
     if ((pre = parse(root->child + 1, ctx, 0)) == NULL)
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(ctx->err, NULL);
 
     if ((eff = parse(root->child + 2, ctx, 0)) == NULL){
         pddlCondDel(pre);
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(ctx->err, NULL);
     }
 
     w = condWhenNew();
@@ -1379,13 +1388,15 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
 
     if (kw == PDDL_KW_NOT){
         if (root->child_size != 2)
-            ERR_LISP_RET(NULL, root, "%sInvalid (not ...)", ctx->err);
+            ERR_LISP_RET(ctx->err, NULL, root,
+                         "%sInvalid (not ...)", ctx->err_prefix);
 
         return parse(root->child + 1, ctx, !negated);
 
     }else if (kw == PDDL_KW_AND){
         if (root->child_size <= 1)
-            ERR_LISP_RET(NULL, root, "%sEmpty (and) expression", ctx->err);
+            ERR_LISP_RET(ctx->err, NULL, root,
+                         "%sEmpty (and) expression", ctx->err_prefix);
 
         if (negated){
             return parsePart(PDDL_COND_OR, root, ctx, negated);
@@ -1395,7 +1406,8 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
 
     }else if (kw == PDDL_KW_OR){
         if (root->child_size <= 1)
-            ERR_LISP_RET(NULL, root, "%sEmpty (or) expression", ctx->err);
+            ERR_LISP_RET(ctx->err, NULL, root,
+                         "%sEmpty (or) expression", ctx->err_prefix);
 
         if (negated){
             return parsePart(PDDL_COND_AND, root, ctx, negated);
@@ -1405,8 +1417,9 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
 
     }else if (kw == PDDL_KW_IMPLY){
         if (root->child_size != 3)
-            ERR_LISP_RET(NULL, root, "%s(imply ...) requires two arguments",
-                         ctx->err);
+            ERR_LISP_RET(ctx->err, NULL, root,
+                         "%s(imply ...) requires two arguments",
+                         ctx->err_prefix);
 
         return parseImply(root->child + 1, root->child + 2, ctx, negated);
 
@@ -1438,17 +1451,19 @@ static pddl_cond_t *parse(const pddl_lisp_node_t *root,
     }
 
     if (root->child_size >= 1 && root->child[0].value != NULL){
-        ERR_LISP_RET(NULL, root, "%sUnexpected token `%s'",
-                     ctx->err, root->child[0].value);
+        ERR_LISP_RET(ctx->err, NULL, root, "%sUnexpected token `%s'",
+                     ctx->err_prefix, root->child[0].value);
     }else{
-        ERR_LISP_RET(NULL, root, "%sUnexpected token", ctx->err);
+        ERR_LISP_RET(ctx->err, NULL, root,
+                     "%sUnexpected token", ctx->err_prefix);
     }
 }
 
 pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
                            pddl_t *pddl,
                            const pddl_params_t *params,
-                           const char *err)
+                           const char *err_prefix,
+                           bor_err_t *err)
 {
     parse_ctx_t ctx;
     pddl_cond_t *c;
@@ -1458,15 +1473,17 @@ pddl_cond_t *pddlCondParse(const pddl_lisp_node_t *root,
     ctx.preds = &pddl->pred;
     ctx.funcs = &pddl->func;
     ctx.params = params;
+    ctx.err_prefix = err_prefix;
     ctx.err = err;
 
     c = parse(root, &ctx, 0);
     if (c == NULL)
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(err, NULL);
     return c;
 }
 
-static pddl_cond_t *parseInitFunc(const pddl_lisp_node_t *n, pddl_t *pddl)
+static pddl_cond_t *parseInitFunc(const pddl_lisp_node_t *n, pddl_t *pddl,
+                                  bor_err_t *err)
 {
     parse_ctx_t ctx;
     pddl_params_t params;
@@ -1478,17 +1495,19 @@ static pddl_cond_t *parseInitFunc(const pddl_lisp_node_t *n, pddl_t *pddl)
     ctx.preds = &pddl->pred;
     ctx.funcs = &pddl->func;
     ctx.params = &params;
-    ctx.err = "";
+    ctx.err_prefix = "";
+    ctx.err = err;
 
     c = parseAssign(n, &ctx, 0);
     pddlParamsFree(&params);
 
     if (c == NULL)
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(err, NULL);
     return c;
 }
 
-static pddl_cond_t *parseInitFact(const pddl_lisp_node_t *n, pddl_t *pddl)
+static pddl_cond_t *parseInitFact(const pddl_lisp_node_t *n, pddl_t *pddl,
+                                  bor_err_t *err)
 {
     parse_ctx_t ctx;
     pddl_params_t params;
@@ -1500,36 +1519,39 @@ static pddl_cond_t *parseInitFact(const pddl_lisp_node_t *n, pddl_t *pddl)
     ctx.preds = &pddl->pred;
     ctx.funcs = &pddl->func;
     ctx.params = &params;
-    ctx.err = "";
+    ctx.err_prefix = "";
+    ctx.err = err;
 
     c = parseAtom(n, &ctx, 0);
     pddlParamsFree(&params);
 
     if (c == NULL)
-        TRACE_RET(NULL);
+        BOR_TRACE_RET(err, NULL);
     return c;
 }
 
-static pddl_cond_t *parseInitFactFunc(const pddl_lisp_node_t *n, pddl_t *pddl)
+static pddl_cond_t *parseInitFactFunc(const pddl_lisp_node_t *n, pddl_t *pddl,
+                                      bor_err_t *err)
 {
     const char *head;
 
     if (n->child_size < 1)
-        ERR_LISP_RET2(NULL, n, "Invalid expression in :init.");
+        ERR_LISP_RET2(err, NULL, n, "Invalid expression in :init.");
 
     head = pddlLispNodeHead(n);
     if (head == NULL)
-        ERR_LISP_RET2(NULL, n, "Invalid expression in :init.");
+        ERR_LISP_RET2(err, NULL, n, "Invalid expression in :init.");
     if (strcmp(head, "=") == 0
             && n->child_size == 3
             && n->child[1].value == NULL){
-        return parseInitFunc(n, pddl);
+        return parseInitFunc(n, pddl, err);
     }else{
-        return parseInitFact(n, pddl);
+        return parseInitFact(n, pddl, err);
     }
 }
 
-pddl_cond_part_t *pddlCondParseInit(const pddl_lisp_node_t *root, pddl_t *pddl)
+pddl_cond_part_t *pddlCondParseInit(const pddl_lisp_node_t *root, pddl_t *pddl,
+                                    bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
     pddl_cond_part_t *and;
@@ -1539,10 +1561,10 @@ pddl_cond_part_t *pddlCondParseInit(const pddl_lisp_node_t *root, pddl_t *pddl)
 
     for (int i = 1; i < root->child_size; ++i){
         n = root->child + i;
-        if ((c = parseInitFactFunc(n, pddl)) == NULL){
+        if ((c = parseInitFactFunc(n, pddl, err)) == NULL){
             condPartDel(and);
-            TRACE_UPDATE_RET(NULL, "While parsing :init in %s: ",
-                             pddl->problem_lisp->filename);
+            BOR_TRACE_PREPEND_RET(err, NULL, "While parsing :init in %s: ",
+                                  pddl->problem_lisp->filename);
         }
         condPartAdd(and, c);
     }
@@ -1587,9 +1609,7 @@ void pddlCondPartAdd(pddl_cond_part_t *part, pddl_cond_t *c)
 
 
 /*** CHECK ***/
-int pddlCondCheckPre(const pddl_cond_t *cond,
-                     int require,
-                     int verbose)
+int pddlCondCheckPre(const pddl_cond_t *cond, int require, bor_err_t *err)
 {
     pddl_cond_part_t *p;
     pddl_cond_quant_t *q;
@@ -1602,58 +1622,49 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
             || cond->type == PDDL_COND_OR){
         if (cond->type == PDDL_COND_OR
                 && !(require & PDDL_REQUIRE_DISJUNCTIVE_PRE)){
-            if (verbose){
-                ERR2("(forall ...) can be used only with"
+            BOR_ERR2(err, "(forall ...) can be used only with"
                      " :disjunctive-preconditions");
-            }
             return -1;
         }
 
         p = OBJ(cond, part);
         BOR_LIST_FOR_EACH(&p->part, item){
             c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            if (pddlCondCheckPre(c, require, verbose) != 0)
-                TRACE_RET(-1);
+            if (pddlCondCheckPre(c, require, err) != 0)
+                BOR_TRACE_RET(err, -1);
         }
 
         return 0;
 
     }else if (cond->type == PDDL_COND_FORALL){
         if (!(require & PDDL_REQUIRE_UNIVERSAL_PRE)){
-            if (verbose){
-                ERR2("(forall ...) can be used only with"
+            BOR_ERR2(err, "(forall ...) can be used only with"
                      " :universal-preconditions");
-            }
             return -1;
         }
 
         q = OBJ(cond, quant);
-        return pddlCondCheckPre(q->cond, require, verbose);
+        return pddlCondCheckPre(q->cond, require, err);
 
     }else if (cond->type == PDDL_COND_EXIST){
         if (!(require & PDDL_REQUIRE_EXISTENTIAL_PRE)){
-            if (verbose){
-                ERR2("(exists ...) can be used only with"
+            BOR_ERR2(err, "(exists ...) can be used only with"
                      " :existential-preconditions");
-            }
             return -1;
         }
 
         q = OBJ(cond, quant);
-        return pddlCondCheckPre(q->cond, require, verbose);
+        return pddlCondCheckPre(q->cond, require, err);
 
     }else if (cond->type == PDDL_COND_WHEN){
-        if (verbose){
-            ERR2("(when ...) cannot be part of preconditions");
-        }
+        BOR_ERR2(err, "(when ...) cannot be part of preconditions");
         return -1;
 
     }else if (cond->type == PDDL_COND_ATOM){
         atom = OBJ(cond, atom);
         if (atom->neg && !(require & PDDL_REQUIRE_NEGATIVE_PRE)){
-            if (verbose){
-                ERR2("For negative preconditions add :negative-preconditions");
-            }
+            BOR_ERR2(err, "For negative preconditions add"
+                          " :negative-preconditions");
             return -1;
         }
 
@@ -1662,16 +1673,14 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
     }else if (cond->type == PDDL_COND_IMPLY){
         imp = OBJ(cond, imply);
         if (!(require & PDDL_REQUIRE_DISJUNCTIVE_PRE)){
-            if (verbose){
-                ERR2("(imply ...) can be used only with"
+            BOR_ERR2(err, "(imply ...) can be used only with"
                      " :disjunctive-preconditions");
-            }
             return -1;
         }
 
-        if (pddlCondCheckPre(imp->left, require, verbose) != 0)
+        if (pddlCondCheckPre(imp->left, require, err) != 0)
             return -1;
-        if (pddlCondCheckPre(imp->right, require, verbose) != 0)
+        if (pddlCondCheckPre(imp->right, require, err) != 0)
             return -1;
         return 0;
 
@@ -1684,54 +1693,49 @@ int pddlCondCheckPre(const pddl_cond_t *cond,
 }
 
 
-static int checkCEffect(const pddl_cond_t *cond, int require, int verbose);
-static int checkPEffect(const pddl_cond_t *cond, int require, int verbose);
-static int checkCondEffect(const pddl_cond_t *cond, int require, int verbose);
+static int checkCEffect(const pddl_cond_t *cond, int require, bor_err_t *err);
+static int checkPEffect(const pddl_cond_t *cond, int require, bor_err_t *err);
+static int checkCondEffect(const pddl_cond_t *cond, int require,
+                           bor_err_t *err);
 
-static int checkCEffect(const pddl_cond_t *cond, int require, int verbose)
+static int checkCEffect(const pddl_cond_t *cond, int require, bor_err_t *err)
 {
     pddl_cond_quant_t *forall;
     pddl_cond_when_t *when;
 
     if (cond->type == PDDL_COND_FORALL){
         if (!(require & PDDL_REQUIRE_CONDITIONAL_EFF)){
-            if (verbose){
-                ERR2("(forall ...) is allowed in effects only if"
+            BOR_ERR2(err, "(forall ...) is allowed in effects only if"
                      " :conditional-effects is specified as requirement");
-            }
             return -1;
         }
 
         forall = OBJ(cond, quant);
-        return pddlCondCheckEff(forall->cond, require, verbose);
+        return pddlCondCheckEff(forall->cond, require, err);
 
     }else if (cond->type == PDDL_COND_WHEN){
         if (!(require & PDDL_REQUIRE_CONDITIONAL_EFF)){
-            if (verbose){
-                ERR2("(when ...) is allowed in effects only if"
+            BOR_ERR2(err, "(when ...) is allowed in effects only if"
                      " :conditional-effects is specified as requirement");
-            }
             return -1;
         }
 
         when = OBJ(cond, when);
-        if (pddlCondCheckPre(when->pre, require, verbose) != 0)
+        if (pddlCondCheckPre(when->pre, require, err) != 0)
             return -1;
-        return checkCondEffect(when->eff, require, verbose);
+        return checkCondEffect(when->eff, require, err);
 
     }else{
-        if (checkPEffect(cond, require, verbose) != 0){
-            if (verbose){
-                ERR2("A single effect has to be either literal or"
+        if (checkPEffect(cond, require, err) != 0){
+            BOR_ERR2(err, "A single effect has to be either literal or"
                      " conditional effect (+ universal quantifier).");
-            }
             return -1;
         }
         return 0;
     }
 }
 
-static int checkPEffect(const pddl_cond_t *cond, int require, int verbose)
+static int checkPEffect(const pddl_cond_t *cond, int require, bor_err_t *err)
 {
     if (cond->type == PDDL_COND_ATOM
             || cond->type == PDDL_COND_ASSIGN
@@ -1741,24 +1745,23 @@ static int checkPEffect(const pddl_cond_t *cond, int require, int verbose)
     return -1;
 }
 
-static int checkCondEffect(const pddl_cond_t *cond, int require, int verbose)
+static int checkCondEffect(const pddl_cond_t *cond, int require,
+                           bor_err_t *err)
 {
     const pddl_cond_part_t *part;
     const pddl_cond_t *sub;
     bor_list_t *item;
 
-    if (checkPEffect(cond, require, verbose) == 0)
+    if (checkPEffect(cond, require, err) == 0)
         return 0;
 
     if (cond->type == PDDL_COND_AND){
         part = OBJ(cond, part);
         BOR_LIST_FOR_EACH(&part->part, item){
             sub = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            if (checkPEffect(sub, require, verbose) != 0){
-                if (verbose){
-                    ERR2("Conditional effect can contain only literals and"
-                         " conjuction of literals.");
-                }
+            if (checkPEffect(sub, require, err) != 0){
+                BOR_ERR2(err, "Conditional effect can contain only literals"
+                         " and conjuction of literals.");
                 return -1;
             }
         }
@@ -1769,9 +1772,7 @@ static int checkCondEffect(const pddl_cond_t *cond, int require, int verbose)
     return -1;
 }
 
-int pddlCondCheckEff(const pddl_cond_t *cond,
-                     int require,
-                     int verbose)
+int pddlCondCheckEff(const pddl_cond_t *cond, int require, bor_err_t *err)
 {
     const pddl_cond_part_t *and;
     const pddl_cond_t *sub;
@@ -1781,14 +1782,14 @@ int pddlCondCheckEff(const pddl_cond_t *cond,
         and = OBJ(cond, part);
         BOR_LIST_FOR_EACH(&and->part, item){
             sub = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            if (checkCEffect(sub, require, verbose) != 0)
+            if (checkCEffect(sub, require, err) != 0)
                 return -1;
         }
 
         return 0;
 
     }else{
-        return checkCEffect(cond, require, verbose);
+        return checkCEffect(cond, require, err);
     }
 }
 
