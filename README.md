@@ -20,3 +20,25 @@ library:
   $ make -C bin
 ```
 
+You can change default configuration by adding Makefile.local file containing
+the new configuration.
+
+You can check the current configuration by calling:
+```
+  $ make help
+```
+
+For example, if you want to use your own installation of the library boruvka,
+you can add definitions of *BORUVKA_CFLAGS* and *BORUVKA_LDFLAGS* variables
+to the Makefile.local file:
+```
+  $ echo "BORUVKA_CFLAGS = -I/path/to/boruvka" >>Makefile.local
+  $ echo "BORUVKA_LDFLAGS = -I/path/to/boruvka -lboruvka" >>Makefile.local
+```
+
+and then just skip compiling the local submodule of the boruvka library:
+```
+  $ make opts
+  $ make
+  $ make -C bin
+```
