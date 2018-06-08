@@ -1,7 +1,7 @@
 # cpddl
 
-**cpddl** is a small library for parsing PDDL and grounding of the PDDL input to a
-STRIPS representation.
+**cpddl** is a small library for parsing PDDL files and for the grounding of
+the PDDL files into a STRIPS representation.
 
 ## License
 
@@ -33,7 +33,7 @@ you can add definitions of *BORUVKA_CFLAGS* and *BORUVKA_LDFLAGS* variables
 to the Makefile.local file:
 ```
   $ echo "BORUVKA_CFLAGS = -I/path/to/boruvka" >>Makefile.local
-  $ echo "BORUVKA_LDFLAGS = -I/path/to/boruvka -lboruvka" >>Makefile.local
+  $ echo "BORUVKA_LDFLAGS = -L/path/to/boruvka -lboruvka" >>Makefile.local
 ```
 
 and then just skip compiling the local submodule of the boruvka library:
