@@ -977,8 +977,16 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
 
     }else if (c->type == PDDL_COND_AND){
         return 0;
+
+    }else if (c->type == PDDL_COND_BOOL){
+        const pddl_cond_bool_t *b = PDDL_COND_CAST(c, bool);
+        if (!b->val)
+            strips->goal_is_unreachable = 1;
+        return 0;
+
     }else{
-        BOR_ERR2(g->err, "Only conjuctive goal specifications are supported.");
+        BOR_ERR(g->err, "Only conjuctive goal specifications are supported."
+                " (Goal contains %s.)", pddlCondTypeName(c->type));
         ggoal->fail = 1;
         return -2;
     }
@@ -989,7 +997,7 @@ static int groundGoal(ground_t *g, pddl_strips_t *strips)
     struct ground_goal ggoal = { g, strips, 0 };
     if (g->pddl->goal->type == PDDL_COND_OR){
         BOR_ERR_RET2(g->err, -1, "Only conjuctive goal specifications"
-                     " are supported.");
+                     " are supported. This goal is a disjunction.");
     }
 
     pddlCondTraverse(g->pddl->goal, _groundGoal, NULL, &ggoal);
