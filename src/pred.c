@@ -179,41 +179,47 @@ static void addEqPredicate(pddl_preds_t *ps)
 int pddlPredsParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
-    int i, to, private;
+    int i, private;
+
+    pddl->pred.eq_pred = -1;
+    addEqPredicate(&pddl->pred);
 
     n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_PREDICATES);
     if (n == NULL)
         return 0;
 
-    pddl->pred.eq_pred = -1;
-    addEqPredicate(&pddl->pred);
-
     // Determine if we can expect :private definitions
     private = (pddl->require & PDDL_REQUIRE_UNFACTORED_PRIVACY)
                 || (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
 
-    if (private){
-        // Find out first :private definition
-        for (to = 1; to < n->child_size; ++to){
-            if (n->child[to].child_size > 0
-                    && n->child[to].child[0].kw == PDDL_KW_PRIVATE)
-                break;
+    // Fisrt parse non :private predicates
+    for (i = 1; i < n->child_size; ++i){
+        if (n->child[i].child_size > 0
+                && n->child[i].child[0].kw == PDDL_KW_PRIVATE){
+            if (!private){
+                ERR_LISP_RET(err, -1, n->child + i,
+                             "Private predicates are allowed only"
+                             " with :factored-privacy and"
+                             " :unfactored-privacy (%s).",
+                             pddl->domain_lisp->filename);
+            }
+            continue;
         }
-    }else{
-        to = n->child_size;
-    }
 
-    // Parse non :private predicates
-    for (i = 1; i < to; ++i){
         if (parsePred(pddl, n->child + i, NULL, "predicate", &pddl->pred,
                       err) != 0)
             BOR_TRACE_PREPEND_RET(err, -1, "While parsing :predicates in %s: ",
                                   pddl->domain_lisp->filename);
     }
 
+    // And then the private predicates
     if (private){
-        // Parse :private predicates
-        for (i = to; i < n->child_size; ++i){
+        for (i = 1; i < n->child_size; ++i){
+            if (n->child[i].child_size == 0
+                    || n->child[i].child[0].kw != PDDL_KW_PRIVATE){
+                continue;
+            }
+
             if (parsePrivatePreds(pddl, n->child + i, &pddl->pred, err) != 0)
                 BOR_TRACE_PREPEND_RET(err, -1, "While parsing private"
                                       " :predicates in %s: ",

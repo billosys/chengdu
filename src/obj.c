@@ -134,7 +134,8 @@ static int parse(pddl_t *pddl, const pddl_lisp_t *lisp, int kw, int is_const,
     return 0;
 }
 
-static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp, bor_err_t *err)
+static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp, int kw,
+                        bor_err_t *err)
 {
     const pddl_lisp_node_t *n, *p;
     int i, factor, pi, owner, parse_from;
@@ -186,19 +187,22 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp, bor_err_t *err)
 
 int pddlObjsParse(pddl_t *pddl, bor_err_t *err)
 {
+    const pddl_lisp_t *dom_lisp = pddl->domain_lisp;
+    const pddl_lisp_t *prob_lisp = pddl->problem_lisp;
     int i;
 
     bzero(&pddl->obj, sizeof(pddl->obj));
     pddl->obj.htable = borHTableNew(objHash, objEq, NULL);
 
-    if (parse(pddl, pddl->domain_lisp, PDDL_KW_CONSTANTS, 1, err) != 0
-            || parse(pddl, pddl->problem_lisp, PDDL_KW_OBJECTS, 0, err) != 0)
+    if (parse(pddl, dom_lisp, PDDL_KW_CONSTANTS, 1, err) != 0
+            || parse(pddl, prob_lisp, PDDL_KW_OBJECTS, 0, err) != 0)
         BOR_TRACE_RET(err, -1);
 
     if (((pddl->require & PDDL_REQUIRE_MULTI_AGENT)
                 && (pddl->require & PDDL_REQUIRE_UNFACTORED_PRIVACY))
             || (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY)){
-        if (parsePrivate(pddl, pddl->problem_lisp, err) != 0)
+        if (parsePrivate(pddl, dom_lisp, PDDL_KW_CONSTANTS, err) != 0
+                || parsePrivate(pddl, prob_lisp, PDDL_KW_OBJECTS, err) != 0)
             BOR_TRACE_RET(err, -1);
     }
 
