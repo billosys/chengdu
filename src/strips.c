@@ -336,17 +336,17 @@ void pddlStripsPrintPDDLProblem(const pddl_strips_t *strips, FILE *fout)
 void pddlStripsPrintDebug(const pddl_strips_t *strips, FILE *fout)
 {
     fprintf(fout, "Fact[%d]:\n", strips->fact.fact_size);
-    pddlFactsPrintSorted(&strips->fact, "  (", ")\n", fout);
+    pddlFactsPrint(&strips->fact, "  ", "\n", fout);
 
     fprintf(fout, "Op[%d]:\n", strips->op.op_size);
     pddlStripsOpsPrintDebug(&strips->op, &strips->fact, fout);
 
     fprintf(fout, "Init State:");
-    pddlFactsIdSetPrintSorted(&strips->init, &strips->fact, " (", ")", fout);
+    pddlFactsPrintSet(&strips->init, &strips->fact, " ", "", fout);
     fprintf(fout, "\n");
 
     fprintf(fout, "Goal:");
-    pddlFactsIdSetPrintSorted(&strips->goal, &strips->fact, " (", ")", fout);
+    pddlFactsPrintSet(&strips->goal, &strips->fact, " ", "", fout);
     fprintf(fout, "\n");
     if (strips->goal_is_unreachable)
         fprintf(fout, "Goal is unreachable\n");

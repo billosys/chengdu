@@ -42,6 +42,7 @@ struct pddl_fact {
     bor_list_t htable;
 
     char *name; /*!< Name of the fact */
+    int is_private; /*!< True if the fact is private */
     pddl_ground_atom_t *ground_atom; /*!< If the fact was created from a
                                           grounded atom, its copy is stored
                                           here (may be NULL). */
@@ -64,6 +65,11 @@ void pddlFactDel(pddl_fact_t *f);
  * Compares two facts.
  */
 int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2);
+
+void pddlFactPrint(const pddl_fact_t *f,
+                   const char *prefix,
+                   const char *suffix,
+                   FILE *fout);
 
 
 struct pddl_facts {
@@ -125,14 +131,16 @@ void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
  */
 void pddlFactsSort(pddl_facts_t *fs, int *remap);
 
+void pddlFactsPrint(const pddl_facts_t *fs,
+                    const char *prefix,
+                    const char *suffix,
+                    FILE *fout);
 
-void pddlFactsPrintSorted(const pddl_facts_t *fs,
-                          const char *prefix, const char *suffix,
-                          FILE *fout);
-void pddlFactsIdSetPrintSorted(const bor_iset_t *set,
-                               const pddl_facts_t *fs,
-                               const char *prefix, const char *suffix,
-                               FILE *fout);
+void pddlFactsPrintSet(const bor_iset_t *fact_set,
+                       const pddl_facts_t *fs,
+                       const char *prefix,
+                       const char *suffix,
+                       FILE *fout);
 
 #ifdef __cplusplus
 } /* extern "C" */
