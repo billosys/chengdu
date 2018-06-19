@@ -55,12 +55,9 @@ struct pddl_strips {
 };
 
 /**
- * Ground PDDL into STRIPS.
+ * Initialize empty STRIPS
  */
-int pddlStripsGround(pddl_strips_t *strips,
-                     pddl_t *pddl,
-                     const pddl_ground_config_t *cfg,
-                     bor_err_t *err);
+void pddlStripsInit(pddl_strips_t *strips);
 
 /**
  * Free allocated memory.

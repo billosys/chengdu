@@ -23,10 +23,6 @@
 #include "err.h"
 #include "assert.h"
 
-/** Implemented in strips_ground.c */
-int _pddlStripsGround(pddl_strips_t *strips, const pddl_t *pddl,
-                      bor_err_t *err);
-
 static void copyBasicInfo(pddl_strips_t *dst, const pddl_strips_t *src)
 {
     if (src->domain_name)
@@ -39,7 +35,7 @@ static void copyBasicInfo(pddl_strips_t *dst, const pddl_strips_t *src)
         dst->problem_file = BOR_STRDUP(src->problem_file);
 }
 
-static void stripsInit(pddl_strips_t *strips)
+void pddlStripsInit(pddl_strips_t *strips)
 {
     bzero(strips, sizeof(*strips));
     pddlFactsInit(&strips->fact);
@@ -71,35 +67,6 @@ void pddlStripsMakeUnsolvable(pddl_strips_t *strips)
     strips->fact.fact_size = 1;
 }
 
-int pddlStripsGround(pddl_strips_t *strips,
-                     pddl_t *pddl,
-                     const pddl_ground_config_t *cfg,
-                     bor_err_t *err)
-{
-    stripsInit(strips);
-
-    strips->cfg = *cfg;
-
-    if (pddl->domain_name)
-        strips->domain_name = BOR_STRDUP(pddl->domain_name);
-    if (pddl->problem_name)
-        strips->problem_name = BOR_STRDUP(pddl->problem_name);
-    if (pddl->domain_lisp->filename)
-        strips->domain_file = BOR_STRDUP(pddl->domain_lisp->filename);
-    if (pddl->problem_lisp->filename)
-        strips->problem_file = BOR_STRDUP(pddl->problem_lisp->filename);
-
-    if (_pddlStripsGround(strips, pddl, err) != 0){
-        pddlStripsFree(strips);
-        BOR_TRACE_RET(err, -1);
-    }
-
-    if (strips->goal_is_unreachable)
-        pddlStripsMakeUnsolvable(strips);
-
-    return 0;
-}
-
 void pddlStripsFree(pddl_strips_t *strips)
 {
     if (strips->domain_name)
@@ -119,7 +86,7 @@ void pddlStripsFree(pddl_strips_t *strips)
 
 void pddlStripsCopy(pddl_strips_t *dst, const pddl_strips_t *src)
 {
-    stripsInit(dst);
+    pddlStripsInit(dst);
     copyBasicInfo(dst, src);
     dst->cfg = src->cfg;
 
