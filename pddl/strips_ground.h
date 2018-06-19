@@ -42,6 +42,9 @@ struct pddl_strips_ground_args_arr {
 };
 typedef struct pddl_strips_ground_args_arr pddl_strips_ground_args_arr_t;
 
+typedef void (*pddl_strips_ground_unify_new_atom_fn)
+                    (const pddl_ground_atom_t *a, void *);
+
 struct pddl_strips_ground {
     const pddl_t *pddl;
     pddl_ground_config_t cfg;
@@ -52,6 +55,9 @@ struct pddl_strips_ground {
     int static_facts_unified;
     pddl_ground_atoms_t facts;
     int unify_start_idx;
+    pddl_strips_ground_unify_new_atom_fn unify_new_atom_fn;
+    void *unify_new_atom_data;
+
     int *ground_atom_to_fact_id;
     pddl_ground_atoms_t funcs;
     pddl_strips_ground_tree_t *tree;
@@ -72,11 +78,25 @@ int pddlStripsGround(pddl_strips_t *strips,
                      bor_err_t *err);
 
 
+/**
+ * Starts grounding.
+ */
 int pddlStripsGroundStart(pddl_strips_ground_t *g,
                           const pddl_t *pddl,
                           const pddl_ground_config_t *cfg,
-                          bor_err_t *err);
+                          bor_err_t *err,
+                          pddl_strips_ground_unify_new_atom_fn new_atom,
+                          void *new_atom_data);
+
+/**
+ * Performs one cycle of fixpoint grounding.
+ * For each newly generated 
+ */
 int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g);
+
+/**
+ * Finalizes grounding and writes the output STRIPS.
+ */
 int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips);
 
 

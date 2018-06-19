@@ -657,6 +657,20 @@ static int unifyFacts(pddl_strips_ground_t *g)
 }
 /*** unify END ***/
 
+static void groundAtomsAddFact(pddl_strips_ground_t *g,
+                               const pddl_cond_atom_t *c,
+                               const int *arg)
+{
+    if (g->unify_new_atom_fn == NULL){
+        pddlGroundAtomsAddAtom(&g->facts, c, arg);
+    }else{
+        int size = g->facts.atom_size;
+        pddl_ground_atom_t *atom = pddlGroundAtomsAddAtom(&g->facts, c, arg);
+        if (g->facts.atom_size > size)
+            g->unify_new_atom_fn(atom, g->unify_new_atom_data);
+
+    }
+}
 
 static void _groundActionAddEff(pddl_strips_ground_t *g,
                                 const pddl_prep_action_t *a,
@@ -684,7 +698,7 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
     const pddl_cond_atom_t *atom;
     for (int i = 0; i < a->add_eff.size; ++i){
         atom = PDDL_COND_CAST(a->add_eff.cond[i], atom);
-        pddlGroundAtomsAddAtom(&g->facts, atom, arg);
+        groundAtomsAddFact(g, atom, arg);
     }
 
     groundArgsAdd(&g->ground_args, a - g->action.action, a, arg);
@@ -1011,7 +1025,7 @@ static void groundInitFact(pddl_strips_ground_t *g, const pddl_t *pddl)
                 pddlGroundAtomsAddAtom(&g->static_facts, a, NULL);
             }else{
                 ASSERT(pddlCondAtomIsGrounded(a));
-                pddlGroundAtomsAddAtom(&g->facts, a, NULL);
+                groundAtomsAddFact(g, a, NULL);
             }
         }else if (c->type == PDDL_COND_ASSIGN){
             ass = PDDL_COND_CAST(c, func_op);
@@ -1026,12 +1040,16 @@ static void groundInitFact(pddl_strips_ground_t *g, const pddl_t *pddl)
 
 static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
                       const pddl_ground_config_t *cfg,
-                      bor_err_t *err)
+                      bor_err_t *err,
+                      pddl_strips_ground_unify_new_atom_fn new_atom,
+                      void *new_atom_data)
 {
     bzero(g, sizeof(*g));
     g->pddl = pddl;
     g->cfg = *cfg;
     g->err = err;
+    g->unify_new_atom_fn = new_atom;
+    g->unify_new_atom_data = new_atom_data;
 
     if (pddlPrepActionsInit(pddl, &g->action, g->err) != 0)
         BOR_TRACE_RET(g->err, -1);
@@ -1070,9 +1088,11 @@ static void groundFree(pddl_strips_ground_t *g)
 int pddlStripsGroundStart(pddl_strips_ground_t *g,
                           const pddl_t *pddl,
                           const pddl_ground_config_t *cfg,
-                          bor_err_t *err)
+                          bor_err_t *err,
+                          pddl_strips_ground_unify_new_atom_fn new_atom,
+                          void *new_atom_data)
 {
-    if (groundInit(g, pddl, cfg, err) != 0){
+    if (groundInit(g, pddl, cfg, err, new_atom, new_atom_data) != 0){
         groundFree(g);
         BOR_TRACE_RET(err, -1);
     }
@@ -1134,7 +1154,7 @@ int pddlStripsGround(pddl_strips_t *strips,
 {
     pddl_strips_ground_t g;
 
-    if (pddlStripsGroundStart(&g, pddl, cfg, err) != 0
+    if (pddlStripsGroundStart(&g, pddl, cfg, err, NULL, NULL) != 0
             || pddlStripsGroundUnifyStep(&g) != 0
             || pddlStripsGroundFinalize(&g, strips) != 0){
         BOR_TRACE_RET(err, -1);
