@@ -95,6 +95,15 @@ int pddlStripsGroundStart(pddl_strips_ground_t *g,
 int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g);
 
 /**
+ * Adds a grounded atom to the set of facts.
+ * Returns -1 on error, 0 if the grounded atom was already there and 1 if
+ * this was a new atom.
+ * This call does *not* trigger unify_new_atom callback.
+ */
+int pddlStripsGroundAddGroundAtom(pddl_strips_ground_t *g,
+                                  int pred, const int *arg, int arg_size);
+
+/**
  * Finalizes grounding and writes the output STRIPS.
  */
 int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips);

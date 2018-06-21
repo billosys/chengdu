@@ -86,6 +86,14 @@ pddl_ground_atom_t *pddlGroundAtomsAddAtom(pddl_ground_atoms_t *ga,
                                            const int *arg);
 
 /**
+ * Adds a unique ground predicate atom (fact). Returns the newly added atom
+ * or the atom that was added in the past if it was already there.
+ */
+pddl_ground_atom_t *pddlGroundAtomsAddPred(pddl_ground_atoms_t *ga,
+                                           int pred,
+                                           const int *arg, int arg_size);
+
+/**
  * Find the grounded fact.
  */
 pddl_ground_atom_t *pddlGroundAtomsFindAtom(const pddl_ground_atoms_t *ga,

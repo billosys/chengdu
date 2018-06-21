@@ -1112,6 +1112,16 @@ int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g)
     return 0;
 }
 
+int pddlStripsGroundAddGroundAtom(pddl_strips_ground_t *g,
+                                  int pred, const int *arg, int arg_size)
+{
+    int size = g->facts.atom_size;
+    pddlGroundAtomsAddPred(&g->facts, pred, arg, arg_size);
+    if (g->facts.atom_size > size)
+        return 1;
+    return 0;
+}
+
 int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips)
 {
     pddlStripsInit(strips);
