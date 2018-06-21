@@ -32,5 +32,6 @@
 #include <pddl/cond.h>
 #include <pddl/pddl_struct.h>
 #include <pddl/strips.h>
+#include <pddl/strips_ground.h>
 
 #endif /* __PDDL_H__ */

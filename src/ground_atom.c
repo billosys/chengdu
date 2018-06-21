@@ -165,6 +165,31 @@ pddl_ground_atom_t *pddlGroundAtomsAddAtom(pddl_ground_atoms_t *ga,
     return out;
 }
 
+pddl_ground_atom_t *pddlGroundAtomsAddPred(pddl_ground_atoms_t *ga,
+                                           int pred,
+                                           const int *arg, int arg_size)
+{
+    bor_list_t *found;
+    pddl_ground_atom_t *out;
+    PDDL_GROUND_ATOM_STACK(loc, arg_size);
+
+    loc.func_val = 0;
+    loc.pred = pred;
+    memcpy(loc.arg, arg, sizeof(int) * arg_size);
+    loc.arg_size = arg_size;
+
+    loc.hash = pddlGroundAtomHash(&loc);
+    if ((found = borHTableFind(ga->htable, &loc.htable)) != NULL){
+        out = BOR_LIST_ENTRY(found, pddl_ground_atom_t, htable);
+        return out;
+    }
+
+    out = nextNewGroundAtom(ga, &loc);
+    borListInit(&out->htable);
+    borHTableInsert(ga->htable, &out->htable);
+    return out;
+}
+
 
 pddl_ground_atom_t *pddlGroundAtomsFindAtom(const pddl_ground_atoms_t *ga,
                                             const pddl_cond_atom_t *c,
