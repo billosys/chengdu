@@ -92,6 +92,7 @@ static pddl_fact_t *factFromGroundAtom(const pddl_ground_atom_t *ga,
 void pddlFactInit(pddl_fact_t *f)
 {
     bzero(f, sizeof(*f));
+    f->neg_of = -1;
 }
 
 pddl_fact_t *pddlFactNew(void)
@@ -123,6 +124,7 @@ static void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)
     if (src->ground_atom != NULL)
         dst->ground_atom = pddlGroundAtomClone(src->ground_atom);
     dst->hash = pddlFactHash(dst);
+    dst->is_private = src->is_private;
 }
 
 int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
@@ -182,6 +184,7 @@ static int addFact(pddl_facts_t *fs, pddl_fact_t *fact)
     fs->fact[fs->fact_size] = fact;
     ++fs->fact_size;
     borHTableInsert(fs->htable, &fact->htable);
+
     return fact->id;
 }
 
@@ -211,7 +214,34 @@ int pddlFactsAddGroundAtom(pddl_facts_t *fs, const pddl_ground_atom_t *ga,
         return fact->id;
     }
 
-    return addFact(fs, fact);
+    int fact_id = addFact(fs, fact);
+    fact = fs->fact[fact_id];
+    int pred_neg = pddl->pred.pred[ga->pred].neg_of;
+    if (pred_neg >= 0){
+        for (int i = 0; i < fs->fact_size - 1; ++i){
+            pddl_fact_t *fact2 = fs->fact[i];
+            const pddl_ground_atom_t *ga2 = fact2->ground_atom;
+            if (ga2 != NULL
+                    && ga2->pred == pred_neg
+                    && ga->arg_size == ga2->arg_size
+                    && memcmp(ga->arg, ga2->arg,
+                              sizeof(int) * ga->arg_size) == 0){
+                ASSERT_RUNTIME(fact2->neg_of == -1);
+                ASSERT_RUNTIME(fact->neg_of == -1);
+                ASSERT(strncmp(fact->name, "NOT-", 4) == 0
+                        || strncmp(fact2->name, "NOT-", 4) == 0);
+                ASSERT(strncmp(fact->name, "NOT-", 4) == 0
+                        || strcmp(fact->name, fact2->name + 4) == 0);
+                ASSERT(strncmp(fact2->name, "NOT-", 4) == 0
+                        || strcmp(fact2->name, fact->name + 4) == 0);
+                fact->neg_of = fact2->id;
+                fact2->neg_of = fact->id;
+                break;
+            }
+        }
+    }
+
+    return fact_id;
 }
 
 void pddlFactsDelFact(pddl_facts_t *fs, int fact_id)
@@ -268,6 +298,11 @@ void pddlFactsSort(pddl_facts_t *fs, int *remap)
         if (remap != NULL)
             remap[f->id] = i;
         f->id = i;
+    }
+    for (int i = 0; i < fs->fact_size; ++i){
+        pddl_fact_t *f = fs->fact[i];
+        if (f->neg_of >= 0)
+            f->neg_of = remap[f->neg_of];
     }
 }
 

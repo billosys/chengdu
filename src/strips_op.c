@@ -23,6 +23,7 @@
 #include <boruvka/hfunc.h>
 #include "pddl/pddl.h"
 #include "pddl/strips_op.h"
+#include "helper.h"
 #include "assert.h"
 
 void pddlStripsOpInit(pddl_strips_op_t *op)
@@ -161,14 +162,14 @@ void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap)
 {
     pddl_strips_op_cond_eff_t *ce;
 
-    borISetRemap(&op->pre, remap);
-    borISetRemap(&op->add_eff, remap);
-    borISetRemap(&op->del_eff, remap);
+    pddlISetRemap(&op->pre, remap);
+    pddlISetRemap(&op->add_eff, remap);
+    pddlISetRemap(&op->del_eff, remap);
     for (int i = 0; i < op->cond_eff_size; ++i){
         ce = op->cond_eff + i;
-        borISetRemap(&ce->pre, remap);
-        borISetRemap(&ce->add_eff, remap);
-        borISetRemap(&ce->del_eff, remap);
+        pddlISetRemap(&ce->pre, remap);
+        pddlISetRemap(&ce->add_eff, remap);
+        pddlISetRemap(&ce->del_eff, remap);
     }
 }
 
@@ -317,7 +318,14 @@ static int opCmp(const void *a, const void *b, void *_)
 {
     pddl_strips_op_t *o1 = *(pddl_strips_op_t **)a;
     pddl_strips_op_t *o2 = *(pddl_strips_op_t **)b;
-    return strcmp(o1->name, o2->name);
+    int cmp = strcmp(o1->name, o2->name);
+    if (cmp == 0)
+        cmp = borISetCmp(&o1->pre, &o2->pre);
+    if (cmp == 0)
+        cmp = borISetCmp(&o1->add_eff, &o2->add_eff);
+    if (cmp == 0)
+        cmp = borISetCmp(&o1->del_eff, &o2->del_eff);
+    return cmp;
 }
 
 void pddlStripsOpsSort(pddl_strips_ops_t *ops)
