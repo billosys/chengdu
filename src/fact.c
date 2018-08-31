@@ -124,6 +124,7 @@ static void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)
     if (src->ground_atom != NULL)
         dst->ground_atom = pddlGroundAtomClone(src->ground_atom);
     dst->hash = pddlFactHash(dst);
+    dst->is_private = src->is_private;
 }
 
 int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
@@ -297,6 +298,11 @@ void pddlFactsSort(pddl_facts_t *fs, int *remap)
         if (remap != NULL)
             remap[f->id] = i;
         f->id = i;
+    }
+    for (int i = 0; i < fs->fact_size; ++i){
+        pddl_fact_t *f = fs->fact[i];
+        if (f->neg_of >= 0)
+            f->neg_of = remap[f->neg_of];
     }
 }
 
