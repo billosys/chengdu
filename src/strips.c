@@ -20,6 +20,7 @@
 #include <boruvka/alloc.h>
 #include "pddl/pddl.h"
 #include "pddl/strips.h"
+#include "helper.h"
 #include "err.h"
 #include "assert.h"
 
@@ -96,6 +97,199 @@ void pddlStripsCopy(pddl_strips_t *dst, const pddl_strips_t *src)
     borISetUnion(&dst->goal, &src->goal);
     dst->goal_is_unreachable = src->goal_is_unreachable;
     dst->has_cond_eff = src->has_cond_eff;
+}
+
+// TODO: Make public function
+static int addNegFact(pddl_strips_t *strips, int fact_id)
+{
+    pddl_fact_t *fact = strips->fact.fact[fact_id];
+    ASSERT_RUNTIME(fact->neg_of == -1);
+
+    pddl_fact_t neg;
+    char name[512];
+    snprintf(name, 512, "NOT-%s", fact->name);
+    pddlFactInit(&neg);
+    neg.name = BOR_STRDUP(name);
+    int neg_id = pddlFactsAdd(&strips->fact, &neg);
+    pddlFactFree(&neg);
+
+    pddl_fact_t *neg_fact = strips->fact.fact[neg_id];
+    neg_fact->neg_of = fact_id;
+    fact->neg_of = neg_id;
+
+    for (int opi = 0; opi < strips->op.op_size; ++opi){
+        pddl_strips_op_t *op = strips->op.op[opi];
+        if (borISetIn(fact_id, &op->del_eff))
+            borISetAdd(&op->add_eff, neg_id);
+        if (borISetIn(fact_id, &op->add_eff))
+            borISetAdd(&op->del_eff, neg_id);
+        for (int cei = 0; cei < op->cond_eff_size; ++cei){
+            pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+            if (borISetIn(fact_id, &ce->del_eff))
+                borISetAdd(&ce->add_eff, neg_id);
+            if (borISetIn(fact_id, &ce->add_eff))
+                borISetAdd(&ce->del_eff, neg_id);
+        }
+    }
+
+    if (!borISetIn(fact_id, &strips->init))
+        borISetAdd(&strips->init, neg_id);
+
+    return neg_id;
+}
+
+static void opCompileAwayCondEffNegPreRec(pddl_strips_t *strips,
+                                          const pddl_strips_op_t *op_in,
+                                          const bor_iset_t *neg_pre,
+                                          int neg_pre_size,
+                                          int cur_neg_pre)
+{
+    pddl_strips_op_t op;
+
+    int neg_fact;
+    BOR_ISET_FOR_EACH(neg_pre + cur_neg_pre, neg_fact){
+        pddlStripsOpInit(&op);
+        pddlStripsOpCopyWithoutCondEff(&op, op_in);
+        borISetAdd(&op.pre, neg_fact);
+
+        if (cur_neg_pre == neg_pre_size - 1){
+            pddlStripsOpNormalize(&op);
+            pddlStripsOpsAdd(&strips->op, &op);
+        }else{
+            opCompileAwayCondEffNegPreRec(strips, &op, neg_pre, neg_pre_size,
+                                          cur_neg_pre + 1);
+        }
+
+        pddlStripsOpFree(&op);
+    }
+}
+
+static void opCompileAwayCondEffNegPre(pddl_strips_t *strips,
+                                       const pddl_strips_op_t *src_op,
+                                       const pddl_strips_op_t *op,
+                                       const int *neg_ce,
+                                       int neg_ce_size)
+{
+    // Prepare negative preconditions
+    bor_iset_t neg_pre[neg_ce_size];
+    for (int i = 0; i < neg_ce_size; ++i)
+        borISetInit(neg_pre + i);
+
+    for (int i = 0; i < neg_ce_size; ++i){
+        const pddl_strips_op_cond_eff_t *ce = src_op->cond_eff + neg_ce[i];
+        int fact_id;
+        BOR_ISET_FOR_EACH(&ce->pre, fact_id){
+            int neg_fact_id = strips->fact.fact[fact_id]->neg_of;
+            if (neg_fact_id == -1)
+                neg_fact_id = addNegFact(strips, fact_id);
+            borISetAdd(&neg_pre[i], neg_fact_id);
+        }
+    }
+
+    opCompileAwayCondEffNegPreRec(strips, op, neg_pre, neg_ce_size, 0);
+
+    for (int i = 0; i < neg_ce_size; ++i)
+        borISetFree(neg_pre + i);
+}
+
+static void opCompileAwayCondEffComb(pddl_strips_t *strips,
+                                     const pddl_strips_op_t *src_op,
+                                     const int *neg_ce,
+                                     int neg_ce_size,
+                                     const int *pos_ce,
+                                     int pos_ce_size)
+{
+    pddl_strips_op_t op;
+
+    pddlStripsOpInit(&op);
+    pddlStripsOpCopyWithoutCondEff(&op, src_op);
+
+    // First merge in positive conditional effects
+    for (int i = 0; i < pos_ce_size; ++i){
+        borISetUnion(&op.pre, &src_op->cond_eff[pos_ce[i]].pre);
+        borISetMinus(&op.add_eff, &src_op->cond_eff[pos_ce[i]].del_eff);
+        borISetUnion(&op.del_eff, &src_op->cond_eff[pos_ce[i]].del_eff);
+        borISetUnion(&op.add_eff, &src_op->cond_eff[pos_ce[i]].add_eff);
+    }
+
+    if (neg_ce_size > 0){
+        // Then, recursivelly, set up negative preconditions
+        opCompileAwayCondEffNegPre(strips, src_op, &op, neg_ce, neg_ce_size);
+    }else{
+        // Or add operator if there are no negative preconditions
+        pddlStripsOpNormalize(&op);
+        pddlStripsOpsAdd(&strips->op, &op);
+    }
+
+    pddlStripsOpFree(&op);
+}
+
+static void opCompileAwayCondEff(pddl_strips_t *strips,
+                                 const pddl_strips_op_t *op)
+{
+    ASSERT_RUNTIME(op->cond_eff_size < sizeof(unsigned long) * 8);
+    int neg_ce[op->cond_eff_size];
+    int neg_ce_size;
+    int pos_ce[op->cond_eff_size];
+    int pos_ce_size;
+
+    unsigned long max = 1ul << op->cond_eff_size;
+    for (unsigned long comb = 0; comb < max; ++comb){
+        unsigned long c = comb;
+        neg_ce_size = pos_ce_size = 0;
+        for (int i = 0; i < op->cond_eff_size; ++i){
+            if (c & 0x1ul){
+                pos_ce[pos_ce_size++] = i;
+            }else{
+                neg_ce[neg_ce_size++] = i;
+            }
+            c >>= 1ul;
+        }
+        opCompileAwayCondEffComb(strips, op, neg_ce, neg_ce_size,
+                                 pos_ce, pos_ce_size);
+    }
+}
+
+void pddlStripsCompileAwayCondEff(pddl_strips_t *strips)
+{
+    if (!strips->has_cond_eff || strips->op.op_size == 0)
+        return;
+
+    int fact_size = strips->fact.fact_size;
+    int op_size = strips->op.op_size;
+    for (int opi = 0; opi < op_size; ++opi){
+        const pddl_strips_op_t *op = strips->op.op[opi];
+        if (op->cond_eff_size > 0)
+            opCompileAwayCondEff(strips, op);
+    }
+
+    if (strips->fact.fact_size != fact_size){
+        // Sort facts if any was added
+        int *fact_remap;
+        fact_remap = BOR_CALLOC_ARR(int, strips->fact.fact_size);
+        pddlFactsSort(&strips->fact, fact_remap);
+        pddlISetRemap(&strips->init, fact_remap);
+        pddlISetRemap(&strips->goal, fact_remap);
+        pddlStripsOpsRemapFacts(&strips->op, fact_remap);
+        BOR_FREE(fact_remap);
+    }
+
+    // Remove operators with conditional effects
+    int *op_map;
+    op_map = BOR_CALLOC_ARR(int, strips->op.op_size);
+    for (int opi = 0; opi < strips->op.op_size; ++opi){
+        if (strips->op.op[opi]->cond_eff_size > 0)
+            op_map[opi] = 1;
+    }
+    pddlStripsOpsDelOps(&strips->op, op_map);
+    BOR_FREE(op_map);
+
+    // Remove duplicate operators
+    pddlStripsOpsDeduplicate(&strips->op);
+    // And sort operators to get deterministinc results.
+    pddlStripsOpsSort(&strips->op);
+
+    strips->has_cond_eff = 0;
 }
 
 void pddlStripsCrossRefFactsOps(const pddl_strips_t *strips,

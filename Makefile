@@ -25,6 +25,7 @@ OBJS += strips_op
 OBJS += strips_ground
 OBJS += ground_atom
 OBJS += profile
+OBJS += helper
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
