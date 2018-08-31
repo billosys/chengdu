@@ -317,7 +317,14 @@ static int opCmp(const void *a, const void *b, void *_)
 {
     pddl_strips_op_t *o1 = *(pddl_strips_op_t **)a;
     pddl_strips_op_t *o2 = *(pddl_strips_op_t **)b;
-    return strcmp(o1->name, o2->name);
+    int cmp = strcmp(o1->name, o2->name);
+    if (cmp == 0)
+        cmp = borISetCmp(&o1->pre, &o2->pre);
+    if (cmp == 0)
+        cmp = borISetCmp(&o1->add_eff, &o2->add_eff);
+    if (cmp == 0)
+        cmp = borISetCmp(&o1->del_eff, &o2->del_eff);
+    return cmp;
 }
 
 void pddlStripsOpsSort(pddl_strips_ops_t *ops)
