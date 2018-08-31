@@ -148,13 +148,16 @@ static void opCompileAwayCondEffNegPreRec(pddl_strips_t *strips,
 
     int neg_fact;
     BOR_ISET_FOR_EACH(neg_pre + cur_neg_pre, neg_fact){
+        if (borISetIn(strips->fact.fact[neg_fact]->neg_of, &op_in->pre))
+            continue;
         pddlStripsOpInit(&op);
         pddlStripsOpCopyWithoutCondEff(&op, op_in);
         borISetAdd(&op.pre, neg_fact);
 
         if (cur_neg_pre == neg_pre_size - 1){
             pddlStripsOpNormalize(&op);
-            pddlStripsOpsAdd(&strips->op, &op);
+            if (borISetSize(&op.add_eff) > 0)
+                pddlStripsOpsAdd(&strips->op, &op);
         }else{
             opCompileAwayCondEffNegPreRec(strips, &op, neg_pre, neg_pre_size,
                                           cur_neg_pre + 1);
@@ -180,8 +183,7 @@ static void opCompileAwayCondEffNegPre(pddl_strips_t *strips,
         int fact_id;
         BOR_ISET_FOR_EACH(&ce->pre, fact_id){
             int neg_fact_id = strips->fact.fact[fact_id]->neg_of;
-            if (neg_fact_id == -1)
-                neg_fact_id = addNegFact(strips, fact_id);
+            ASSERT_RUNTIME(neg_fact_id >= 0);
             borISetAdd(&neg_pre[i], neg_fact_id);
         }
     }
@@ -218,7 +220,8 @@ static void opCompileAwayCondEffComb(pddl_strips_t *strips,
     }else{
         // Or add operator if there are no negative preconditions
         pddlStripsOpNormalize(&op);
-        pddlStripsOpsAdd(&strips->op, &op);
+        if (borISetSize(&op.add_eff) > 0)
+            pddlStripsOpsAdd(&strips->op, &op);
     }
 
     pddlStripsOpFree(&op);
@@ -250,17 +253,22 @@ static void opCompileAwayCondEff(pddl_strips_t *strips,
     }
 }
 
-void pddlStripsCompileAwayCondEff(pddl_strips_t *strips)
+static void compileAwayCondEffCreateNegFacts(pddl_strips_t *strips)
 {
-    if (!strips->has_cond_eff || strips->op.op_size == 0)
-        return;
-
     int fact_size = strips->fact.fact_size;
-    int op_size = strips->op.op_size;
-    for (int opi = 0; opi < op_size; ++opi){
+
+    for (int opi = 0; opi < strips->op.op_size; ++opi){
         const pddl_strips_op_t *op = strips->op.op[opi];
-        if (op->cond_eff_size > 0)
-            opCompileAwayCondEff(strips, op);
+        for (int cei = 0; cei < op->cond_eff_size; ++cei){
+            const pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+            int fact_id;
+            BOR_ISET_FOR_EACH(&ce->pre, fact_id){
+                if (strips->fact.fact[fact_id]->neg_of == -1){
+                    addNegFact(strips, fact_id);
+                    ASSERT_RUNTIME(strips->fact.fact[fact_id]->neg_of != -1);
+                }
+            }
+        }
     }
 
     if (strips->fact.fact_size != fact_size){
@@ -272,6 +280,22 @@ void pddlStripsCompileAwayCondEff(pddl_strips_t *strips)
         pddlISetRemap(&strips->goal, fact_remap);
         pddlStripsOpsRemapFacts(&strips->op, fact_remap);
         BOR_FREE(fact_remap);
+    }
+}
+
+void pddlStripsCompileAwayCondEff(pddl_strips_t *strips)
+{
+    if (!strips->has_cond_eff || strips->op.op_size == 0)
+        return;
+
+    // First create all negations that we might need
+    compileAwayCondEffCreateNegFacts(strips);
+
+    int op_size = strips->op.op_size;
+    for (int opi = 0; opi < op_size; ++opi){
+        const pddl_strips_op_t *op = strips->op.op[opi];
+        if (op->cond_eff_size > 0)
+            opCompileAwayCondEff(strips, op);
     }
 
     // Remove operators with conditional effects
