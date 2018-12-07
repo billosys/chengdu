@@ -60,7 +60,7 @@ void pddlActionFree(pddl_action_t *a);
 /**
  * Creates an exact copy of the given action.
  */
-void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src);
+void pddlActionInitCopy(pddl_action_t *dst, const pddl_action_t *src);
 
 /**
  * Normalize .pre and .eff (see pddlCondNormalize()).
@@ -79,8 +79,15 @@ void pddlActionsFree(pddl_actions_t *actions);
 
 /**
  * Adds an empty action to the list.
+ * This may invalidate your current pointers to as's actions.
  */
-pddl_action_t *pddlActionsAdd(pddl_actions_t *as);
+pddl_action_t *pddlActionsAddEmpty(pddl_actions_t *as);
+
+/**
+ * Adds a new copy of the action specified by its ID.
+ * This may invalidate your current pointers to as's actions.
+ */
+pddl_action_t *pddlActionsAddCopy(pddl_actions_t *as, int copy_id);
 
 /**
  * Split all actions by disjunctions in .pre assuming all .pre are in DNF.

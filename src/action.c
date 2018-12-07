@@ -43,7 +43,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root,
         BOR_ERR_RET2(err, -1, "Invalid definition.");
     }
 
-    a = pddlActionsAdd(&pddl->action);
+    a = pddlActionsAddEmpty(&pddl->action);
     a->name = root->child[1].value;
     for (i = 2; i < root->child_size; i += 2){
         n = root->child + i + 1;
@@ -146,7 +146,7 @@ void pddlActionFree(pddl_action_t *a)
         pddlCondDel(a->eff);
 }
 
-void pddlActionCopy(pddl_action_t *dst, const pddl_action_t *src)
+void pddlActionInitCopy(pddl_action_t *dst, const pddl_action_t *src)
 {
     pddlActionInit(dst);
     dst->name = src->name;
@@ -172,7 +172,12 @@ void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl)
     }
 }
 
-pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
+pddl_action_t *pddlActionsAddEmpty(pddl_actions_t *as)
+{
+    return pddlActionsAddCopy(as, -1);
+}
+
+pddl_action_t *pddlActionsAddCopy(pddl_actions_t *as, int copy_id)
 {
     pddl_action_t *a;
 
@@ -185,7 +190,11 @@ pddl_action_t *pddlActionsAdd(pddl_actions_t *as)
 
     a = as->action + as->size;
     ++as->size;
-    pddlActionInit(a);
+    if (copy_id >= 0){
+        pddlActionInitCopy(a, as->action + copy_id);
+    }else{
+        pddlActionInit(a);
+    }
     return a;
 }
 
@@ -227,8 +236,7 @@ void pddlActionSplit(pddl_action_t *a, pddl_t *pddl)
         item = borListNext(&pre->part);
         borListDel(item);
         cond = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-        newa = pddlActionsAdd(as);
-        pddlActionCopy(newa, as->action + aidx);
+        newa = pddlActionsAddCopy(as, aidx);
         newa->pre = cond;
         pddlActionNormalize(newa, pddl);
     }

@@ -531,14 +531,11 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
             w = pddlCondRemoveFirstNonStaticWhen(a->eff, pddl);
             if (w != NULL){
                 // Create a new action
-                new_a = pddlActionsAdd(&pddl->action);
+                new_a = pddlActionsAddCopy(&pddl->action, ai);
 
                 // Get the original action again, because pddlActionsAdd()
                 // could realloc the array.
                 a = pddl->action.action + ai;
-
-                // Copy the original to the new
-                pddlActionCopy(new_a, a);
 
                 // The original takes additional precondition which is the
                 // negation of w->pre
