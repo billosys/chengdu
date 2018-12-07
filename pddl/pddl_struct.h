@@ -78,11 +78,6 @@ pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
 void pddlDel(pddl_t *pddl);
 
 /**
- * Creates a (deep) copy of the pddl structure.
- */
-void pddlCopy(pddl_t *dst, const pddl_t *src);
-
-/**
  * Normalize pddl, i.e., make preconditions and effects CNF
  */
 void pddlNormalize(pddl_t *pddl);

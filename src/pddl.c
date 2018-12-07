@@ -192,29 +192,6 @@ pddl_fail:
     BOR_TRACE_RET(err, -1);
 }
 
-void pddlCopy(pddl_t *dst, const pddl_t *src)
-{
-    bzero(dst, sizeof(*dst));
-    dst->cfg = src->cfg;
-    // TODO
-    // TODO: pddlLispClone
-    if (src->domain_name != NULL)
-        dst->domain_name = BOR_STRDUP(src->domain_name);
-    if (src->problem_name != NULL)
-        dst->problem_name = BOR_STRDUP(src->problem_name);
-    dst->require = src->require;
-    // TODO: pddlTypesCopy
-    // TODO: pddlObjsCopy
-    // TODO: pddlPredsCopy
-    if (src->init != NULL)
-        dst->init = PDDL_COND_CAST(pddlCondClone(&src->init->cls), part);
-    if (src->goal != NULL)
-        dst->goal = pddlCondClone(src->goal);
-    // TODO: pddlActionsCopy
-    dst->metric = src->metric;
-    dst->normalized = src->normalized;
-}
-
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
                 const pddl_config_t *cfg, bor_err_t *err)
 {
