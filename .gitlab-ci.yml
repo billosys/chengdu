@@ -51,7 +51,7 @@ stages:
 
 .check-valgrind-debian:
   extends: .job-debian
-  stage: test
+  stage: test-valgrind
   before_script:
     - env
     - apt-get update
@@ -86,10 +86,10 @@ check-debian-clang:
 
 
 
-check-debian-gcc:
+check-valgrind-debian-gcc:
   extends: .check-valgrind-debian
 
-check-debian-clang:
+check-valgrind-debian-clang:
   extends: .check-valgrind-debian
   variables:
     DEBIAN_PKGS: clang

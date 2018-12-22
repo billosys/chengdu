@@ -21,7 +21,7 @@ ifeq '$(PROFIL)' 'yes'
 endif
 
 ifeq '$(DEBUG)' 'yes'
-  CFLAGS = -g -Wno-unused-function
+  CFLAGS = -g
   CONFIG_FLAGS += -DDEBUG
 else
   # force to use optimizations
