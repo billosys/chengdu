@@ -33,6 +33,7 @@ stages:
     - make third-party
     - make help
     - make
+    - make -C bin
 
 .check-debian:
   extends: .job-debian
