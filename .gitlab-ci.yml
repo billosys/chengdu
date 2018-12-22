@@ -5,6 +5,7 @@ variables:
 stages:
   - build
   - test
+  - test-valgrind
 
 .restrict: &restrict
   only:
@@ -46,7 +47,22 @@ stages:
     - make third-party
     - make help
     - make
-    - make check
+    - make check-ci
+
+.check-valgrind-debian:
+  extends: .job-debian
+  stage: test
+  before_script:
+    - env
+    - apt-get update
+    - apt-get install -y clang make m4 python pkg-config valgrind $DEBIAN_PKGS
+  script:
+    - env
+    - make help
+    - make third-party
+    - make help
+    - make
+    - make check-valgrind
 
 build-debian-gcc:
   extends: .build-debian
@@ -64,6 +80,17 @@ check-debian-gcc:
 
 check-debian-clang:
   extends: .check-debian
+  variables:
+    DEBIAN_PKGS: clang
+    CC: clang
+
+
+
+check-debian-gcc:
+  extends: .check-valgrind-debian
+
+check-debian-clang:
+  extends: .check-valgrind-debian
   variables:
     DEBIAN_PKGS: clang
     CC: clang
