@@ -26,7 +26,7 @@ stages:
   before_script:
     - env
     - apt-get update
-    - apt-get install -y make m4 $DEBIAN_PKGS
+    - apt-get install -y make $DEBIAN_PKGS
   script:
     - env
     - make help
@@ -40,7 +40,7 @@ stages:
   before_script:
     - env
     - apt-get update
-    - apt-get install -y make m4 python $DEBIAN_PKGS
+    - apt-get install -y make python $DEBIAN_PKGS
   script:
     - env
     - make help
@@ -55,7 +55,7 @@ stages:
   before_script:
     - env
     - apt-get update
-    - apt-get install -y make m4 python pkg-config valgrind $DEBIAN_PKGS
+    - apt-get install -y make python valgrind $DEBIAN_PKGS
   script:
     - env
     - make help

@@ -2,7 +2,6 @@
 BASEPATH_ := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
 CC ?= gcc
-M4 ?= m4
 SCAN_BUILD ?= scan-build
 PYTHON2 ?= python2
 CPPCHECK ?= cppcheck
@@ -10,7 +9,6 @@ CPPCHECK ?= cppcheck
 SYSTEM = $(shell uname)
 
 SYSTEM_LDFLAGS =
-CONFIG_FLAGS =
 
 DEBUG ?= no
 PROFIL ?= no
@@ -22,7 +20,6 @@ endif
 
 ifeq '$(DEBUG)' 'yes'
   CFLAGS = -g
-  CONFIG_FLAGS += -DDEBUG
 else
   # force to use optimizations
   CFLAGS += -O3
@@ -76,7 +73,6 @@ help:
 	@echo ""
 	@echo "Options:"
 	@echo "    CC         - Path to C compiler          (=$(CC))"
-	@echo "    M4         - Path to m4 macro processor  (=$(M4))"
 	@echo "    SCAN_BUILD - Path to scan-build          (=$(SCAN_BUILD))"
 	@echo "    PYTHON2    - Path to python v2 interpret (=$(PYTHON2))"
 	@echo ""
@@ -88,7 +84,6 @@ help:
 	@echo "    SYSTEM            = $(SYSTEM)"
 	@echo "    CFLAGS            = $(CFLAGS)"
 	@echo "    LDFLAGS           = $(LDFLAGS)"
-	@echo "    CONFIG_FLAGS      = $(CONFIG_FLAGS)"
 	@echo "    USE_LOCAL_OPTS    = $(USE_LOCAL_OPTS)"
 	@echo "    OPTS_CFLAGS       = $(OPTS_CFLAGS)"
 	@echo "    OPTS_LDFLAGS      = $(OPTS_LDFLAGS)"
