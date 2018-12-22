@@ -61,6 +61,8 @@ mrproper: clean boruvka-clean opts-clean
 
 check:
 	$(MAKE) -C test check
+check-ci:
+	$(MAKE) -C test check-ci
 check-valgrind:
 	$(MAKE) -C test check-valgrind
 check-segfault:
@@ -93,4 +95,4 @@ third-party/opts/Makefile:
 	git submodule init -- third-party/opts
 	git submodule update -- third-party/opts
 
-.PHONY: all clean check check-valgrind help doc install analyze examples third-party third-party-clean boruvka boruvka-clean opts opts-clean mrproper
+.PHONY: all clean check check-ci check-valgrind help doc install analyze examples third-party third-party-clean boruvka boruvka-clean opts opts-clean mrproper
