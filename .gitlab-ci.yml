@@ -29,6 +29,8 @@ stages:
   script:
     - env
     - make help
+    - make third-party
+    - make help
     - make
 
 .check-debian:
@@ -40,6 +42,8 @@ stages:
     - apt-get install -y clang make m4 python pkg-config $DEBIAN_PKGS
   script:
     - env
+    - make help
+    - make third-party
     - make help
     - make
     - make check
