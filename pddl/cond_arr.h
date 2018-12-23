@@ -36,7 +36,7 @@ typedef struct pddl_cond_arr pddl_cond_arr_t;
 void pddlCondArrInit(pddl_cond_arr_t *ca);
 void pddlCondArrFree(pddl_cond_arr_t *ca);
 void pddlCondArrAdd(pddl_cond_arr_t *ca, const pddl_cond_t *c);
-void pddlCondArrCopy(pddl_cond_arr_t *dst, const pddl_cond_arr_t *src);
+void pddlCondArrInitCopy(pddl_cond_arr_t *dst, const pddl_cond_arr_t *src);
 
 #ifdef __cplusplus
 } /* extern "C" */

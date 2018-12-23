@@ -42,7 +42,7 @@ void pddlCondArrAdd(pddl_cond_arr_t *ca, const pddl_cond_t *c)
     ca->cond[ca->size++] = c;
 }
 
-void pddlCondArrCopy(pddl_cond_arr_t *dst, const pddl_cond_arr_t *src)
+void pddlCondArrInitCopy(pddl_cond_arr_t *dst, const pddl_cond_arr_t *src)
 {
     *dst = *src;
     if (src->cond != NULL){
