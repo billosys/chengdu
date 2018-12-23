@@ -35,8 +35,13 @@ libpddl.a: $(OBJS)
 	ar cr $@ $(OBJS)
 	ranlib $@
 
-pddl/config.h: pddl/config.h.m4
-	$(M4) $(CONFIG_FLAGS) $< >$@
+pddl/config.h:
+	echo "#ifndef __PDDL_CONFIG_H__" >$@
+	echo "#define __PDDL_CONFIG_H__" >>$@
+	echo "" >>$@
+	if [ "$(DEBUG)" = "yes" ]; then echo "#define PDDL_DEBUG" >>$@; fi
+	echo "" >>$@
+	echo "#endif /* __PDDL_CONFIG_H__ */" >>$@
 
 .objs/%.o: src/%.c pddl/%.h pddl/config.h
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -61,6 +66,8 @@ mrproper: clean boruvka-clean opts-clean
 
 check:
 	$(MAKE) -C test check
+check-ci:
+	$(MAKE) -C test check-ci
 check-valgrind:
 	$(MAKE) -C test check-valgrind
 check-segfault:
@@ -93,4 +100,4 @@ third-party/opts/Makefile:
 	git submodule init -- third-party/opts
 	git submodule update -- third-party/opts
 
-.PHONY: all clean check check-valgrind help doc install analyze examples third-party third-party-clean boruvka boruvka-clean opts opts-clean mrproper
+.PHONY: all clean check check-ci check-valgrind help doc install analyze examples third-party third-party-clean boruvka boruvka-clean opts opts-clean mrproper
