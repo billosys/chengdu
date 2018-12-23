@@ -314,11 +314,8 @@ void pddlLispPrintDebug(const pddl_lisp_t *lisp, FILE *fout)
     nodeDebug(&lisp->root, fout, 0);
 }
 
-void pddlLispNodeCopy(pddl_lisp_node_t *dst,
-                          const pddl_lisp_node_t *src)
+void pddlLispNodeInitCopy(pddl_lisp_node_t *dst, const pddl_lisp_node_t *src)
 {
-    int i;
-
     lispNodeInit(dst);
     dst->value = src->value;
     dst->kw = src->kw;
@@ -326,9 +323,9 @@ void pddlLispNodeCopy(pddl_lisp_node_t *dst,
 
     dst->child_size = src->child_size;
     dst->child = BOR_ALLOC_ARR(pddl_lisp_node_t, dst->child_size);
-    for (i = 0; i < dst->child_size; ++i){
+    for (int i = 0; i < dst->child_size; ++i){
         lispNodeInit(dst->child + i);
-        pddlLispNodeCopy(dst->child + i, src->child + i);
+        pddlLispNodeInitCopy(dst->child + i, src->child + i);
     }
 }
 

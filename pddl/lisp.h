@@ -150,7 +150,7 @@ int pddlLispParseTypedList(const pddl_lisp_node_t *root,
 /**
  * Copy pddl-lisp-node from src to dst.
  */
-void pddlLispNodeCopy(pddl_lisp_node_t *dst, const pddl_lisp_node_t *src);
+void pddlLispNodeInitCopy(pddl_lisp_node_t *dst, const pddl_lisp_node_t *src);
 
 /**
  * Frees pddl-lisp-node -- use it as pair function to *Copy().
