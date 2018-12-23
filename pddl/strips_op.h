@@ -171,7 +171,7 @@ void pddlStripsOpsInit(pddl_strips_ops_t *ops);
 void pddlStripsOpsFree(pddl_strips_ops_t *ops);
 
 /**
- * Copy the structure.
+ * Copy all operators one by one from src to dst with pddlStripsOpsAdd().
  */
 void pddlStripsOpsCopy(pddl_strips_ops_t *dst, const pddl_strips_ops_t *src);
 
