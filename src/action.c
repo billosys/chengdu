@@ -150,7 +150,7 @@ void pddlActionInitCopy(pddl_action_t *dst, const pddl_action_t *src)
 {
     pddlActionInit(dst);
     dst->name = src->name;
-    pddlParamsCopy(&dst->param, &src->param);
+    pddlParamsInitCopy(&dst->param, &src->param);
     if (src->pre != NULL)
         dst->pre = pddlCondClone(src->pre);
     if (src->eff != NULL)

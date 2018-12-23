@@ -55,7 +55,7 @@ void pddlParamInit(pddl_param_t *param);
 /**
  * Copies src to dst.
  */
-void pddlParamCopy(pddl_param_t *dst, const pddl_param_t *src);
+void pddlParamInitCopy(pddl_param_t *dst, const pddl_param_t *src);
 
 /**
  * Initialize list of parameters
@@ -75,7 +75,7 @@ pddl_param_t *pddlParamsAdd(pddl_params_t *params);
 /**
  * Copies src to dst.
  */
-void pddlParamsCopy(pddl_params_t *dst, const pddl_params_t *src);
+void pddlParamsInitCopy(pddl_params_t *dst, const pddl_params_t *src);
 
 /**
  * Returns index of the parameter with the specified name or -1 if such a

@@ -421,7 +421,7 @@ static pddl_cond_quant_t *condQuantClone(const pddl_cond_quant_t *q)
     pddl_cond_quant_t *n;
 
     n = condQuantNew(q->cls.type);
-    pddlParamsCopy(&n->param, &q->param);
+    pddlParamsInitCopy(&n->param, &q->param);
     n->cond = pddlCondClone(q->cond);
     return n;
 }
@@ -436,7 +436,7 @@ static pddl_cond_quant_t *condQuantNegate(const pddl_cond_quant_t *q,
     }else{
         n = condQuantNew(PDDL_COND_FORALL);
     }
-    pddlParamsCopy(&n->param, &q->param);
+    pddlParamsInitCopy(&n->param, &q->param);
     n->cond = pddlCondNegate(q->cond, pddl);
     return n;
 }
@@ -1295,7 +1295,7 @@ static int parseQuantParams(pddl_params_t *params,
 
         if (use){
             param = pddlParamsAdd(params);
-            pddlParamCopy(param, ctx->params->param + i);
+            pddlParamInitCopy(param, ctx->params->param + i);
             param->inherit = i;
         }
     }

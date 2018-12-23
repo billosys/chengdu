@@ -29,7 +29,7 @@ void pddlParamInit(pddl_param_t *param)
     param->inherit = -1;
 }
 
-void pddlParamCopy(pddl_param_t *dst, const pddl_param_t *src)
+void pddlParamInitCopy(pddl_param_t *dst, const pddl_param_t *src)
 {
     *dst = *src;
 }
@@ -62,14 +62,14 @@ pddl_param_t *pddlParamsAdd(pddl_params_t *params)
     return param;
 }
 
-void pddlParamsCopy(pddl_params_t *dst, const pddl_params_t *src)
+void pddlParamsInitCopy(pddl_params_t *dst, const pddl_params_t *src)
 {
     int i;
 
     dst->size = dst->alloc = src->size;
     dst->param = BOR_ALLOC_ARR(pddl_param_t, dst->alloc);
     for (i = 0; i < dst->size; ++i)
-        pddlParamCopy(dst->param + i, src->param + i);
+        pddlParamInitCopy(dst->param + i, src->param + i);
 }
 
 int pddlParamsGetId(const pddl_params_t *param, const char *name)
