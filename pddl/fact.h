@@ -122,7 +122,7 @@ void pddlFactsDelFact(pddl_facts_t *fs, int fact_id);
 void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs, const int *m, int *remap);
 
 /**
- * Copies fact from src to dst.
+ * Copies all facts from src to dst using pddlFactsAdd().
  */
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src);
 
