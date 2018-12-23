@@ -292,7 +292,7 @@ static int createNewNotPred(pddl_t *pddl, int pred_id)
     // pddlPredsAdd() can reallocate, so we need to probe positive
     // predicate again
     pos = pddl->pred.pred + pred_id;
-    pddlPredCopy(neg, pos);
+    pddlPredInitCopy(neg, pos);
     if (neg->free_name)
         BOR_FREE((char *)neg->name);
     neg->name = name;

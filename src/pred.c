@@ -22,7 +22,7 @@
 #include "pddl/pred.h"
 #include "lisp_err.h"
 
-void pddlPredCopy(pddl_pred_t *dst, const pddl_pred_t *src)
+void pddlPredInitCopy(pddl_pred_t *dst, const pddl_pred_t *src)
 {
     memcpy(dst, src, sizeof(*src));
     if (src->param != NULL){

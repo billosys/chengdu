@@ -42,7 +42,7 @@ struct pddl_pred {
 };
 typedef struct pddl_pred pddl_pred_t;
 
-void pddlPredCopy(pddl_pred_t *dst, const pddl_pred_t *src);
+void pddlPredInitCopy(pddl_pred_t *dst, const pddl_pred_t *src);
 
 _bor_inline int pddlPredIsStatic(const pddl_pred_t *pred);
 
