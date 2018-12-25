@@ -1023,6 +1023,12 @@ pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b)
     return &p->cls;
 }
 
+pddl_cond_t *pddlCondNewEmptyAnd(void)
+{
+    pddl_cond_part_t *p = condPartNew(PDDL_COND_AND);
+    return &p->cls;
+}
+
 static int hasAtom(pddl_cond_t *c, void *_ret)
 {
     int *ret = _ret;
@@ -2072,19 +2078,81 @@ static int atomIsInInit(const pddl_t *pddl, const pddl_cond_atom_t *atom)
     return 0;
 }
 
+/** Returns true if atom at least partially matches grounded atom ground_atom
+ *  (disregarding negative flag), i.e., true is returned if the objects (in
+ *  place of arguments) match. */
+static int atomPartialMatchNoNeg(const pddl_cond_atom_t *atom,
+                                 const pddl_cond_atom_t *ground_atom)
+{
+    int cmp;
+
+    cmp = atom->pred - ground_atom->pred;
+    if (cmp == 0){
+        if (atom->arg_size != ground_atom->arg_size)
+            return 0;
+
+        for (int i = 0; i < atom->arg_size && cmp == 0; ++i){
+            if (atom->arg[i].param >= 0)
+                continue;
+            cmp = atom->arg[i].obj - ground_atom->arg[i].obj;
+        }
+    }
+
+    return cmp == 0;
+}
+
+static int atomIsPartiallyInInit(const pddl_t *pddl,
+                                 const pddl_cond_atom_t *atom)
+{
+    bor_list_t *item;
+    const pddl_cond_t *c;
+
+    BOR_LIST_FOR_EACH(&pddl->init->part, item){
+        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (c->type == PDDL_COND_ATOM
+                && atomPartialMatchNoNeg(atom, OBJ(c, atom))){
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static pddl_cond_t *removeBoolAtom(pddl_cond_atom_t *atom, const pddl_t *pddl)
 {
     int bval;
 
-    if (pddlPredIsStatic(&pddl->pred.pred[atom->pred])
-            && pddlCondAtomIsGrounded(atom)){
-        if (atomIsInInit(pddl, atom)){
-            bval = !atom->neg;
-        }else{
+    if (pddlPredIsStatic(&pddl->pred.pred[atom->pred])){
+        if (atom->pred == pddl->pred.eq_pred){
+            ASSERT(atom->arg_size == 2);
+            if (atom->arg[0].obj >= 0 && atom->arg[1].obj >= 0){
+                // Evaluate fully grounded (= ...) atom
+                if (atom->arg[0].obj == atom->arg[1].obj){
+                    bval = !atom->neg;
+                }else{
+                    bval = atom->neg;
+                }
+                pddlCondDel(&atom->cls);
+                return &condBoolNew(bval)->cls;
+            }
+
+        }else if (pddlCondAtomIsGrounded(atom)){
+            // If the atom is static and fully grounded we can evaluate it
+            // right now by comparing it to the inital state
+            if (atomIsInInit(pddl, atom)){
+                bval = !atom->neg;
+            }else{
+                bval = atom->neg;
+            }
+            pddlCondDel(&atom->cls);
+            return &condBoolNew(bval)->cls;
+
+        }else if (atom->neg && !atomIsPartiallyInInit(pddl, atom)){
+            // If the atom is static but not fully grounded we can evaluate
+            // it if there is no atom matching the grounded parts
             bval = atom->neg;
+            pddlCondDel(&atom->cls);
+            return &condBoolNew(bval)->cls;
         }
-        pddlCondDel(&atom->cls);
-        return &condBoolNew(bval)->cls;
     }
 
     return &atom->cls;
@@ -2102,7 +2170,6 @@ static pddl_cond_t *removeBoolImply(pddl_cond_imply_t *imp)
 
         }else{
             pddlCondDel(&imp->cls);
-            //fprintf(stderr, "X\n");
             return &condBoolNew(1)->cls;
         }
     }
