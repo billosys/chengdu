@@ -419,3 +419,8 @@ int pddlPrepActionCheckFact(const pddl_prep_action_t *a, int pre_i,
 
     return checkEq(a, arg, 1);
 }
+
+int pddlPrepActionCheckEqDef(const pddl_prep_action_t *a, const int *arg)
+{
+    return checkEq(a, arg, 1);
+}

@@ -30,6 +30,8 @@
 
 // TODO: Move this to common.h and define also pddl_type_id_t, etc...
 typedef int obj_id_t;
+// TODO: This constant is used also in prep_action, but as the constant -1,
+//       we need to define PDDL_OBJ_UNDEF and include it here and there
 #define UNDEF -1
 
 #ifdef PDDL_DEBUG
@@ -474,6 +476,8 @@ static void unify(pddl_strips_ground_tree_t *tr, tnode_t *tn,
     tnode_t *ch;
     int match = 0;
 
+    if (!pddlPrepActionCheckEqDef(tr->action, arg))
+        return;
     if (remain == 0){
         unifyPre(tr, tn, arg, pre_i);
         return;
