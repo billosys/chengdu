@@ -21,6 +21,7 @@
 #define __PDDL_LISP_H__
 
 #include <stdio.h>
+#include <string.h>
 #include <boruvka/compiler.h>
 #include <boruvka/err.h>
 
@@ -168,6 +169,11 @@ _bor_inline const char *pddlLispNodeHead(const pddl_lisp_node_t *n);
  */
 _bor_inline int pddlLispNodeHeadKw(const pddl_lisp_node_t *n);
 
+/**
+ * Returns true if the node is () or (and)
+ */
+_bor_inline int pddlLispNodeIsEmptyAnd(const pddl_lisp_node_t *n);
+
 /**** INLINES: ****/
 _bor_inline const char *pddlLispNodeHead(const pddl_lisp_node_t *n)
 {
@@ -181,6 +187,15 @@ _bor_inline int pddlLispNodeHeadKw(const pddl_lisp_node_t *n)
     if (n->child_size == 0)
         return -1;
     return n->child[0].kw;
+}
+
+_bor_inline int pddlLispNodeIsEmptyAnd(const pddl_lisp_node_t *n)
+{
+    return n->child_size == 0
+                || (n->child_size == 1
+                        && n->child[0].child_size == 0
+                        && n->child[0].value != NULL
+                        && strcmp(n->child[0].value, "and") == 0);
 }
 
 #ifdef __cplusplus

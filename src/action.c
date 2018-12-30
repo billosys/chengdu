@@ -67,13 +67,8 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root,
         }else if (root->child[i].kw == PDDL_KW_PRE){
             // Skip empty preconditions, i.e., () or (and)
             //      -- it will be set to the empty conjunction later anyway.
-            if (n->child_size == 0
-                    || (n->child_size == 1
-                            && n->child[0].child_size == 0
-                            && n->child[0].value != NULL
-                            && strcmp(n->child[0].value, "and") == 0)){
+            if (pddlLispNodeIsEmptyAnd(n))
                 continue;
-            }
 
             snprintf(err_prefix, ERR_PREFIX_MAXSIZE,
                      "Precondition of the action `%s': ", a->name);
@@ -85,6 +80,9 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root,
             pddlCondSetPredRead(a->pre, &pddl->pred);
 
         }else if (root->child[i].kw == PDDL_KW_EFF){
+            if (pddlLispNodeIsEmptyAnd(n))
+                continue;
+
             snprintf(err_prefix, ERR_PREFIX_MAXSIZE,
                      "Effect of the action `%s': ", a->name);
             a->eff = pddlCondParse(n, pddl, &a->param, err_prefix, err);
@@ -103,7 +101,12 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root,
     // Empty precondition is allowed meaning the action can be applied in
     // any state
     if (a->pre == NULL)
-        a->pre = pddlCondEmptyPre();
+        a->pre = pddlCondNewEmptyAnd();
+
+    // Empty effect is also allowed because of some domains that contain
+    // these actions. This action can be later removed by pddlNormalize().
+    if (a->eff == NULL)
+        a->eff = pddlCondNewEmptyAnd();
 
     // TODO: Check compatibility of types of parameters and types of
     //       arguments of all predicates.

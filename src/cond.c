@@ -1578,11 +1578,6 @@ pddl_cond_part_t *pddlCondParseInit(const pddl_lisp_node_t *root, pddl_t *pddl,
     return and;
 }
 
-pddl_cond_t *pddlCondEmptyPre(void)
-{
-    return &condPartNew(PDDL_COND_AND)->cls;
-}
-
 pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom)
 {
     pddl_cond_part_t *and;
@@ -1628,7 +1623,7 @@ int pddlCondCheckPre(const pddl_cond_t *cond, int require, bor_err_t *err)
             || cond->type == PDDL_COND_OR){
         if (cond->type == PDDL_COND_OR
                 && !(require & PDDL_REQUIRE_DISJUNCTIVE_PRE)){
-            BOR_ERR2(err, "(forall ...) can be used only with"
+            BOR_ERR2(err, "(or ...) can be used only with"
                      " :disjunctive-preconditions");
             return -1;
         }
