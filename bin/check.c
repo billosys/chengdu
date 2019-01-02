@@ -72,10 +72,10 @@ int main(int argc, char *argv[])
         BOR_INFO(&err, "Number of PDDL Functions: %d", pddl.func.size);
         BOR_INFO(&err, "Number of PDDL Actions: %d", pddl.action.size);
         BOR_INFO(&err, "Number of PDDL Metric: %d", pddl.metric);
+        fflush(stdout);
     }
 
     if (pddlStripsGround(&strips, &pddl, &ground_cfg, &err) != 0){
-        pddlFree(&pddl);
         if (!o.quiet){
             fprintf(stderr, "Error: ");
             borErrPrint(&err, 1, stderr);
@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
         BOR_INFO(&err, "Goal is unreachable: %d",
                  strips.goal_is_unreachable);
         BOR_INFO(&err, "Has Conditional Effects: %d", strips.has_cond_eff);
+        fflush(stdout);
     }
 
     pddlStripsFree(&strips);
