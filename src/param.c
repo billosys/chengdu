@@ -64,19 +64,15 @@ pddl_param_t *pddlParamsAdd(pddl_params_t *params)
 
 void pddlParamsInitCopy(pddl_params_t *dst, const pddl_params_t *src)
 {
-    int i;
-
     dst->size = dst->alloc = src->size;
     dst->param = BOR_ALLOC_ARR(pddl_param_t, dst->alloc);
-    for (i = 0; i < dst->size; ++i)
+    for (int i = 0; i < dst->size; ++i)
         pddlParamInitCopy(dst->param + i, src->param + i);
 }
 
 int pddlParamsGetId(const pddl_params_t *param, const char *name)
 {
-    int i;
-
-    for (i = 0; i < param->size; ++i){
+    for (int i = 0; i < param->size; ++i){
         if (strcmp(name, param->param[i].name) == 0)
             return i;
     }
@@ -97,7 +93,7 @@ static int setParams(const pddl_lisp_node_t *root,
     pddl_params_t *params = ((set_param_t *)ud)->param;
     pddl_types_t *types = ((set_param_t *)ud)->types;
     pddl_param_t *param;
-    int i, tid;
+    int tid;
 
     tid = 0;
     if (child_type >= 0){
@@ -106,7 +102,7 @@ static int setParams(const pddl_lisp_node_t *root,
             return -1;
     }
 
-    for (i = child_from; i < child_to; ++i){
+    for (int i = child_from; i < child_to; ++i){
         ASSERT(root->child[i].value != NULL);
         if (root->child[i].value == NULL)
             ERR_LISP_RET2(err, -1, root->child + i, "Unexpected expression");

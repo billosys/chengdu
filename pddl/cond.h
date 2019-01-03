@@ -98,7 +98,7 @@ typedef struct pddl_cond_when pddl_cond_when_t;
  */
 struct pddl_cond_atom_arg {
     int param; /*!< -1 or index of parameter */
-    int obj;   /*!< -1 or object ID (constant) */
+    pddl_obj_id_t obj; /*!< object ID (constant) or PDDL_OBJ_ID_UNDEF */
 };
 typedef struct pddl_cond_atom_arg pddl_cond_atom_arg_t;
 
@@ -235,7 +235,7 @@ pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom);
  * Creates a new atom that corresponds to a grounded fact.
  */
 pddl_cond_atom_t *pddlCondCreateFactAtom(int pred, int arg_size, 
-                                         const int *arg);
+                                         const pddl_obj_id_t *arg);
 
 /**
  * Adds {c} to and/or condition.

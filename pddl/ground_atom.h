@@ -44,7 +44,7 @@ struct pddl_ground_atom {
     int func_val; /*!< Assigned value in the case of function */
     int pred;     /*!< Predicate ID */
     int arg_size; /*!< Number of arguments */
-    int *arg;    /*!< Object IDs are arguments */
+    pddl_obj_id_t *arg; /*!< Object IDs are arguments */
 };
 typedef struct pddl_ground_atom pddl_ground_atom_t;
 
@@ -83,7 +83,7 @@ void pddlGroundAtomsFree(pddl_ground_atoms_t *fs);
  */
 pddl_ground_atom_t *pddlGroundAtomsAddAtom(pddl_ground_atoms_t *ga,
                                            const pddl_cond_atom_t *c,
-                                           const int *arg);
+                                           const pddl_obj_id_t *arg);
 
 /**
  * Adds a unique ground predicate atom (fact). Returns the newly added atom
@@ -91,14 +91,15 @@ pddl_ground_atom_t *pddlGroundAtomsAddAtom(pddl_ground_atoms_t *ga,
  */
 pddl_ground_atom_t *pddlGroundAtomsAddPred(pddl_ground_atoms_t *ga,
                                            int pred,
-                                           const int *arg, int arg_size);
+                                           const pddl_obj_id_t *arg,
+                                           int arg_size);
 
 /**
  * Find the grounded fact.
  */
 pddl_ground_atom_t *pddlGroundAtomsFindAtom(const pddl_ground_atoms_t *ga,
                                             const pddl_cond_atom_t *c,
-                                            const int *arg);
+                                            const pddl_obj_id_t *arg);
 
 #ifdef __cplusplus
 } /* extern "C" */

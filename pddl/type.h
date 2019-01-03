@@ -38,7 +38,7 @@ struct pddl_type {
 typedef struct pddl_type pddl_type_t;
 
 struct pddl_objs_by_type {
-    int *obj;
+    pddl_obj_id_t *obj;
     int size;
     int alloc;
 };
@@ -75,17 +75,18 @@ void pddlTypesPrint(const pddl_types_t *t, FILE *fout);
 /**
  * Record the given object as being of the given type.
  */
-void pddlTypesAddObj(pddl_types_t *ts, int obj_id, int type_id);
+void pddlTypesAddObj(pddl_types_t *ts, pddl_obj_id_t obj_id, int type_id);
 
 /**
  * Returns list of object IDs of the specified type.
  */
-const int *pddlTypesObjsByType(const pddl_types_t *ts, int type_id, int *size);
+const pddl_obj_id_t *pddlTypesObjsByType(const pddl_types_t *ts, int type_id,
+                                         int *size);
 
 /**
  * Returns true if the object compatible with the specified type.
  */
-int pddlTypesObjHasType(const pddl_types_t *ts, int type, int obj);
+int pddlTypesObjHasType(const pddl_types_t *ts, int type, pddl_obj_id_t obj);
 
 /**
  * Returns type ID from the lisp node or -1 if error occured.

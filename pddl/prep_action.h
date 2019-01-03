@@ -64,19 +64,20 @@ void pddlPrepActionsFree(pddl_prep_actions_t *as);
  */
 int pddlPrepActionCheck(const pddl_prep_action_t *a,
                         const pddl_ground_atoms_t *static_facts,
-                        const int *arg);
+                        const pddl_obj_id_t *arg);
 
 /**
  * Checks the given fact against specified precondition.
  */
 int pddlPrepActionCheckFact(const pddl_prep_action_t *a, int pre_i,
-                            const int *fact_args);
+                            const pddl_obj_id_t *fact_args);
 
 /**
  * Checks equality preconditions, i.e., (= ?x ?y) and (not (= ?x ?y)), but
  * only for the defined arguments.
  */
-int pddlPrepActionCheckEqDef(const pddl_prep_action_t *a, const int *arg);
+int pddlPrepActionCheckEqDef(const pddl_prep_action_t *a,
+                             const pddl_obj_id_t *arg);
 
 #ifdef __cplusplus
 } /* extern "C" */

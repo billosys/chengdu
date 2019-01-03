@@ -108,9 +108,7 @@ static int kw_size = sizeof(kw) / sizeof(kw_t);
 
 static int recongnizeKeyword(const char *text)
 {
-    int i;
-
-    for (i = 0; i < kw_size; ++i){
+    for (int i = 0; i < kw_size; ++i){
         if (strcmp(text, kw[i].text) == 0)
             return kw[i].kw;
     }
@@ -130,9 +128,7 @@ static pddl_lisp_node_t *lispNodeInit(pddl_lisp_node_t *n)
 
 static void lispNodeFree(pddl_lisp_node_t *n)
 {
-    int i;
-
-    for (i = 0; i < n->child_size; ++i)
+    for (int i = 0; i < n->child_size; ++i)
         lispNodeFree(n->child + i);
     if (n->child != NULL)
         BOR_FREE(n->child);
@@ -288,9 +284,7 @@ void pddlLispDel(pddl_lisp_t *lisp)
 
 static void nodeDebug(const pddl_lisp_node_t *node, FILE *fout, int prefix)
 {
-    int i;
-
-    for (i = 0; i < prefix; ++i)
+    for (int i = 0; i < prefix; ++i)
         fprintf(fout, " ");
 
     if (node->value != NULL){
@@ -299,11 +293,10 @@ static void nodeDebug(const pddl_lisp_node_t *node, FILE *fout, int prefix)
     }else{
         fprintf(fout, "( :: %d\n", node->lineno);
 
-        for (i = 0; i < node->child_size; ++i){
+        for (int i = 0; i < node->child_size; ++i)
             nodeDebug(node->child + i, fout, prefix + 4);
-        }
 
-        for (i = 0; i < prefix; ++i)
+        for (int i = 0; i < prefix; ++i)
             fprintf(fout, " ");
         fprintf(fout, ")\n");
     }
@@ -337,9 +330,7 @@ void pddlLispNodeFree(pddl_lisp_node_t *node)
 const pddl_lisp_node_t *pddlLispFindNode(
             const pddl_lisp_node_t *root, int kw)
 {
-    int i;
-
-    for (i = 0; i < root->child_size; ++i){
+    for (int i = 0; i < root->child_size; ++i){
         if (pddlLispNodeHeadKw(root->child + i) == kw)
             return root->child + i;
     }

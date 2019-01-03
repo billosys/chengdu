@@ -225,7 +225,7 @@ int pddlFactsAddGroundAtom(pddl_facts_t *fs, const pddl_ground_atom_t *ga,
                     && ga2->pred == pred_neg
                     && ga->arg_size == ga2->arg_size
                     && memcmp(ga->arg, ga2->arg,
-                              sizeof(int) * ga->arg_size) == 0){
+                              sizeof(pddl_obj_id_t) * ga->arg_size) == 0){
                 ASSERT_RUNTIME(fact2->neg_of == -1);
                 ASSERT_RUNTIME(fact->neg_of == -1);
                 ASSERT(strncmp(fact->name, "NOT-", 4) == 0

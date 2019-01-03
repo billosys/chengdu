@@ -74,9 +74,7 @@ static int setCB(const pddl_lisp_node_t *root,
 
 static int checkDuplicate(const pddl_preds_t *ps, const char *name)
 {
-    int i;
-
-    for (i = 0; i < ps->size; ++i){
+    for (int i = 0; i < ps->size; ++i){
         if (strcmp(ps->pred[i].name, name) == 0)
             return 1;
     }
@@ -121,7 +119,7 @@ static int parsePrivatePreds(pddl_t *pddl,
                              bor_err_t *err)
 {
     const char *owner_var;
-    int factor, i, from;
+    int factor, from;
 
     factor = (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
 
@@ -153,7 +151,7 @@ static int parsePrivatePreds(pddl_t *pddl,
         }
     }
 
-    for (i = from; i < n->child_size; ++i){
+    for (int i = from; i < n->child_size; ++i){
         if (parsePred(pddl, n->child + i, owner_var,
                       "private predicate", ps, err) != 0){
             BOR_TRACE_RET(err, -1);
@@ -179,7 +177,7 @@ static void addEqPredicate(pddl_preds_t *ps)
 int pddlPredsParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
-    int i, private;
+    int  private;
 
     pddl->pred.eq_pred = -1;
     addEqPredicate(&pddl->pred);
@@ -193,7 +191,7 @@ int pddlPredsParse(pddl_t *pddl, bor_err_t *err)
                 || (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
 
     // Fisrt parse non :private predicates
-    for (i = 1; i < n->child_size; ++i){
+    for (int i = 1; i < n->child_size; ++i){
         if (n->child[i].child_size > 0
                 && n->child[i].child[0].kw == PDDL_KW_PRIVATE){
             if (!private){
@@ -214,7 +212,7 @@ int pddlPredsParse(pddl_t *pddl, bor_err_t *err)
 
     // And then the private predicates
     if (private){
-        for (i = 1; i < n->child_size; ++i){
+        for (int i = 1; i < n->child_size; ++i){
             if (n->child[i].child_size == 0
                     || n->child[i].child[0].kw != PDDL_KW_PRIVATE){
                 continue;
@@ -233,13 +231,12 @@ int pddlPredsParse(pddl_t *pddl, bor_err_t *err)
 int pddlFuncsParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
-    int i;
 
     n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_FUNCTIONS);
     if (n == NULL)
         return 0;
 
-    for (i = 1; i < n->child_size; ++i){
+    for (int i = 1; i < n->child_size; ++i){
         if (parsePred(pddl, n->child + i, NULL, "function",
                       &pddl->func, err) != 0){
             BOR_TRACE_PREPEND_RET(err, -1, "While parsing :functions in %s: ",
@@ -264,9 +261,7 @@ int pddlFuncsParse(pddl_t *pddl, bor_err_t *err)
 
 void pddlPredsFree(pddl_preds_t *ps)
 {
-    int i;
-
-    for (i = 0; i < ps->size; ++i){
+    for (int i = 0; i < ps->size; ++i){
         if (ps->pred[i].param != NULL)
             BOR_FREE(ps->pred[i].param);
         if (ps->pred[i].free_name)
@@ -278,9 +273,7 @@ void pddlPredsFree(pddl_preds_t *ps)
 
 int pddlPredsGet(const pddl_preds_t *ps, const char *name)
 {
-    int i;
-
-    for (i = 0; i < ps->size; ++i){
+    for (int i = 0; i < ps->size; ++i){
         if (strcmp(ps->pred[i].name, name) == 0)
             return i;
     }
@@ -320,12 +313,10 @@ void pddlPredsRemoveLast(pddl_preds_t *ps)
 void pddlPredsPrint(const pddl_preds_t *ps,
                     const char *title, FILE *fout)
 {
-    int i, j;
-
     fprintf(fout, "%s[%d]:\n", title, ps->size);
-    for (i = 0; i < ps->size; ++i){
+    for (int i = 0; i < ps->size; ++i){
         fprintf(fout, "    %s:", ps->pred[i].name);
-        for (j = 0; j < ps->pred[i].param_size; ++j){
+        for (int j = 0; j < ps->pred[i].param_size; ++j){
             fprintf(fout, " %d", ps->pred[i].param[j]);
         }
         fprintf(fout, " :: is-private: %d, owner-param: %d",

@@ -25,7 +25,7 @@
 #include "lisp_err.h"
 
 struct obj_key {
-    int obj_id;
+    pddl_obj_id_t obj_id;
     const char *name;
     uint32_t hash;
     bor_list_t htable;
@@ -60,7 +60,7 @@ static int setCB(const pddl_lisp_node_t *root,
     pddl_obj_t *o;
     const pddl_types_t *types = ((set_t *)ud)->types;
     int is_const = ((set_t *)ud)->is_const;
-    int i, tid;
+    int tid;
 
     tid = 0;
     if (child_type >= 0){
@@ -77,7 +77,7 @@ static int setCB(const pddl_lisp_node_t *root,
     }
 
 
-    for (i = child_from; i < child_to; ++i){
+    for (int i = child_from; i < child_to; ++i){
         o = pddlObjsAdd(objs, root->child[i].value);
         if (o == NULL){
             // TODO: Configure warn/err
@@ -88,7 +88,7 @@ static int setCB(const pddl_lisp_node_t *root,
         o->type = tid;
         o->is_constant = is_const;
         o->is_private = 0;
-        o->owner = -1;
+        o->owner = PDDL_OBJ_ID_UNDEF;
         o->is_agent = 0;
     }
 
@@ -138,7 +138,8 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp, int kw,
                         bor_err_t *err)
 {
     const pddl_lisp_node_t *n, *p;
-    int i, factor, pi, owner, parse_from;
+    int i, factor, pi, parse_from;
+    pddl_obj_id_t owner;
     set_t set;
 
     factor = (pddl->require & PDDL_REQUIRE_FACTORED_PRIVACY);
@@ -165,7 +166,7 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp, int kw,
                          " :objects in %s.", lisp->filename);
         }
 
-        owner = -1;
+        owner = PDDL_OBJ_ID_UNDEF;
         if (!factor){
             owner = pddlObjsGet(&pddl->obj, p->child[1].value);
             if (owner < 0){
@@ -234,7 +235,7 @@ void pddlObjsFree(pddl_objs_t *objs)
     }
 }
 
-int pddlObjsGet(const pddl_objs_t *objs, const char *name)
+pddl_obj_id_t pddlObjsGet(const pddl_objs_t *objs, const char *name)
 {
     bor_list_t *item;
     obj_key_t *key, keyin;
@@ -243,7 +244,7 @@ int pddlObjsGet(const pddl_objs_t *objs, const char *name)
     keyin.hash = borHashSDBM(name);
     item = borHTableFind(objs->htable, &keyin.htable);
     if (item == NULL)
-        return -1;
+        return PDDL_OBJ_ID_UNDEF;
 
     key = BOR_LIST_ENTRY(item, obj_key_t, htable);
     return key->obj_id;
@@ -254,7 +255,7 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name)
     pddl_obj_t *o;
     obj_key_t *key;
 
-    if (pddlObjsGet(objs, name) != -1)
+    if (pddlObjsGet(objs, name) != PDDL_OBJ_ID_UNDEF)
         return NULL;
 
     if (objs->size >= objs->alloc){
@@ -263,14 +264,13 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name)
         }else{
             objs->alloc *= 2;
         }
-        objs->obj = BOR_REALLOC_ARR(objs->obj, pddl_obj_t,
-                                    objs->alloc);
+        objs->obj = BOR_REALLOC_ARR(objs->obj, pddl_obj_t, objs->alloc);
     }
 
     o = objs->obj + objs->size++;
     bzero(o, sizeof(*o));
     o->name = name;
-    o->owner = -1;
+    o->owner = PDDL_OBJ_ID_UNDEF;
 
     key = BOR_ALLOC(obj_key_t);
     key->obj_id = objs->size - 1;
@@ -284,15 +284,13 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name)
 
 void pddlObjsPrint(const pddl_objs_t *objs, FILE *fout)
 {
-    int i;
-
     fprintf(fout, "Obj[%d]:\n", objs->size);
-    for (i = 0; i < objs->size; ++i){
+    for (int i = 0; i < objs->size; ++i){
         fprintf(fout, "    [%d]: %s, type: %d, is-constant: %d,"
                       " is-private: %d, owner: %d, is-agent: %d\n", i,
                 objs->obj[i].name, objs->obj[i].type,
                 objs->obj[i].is_constant, objs->obj[i].is_private,
-                objs->obj[i].owner, objs->obj[i].is_agent);
+                (int)objs->obj[i].owner, objs->obj[i].is_agent);
     }
 }
 

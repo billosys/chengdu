@@ -20,12 +20,21 @@
 #ifndef __PDDL_COMMON_H__
 #define __PDDL_COMMON_H__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
 typedef struct pddl pddl_t;
 typedef struct pddl_strips pddl_strips_t;
+
+typedef int16_t pddl_obj_id_t;
+
+/** Constant for undefined object ID.
+ *  It should be always defined as something negative so we can test object
+ *  ID with >= 0 and < 0. */
+#define PDDL_OBJ_ID_UNDEF ((pddl_obj_id_t)-1)
 
 #ifdef __cplusplus
 } /* extern "C" */

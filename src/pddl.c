@@ -382,7 +382,7 @@ static void compileOutNegPre(pddl_t *pddl, int pos, int neg)
 }
 
 static int initHasFact(const pddl_t *pddl, int pred,
-                       int arg_size, const int *arg)
+                       int arg_size, const pddl_obj_id_t *arg)
 {
     bor_list_t *item;
     const pddl_cond_t *c;
@@ -408,12 +408,12 @@ static int initHasFact(const pddl_t *pddl, int pred,
 }
 
 static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
-                                 int arg_size, int *arg,
+                                 int arg_size, pddl_obj_id_t *arg,
                                  const pddl_pred_t *pred, int argi)
 {
     pddl_cond_atom_t *a;
-    const int *obj;
-    int i, obj_size;
+    const pddl_obj_id_t *obj;
+    int obj_size;
 
     if (argi == arg_size){
         if (!initHasFact(pddl, pos, arg_size, arg)){
@@ -425,7 +425,7 @@ static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
     }
 
     obj = pddlTypesObjsByType(&pddl->type, pred->param[argi], &obj_size);
-    for (i = 0; i < obj_size; ++i){
+    for (int i = 0; i < obj_size; ++i){
         arg[argi] = obj[i];
         addNotPredsToInitRec(pddl, pos, neg, arg_size, arg, pred, argi + 1);
     }
@@ -434,7 +434,7 @@ static void addNotPredsToInitRec(pddl_t *pddl, int pos, int neg,
 static void addNotPredsToInit(pddl_t *pddl, int pos, int neg)
 {
     const pddl_pred_t *pos_pred = pddl->pred.pred + pos;
-    int arg[pos_pred->param_size];
+    pddl_obj_id_t arg[pos_pred->param_size];
 
     // Recursivelly try all possible objects for each argument
     addNotPredsToInitRec(pddl, pos, neg,
@@ -444,16 +444,15 @@ static void addNotPredsToInit(pddl_t *pddl, int pos, int neg)
 /** Compile out negative preconditions if they are not static */
 static void compileOutNonStaticNegPre(pddl_t *pddl)
 {
-    int i, size, *negpred;
-    int not;
+    int size, *negpred;
 
     size = pddl->pred.size;
     negpred = BOR_ALLOC_ARR(int, size);
     findNonStaticPredInNegPre(pddl, negpred);
 
-    for (i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i){
         if (negpred[i]){
-            not = createNewNotPred(pddl, i);
+            int not = createNewNotPred(pddl, i);
             compileOutNegPre(pddl, i, not);
             addNotPredsToInit(pddl, i, not);
         }
@@ -491,12 +490,10 @@ static void removeIrrelevantActions(pddl_t *pddl)
 
 void pddlNormalize(pddl_t *pddl)
 {
-    int i;
-
-    for (i = 0; i < pddl->action.size; ++i)
+    for (int i = 0; i < pddl->action.size; ++i)
         pddlActionNormalize(pddl->action.action + i, pddl);
 
-    for (i = 0; i < pddl->action.size; ++i)
+    for (int i = 0; i < pddl->action.size; ++i)
         pddlActionSplit(pddl->action.action + i, pddl);
 
     removeIrrelevantActions(pddl);
@@ -562,11 +559,11 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
 
 int pddlPredFuncMaxParamSize(const pddl_t *pddl)
 {
-    int i, max = 0;
+    int max = 0;
 
-    for (i = 0; i < pddl->pred.size; ++i)
+    for (int i = 0; i < pddl->pred.size; ++i)
         max = BOR_MAX(max, pddl->pred.pred[i].param_size);
-    for (i = 0; i < pddl->func.size; ++i)
+    for (int i = 0; i < pddl->func.size; ++i)
         max = BOR_MAX(max, pddl->func.pred[i].param_size);
 
     return max;

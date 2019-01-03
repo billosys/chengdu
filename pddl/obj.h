@@ -34,8 +34,8 @@ struct pddl_obj {
     int type;         /*!< Type of the object */
     int is_constant;  /*!< True if it is constant (defined in domain) */
     int is_private;   /*!< True if the object is private to an agent */
-    int owner;        /*!< -1 or ID of the object corresponding to an agent
-                           in unfactored privacy model */
+    pddl_obj_id_t owner; /*!< ID of the object corresponding to an agent in
+                              unfactored privacy model or PDDL_OBJ_ID_UNDEF */
     int is_agent;     /*!< True if the object correspondnds to an agent in
                            unfactored privacy model */
 };
@@ -62,7 +62,7 @@ void pddlObjsFree(pddl_objs_t *objs);
 /**
  * Returns ID of the object of the specified name.
  */
-int pddlObjsGet(const pddl_objs_t *objs, const char *name);
+pddl_obj_id_t pddlObjsGet(const pddl_objs_t *objs, const char *name);
 
 /**
  * Adds a new obj at the end of the array.

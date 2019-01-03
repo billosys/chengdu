@@ -1052,30 +1052,28 @@ static int parseAtomArg(pddl_cond_atom_arg_t *arg,
                         const pddl_lisp_node_t *root,
                         const parse_ctx_t *ctx)
 {
-    int v;
-
     if (root->value[0] == '?'){
         if (ctx->params == NULL){
             ERR_LISP_RET(ctx->err, -1, root, "%sUnexpected variable `%s'",
                          ctx->err_prefix, root->value);
         }
 
-        v = pddlParamsGetId(ctx->params, root->value);
-        if (v < 0){
+        int param = pddlParamsGetId(ctx->params, root->value);
+        if (param < 0){
             ERR_LISP_RET(ctx->err, -1, root, "%sUnkown variable `%s'",
                          ctx->err_prefix, root->value);
         }
-        arg->param = v;
-        arg->obj = -1;
+        arg->param = param;
+        arg->obj = PDDL_OBJ_ID_UNDEF;
 
     }else{
-        v = pddlObjsGet(ctx->objs, root->value);
-        if (v < 0){
+        pddl_obj_id_t obj = pddlObjsGet(ctx->objs, root->value);
+        if (obj < 0){
             ERR_LISP_RET(ctx->err, -1, root, "%sUnkown constant/object `%s'",
                          ctx->err_prefix, root->value);
         }
         arg->param = -1;
-        arg->obj = v;
+        arg->obj = obj;
     }
 
     return 0;
@@ -1087,7 +1085,7 @@ static pddl_cond_t *parseAtom(const pddl_lisp_node_t *root,
 {
     pddl_cond_atom_t *atom;
     const char *name;
-    int pred, i;
+    int pred;
 
     // Get predicate name
     name = pddlLispNodeHead(root);
@@ -1111,7 +1109,7 @@ static pddl_cond_t *parseAtom(const pddl_lisp_node_t *root,
     }
 
     // Check that all children are terminals
-    for (i = 1; i < root->child_size; ++i){
+    for (int i = 1; i < root->child_size; ++i){
         if (root->child[i].value == NULL){
             ERR_LISP_RET(ctx->err, NULL, root->child + i,
                          "%sInvalid %d'th argument of the predicate `%s'",
@@ -1123,7 +1121,7 @@ static pddl_cond_t *parseAtom(const pddl_lisp_node_t *root,
     atom->pred = pred;
     atom->arg_size = root->child_size - 1;
     atom->arg = BOR_ALLOC_ARR(pddl_cond_atom_arg_t, atom->arg_size);
-    for (i = 0; i < atom->arg_size; ++i){
+    for (int i = 0; i < atom->arg_size; ++i){
         if (parseAtomArg(atom->arg + i, root->child + i + 1, ctx) != 0){
             condAtomDel(atom);
             BOR_TRACE_RET(ctx->err, NULL);
@@ -1279,7 +1277,6 @@ static int parseQuantParams(pddl_params_t *params,
                             const parse_ctx_t *ctx)
 {
     pddl_param_t *param;
-    int i, j, use;
 
     pddlParamsInit(params);
 
@@ -1290,9 +1287,9 @@ static int parseQuantParams(pddl_params_t *params,
     }
 
     // And also add all global parameters that are not shadowed
-    for (i = 0; ctx->params != NULL && i < ctx->params->size; ++i){
-        use = 1;
-        for (j = 0; j < params->size; ++j){
+    for (int i = 0; ctx->params != NULL && i < ctx->params->size; ++i){
+        int use = 1;
+        for (int j = 0; j < params->size; ++j){
             if (strcmp(params->param[j].name, ctx->params->param[i].name) == 0){
                 use = 0;
                 break;
@@ -1588,7 +1585,7 @@ pddl_cond_t *pddlCondAtomToAnd(pddl_cond_t *atom)
 }
 
 pddl_cond_atom_t *pddlCondCreateFactAtom(int pred, int arg_size, 
-                                         const int *arg)
+                                         const pddl_obj_id_t *arg)
 {
     pddl_cond_atom_t *a;
 
@@ -1841,23 +1838,20 @@ void pddlCondSetPredReadWriteEff(const pddl_cond_t *cond, pddl_preds_t *preds)
 /*** INSTANTIATE QUANTIFIERS ***/
 struct instantiate_cond {
     int param_id;
-    int obj_id;
+    pddl_obj_id_t obj_id;
 };
 typedef struct instantiate_cond instantiate_cond_t;
 
 static int instantiateParentParam(pddl_cond_t *c, void *data)
 {
-    const pddl_params_t *params = data;
-    pddl_cond_atom_t *a;
-    int i, j;
-
     if (c->type == PDDL_COND_ATOM){
-        a = OBJ(c, atom);
-        for (i = 0; i < params->size; ++i){
+        const pddl_params_t *params = data;
+        pddl_cond_atom_t *a = OBJ(c, atom);
+        for (int i = 0; i < params->size; ++i){
             if (params->param[i].inherit < 0)
                 continue;
 
-            for (j = 0; j < a->arg_size; ++j){
+            for (int j = 0; j < a->arg_size; ++j){
                 if (a->arg[j].param == i)
                     a->arg[j].param = params->param[i].inherit;
             }
@@ -1877,12 +1871,10 @@ static int instantiateParentParam(pddl_cond_t *c, void *data)
 static int instantiateCond(pddl_cond_t *c, void *data)
 {
     const instantiate_cond_t *d = data;
-    pddl_cond_atom_t *a;
-    int i;
 
     if (c->type == PDDL_COND_ATOM){
-        a = OBJ(c, atom);
-        for (i = 0; i < a->arg_size; ++i){
+        pddl_cond_atom_t *a = OBJ(c, atom);
+        for (int i = 0; i < a->arg_size; ++i){
             if (a->arg[i].param == d->param_id){
                 a->arg[i].param = -1;
                 a->arg[i].obj = d->obj_id;
@@ -1902,17 +1894,17 @@ static int instantiateCond(pddl_cond_t *c, void *data)
 
 static pddl_cond_part_t *instantiatePart(pddl_cond_part_t *p,
                                          int param_id,
-                                         const int *objs, int objs_size)
+                                         const pddl_obj_id_t *objs,
+                                         int objs_size)
 {
     pddl_cond_part_t *out;
     pddl_cond_t *c, *newc;
     bor_list_t *item;
     instantiate_cond_t set;
-    int i;
 
     out = condPartNew(p->cls.type);
 
-    for (i = 0; i < objs_size; ++i){
+    for (int i = 0; i < objs_size; ++i){
         BOR_LIST_FOR_EACH(&p->part, item){
             c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
             newc = pddlCondClone(c);
@@ -1932,8 +1924,8 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
 {
     pddl_cond_part_t *top;
     const pddl_param_t *param;
-    const int *obj;
-    int i, obj_size, bval;
+    const pddl_obj_id_t *obj;
+    int obj_size, bval;
 
     // The instantiation of universal/existential quantifier is a
     // conjuction/disjunction of all instances.
@@ -1946,7 +1938,7 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
     q->cond = NULL;
 
     // Apply object to each (non-inherited) parameter according to its type
-    for (i = 0; i < q->param.size; ++i){
+    for (int i = 0; i < q->param.size; ++i){
         param = q->param.param + i;
         if (param->inherit >= 0)
             continue;
@@ -2467,7 +2459,7 @@ static int implyParams(pddl_cond_t *c, void *data)
 
 struct instantiate_ctx {
     const bor_iset_t *params;
-    const int *arg;
+    const pddl_obj_id_t *arg;
 };
 typedef struct instantiate_ctx instantiate_ctx_t;
 
@@ -2492,7 +2484,7 @@ static int instantiateTraverse(pddl_cond_t *cond, void *ud)
 
 static pddl_cond_t *instantiate(pddl_cond_t *cond,
                                 const bor_iset_t *params,
-                                const int *arg,
+                                const pddl_obj_id_t *arg,
                                 int eq_pred)
 {
     pddl_cond_part_t *and;
@@ -2508,7 +2500,7 @@ static pddl_cond_t *instantiate(pddl_cond_t *cond,
         eq->arg_size = 2;
         eq->arg = BOR_ALLOC_ARR(pddl_cond_atom_arg_t, 2);
         eq->arg[0].param = param;
-        eq->arg[0].obj = -1;
+        eq->arg[0].obj = PDDL_OBJ_ID_UNDEF;
         eq->arg[1].param = -1;
         eq->arg[1].obj = arg[i];
         pddlCondPartAdd(and, &eq->cls);
@@ -2528,9 +2520,9 @@ static void removeStaticImplyRec(pddl_cond_part_t *top,
                                  const pddl_params_t *params,
                                  const bor_iset_t *imp_params,
                                  int pidx,
-                                 int *arg)
+                                 pddl_obj_id_t *arg)
 {
-    const int *obj;
+    const pddl_obj_id_t *obj;
     int obj_size;
 
     if (pidx == borISetSize(imp_params)){
@@ -2556,14 +2548,14 @@ static int removeStaticImply(pddl_cond_t **cond, const pddl_t *pddl,
 {
     pddl_cond_part_t *or;
     BOR_ISET(imply_params);
-    int *obj;
+    pddl_obj_id_t *obj;
 
     if (params == NULL)
         return 0;
 
     pddlCondTraverse(*cond, NULL, implyParams, &imply_params);
     if (borISetSize(&imply_params) > 0){
-        obj = BOR_ALLOC_ARR(int, borISetSize(&imply_params));
+        obj = BOR_ALLOC_ARR(pddl_obj_id_t, borISetSize(&imply_params));
         or = condPartNew(PDDL_COND_OR);
         removeStaticImplyRec(or, *cond, pddl, params, &imply_params, 0, obj);
         BOR_FREE(obj);

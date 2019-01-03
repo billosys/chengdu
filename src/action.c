@@ -119,9 +119,8 @@ int pddlActionsParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *root = &pddl->domain_lisp->root;
     const pddl_lisp_node_t *n;
-    int i;
 
-    for (i = 0; i < root->child_size; ++i){
+    for (int i = 0; i < root->child_size; ++i){
         n = root->child + i;
         if (pddlLispNodeHeadKw(n) == PDDL_KW_ACTION){
             if (parseAction(pddl, n, err) != 0){
