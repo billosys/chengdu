@@ -159,7 +159,7 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp, int kw,
         if (p->child_size == 0 || p->child[0].kw != PDDL_KW_PRIVATE)
             continue;
 
-        pi = pddl->obj.size;
+        pi = pddl->obj.obj_size;
         if (pddlLispParseTypedList(p, parse_from, p->child_size,
                                    setCB, &set, err) != 0){
             ERR_LISP_RET(err, -1, n->child + i, "Invalid definition of :private"
@@ -177,7 +177,7 @@ static int parsePrivate(pddl_t *pddl, const pddl_lisp_t *lisp, int kw,
             pddl->obj.obj[owner].is_agent = 1;
         }
 
-        for (; pi < pddl->obj.size; ++pi){
+        for (; pi < pddl->obj.obj_size; ++pi){
             pddl->obj.obj[pi].is_private = 1;
             pddl->obj.obj[pi].owner = owner;
         }
@@ -207,7 +207,7 @@ int pddlObjsParse(pddl_t *pddl, bor_err_t *err)
             BOR_TRACE_RET(err, -1);
     }
 
-    for (i = 0; i < pddl->obj.size; ++i)
+    for (i = 0; i < pddl->obj.obj_size; ++i)
         pddlTypesAddObj(&pddl->type, i, pddl->obj.obj[i].type);
 
     return 0;
@@ -258,22 +258,22 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name)
     if (pddlObjsGet(objs, name) != PDDL_OBJ_ID_UNDEF)
         return NULL;
 
-    if (objs->size >= objs->alloc){
-        if (objs->alloc == 0){
-            objs->alloc = 2;
+    if (objs->obj_size >= objs->obj_alloc){
+        if (objs->obj_alloc == 0){
+            objs->obj_alloc = 2;
         }else{
-            objs->alloc *= 2;
+            objs->obj_alloc *= 2;
         }
-        objs->obj = BOR_REALLOC_ARR(objs->obj, pddl_obj_t, objs->alloc);
+        objs->obj = BOR_REALLOC_ARR(objs->obj, pddl_obj_t, objs->obj_alloc);
     }
 
-    o = objs->obj + objs->size++;
+    o = objs->obj + objs->obj_size++;
     bzero(o, sizeof(*o));
     o->name = name;
     o->owner = PDDL_OBJ_ID_UNDEF;
 
     key = BOR_ALLOC(obj_key_t);
-    key->obj_id = objs->size - 1;
+    key->obj_id = objs->obj_size - 1;
     key->name = name;
     key->hash = borHashSDBM(name);
     borListInit(&key->htable);
@@ -284,8 +284,8 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name)
 
 void pddlObjsPrint(const pddl_objs_t *objs, FILE *fout)
 {
-    fprintf(fout, "Obj[%d]:\n", objs->size);
-    for (int i = 0; i < objs->size; ++i){
+    fprintf(fout, "Obj[%d]:\n", objs->obj_size);
+    for (int i = 0; i < objs->obj_size; ++i){
         fprintf(fout, "    [%d]: %s, type: %d, is-constant: %d,"
                       " is-private: %d, owner: %d, is-agent: %d\n", i,
                 objs->obj[i].name, objs->obj[i].type,
@@ -299,7 +299,7 @@ void pddlObjsPrintPDDLConstants(const pddl_objs_t *objs,
                                 FILE *fout)
 {
     fprintf(fout, "(:constants\n");
-    for (int i = 0; i < objs->size; ++i){
+    for (int i = 0; i < objs->obj_size; ++i){
         const pddl_obj_t *o = objs->obj + i;
         fprintf(fout, "    %s - %s\n", o->name, ts->type[o->type].name);
     }
