@@ -144,7 +144,7 @@ void pddlTypesPrint(const pddl_types_t *t, FILE *fout)
     fprintf(fout, "Obj-by-Type:\n");
     for (int i = 0; i < t->type_size; ++i){
         fprintf(fout, "    [%d]:", i);
-        for (int j = 0; j < t->obj_by_type[i].size; ++j)
+        for (int j = 0; j < t->obj_by_type[i].obj_size; ++j)
             fprintf(fout, " %d", (int)t->obj_by_type[i].obj[j]);
         fprintf(fout, "\n");
     }
@@ -155,19 +155,19 @@ void pddlTypesAddObj(pddl_types_t *ts, pddl_obj_id_t obj_id, int type_id)
     pddl_objs_by_type_t *obj;
 
     obj = ts->obj_by_type + type_id;
-    for (int i = 0; i < obj->size; ++i){
+    for (int i = 0; i < obj->obj_size; ++i){
         if (obj->obj[i] == obj_id)
             return;
     }
 
-    if (obj->size >= obj->alloc){
-        if (obj->alloc == 0)
-            obj->alloc = 2;
-        obj->alloc *= 2;
-        obj->obj = BOR_REALLOC_ARR(obj->obj, pddl_obj_id_t, obj->alloc);
+    if (obj->obj_size >= obj->obj_alloc){
+        if (obj->obj_alloc == 0)
+            obj->obj_alloc = 2;
+        obj->obj_alloc *= 2;
+        obj->obj = BOR_REALLOC_ARR(obj->obj, pddl_obj_id_t, obj->obj_alloc);
     }
 
-    obj->obj[obj->size++] = obj_id;
+    obj->obj[obj->obj_size++] = obj_id;
 
     if (ts->type[type_id].parent != -1)
         pddlTypesAddObj(ts, obj_id, ts->type[type_id].parent);
@@ -177,7 +177,7 @@ const pddl_obj_id_t *pddlTypesObjsByType(const pddl_types_t *ts, int type_id,
                                          int *size)
 {
     if (size != NULL)
-        *size = ts->obj_by_type[type_id].size;
+        *size = ts->obj_by_type[type_id].obj_size;
     return ts->obj_by_type[type_id].obj;
 }
 
@@ -243,7 +243,7 @@ static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
     obj = ts->obj_by_type + ts->type_size - 1;
     bzero(obj, sizeof(*obj));
     for (i = 0; i < either_size; ++i){
-        for (j = 0; j < ts->obj_by_type[either[i]].size; ++j){
+        for (j = 0; j < ts->obj_by_type[either[i]].obj_size; ++j){
             pddlTypesAddObj(ts, ts->obj_by_type[either[i]].obj[j], tid);
         }
     }

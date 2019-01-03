@@ -39,8 +39,8 @@ typedef struct pddl_type pddl_type_t;
 
 struct pddl_objs_by_type {
     pddl_obj_id_t *obj;
-    int size;
-    int alloc;
+    int obj_size;
+    int obj_alloc;
 };
 typedef struct pddl_objs_by_type pddl_objs_by_type_t;
 
