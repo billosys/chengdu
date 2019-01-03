@@ -27,7 +27,7 @@ static const char *object_name = "object";
 
 int pddlTypesGet(const pddl_types_t *t, const char *name)
 {
-    for (int i = 0; i < t->size; ++i){
+    for (int i = 0; i < t->type_size; ++i){
         if (strcmp(t->type[i].name, name) == 0)
             return i;
     }
@@ -43,13 +43,13 @@ static int add(pddl_types_t *t, const char *name)
     if ((id = pddlTypesGet(t, name)) != -1)
         return id;
 
-    ++t->size;
-    t->type = BOR_REALLOC_ARR(t->type, pddl_type_t, t->size);
-    t->type[t->size - 1].name = name;
-    t->type[t->size - 1].parent = 0;
-    t->type[t->size - 1].either = NULL;
-    t->type[t->size - 1].either_size = 0;
-    return t->size - 1;
+    ++t->type_size;
+    t->type = BOR_REALLOC_ARR(t->type, pddl_type_t, t->type_size);
+    t->type[t->type_size - 1].name = name;
+    t->type[t->type_size - 1].parent = 0;
+    t->type[t->type_size - 1].either = NULL;
+    t->type[t->type_size - 1].either_size = 0;
+    return t->type_size - 1;
 }
 
 static int setCB(const pddl_lisp_node_t *root,
@@ -89,7 +89,7 @@ int pddlTypesParse(pddl_t *pddl, bor_err_t *e)
 
     // Create a default "object" type
     types = &pddl->type;
-    types->size = 1;
+    types->type_size = 1;
     types->type = BOR_ALLOC(pddl_type_t);
     types->type[0].name = object_name;
     types->type[0].parent = -1;
@@ -104,8 +104,9 @@ int pddlTypesParse(pddl_t *pddl, bor_err_t *e)
         }
     }
 
-    if (types->size > 0)
-        types->obj_by_type = BOR_CALLOC_ARR(pddl_objs_by_type_t, types->size);
+    if (types->type_size > 0)
+        types->obj_by_type = BOR_CALLOC_ARR(pddl_objs_by_type_t,
+                                            types->type_size);
 
     // TODO: Check circular dependency on types
     return 0;
@@ -113,7 +114,7 @@ int pddlTypesParse(pddl_t *pddl, bor_err_t *e)
 
 void pddlTypesFree(pddl_types_t *types)
 {
-    for (int i = 0; i < types->size; ++i){
+    for (int i = 0; i < types->type_size; ++i){
         if (types->type[i].either != NULL){
             BOR_FREE((char *)types->type[i].name);
             BOR_FREE(types->type[i].either);
@@ -124,7 +125,7 @@ void pddlTypesFree(pddl_types_t *types)
         BOR_FREE(types->type);
 
     if (types->obj_by_type != NULL){
-        for (int i = 0; i < types->size; ++i){
+        for (int i = 0; i < types->type_size; ++i){
             if (types->obj_by_type[i].obj != NULL)
                 BOR_FREE(types->obj_by_type[i].obj);
         }
@@ -134,14 +135,14 @@ void pddlTypesFree(pddl_types_t *types)
 
 void pddlTypesPrint(const pddl_types_t *t, FILE *fout)
 {
-    fprintf(fout, "Type[%d]:\n", t->size);
-    for (int i = 0; i < t->size; ++i){
+    fprintf(fout, "Type[%d]:\n", t->type_size);
+    for (int i = 0; i < t->type_size; ++i){
         fprintf(fout, "    [%d]: %s, parent: %d\n", i,
                 t->type[i].name, t->type[i].parent);
     }
 
     fprintf(fout, "Obj-by-Type:\n");
-    for (int i = 0; i < t->size; ++i){
+    for (int i = 0; i < t->type_size; ++i){
         fprintf(fout, "    [%d]:", i);
         for (int j = 0; j < t->obj_by_type[i].size; ++j)
             fprintf(fout, " %d", (int)t->obj_by_type[i].obj[j]);
@@ -204,7 +205,7 @@ static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
     int tid;
 
     // Try to find already created (either ...) type
-    for (i = 0; i < ts->size; ++i){
+    for (i = 0; i < ts->type_size; ++i){
         if (ts->type[i].either == NULL)
             continue;
         if (ts->type[i].either_size == either_size
@@ -215,12 +216,12 @@ static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
     }
 
     // Create a new type
-    ++ts->size;
-    ts->type = BOR_REALLOC_ARR(ts->type, pddl_type_t, ts->size);
+    ++ts->type_size;
+    ts->type = BOR_REALLOC_ARR(ts->type, pddl_type_t, ts->type_size);
     ts->obj_by_type = BOR_REALLOC_ARR(ts->obj_by_type, pddl_objs_by_type_t,
-                                      ts->size);
+                                      ts->type_size);
 
-    type = ts->type + ts->size - 1;
+    type = ts->type + ts->type_size - 1;
     type->parent = -1;
     type->either = BOR_ALLOC_ARR(int, either_size);
     memcpy(type->either, either, sizeof(int) * either_size);
@@ -235,11 +236,11 @@ static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
     for (i = 0; i < either_size; ++i)
         cur += sprintf(cur, " %s", ts->type[either[i]].name);
     sprintf(cur, ")");
-    tid = ts->size - 1;
+    tid = ts->type_size - 1;
 
     // Merge obj IDs from all simple types from which this (either ...)
     // type consists of.
-    obj = ts->obj_by_type + ts->size - 1;
+    obj = ts->obj_by_type + ts->type_size - 1;
     bzero(obj, sizeof(*obj));
     for (i = 0; i < either_size; ++i){
         for (j = 0; j < ts->obj_by_type[either[i]].size; ++j){
@@ -301,11 +302,11 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
 
 void pddlTypesPrintPDDL(const pddl_types_t *ts, FILE *fout)
 {
-    int q[ts->size];
+    int q[ts->type_size];
     int qi = 0, qsize = 0;
 
     fprintf(fout, "(:types\n");
-    for (int i = 0; i < ts->size; ++i){
+    for (int i = 0; i < ts->type_size; ++i){
         if (ts->type[i].parent == 0)
             q[qsize++] = i;
     }
@@ -314,7 +315,7 @@ void pddlTypesPrintPDDL(const pddl_types_t *ts, FILE *fout)
         fprintf(fout, "    %s - %s\n",
                 ts->type[q[qi]].name,
                 ts->type[ts->type[q[qi]].parent].name);
-        for (int i = 0; i < ts->size; ++i){
+        for (int i = 0; i < ts->type_size; ++i){
             if (ts->type[i].parent == q[qi] && ts->type[i].either == NULL)
                 q[qsize++] = i;
         }

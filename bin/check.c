@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         pddlCompileAwayCondEff(&pddl);
 
     if (!o.quiet){
-        BOR_INFO(&err, "Number of PDDL Types: %d", pddl.type.size);
+        BOR_INFO(&err, "Number of PDDL Types: %d", pddl.type.type_size);
         BOR_INFO(&err, "Number of PDDL Objects: %d", pddl.obj.obj_size);
         BOR_INFO(&err, "Number of PDDL Predicates: %d", pddl.pred.pred_size);
         BOR_INFO(&err, "Number of PDDL Functions: %d", pddl.func.pred_size);
