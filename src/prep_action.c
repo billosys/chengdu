@@ -173,9 +173,10 @@ static void actionFree(pddl_prep_action_t *a)
 
 static void actionsReserve(pddl_prep_actions_t *as)
 {
-    if (as->size >= as->alloc){
-        as->alloc *= 2;
-        as->action = BOR_REALLOC_ARR(as->action, pddl_prep_action_t, as->alloc);
+    if (as->action_size >= as->action_alloc){
+        as->action_alloc *= 2;
+        as->action = BOR_REALLOC_ARR(as->action, pddl_prep_action_t,
+                                     as->action_alloc);
     }
 }
 
@@ -190,7 +191,7 @@ static int actionInitCondEff(pddl_cond_t *c, void *ud)
 
         // Create a new action
         actionsReserve(ctx->as);
-        a = ctx->as->action + ctx->as->size++;
+        a = ctx->as->action + ctx->as->action_size++;
 
         // Parse preconditions and effects of (when ) element
         if (actionInit2(a, ctx->pddl, ctx->action,
@@ -250,17 +251,17 @@ int pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as,
     const pddl_action_t *action;
 
     bzero(as, sizeof(*as));
-    as->alloc = 4;
-    as->action = BOR_ALLOC_ARR(pddl_prep_action_t, as->alloc);
+    as->action_alloc = 4;
+    as->action = BOR_ALLOC_ARR(pddl_prep_action_t, as->action_alloc);
 
     for (int i = 0; i < pddl->action.action_size; ++i){
         actionsReserve(as);
         action = pddl->action.action + i;
-        if (actionInit(as->action + as->size, pddl, action, err) != 0){
+        if (actionInit(as->action + as->action_size, pddl, action, err) != 0){
             pddlPrepActionsFree(as);
             BOR_TRACE_RET(err, -1);
         }
-        ++as->size;
+        ++as->action_size;
     }
 
     for (int i = 0; i < pddl->action.action_size; ++i){
@@ -277,7 +278,7 @@ int pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as,
 
 void pddlPrepActionsFree(pddl_prep_actions_t *as)
 {
-    for (int i = 0; i < as->size; ++i)
+    for (int i = 0; i < as->action_size; ++i)
         actionFree(as->action + i);
     if (as->action)
         BOR_FREE(as->action);

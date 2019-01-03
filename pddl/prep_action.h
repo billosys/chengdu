@@ -50,8 +50,8 @@ typedef struct pddl_prep_action pddl_prep_action_t;
 
 struct pddl_prep_actions {
     pddl_prep_action_t *action;
-    int size;
-    int alloc;
+    int action_size;
+    int action_alloc;
 };
 typedef struct pddl_prep_actions pddl_prep_actions_t;
 

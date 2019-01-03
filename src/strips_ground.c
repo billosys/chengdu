@@ -625,7 +625,7 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
     for (int i = start_idx; i < ga->atom_size; ++i){
         const pddl_ground_atom_t *fact = ga->atom[i];
 
-        for (int j = 0; j < g->action.size; ++j){
+        for (int j = 0; j < g->action.action_size; ++j){
             pddl_strips_ground_tree_t *tr = g->tree + j;
             for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
                 unifyTree(tr, fact, tr->pred_to_pre[fact->pred].pre[k],
@@ -638,13 +638,13 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
 static int unifyStaticFacts(pddl_strips_ground_t *g)
 {
     // First ground actions without preconditions
-    for (int i = 0; i < g->action.size; ++i){
+    for (int i = 0; i < g->action.action_size; ++i){
         if (g->tree[i].pre_size == 0)
             groundActionAddEffEmptyPre(g, g->action.action + i);
     }
 
     _unifyFacts(g, &g->static_facts, 0, 1);
-    for (int i = 0; i < g->action.size; ++i)
+    for (int i = 0; i < g->action.action_size; ++i)
         treeFixStatic(g->tree + i);
     g->static_facts_unified = 1;
 
@@ -1065,8 +1065,8 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     groundInitFact(g, pddl);
     g->unify_start_idx = 0;
 
-    g->tree = BOR_ALLOC_ARR(pddl_strips_ground_tree_t, g->action.size);
-    for (int i = 0; i < g->action.size; ++i)
+    g->tree = BOR_ALLOC_ARR(pddl_strips_ground_tree_t, g->action.action_size);
+    for (int i = 0; i < g->action.action_size; ++i)
         treeInit(g->tree + i, g, i);
 
     return 0;
@@ -1074,7 +1074,7 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
 
 static void groundFree(pddl_strips_ground_t *g)
 {
-    for (int i = 0; i < g->action.size; ++i)
+    for (int i = 0; i < g->action.action_size; ++i)
         treeFree(g->tree + i);
     if (g->tree != NULL)
         BOR_FREE(g->tree);
