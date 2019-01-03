@@ -260,7 +260,7 @@ static void findNonStaticPredInNegPre(pddl_t *pddl, int *np)
 {
     int i;
 
-    bzero(np, sizeof(int) * pddl->pred.size);
+    bzero(np, sizeof(int) * pddl->pred.pred_size);
     for (i = 0; i < pddl->action.action_size; ++i){
         pddlCondTraverse(pddl->action.action[i].pre, markNegPre, NULL, np);
         pddlCondTraverse(pddl->action.action[i].eff, markNegPreWhen, NULL, np);
@@ -269,7 +269,7 @@ static void findNonStaticPredInNegPre(pddl_t *pddl, int *np)
     if (pddl->goal)
         pddlCondTraverse(pddl->goal, markNegPre, NULL, np);
 
-    for (i = 0; i < pddl->pred.size; ++i){
+    for (i = 0; i < pddl->pred.pred_size; ++i){
         if (pddlPredIsStatic(pddl->pred.pred + i))
             np[i] = 0;
     }
@@ -298,9 +298,9 @@ static int createNewNotPred(pddl_t *pddl, int pred_id)
     neg->name = name;
     neg->free_name = 1;
     neg->neg_of = pred_id;
-    pos->neg_of = pddl->pred.size - 1;
+    pos->neg_of = pddl->pred.pred_size - 1;
 
-    return pddl->pred.size - 1;
+    return pddl->pred.pred_size - 1;
 }
 
 static int replaceNegPre(pddl_cond_t **c, void *_ids)
@@ -446,7 +446,7 @@ static void compileOutNonStaticNegPre(pddl_t *pddl)
 {
     int size, *negpred;
 
-    size = pddl->pred.size;
+    size = pddl->pred.pred_size;
     negpred = BOR_ALLOC_ARR(int, size);
     findNonStaticPredInNegPre(pddl, negpred);
 
@@ -561,9 +561,9 @@ int pddlPredFuncMaxParamSize(const pddl_t *pddl)
 {
     int max = 0;
 
-    for (int i = 0; i < pddl->pred.size; ++i)
+    for (int i = 0; i < pddl->pred.pred_size; ++i)
         max = BOR_MAX(max, pddl->pred.pred[i].param_size);
-    for (int i = 0; i < pddl->func.size; ++i)
+    for (int i = 0; i < pddl->func.pred_size; ++i)
         max = BOR_MAX(max, pddl->func.pred[i].param_size);
 
     return max;

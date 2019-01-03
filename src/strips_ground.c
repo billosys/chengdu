@@ -249,7 +249,7 @@ static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
         }
     }
 
-    tr->pred_to_pre = BOR_CALLOC_ARR(pred_to_pre_t, g->pddl->pred.size);
+    tr->pred_to_pre = BOR_CALLOC_ARR(pred_to_pre_t, g->pddl->pred.pred_size);
     for (int i = 0; i < a->pre.size; ++i){
         atom = PDDL_COND_CAST(a->pre.cond[i], atom);
         predToPreAdd(tr->pred_to_pre + atom->pred, i);
@@ -263,7 +263,7 @@ static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
 
 static void treeFree(pddl_strips_ground_tree_t *tr)
 {
-    for (int i = 0; i < tr->g->pddl->pred.size; ++i){
+    for (int i = 0; i < tr->g->pddl->pred.pred_size; ++i){
         if (tr->pred_to_pre[i].pre != NULL)
             BOR_FREE(tr->pred_to_pre[i].pre);
     }
