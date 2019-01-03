@@ -187,15 +187,16 @@ pddl_action_t *pddlActionsAddCopy(pddl_actions_t *as, int copy_id)
 {
     pddl_action_t *a;
 
-    if (as->size == as->alloc){
-        if (as->alloc == 0)
-            as->alloc = PDDL_ACTIONS_ALLOC_INIT;
-        as->alloc *= 2;
-        as->action = BOR_REALLOC_ARR(as->action, pddl_action_t, as->alloc);
+    if (as->action_size == as->action_alloc){
+        if (as->action_alloc == 0)
+            as->action_alloc = PDDL_ACTIONS_ALLOC_INIT;
+        as->action_alloc *= 2;
+        as->action = BOR_REALLOC_ARR(as->action, pddl_action_t,
+                                     as->action_alloc);
     }
 
-    a = as->action + as->size;
-    ++as->size;
+    a = as->action + as->action_size;
+    ++as->action_size;
     if (copy_id >= 0){
         pddlActionInitCopy(a, as->action + copy_id);
     }else{
@@ -209,7 +210,7 @@ void pddlActionsFree(pddl_actions_t *actions)
     pddl_action_t *a;
     int i;
 
-    for (i = 0; i < actions->size; ++i){
+    for (i = 0; i < actions->action_size; ++i){
         a = actions->action + i;
         pddlActionFree(a);
     }
@@ -297,8 +298,8 @@ void pddlActionsPrint(const pddl_t *pddl,
 {
     int i;
 
-    fprintf(fout, "Action[%d]:\n", actions->size);
-    for (i = 0; i < actions->size; ++i)
+    fprintf(fout, "Action[%d]:\n", actions->action_size);
+    for (i = 0; i < actions->action_size; ++i)
         pddlActionPrint(pddl, actions->action + i, fout);
 }
 
@@ -333,7 +334,7 @@ void pddlActionsPrintPDDL(const pddl_actions_t *actions,
                           const pddl_t *pddl,
                           FILE *fout)
 {
-    for (int i = 0; i < actions->size; ++i){
+    for (int i = 0; i < actions->action_size; ++i){
         pddlActionPrintPDDL(&actions->action[i], pddl, fout);
         fprintf(fout, "\n");
     }

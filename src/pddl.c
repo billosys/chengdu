@@ -261,7 +261,7 @@ static void findNonStaticPredInNegPre(pddl_t *pddl, int *np)
     int i;
 
     bzero(np, sizeof(int) * pddl->pred.size);
-    for (i = 0; i < pddl->action.size; ++i){
+    for (i = 0; i < pddl->action.action_size; ++i){
         pddlCondTraverse(pddl->action.action[i].pre, markNegPre, NULL, np);
         pddlCondTraverse(pddl->action.action[i].eff, markNegPreWhen, NULL, np);
     }
@@ -372,7 +372,7 @@ static void compileOutNegPre(pddl_t *pddl, int pos, int neg)
 {
     int i;
 
-    for (i = 0; i < pddl->action.size; ++i)
+    for (i = 0; i < pddl->action.action_size; ++i)
         compileOutNegPreInAction(pddl, pos, neg, pddl->action.action + i);
 
     if (pddl->goal){
@@ -471,16 +471,16 @@ static int isFalsePre(const pddl_cond_t *c)
 
 static void removeIrrelevantActions(pddl_t *pddl)
 {
-    for (int ai = 0; ai < pddl->action.size;){
+    for (int ai = 0; ai < pddl->action.action_size;){
         pddl_action_t *a = pddl->action.action + ai;
         a->pre = pddlCondDeconflictPre(a->pre, pddl, &a->param);
         a->eff = pddlCondDeconflictEff(a->eff, pddl, &a->param);
 
         if (isFalsePre(a->pre) || !pddlCondHasAtom(a->eff)){
             pddlActionFree(a);
-            if (ai != pddl->action.size - 1)
-                *a = pddl->action.action[pddl->action.size - 1];
-            --pddl->action.size;
+            if (ai != pddl->action.action_size - 1)
+                *a = pddl->action.action[pddl->action.action_size - 1];
+            --pddl->action.action_size;
         }else{
             ++ai;
         }
@@ -490,10 +490,10 @@ static void removeIrrelevantActions(pddl_t *pddl)
 
 void pddlNormalize(pddl_t *pddl)
 {
-    for (int i = 0; i < pddl->action.size; ++i)
+    for (int i = 0; i < pddl->action.action_size; ++i)
         pddlActionNormalize(pddl->action.action + i, pddl);
 
-    for (int i = 0; i < pddl->action.size; ++i)
+    for (int i = 0; i < pddl->action.action_size; ++i)
         pddlActionSplit(pddl->action.action + i, pddl);
 
     removeIrrelevantActions(pddl);
@@ -523,7 +523,7 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
         change = 0;
         pddlNormalize(pddl);
 
-        asize = pddl->action.size;
+        asize = pddl->action.action_size;
         for (int ai = 0; ai < asize; ++ai){
             a = pddl->action.action + ai;
             w = pddlCondRemoveFirstNonStaticWhen(a->eff, pddl);

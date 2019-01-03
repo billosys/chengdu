@@ -253,7 +253,7 @@ int pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as,
     as->alloc = 4;
     as->action = BOR_ALLOC_ARR(pddl_prep_action_t, as->alloc);
 
-    for (int i = 0; i < pddl->action.size; ++i){
+    for (int i = 0; i < pddl->action.action_size; ++i){
         actionsReserve(as);
         action = pddl->action.action + i;
         if (actionInit(as->action + as->size, pddl, action, err) != 0){
@@ -263,7 +263,7 @@ int pddlPrepActionsInit(const pddl_t *pddl, pddl_prep_actions_t *as,
         ++as->size;
     }
 
-    for (int i = 0; i < pddl->action.size; ++i){
+    for (int i = 0; i < pddl->action.action_size; ++i){
         if (as->action[i].cond_eff_size > 0){
             if (actionsAddCondEff(as, i, pddl, err) != 0){
                 pddlPrepActionsFree(as);
