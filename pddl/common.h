@@ -29,7 +29,7 @@ extern "C" {
 typedef struct pddl pddl_t;
 typedef struct pddl_strips pddl_strips_t;
 
-typedef int16_t pddl_obj_id_t;
+typedef int pddl_obj_id_t;
 
 /** Constant for undefined object ID.
  *  It should be always defined as something negative so we can test object
