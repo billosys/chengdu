@@ -66,17 +66,18 @@ int main(int argc, char *argv[])
         pddlCompileAwayCondEff(&pddl);
 
     if (!o.quiet){
-        BOR_INFO(&err, "Number of PDDL Types: %d", pddl.type.size);
-        BOR_INFO(&err, "Number of PDDL Objects: %d", pddl.obj.size);
-        BOR_INFO(&err, "Number of PDDL Predicates: %d", pddl.pred.size);
-        BOR_INFO(&err, "Number of PDDL Functions: %d", pddl.func.size);
-        BOR_INFO(&err, "Number of PDDL Actions: %d", pddl.action.size);
+        BOR_INFO(&err, "Number of PDDL Types: %d", pddl.type.type_size);
+        BOR_INFO(&err, "Number of PDDL Objects: %d", pddl.obj.obj_size);
+        BOR_INFO(&err, "Number of PDDL Predicates: %d", pddl.pred.pred_size);
+        BOR_INFO(&err, "Number of PDDL Functions: %d", pddl.func.pred_size);
+        BOR_INFO(&err, "Number of PDDL Actions: %d", pddl.action.action_size);
         BOR_INFO(&err, "Number of PDDL Metric: %d", pddl.metric);
         fflush(stdout);
     }
 
     if (pddlStripsGround(&strips, &pddl, &ground_cfg, &err) != 0){
         if (!o.quiet){
+            BOR_INFO2(&err, "Grounding failed.");
             fprintf(stderr, "Error: ");
             borErrPrint(&err, 1, stderr);
         }

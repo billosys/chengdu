@@ -46,7 +46,7 @@ typedef struct pddl_objs_by_type pddl_objs_by_type_t;
 
 struct pddl_types {
     pddl_type_t *type;
-    int size;
+    int type_size;
 
     pddl_objs_by_type_t *obj_by_type;
 };

@@ -49,30 +49,30 @@ pddl_param_t *pddlParamsAdd(pddl_params_t *params)
 {
     pddl_param_t *param;
 
-    if (params->size >= params->alloc){
-        if (params->alloc == 0)
-            params->alloc = 1;
-        params->alloc *= 2;
+    if (params->param_size >= params->param_alloc){
+        if (params->param_alloc == 0)
+            params->param_alloc = 1;
+        params->param_alloc *= 2;
         params->param = BOR_REALLOC_ARR(params->param, pddl_param_t,
-                                        params->alloc);
+                                        params->param_alloc);
     }
 
-    param = params->param + params->size++;
+    param = params->param + params->param_size++;
     pddlParamInit(param);
     return param;
 }
 
 void pddlParamsInitCopy(pddl_params_t *dst, const pddl_params_t *src)
 {
-    dst->size = dst->alloc = src->size;
-    dst->param = BOR_ALLOC_ARR(pddl_param_t, dst->alloc);
-    for (int i = 0; i < dst->size; ++i)
+    dst->param_size = dst->param_alloc = src->param_size;
+    dst->param = BOR_ALLOC_ARR(pddl_param_t, dst->param_alloc);
+    for (int i = 0; i < dst->param_size; ++i)
         pddlParamInitCopy(dst->param + i, src->param + i);
 }
 
 int pddlParamsGetId(const pddl_params_t *param, const char *name)
 {
-    for (int i = 0; i < param->size; ++i){
+    for (int i = 0; i < param->param_size; ++i){
         if (strcmp(name, param->param[i].name) == 0)
             return i;
     }
@@ -157,7 +157,7 @@ int pddlParamsParseAgent(pddl_params_t *params,
     if (pddlLispParseTypedList(n, nid + 1, to, setParams, &set_param, err) != 0)
         BOR_TRACE_RET(err, -1);
 
-    params->param[params->size - 1].is_agent = 1;
+    params->param[params->param_size - 1].is_agent = 1;
     return to;
 }
 
@@ -165,7 +165,7 @@ void pddlParamsPrint(const pddl_params_t *params, FILE *fout)
 {
     int i;
 
-    for (i = 0; i < params->size; ++i){
+    for (i = 0; i < params->param_size; ++i){
         if (i > 0)
             fprintf(fout, " ");
         if (params->param[i].is_agent)
@@ -181,7 +181,7 @@ void pddlParamsPrintPDDL(const pddl_params_t *params,
                          FILE *fout)
 {
     int printed = 0;
-    for (int i = 0; i < params->size; ++i){
+    for (int i = 0; i < params->param_size; ++i){
         const pddl_param_t *p = params->param + i;
         if (p->inherit == -1){
             if (printed)

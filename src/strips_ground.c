@@ -249,7 +249,7 @@ static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
         }
     }
 
-    tr->pred_to_pre = BOR_CALLOC_ARR(pred_to_pre_t, g->pddl->pred.size);
+    tr->pred_to_pre = BOR_CALLOC_ARR(pred_to_pre_t, g->pddl->pred.pred_size);
     for (int i = 0; i < a->pre.size; ++i){
         atom = PDDL_COND_CAST(a->pre.cond[i], atom);
         predToPreAdd(tr->pred_to_pre + atom->pred, i);
@@ -263,7 +263,7 @@ static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
 
 static void treeFree(pddl_strips_ground_tree_t *tr)
 {
-    for (int i = 0; i < tr->g->pddl->pred.size; ++i){
+    for (int i = 0; i < tr->g->pddl->pred.pred_size; ++i){
         if (tr->pred_to_pre[i].pre != NULL)
             BOR_FREE(tr->pred_to_pre[i].pre);
     }
@@ -625,7 +625,7 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
     for (int i = start_idx; i < ga->atom_size; ++i){
         const pddl_ground_atom_t *fact = ga->atom[i];
 
-        for (int j = 0; j < g->action.size; ++j){
+        for (int j = 0; j < g->action.action_size; ++j){
             pddl_strips_ground_tree_t *tr = g->tree + j;
             for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
                 unifyTree(tr, fact, tr->pred_to_pre[fact->pred].pre[k],
@@ -638,13 +638,13 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
 static int unifyStaticFacts(pddl_strips_ground_t *g)
 {
     // First ground actions without preconditions
-    for (int i = 0; i < g->action.size; ++i){
+    for (int i = 0; i < g->action.action_size; ++i){
         if (g->tree[i].pre_size == 0)
             groundActionAddEffEmptyPre(g, g->action.action + i);
     }
 
     _unifyFacts(g, &g->static_facts, 0, 1);
-    for (int i = 0; i < g->action.size; ++i)
+    for (int i = 0; i < g->action.action_size; ++i)
         treeFixStatic(g->tree + i);
     g->static_facts_unified = 1;
 
@@ -734,12 +734,12 @@ static char *groundOpName(const pddl_t *pddl,
     char *name, *cur;
 
     slen = strlen(action->name) + 2 + 1;
-    for (i = 0; i < action->param.size; ++i)
+    for (i = 0; i < action->param.param_size; ++i)
         slen += 1 + strlen(pddl->obj.obj[args[i]].name);
 
     cur = name = BOR_ALLOC_ARR(char, slen);
     cur += sprintf(cur, "%s", action->name);
-    for (i = 0; i < action->param.size; ++i)
+    for (i = 0; i < action->param.param_size; ++i)
         cur += sprintf(cur, " %s", pddl->obj.obj[args[i]].name);
 
     return name;
@@ -1065,8 +1065,8 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     groundInitFact(g, pddl);
     g->unify_start_idx = 0;
 
-    g->tree = BOR_ALLOC_ARR(pddl_strips_ground_tree_t, g->action.size);
-    for (int i = 0; i < g->action.size; ++i)
+    g->tree = BOR_ALLOC_ARR(pddl_strips_ground_tree_t, g->action.action_size);
+    for (int i = 0; i < g->action.action_size; ++i)
         treeInit(g->tree + i, g, i);
 
     return 0;
@@ -1074,7 +1074,7 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
 
 static void groundFree(pddl_strips_ground_t *g)
 {
-    for (int i = 0; i < g->action.size; ++i)
+    for (int i = 0; i < g->action.action_size; ++i)
         treeFree(g->tree + i);
     if (g->tree != NULL)
         BOR_FREE(g->tree);

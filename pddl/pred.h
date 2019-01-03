@@ -49,8 +49,8 @@ _bor_inline int pddlPredIsStatic(const pddl_pred_t *pred);
 
 struct pddl_preds {
     pddl_pred_t *pred;
-    int size;
-    int alloc;
+    int pred_size;
+    int pred_alloc;
     int eq_pred; /*!< index of the predicate that corresponds to
                       (= .  .) predicate */
 };

@@ -74,7 +74,7 @@ static int setCB(const pddl_lisp_node_t *root,
 
 static int checkDuplicate(const pddl_preds_t *ps, const char *name)
 {
-    for (int i = 0; i < ps->size; ++i){
+    for (int i = 0; i < ps->pred_size; ++i){
         if (strcmp(ps->pred[i].name, name) == 0)
             return 1;
     }
@@ -157,7 +157,7 @@ static int parsePrivatePreds(pddl_t *pddl,
             BOR_TRACE_RET(err, -1);
         }
 
-        ps->pred[ps->size - 1].is_private = 1;
+        ps->pred[ps->pred_size - 1].is_private = 1;
     }
 
     return 0;
@@ -171,7 +171,7 @@ static void addEqPredicate(pddl_preds_t *ps)
     p->name = eq_name;
     p->param_size = 2;
     p->param = BOR_CALLOC_ARR(int, 2);
-    ps->eq_pred = ps->size - 1;
+    ps->eq_pred = ps->pred_size - 1;
 }
 
 int pddlPredsParse(pddl_t *pddl, bor_err_t *err)
@@ -261,7 +261,7 @@ int pddlFuncsParse(pddl_t *pddl, bor_err_t *err)
 
 void pddlPredsFree(pddl_preds_t *ps)
 {
-    for (int i = 0; i < ps->size; ++i){
+    for (int i = 0; i < ps->pred_size; ++i){
         if (ps->pred[i].param != NULL)
             BOR_FREE(ps->pred[i].param);
         if (ps->pred[i].free_name)
@@ -273,7 +273,7 @@ void pddlPredsFree(pddl_preds_t *ps)
 
 int pddlPredsGet(const pddl_preds_t *ps, const char *name)
 {
-    for (int i = 0; i < ps->size; ++i){
+    for (int i = 0; i < ps->pred_size; ++i){
         if (strcmp(ps->pred[i].name, name) == 0)
             return i;
     }
@@ -284,17 +284,17 @@ pddl_pred_t *pddlPredsAdd(pddl_preds_t *ps)
 {
     pddl_pred_t *p;
 
-    if (ps->size >= ps->alloc){
-        if (ps->alloc == 0){
-            ps->alloc = 2;
+    if (ps->pred_size >= ps->pred_alloc){
+        if (ps->pred_alloc == 0){
+            ps->pred_alloc = 2;
         }else{
-            ps->alloc *= 2;
+            ps->pred_alloc *= 2;
         }
         ps->pred = BOR_REALLOC_ARR(ps->pred, pddl_pred_t,
-                                   ps->alloc);
+                                   ps->pred_alloc);
     }
 
-    p = ps->pred + ps->size++;
+    p = ps->pred + ps->pred_size++;
     bzero(p, sizeof(*p));
     p->owner_param = -1;
     p->neg_of = -1;
@@ -305,7 +305,7 @@ void pddlPredsRemoveLast(pddl_preds_t *ps)
 {
     pddl_pred_t *p;
 
-    p = ps->pred + --ps->size;
+    p = ps->pred + --ps->pred_size;
     if (p->param != NULL)
         BOR_FREE(p->param);
 }
@@ -313,8 +313,8 @@ void pddlPredsRemoveLast(pddl_preds_t *ps)
 void pddlPredsPrint(const pddl_preds_t *ps,
                     const char *title, FILE *fout)
 {
-    fprintf(fout, "%s[%d]:\n", title, ps->size);
-    for (int i = 0; i < ps->size; ++i){
+    fprintf(fout, "%s[%d]:\n", title, ps->pred_size);
+    for (int i = 0; i < ps->pred_size; ++i){
         fprintf(fout, "    %s:", ps->pred[i].name);
         for (int j = 0; j < ps->pred[i].param_size; ++j){
             fprintf(fout, " %d", ps->pred[i].param[j]);
@@ -334,10 +334,10 @@ static void printPDDL(const char *t,
                       const pddl_types_t *ts,
                       FILE *fout)
 {
-    if (ps->size == 0)
+    if (ps->pred_size == 0)
         return;
     fprintf(fout, "(:%s\n", t);
-    for (int i = 0; i < ps->size; ++i){
+    for (int i = 0; i < ps->pred_size; ++i){
         const pddl_pred_t *p = ps->pred + i;
         fprintf(fout, "    (%s", p->name);
         for (int j = 0; j < p->param_size; ++j){

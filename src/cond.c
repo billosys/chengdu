@@ -1287,9 +1287,9 @@ static int parseQuantParams(pddl_params_t *params,
     }
 
     // And also add all global parameters that are not shadowed
-    for (int i = 0; ctx->params != NULL && i < ctx->params->size; ++i){
+    for (int i = 0; ctx->params != NULL && i < ctx->params->param_size; ++i){
         int use = 1;
-        for (int j = 0; j < params->size; ++j){
+        for (int j = 0; j < params->param_size; ++j){
             if (strcmp(params->param[j].name, ctx->params->param[i].name) == 0){
                 use = 0;
                 break;
@@ -1332,7 +1332,7 @@ static pddl_cond_t *parseQuant(int quant_type,
     if (parseQuantParams(&params, root->child + 1, ctx) != 0)
         BOR_TRACE_RET(ctx->err, NULL);
 
-    if (params.size == 0){
+    if (params.param_size == 0){
         pddlParamsFree(&params);
         ERR_LISP_RET(ctx->err, NULL, root,
                      "%sMissing variables in the quantifier",
@@ -1847,7 +1847,7 @@ static int instantiateParentParam(pddl_cond_t *c, void *data)
     if (c->type == PDDL_COND_ATOM){
         const pddl_params_t *params = data;
         pddl_cond_atom_t *a = OBJ(c, atom);
-        for (int i = 0; i < params->size; ++i){
+        for (int i = 0; i < params->param_size; ++i){
             if (params->param[i].inherit < 0)
                 continue;
 
@@ -1938,7 +1938,7 @@ static pddl_cond_t *instantiateQuant(pddl_cond_quant_t *q,
     q->cond = NULL;
 
     // Apply object to each (non-inherited) parameter according to its type
-    for (int i = 0; i < q->param.size; ++i){
+    for (int i = 0; i < q->param.param_size; ++i){
         param = q->param.param + i;
         if (param->inherit >= 0)
             continue;
