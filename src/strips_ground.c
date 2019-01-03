@@ -734,12 +734,12 @@ static char *groundOpName(const pddl_t *pddl,
     char *name, *cur;
 
     slen = strlen(action->name) + 2 + 1;
-    for (i = 0; i < action->param.size; ++i)
+    for (i = 0; i < action->param.param_size; ++i)
         slen += 1 + strlen(pddl->obj.obj[args[i]].name);
 
     cur = name = BOR_ALLOC_ARR(char, slen);
     cur += sprintf(cur, "%s", action->name);
-    for (i = 0; i < action->param.size; ++i)
+    for (i = 0; i < action->param.param_size; ++i)
         cur += sprintf(cur, " %s", pddl->obj.obj[args[i]].name);
 
     return name;

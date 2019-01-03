@@ -41,8 +41,8 @@ typedef struct pddl_param pddl_param_t;
 
 struct pddl_params {
     pddl_param_t *param;
-    int size;
-    int alloc;
+    int param_size;
+    int param_alloc;
 };
 typedef struct pddl_params pddl_params_t;
 
