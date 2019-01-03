@@ -288,19 +288,15 @@ static int createNewNotPred(pddl_t *pddl, int pred_id)
     strcpy(name, "NOT-");
     strcpy(name + 4, pos->name);
 
-    neg = pddlPredsAdd(&pddl->pred);
-    // pddlPredsAdd() can reallocate, so we need to probe positive
-    // predicate again
-    pos = pddl->pred.pred + pred_id;
-    pddlPredInitCopy(neg, pos);
+    neg = pddlPredsAddCopy(&pddl->pred, pred_id);
     if (neg->free_name)
         BOR_FREE((char *)neg->name);
     neg->name = name;
     neg->free_name = 1;
     neg->neg_of = pred_id;
-    pos->neg_of = pddl->pred.pred_size - 1;
+    pddl->pred.pred[pred_id].neg_of = neg->id;
 
-    return pddl->pred.pred_size - 1;
+    return neg->id;
 }
 
 static int replaceNegPre(pddl_cond_t **c, void *_ids)
