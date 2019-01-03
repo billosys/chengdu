@@ -207,6 +207,12 @@ pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b);
 pddl_cond_t *pddlCondNewEmptyAnd(void);
 
 /**
+ * Creates a new empty atom with the specified number of arguments all set
+ * as "undefined".
+ */
+pddl_cond_atom_t *pddlCondNewEmptyAtom(int num_args);
+
+/**
  * Returns true if the conditional contains any atom.
  */
 int pddlCondHasAtom(const pddl_cond_t *c);

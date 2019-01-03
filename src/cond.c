@@ -1029,6 +1029,22 @@ pddl_cond_t *pddlCondNewEmptyAnd(void)
     return &p->cls;
 }
 
+pddl_cond_atom_t *pddlCondNewEmptyAtom(int num_args)
+{
+    pddl_cond_atom_t *atom = condAtomNew();
+
+    if (num_args > 0){
+        atom->arg_size = num_args;
+        atom->arg = BOR_ALLOC_ARR(pddl_cond_atom_arg_t, atom->arg_size);
+        for (int i = 0; i < atom->arg_size; ++i){
+            atom->arg[i].param = -1;
+            atom->arg[i].obj = PDDL_OBJ_ID_UNDEF;
+        }
+    }
+
+    return atom;
+}
+
 static int hasAtom(pddl_cond_t *c, void *_ret)
 {
     int *ret = _ret;

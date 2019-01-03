@@ -40,7 +40,7 @@ typedef struct pddl_lifted_mgroup pddl_lifted_mgroup_t;
  * parameter. If the index is -1 then no variables are counted.
  */
 void pddlLiftedMGroupInitCandFromPred(pddl_lifted_mgroup_t *mgroup,
-                                      int pred_id,
+                                      const pddl_pred_t *pred,
                                       int counted_var);
 
 /**
