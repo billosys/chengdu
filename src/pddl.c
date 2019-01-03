@@ -495,7 +495,7 @@ void pddlNormalize(pddl_t *pddl)
     removeIrrelevantActions(pddl);
 
 #ifdef PDDL_DEBUG
-    for (i = 0; i < pddl->action.size; ++i){
+    for (int i = 0; i < pddl->action.action_size; ++i){
         pddlActionAssertPreConjuction(pddl->action.action + i);
     }
 #endif
