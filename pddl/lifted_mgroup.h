@@ -50,6 +50,16 @@ void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup);
 
 
 /**
+ * Returns true if the candidate has at most one corresponding grounded
+ * atom in the given flattened conjuction.
+ * The function assumes that grounded_conj is a simple flattened conjuction
+ * (and ...) and that the candidate has all atoms' predicates parametrized
+ * (they are not fixed to any object).
+ */
+int pddlLiftedMGroupHasAtMostOne(const pddl_lifted_mgroup_t *cand,
+                                 const pddl_cond_part_t *grounded_conj);
+
+/**
  * Returns true if the given lifted mutex group candidate is a lifted mutex
  * group, i.e., this function proves that the candidate is lifted mutex
  * group.
