@@ -42,7 +42,7 @@ const char *pddlCondTypeName(int type)
 {
     if (type >= 0 && type < PDDL_COND_NUM_TYPES)
         return type_names[type];
-    return "unkown";
+    return "unknown";
 }
 
 typedef void (*pddl_cond_method_del_fn)(pddl_cond_t *);

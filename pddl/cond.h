@@ -42,11 +42,11 @@ extern "C" {
 #define PDDL_COND_FORALL 2u /*!< Universal quantifier */
 #define PDDL_COND_EXIST  3u /*!< Existential quantifier */
 #define PDDL_COND_WHEN   4u /*!< Conditional effect */
-#define PDDL_COND_ATOM   5u
-#define PDDL_COND_ASSIGN 6u
-#define PDDL_COND_INCREASE 7u
-#define PDDL_COND_BOOL   8u
-#define PDDL_COND_IMPLY  9u
+#define PDDL_COND_ATOM   5u /*!< Atom in a positive or negative form */
+#define PDDL_COND_ASSIGN 6u /*!< Assignement to a function (= ...) */
+#define PDDL_COND_INCREASE 7u /*!< (increase ...) */
+#define PDDL_COND_BOOL   8u /*!< True/False */
+#define PDDL_COND_IMPLY  9u /*!< (imply X Y) */
 #define PDDL_COND_NUM_TYPES 10
 
 const char *pddlCondTypeName(int type);
