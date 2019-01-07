@@ -95,6 +95,16 @@ int pddlTypesObjHasType(const pddl_types_t *ts, int type, pddl_obj_id_t obj);
 int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
                          bor_err_t *err);
 
+/**
+ * Returns true if parent is a parent type of child type.
+ */
+int pddlTypesIsParent(const pddl_types_t *ts, int child, int parent);
+
+/**
+ * Returns true if t1 and t2 are disjunct types, i.e., there cannot be
+ * object of both types at the same time.
+ */
+int pddlTypesAreDisjunct(const pddl_types_t *ts, int t1, int t2);
 
 /**
  * Print requirements in PDDL format.

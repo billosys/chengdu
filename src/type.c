@@ -300,6 +300,34 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
     return pddlTypesEither(ts, either, either_size);
 }
 
+int pddlTypesIsParent(const pddl_types_t *ts, int child, int parent)
+{
+    const pddl_type_t *tchild = ts->type + child;
+    const pddl_type_t *tparent = ts->type + parent;
+
+    for (int cur_type = child; cur_type >= 0;){
+        if (cur_type == parent)
+            return 1;
+        cur_type = ts->type[cur_type].parent;
+        for (int i = 0; i < tparent->either_size; ++i){
+            if (cur_type == tparent->either[i])
+                return 1;
+        }
+    }
+
+    for (int i = 0; i < tchild->either_size; ++i){
+        if (pddlTypesIsParent(ts, tchild->either[i], parent))
+            return 1;
+    }
+
+    return 0;
+}
+
+int pddlTypesAreDisjunct(const pddl_types_t *ts, int t1, int t2)
+{
+    return !pddlTypesIsParent(ts, t1, t2) && !pddlTypesIsParent(ts, t2, t1);
+}
+
 void pddlTypesPrintPDDL(const pddl_types_t *ts, FILE *fout)
 {
     int q[ts->type_size];
