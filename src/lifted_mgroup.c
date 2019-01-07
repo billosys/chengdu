@@ -396,27 +396,28 @@ void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup)
     pddlCondArrFree(&mgroup->cond);
 }
 
-int pddlLiftedMGroupHasAtMostOne(const pddl_lifted_mgroup_t *cand,
-                                 const pddl_cond_part_t *grounded_conj)
+int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
+                                   const pddl_t *pddl)
 {
     pddl_cond_arr_t atom_arr = PDDL_COND_ARR_INIT;
-    int ret = 1;
 
-    collectCandAtomsFromAnd(cand, grounded_conj, &atom_arr, 1, 0);
+    collectCandAtomsFromAnd(cand, pddl->init, &atom_arr, 1, 0);
 
-    for (int i = 0; ret == 1 && i < atom_arr.size; ++i){
+    for (int i = 0; i < atom_arr.size; ++i){
         const pddl_cond_t *c1 = atom_arr.cond[i];
         const pddl_cond_atom_t *a1 = PDDL_COND_CAST(c1, atom);
-        for (int j = i + 1; ret == 1 && j < atom_arr.size; ++j){
+        for (int j = i + 1; j < atom_arr.size; ++j){
             const pddl_cond_t *c2 = atom_arr.cond[j];
             const pddl_cond_atom_t *a2 = PDDL_COND_CAST(c2, atom);
-            if (canUnifyToGroundedPair(cand, a1, a2))
-                ret = 0;
+            if (canUnifyToGroundedPair(cand, a1, a2)){
+                pddlCondArrFree(&atom_arr);
+                return 1;
+            }
         }
     }
     pddlCondArrFree(&atom_arr);
 
-    return ret;
+    return 0;
 }
 
 

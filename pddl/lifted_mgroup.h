@@ -50,18 +50,15 @@ void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup);
 
 
 /**
- * Returns true if the candidate has at most one corresponding grounded
- * atom in the given flattened conjuction.
- * The function assumes that grounded_conj is a simple flattened conjuction
- * (and ...) and that the candidate has all atoms' predicates parametrized
- * (they are not fixed to any object).
- * TODO: rename
+ * Returns true if two or more facts from the initial state are covered by
+ * the candidate.
  */
-int pddlLiftedMGroupHasAtMostOne(const pddl_lifted_mgroup_t *cand,
-                                 const pddl_cond_part_t *grounded_conj);
+int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
+                                   const pddl_t *pddl);
 
 /**
- * TODO
+ * Returns true if the action could add two or more facts from the
+ * given candidate.
  */
 int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                                      const pddl_t *pddl,
