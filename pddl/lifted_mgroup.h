@@ -66,10 +66,12 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
 
 /**
  * Returns true if the action is balanced with respect to the given mutex
- * group candidate.
+ * group candidate, i.e., every add effect covered by the candidate has at
+ * least one delete effect \cap precondition covered by the candidate.
  */
-int pddlLiftedMGroupIsBalanced(const pddl_lifted_mgroup_t *cand,
-                               const pddl_action_t *action);
+int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
+                                     const pddl_t *pddl,
+                                     int action_id);
 
 
 /**

@@ -22,28 +22,44 @@
 #include "assert.h"
 
 static void collectCandAtomsFromAnd(const pddl_lifted_mgroup_t *cand,
-                                    const pddl_cond_part_t *and,
+                                    const pddl_cond_t *cond,
                                     pddl_cond_arr_t *atoms,
                                     int positive,
                                     int negative)
 {
-    bor_list_t *item;
-    const pddl_cond_t *c;
+    if (cond == NULL)
+        return;
 
-    BOR_LIST_FOR_EACH(&and->part, item){
-        c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-        if (c->type == PDDL_COND_ATOM){
-            const pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
-            if ((a->neg && !negative) || (!a->neg && !positive))
-                continue;
+    if (cond->type == PDDL_COND_AND){
+        bor_list_t *item;
+        const pddl_cond_t *c;
+        const pddl_cond_part_t *and = PDDL_COND_CAST(cond, part);
+        BOR_LIST_FOR_EACH(&and->part, item){
+            c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+            if (c->type == PDDL_COND_ATOM){
+                const pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
+                if ((a->neg && !negative) || (!a->neg && !positive))
+                    continue;
 
-            for (int i = 0; i < cand->cond.size; ++i){
-                const pddl_cond_t *cc = cand->cond.cond[i];
-                const pddl_cond_atom_t *catom = PDDL_COND_CAST(cc, atom);
-                if (catom->pred == a->pred){
-                    pddlCondArrAdd(atoms, c);
-                    break;
+                for (int i = 0; i < cand->cond.size; ++i){
+                    const pddl_cond_t *cc = cand->cond.cond[i];
+                    const pddl_cond_atom_t *catom = PDDL_COND_CAST(cc, atom);
+                    if (catom->pred == a->pred){
+                        pddlCondArrAdd(atoms, c);
+                        break;
+                    }
                 }
+            }
+        }
+
+    }else if (cond->type == PDDL_COND_ATOM){
+        const pddl_cond_atom_t *a = PDDL_COND_CAST(cond, atom);
+        for (int i = 0; i < cand->cond.size; ++i){
+            const pddl_cond_t *cc = cand->cond.cond[i];
+            const pddl_cond_atom_t *catom = PDDL_COND_CAST(cc, atom);
+            if (catom->pred == a->pred){
+                pddlCondArrAdd(atoms, cond);
+                break;
             }
         }
     }
@@ -401,7 +417,7 @@ int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
 {
     pddl_cond_arr_t atom_arr = PDDL_COND_ARR_INIT;
 
-    collectCandAtomsFromAnd(cand, pddl->init, &atom_arr, 1, 0);
+    collectCandAtomsFromAnd(cand, &pddl->init->cls, &atom_arr, 1, 0);
 
     for (int i = 0; i < atom_arr.size; ++i){
         const pddl_cond_t *c1 = atom_arr.cond[i];
@@ -431,8 +447,7 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
     if (action->eff == NULL || action->eff->type != PDDL_COND_AND)
         return 0;
 
-    collectCandAtomsFromAnd(cand, PDDL_COND_CAST(action->eff, part),
-                            &add_eff, 1, 0);
+    collectCandAtomsFromAnd(cand, action->eff, &add_eff, 1, 0);
     if (add_eff.size <= 1){
         pddlCondArrFree(&add_eff);
         return 0;
@@ -455,26 +470,207 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
     return 0;
 }
 
-struct is_balanced_ctx {
-    const pddl_lifted_mgroup_t *cand;
-    pddl_cond_arr_t *pre;
-    pddl_cond_arr_t *del_eff;
-    pddl_cond_arr_t *add_eff;
-};
-
-int pddlLiftedMGroupIsBalanced(const pddl_lifted_mgroup_t *cand,
-                               const pddl_action_t *action)
+static int isBalancedWith(const pddl_lifted_mgroup_t *cand,
+                          const pddl_cond_atom_t *catom,
+                          const pddl_action_t *action,
+                          const pddl_cond_atom_t *del_eff,
+                          const pddl_cond_arr_t *pres,
+                          int obj_offset,
+                          int next_name,
+                          const int *in_cand_var,
+                          const int *in_action_var)
 {
-    pddl_cond_arr_t pre, del_eff, add_eff;
+    int cand_var[cand->param.param_size];
+    int action_var[action->param.param_size];
 
-    pddlCondArrInit(&pre);
-    pddlCondArrInit(&del_eff);
-    pddlCondArrInit(&add_eff);
+    memcpy(cand_var, in_cand_var, sizeof(int) * cand->param.param_size);
+    memcpy(action_var, in_action_var, sizeof(int) * action->param.param_size);
+
+    // Empty counted variables
+    for (int i = 0; i < cand->param.param_size; ++i){
+        if (cand->param.param[i].is_counted_var)
+            cand_var[i] = 0;
+    }
+
+    for (int ai = 0; ai < catom->arg_size; ++ai){
+        int cparam = catom->arg[ai].param;
+        int dparam = del_eff->arg[ai].param;
+        int dobj = obj_offset + del_eff->arg[ai].obj;
+        if (cand->param.param[cparam].is_counted_var){
+            // Counted variables can be instantiated with anything...
+            if (dparam >= 0){
+                if (action_var[dparam] == 0)
+                    action_var[dparam] = next_name++;
+                cand_var[cparam] = action_var[dparam];
+            }else{
+                cand_var[cparam] = dobj;
+            }
+        }else{
+            // If it is not counted variable then
+            // 1. either it has assigned a value that del_eff must respect and
+            //    if not possible, this delete effect cannot balance the
+            //    add effect
+            // 2. or it doesn't have assigned any value, in which case we can
+            //    reject this delete effect straight away, because
+            //    either a) the delete effect already has assigned a value
+            //    therefore we can instantiate the candidate with a
+            //    different value so that the delete effect does not agree,
+            //    or b) or the delete effect doesn't have assigned any
+            //    value, therefore we can, again, instantiate the action
+            //    differently from the candidate
+            if (dparam >= 0){
+                if (action_var[dparam] > 0){
+                    if (cand_var[cparam] != action_var[dparam]){
+                        // Accounts for 1. and 2a.
+                        return 0;
+                    }
+
+                }else{ // action_var[dparam] == 0
+                    // Accounts for 2b.
+                    return 0;
+                }
+
+            }else{
+                if (cand_var[cparam] != dobj){
+                    // Accounts for 1. and 2a.
+                    return 0;
+                }
+            }
+        }
+    }
+
+    // Now we have assigned names to action variables and we must check
+    // that there is a precondition exactly matching the delete effect so
+    // we can be sure that the delete effect is present in the state the
+    // action is applied on, i.e., that the delete effect really balances
+    // the add effect.
+    for (int pi = 0; pi < pres->size; ++pi){
+        const pddl_cond_t *c = pres->cond[pi];
+        const pddl_cond_atom_t *pre = PDDL_COND_CAST(c, atom);
+        if (pre->pred == del_eff->pred){
+            int match = 1;
+            for (int ai = 0; match && ai < pre->arg_size; ++ai){
+                int pre_param = pre->arg[ai].param;
+                int pre_obj = obj_offset + pre->arg[ai].obj;
+                int del_eff_param = del_eff->arg[ai].param;
+                int del_eff_obj = obj_offset + pre->arg[ai].obj;
+                if (pre_param >= 0){
+                    if (del_eff_param >= 0){
+                        if (action_var[pre_param] != action_var[del_eff_param])
+                            match = 0;
+                    }else{
+                        if (action_var[pre_param] != del_eff_obj)
+                            match = 0;
+                    }
+                }else{
+                    if (del_eff_param >= 0){
+                        if (action_var[del_eff_param] != pre_obj)
+                            match = 0;
+                    }else{
+                        if (pre_obj != del_eff_obj)
+                            match = 0;
+                    }
+                }
+            }
+
+            if (match)
+                return 1;
+        }
+    }
+
+    // If we did not find a matching precondition, we report that the
+    // delete effect cannot balance the add effect.
+    return 0;
+}
+
+static int isAddEffBalanced(const pddl_lifted_mgroup_t *cand,
+                            const pddl_t *pddl,
+                            const pddl_action_t *action,
+                            const pddl_cond_atom_t *add_eff,
+                            const pddl_cond_arr_t *del_effs,
+                            const pddl_cond_arr_t *pres)
+{
+    int obj_offset = 1 + cand->param.param_size + action->param.param_size;
+    int next_name = 1;
+    int cand_var[cand->param.param_size];
+    int action_var[action->param.param_size];
+
+    for (int ci = 0; ci < cand->cond.size; ++ci){
+        const pddl_cond_t *cc = cand->cond.cond[ci];
+        const pddl_cond_atom_t *cand_atom = PDDL_COND_CAST(cc, atom);
+
+        bzero(cand_var, sizeof(int) * cand->param.param_size);
+        bzero(action_var, sizeof(int) * action->param.param_size);
+        if (!setVarNames(cand, cand_atom, action, add_eff, obj_offset,
+                         &next_name, cand_var, action_var)
+                || !argTypesAreValid(&pddl->type, action, action_var)
+                || !inequalityPreHold(action, pddl->pred.eq_pred,
+                                      obj_offset, action_var)){
+            continue;
+        }
+
+        // We managed to find one covered add effect -- fast check that
+        // there is something with which we can balance it
+        if (del_effs->size == 0 || pres->size == 0)
+            return 0;
+
+        int is_balanced = 0;
+        for (int di = 0; !is_balanced && di < del_effs->size; ++di){
+            const pddl_cond_t *c = del_effs->cond[di];
+            const pddl_cond_atom_t *del_eff = PDDL_COND_CAST(c, atom);
+            for (int j = 0; !is_balanced && j < cand->cond.size; ++j){
+                const pddl_cond_t *cc = cand->cond.cond[j];
+                const pddl_cond_atom_t *balance_cand = PDDL_COND_CAST(cc, atom);
+                if (balance_cand->pred != del_eff->pred)
+                    continue;
+
+                if (isBalancedWith(cand, balance_cand, action, del_eff, pres,
+                                   obj_offset, next_name,
+                                   cand_var, action_var)){
+                    is_balanced = 1;
+                }
+            }
+        }
+
+        if (!is_balanced)
+            return 0;
+    }
+
+    return 1;
+}
+
+int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
+                                     const pddl_t *pddl,
+                                     int action_id)
+{
+    const pddl_action_t *action = pddl->action.action + action_id;
+    pddl_cond_arr_t pre = PDDL_COND_ARR_INIT;
+    pddl_cond_arr_t del_eff = PDDL_COND_ARR_INIT;
+    pddl_cond_arr_t add_eff = PDDL_COND_ARR_INIT;
+
+    collectCandAtomsFromAnd(cand, action->eff, &add_eff, 1, 0);
+    if (add_eff.size == 0){
+        pddlCondArrFree(&add_eff);
+        return 1;
+    }
+
+    collectCandAtomsFromAnd(cand, action->eff, &del_eff, 0, 1);
+    collectCandAtomsFromAnd(cand, action->pre, &pre, 1, 0);
+
+    for (int i = 0; i < add_eff.size; ++i){
+        const pddl_cond_atom_t *add = PDDL_COND_CAST(add_eff.cond[i], atom);
+        if (!isAddEffBalanced(cand, pddl, action, add, &del_eff, &pre)){
+            pddlCondArrFree(&pre);
+            pddlCondArrFree(&del_eff);
+            pddlCondArrFree(&add_eff);
+            return 0;
+        }
+    }
 
     pddlCondArrFree(&pre);
     pddlCondArrFree(&del_eff);
     pddlCondArrFree(&add_eff);
-    return 0;
+    return 1;
 }
 
 
