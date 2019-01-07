@@ -55,33 +55,25 @@ void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup);
  * The function assumes that grounded_conj is a simple flattened conjuction
  * (and ...) and that the candidate has all atoms' predicates parametrized
  * (they are not fixed to any object).
+ * TODO: rename
  */
 int pddlLiftedMGroupHasAtMostOne(const pddl_lifted_mgroup_t *cand,
                                  const pddl_cond_part_t *grounded_conj);
 
 /**
- * Returns true if the given lifted mutex group candidate is a lifted mutex
- * group, i.e., this function proves that the candidate is lifted mutex
- * group.
- */
-int pddlLiftedMGroupIsValid(const pddl_lifted_mgroup_t *cand,
-                            const pddl_t *pddl);
-
-/**
- * Returns true if the action specified by its ID is *too heavy* with the
- * given lifted mutex group candidate.
+ * TODO
  */
 int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                                      const pddl_t *pddl,
                                      int action_id);
 
 /**
- * Returns true if the action specified by its ID is *unbalanced* with the
- * given lifted mutex group candidate.
+ * Returns true if the action is balanced with respect to the given mutex
+ * group candidate.
  */
-int pddlLiftedMGroupIsActionUnbalanced(const pddl_lifted_mgroup_t *cand,
-                                       const pddl_t *pddl,
-                                       int action_id);
+int pddlLiftedMGroupIsBalanced(const pddl_lifted_mgroup_t *cand,
+                               const pddl_action_t *action);
+
 
 /**
  * Prints a formatted lifted mutex group (or a candidate if there are some
