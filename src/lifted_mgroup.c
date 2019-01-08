@@ -1032,6 +1032,19 @@ static void initialCandidates(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
     }
 }
 
+static int isSingleFact(const pddl_lifted_mgroup_t *cand)
+{
+    if (cand->cond.size != 1)
+        return 0;
+
+    const pddl_cond_atom_t *a = PDDL_COND_CAST(cand->cond.cond[0], atom);
+    for (int i = 0; i < a->arg_size; ++i){
+        if (cand->param.param[a->arg[i].param].is_counted_var)
+            return 0;
+    }
+    return 1;
+}
+
 void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
 {
     pddl_lifted_mgroups_t cands[2] = { 0 };
@@ -1057,8 +1070,11 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
                 }
             }
 
-            if (proved)
+            if (proved
+                    && !pddlLiftedMGroupIsInitTooHeavy(cand, pddl)
+                    && !isSingleFact(cand)){
                 pddlLiftedMGroupsAdd(lm, cand);
+            }
         }
 
 
