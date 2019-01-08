@@ -334,6 +334,29 @@ void pddlCondPrintPDDL(const pddl_cond_t *cond,
                        const pddl_params_t *params,
                        FILE *fout);
 
+
+
+struct pddl_cond_const_it_atom {
+    const bor_list_t *list;
+    const bor_list_t *cur;
+};
+typedef struct pddl_cond_const_it_atom pddl_cond_const_it_atom_t;
+
+
+const pddl_cond_atom_t *pddlCondConstItAtomInit(pddl_cond_const_it_atom_t *it,
+                                                const pddl_cond_t *cond);
+const pddl_cond_atom_t *pddlCondConstItAtomNext(pddl_cond_const_it_atom_t *it);
+
+#define PDDL_COND_FOR_EACH_ATOM(COND, IT, ATOM) \
+    for ((ATOM) = pddlCondConstItAtomInit((IT), (COND)); \
+            (ATOM) != NULL; \
+            (ATOM) = pddlCondConstItAtomNext((IT)))
+
+#define PDDL_COND_FOR_EACH_CONT(IT, ATOM) \
+    for ((ATOM) = pddlCondConstItAtomNext((IT)); \
+            (ATOM) != NULL; \
+            (ATOM) = pddlCondConstItAtomNext((IT)))
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

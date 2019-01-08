@@ -3004,3 +3004,47 @@ void pddlCondPrintPDDL(const pddl_cond_t *cond,
 {
     cond_cls[cond->type].print_pddl(cond, pddl, params, fout);
 }
+
+
+const pddl_cond_atom_t *pddlCondConstItAtomInit(pddl_cond_const_it_atom_t *it,
+                                                const pddl_cond_t *cond)
+{
+    bzero(it, sizeof(*it));
+
+    if (cond == NULL)
+        return NULL;
+
+    if (cond->type == PDDL_COND_ATOM)
+        return PDDL_COND_CAST(cond, atom);
+
+    if (cond->type == PDDL_COND_AND || cond->type == PDDL_COND_OR){
+        const pddl_cond_part_t *p = PDDL_COND_CAST(cond, part);
+        it->list = &p->part;
+        for (it->cur = borListNext((bor_list_t *)it->list);
+                it->cur != it->list;
+                it->cur = borListNext((bor_list_t *)it->cur)){
+            const pddl_cond_t *c = BOR_LIST_ENTRY(it->cur, pddl_cond_t, conn);
+            if (c->type == PDDL_COND_ATOM)
+                return PDDL_COND_CAST(c, atom);
+        }
+        return NULL;
+    }
+
+    return NULL;
+}
+
+const pddl_cond_atom_t *pddlCondConstItAtomNext(pddl_cond_const_it_atom_t *it)
+{
+    if (it->cur == it->list)
+        return NULL;
+
+    for (it->cur = borListNext((bor_list_t *)it->cur);
+            it->cur != it->list;
+            it->cur = borListNext((bor_list_t *)it->cur)){
+        const pddl_cond_t *c = BOR_LIST_ENTRY(it->cur, pddl_cond_t, conn);
+        if (c->type == PDDL_COND_ATOM)
+            return PDDL_COND_CAST(c, atom);
+    }
+
+    return NULL;
+}
