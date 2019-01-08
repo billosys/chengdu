@@ -33,63 +33,6 @@ static int candHasPred(const pddl_lifted_mgroup_t *cand, int pred)
     return 0;
 }
 
-static void collectCandAtomsFromAnd(const pddl_lifted_mgroup_t *cand,
-                                    const pddl_cond_t *cond,
-                                    pddl_cond_arr_t *atoms,
-                                    int positive,
-                                    int negative)
-{
-    if (cond == NULL)
-        return;
-
-    if (cond->type == PDDL_COND_AND){
-        bor_list_t *item;
-        const pddl_cond_part_t *and = PDDL_COND_CAST(cond, part);
-        BOR_LIST_FOR_EACH(&and->part, item){
-            const pddl_cond_t *c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            if (c->type == PDDL_COND_ATOM){
-                const pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
-                if ((a->neg && !negative) || (!a->neg && !positive))
-                    continue;
-
-                if (candHasPred(cand, a->pred))
-                    pddlCondArrAdd(atoms, &a->cls);
-            }
-        }
-
-    }else if (cond->type == PDDL_COND_ATOM){
-        const pddl_cond_atom_t *a = PDDL_COND_CAST(cond, atom);
-        if (candHasPred(cand, a->pred))
-            pddlCondArrAdd(atoms, &a->cls);
-    }
-}
-
-static void collectNonCandDelEffs(const pddl_lifted_mgroup_t *cand,
-                                  const pddl_cond_t *eff,
-                                  pddl_cond_arr_t *atoms)
-{
-    if (eff == NULL)
-        return;
-
-    if (eff->type == PDDL_COND_AND){
-        bor_list_t *item;
-        const pddl_cond_part_t *and = PDDL_COND_CAST(eff, part);
-        BOR_LIST_FOR_EACH(&and->part, item){
-            const pddl_cond_t *c = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
-            if (c->type == PDDL_COND_ATOM){
-                const pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
-                if (a->neg && !candHasPred(cand, a->pred))
-                    pddlCondArrAdd(atoms, &a->cls);
-            }
-        }
-
-    }else if (eff->type == PDDL_COND_ATOM){
-        const pddl_cond_atom_t *a = PDDL_COND_CAST(eff, atom);
-        if (a->neg && !candHasPred(cand, a->pred))
-            pddlCondArrAdd(atoms, &a->cls);
-    }
-}
-
 static int checkExactMatchAtom(const pddl_action_t *action,
                                const int *action_var,
                                int obj_offset,
@@ -514,23 +457,21 @@ void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup)
 int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
                                    const pddl_t *pddl)
 {
-    pddl_cond_arr_t atom_arr = PDDL_COND_ARR_INIT;
+    pddl_cond_const_it_atom_t it1, it2;
+    const pddl_cond_atom_t *a1, *a2;
 
-    collectCandAtomsFromAnd(cand, &pddl->init->cls, &atom_arr, 1, 0);
-
-    for (int i = 0; i < atom_arr.size; ++i){
-        const pddl_cond_t *c1 = atom_arr.cond[i];
-        const pddl_cond_atom_t *a1 = PDDL_COND_CAST(c1, atom);
-        for (int j = i + 1; j < atom_arr.size; ++j){
-            const pddl_cond_t *c2 = atom_arr.cond[j];
-            const pddl_cond_atom_t *a2 = PDDL_COND_CAST(c2, atom);
-            if (canUnifyToGroundedPair(cand, a1, a2)){
-                pddlCondArrFree(&atom_arr);
+    PDDL_COND_FOR_EACH_ATOM(&pddl->init->cls, &it1, a1){
+        if (a1->neg || !candHasPred(cand, a1->pred))
+            continue;
+        it2 = it1;
+        PDDL_COND_FOR_EACH_CONT(&it2, a2){
+            if (!a2->neg
+                    && candHasPred(cand, a2->pred)
+                    && canUnifyToGroundedPair(cand, a1, a2)){
                 return 1;
             }
         }
     }
-    pddlCondArrFree(&atom_arr);
 
     return 0;
 }
@@ -540,32 +481,23 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                                      const pddl_t *pddl,
                                      int action_id)
 {
-    const pddl_action_t *action = pddl->action.action + action_id;
-    pddl_cond_arr_t add_eff = PDDL_COND_ARR_INIT;
+    const pddl_action_t *act = pddl->action.action + action_id;
+    pddl_cond_const_it_atom_t it1, it2;
+    const pddl_cond_atom_t *a1, *a2;
 
-    if (action->eff == NULL || action->eff->type != PDDL_COND_AND)
-        return 0;
-
-    collectCandAtomsFromAnd(cand, action->eff, &add_eff, 1, 0);
-    if (add_eff.size <= 1){
-        pddlCondArrFree(&add_eff);
-        return 0;
-    }
-
-    for (int i = 0; i < add_eff.size; ++i){
-        const pddl_cond_t *c1 = add_eff.cond[i];
-        const pddl_cond_atom_t *a1 = PDDL_COND_CAST(c1, atom);
-        for (int j = i + 1; j < add_eff.size; ++j){
-            const pddl_cond_t *c2 = add_eff.cond[j];
-            const pddl_cond_atom_t *a2 = PDDL_COND_CAST(c2, atom);
-            if (canUnifyActionAddEffectPair(pddl, cand, action, a1, a2)){
-                pddlCondArrFree(&add_eff);
+    PDDL_COND_FOR_EACH_ATOM(act->eff, &it1, a1){
+        if (a1->neg || !candHasPred(cand, a1->pred))
+            continue;
+        it2 = it1;
+        PDDL_COND_FOR_EACH_CONT(&it2, a2){
+            if (!a2->neg
+                    && candHasPred(cand, a2->pred)
+                    && canUnifyActionAddEffectPair(pddl, cand, act, a1, a2)){
                 return 1;
             }
         }
     }
 
-    pddlCondArrFree(&add_eff);
     return 0;
 }
 
@@ -765,28 +697,24 @@ static void refineCandidate(const pddl_lifted_mgroup_t *cand,
                             int next_name,
                             pddl_lifted_mgroups_t *refined)
 {
-    pddl_cond_arr_t del_effs = PDDL_COND_ARR_INIT;
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *a;
 
-    collectNonCandDelEffs(cand, action->eff, &del_effs);
-
-    for (int ai = 0; ai < del_effs.size; ++ai){
-        const pddl_cond_atom_t *a = PDDL_COND_CAST(del_effs.cond[ai], atom);
-        int del_eff_params[a->arg_size];
-        refineCandidateWithDelEff(cand, action, obj_offset,
-                                  cand_var, action_var,
-                                  a, del_eff_params, 0, 0, next_name,
-                                  refined);
+    PDDL_COND_FOR_EACH_ATOM(action->eff, &it, a){
+        if (a->neg && !candHasPred(cand, a->pred)){
+            int del_eff_params[a->arg_size];
+            refineCandidateWithDelEff(cand, action, obj_offset,
+                                      cand_var, action_var,
+                                      a, del_eff_params, 0, 0, next_name,
+                                      refined);
+        }
     }
-
-    pddlCondArrFree(&del_effs);
 }
 
 static int isAddEffBalanced(const pddl_lifted_mgroup_t *cand,
                             const pddl_t *pddl,
                             const pddl_action_t *action,
                             const pddl_cond_atom_t *add_eff,
-                            const pddl_cond_arr_t *del_effs,
-                            const pddl_cond_arr_t *pres,
                             pddl_lifted_mgroups_t *refined)
 {
     int obj_offset = 1 + cand->param.param_size + action->param.param_size;
@@ -810,21 +738,15 @@ static int isAddEffBalanced(const pddl_lifted_mgroup_t *cand,
             continue;
         }
 
-        // We managed to find one covered add effect -- fast check that
-        // there is something with which we can balance it
-        if (del_effs->size == 0 || pres->size == 0){
-            if (refined != NULL){
-                refineCandidate(cand, action, obj_offset,
-                                cand_var, action_var,
-                                next_name, refined);
-            }
-            return 0;
-        }
-
+        pddl_cond_const_it_atom_t it_del;
+        const pddl_cond_atom_t *del_eff;
         int is_balanced = 0;
-        for (int di = 0; !is_balanced && di < del_effs->size; ++di){
-            const pddl_cond_t *c = del_effs->cond[di];
-            const pddl_cond_atom_t *del_eff = PDDL_COND_CAST(c, atom);
+        PDDL_COND_FOR_EACH_ATOM(action->eff, &it_del, del_eff){
+            if (!del_eff->neg || !candHasPred(cand, del_eff->pred))
+                continue;
+            if (is_balanced)
+                break;
+
             for (int j = 0; !is_balanced && j < cand->cond.size; ++j){
                 const pddl_cond_t *cc = cand->cond.cond[j];
                 const pddl_cond_atom_t *balance_cand = PDDL_COND_CAST(cc, atom);
@@ -858,33 +780,16 @@ int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
                                      pddl_lifted_mgroups_t *refined)
 {
     const pddl_action_t *action = pddl->action.action + action_id;
-    pddl_cond_arr_t pre = PDDL_COND_ARR_INIT;
-    pddl_cond_arr_t del_eff = PDDL_COND_ARR_INIT;
-    pddl_cond_arr_t add_eff = PDDL_COND_ARR_INIT;
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *a;
 
-    collectCandAtomsFromAnd(cand, action->eff, &add_eff, 1, 0);
-    if (add_eff.size == 0){
-        pddlCondArrFree(&add_eff);
-        return 1;
-    }
-
-    collectCandAtomsFromAnd(cand, action->eff, &del_eff, 0, 1);
-    collectCandAtomsFromAnd(cand, action->pre, &pre, 1, 0);
-
-    for (int i = 0; i < add_eff.size; ++i){
-        const pddl_cond_atom_t *add = PDDL_COND_CAST(add_eff.cond[i], atom);
-        if (!isAddEffBalanced(cand, pddl, action, add, &del_eff, &pre,
-                              refined)){
-            pddlCondArrFree(&pre);
-            pddlCondArrFree(&del_eff);
-            pddlCondArrFree(&add_eff);
+    PDDL_COND_FOR_EACH_ATOM(action->eff, &it, a){
+        if (a->neg || !candHasPred(cand, a->pred))
+            continue;
+        if (!isAddEffBalanced(cand, pddl, action, a, refined))
             return 0;
-        }
     }
 
-    pddlCondArrFree(&pre);
-    pddlCondArrFree(&del_eff);
-    pddlCondArrFree(&add_eff);
     return 1;
 }
 
