@@ -123,6 +123,11 @@ void pddlLiftedMGroupsAdd(pddl_lifted_mgroups_t *lm,
  */
 void pddlLiftedMGroupsSortAndUniq(pddl_lifted_mgroups_t *lm);
 
+/**
+ * Find lifted mgroups using "guess, check, refine" approach.
+ */
+void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm);
+
 void pddlLiftedMGroupsPrint(const pddl_t *pddl,
                             const pddl_lifted_mgroups_t *lm,
                             FILE *fout);

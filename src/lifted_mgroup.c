@@ -1011,6 +1011,64 @@ void pddlLiftedMGroupsSortAndUniq(pddl_lifted_mgroups_t *lm)
     lm->mgroup_size = ins;
 }
 
+static void initialCandidates(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
+{
+    for (int pred_id = 0; pred_id < pddl->pred.pred_size; ++pred_id){
+        const pddl_pred_t *pred = pddl->pred.pred + pred_id;
+        if (pddlPredIsStatic(pred) || pred_id == pddl->pred.eq_pred)
+            continue;
+
+        pddl_lifted_mgroup_t m;
+
+        pddlLiftedMGroupInitCandFromPred(&m, pred, -1);
+        pddlLiftedMGroupsAdd(lm, &m);
+        pddlLiftedMGroupFree(&m);
+
+        for (int i = 0; i < pred->param_size; ++i){
+            pddlLiftedMGroupInitCandFromPred(&m, pred, i);
+            pddlLiftedMGroupsAdd(lm, &m);
+            pddlLiftedMGroupFree(&m);
+        }
+    }
+}
+
+void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
+{
+    pddl_lifted_mgroups_t cands[2] = { 0 };
+
+    // TODO: Parametrize number of candidates
+
+    initialCandidates(pddl, cands + 0);
+    int cur = 0;
+    for (cur = 0; cands[cur].mgroup_size > 0; cur = (cur + 1) % 2){
+        int next = (cur + 1) % 2;
+
+        pddlLiftedMGroupsInit(cands + next);
+        for (int cid = 0; cid < cands[cur].mgroup_size; ++cid){
+            const pddl_lifted_mgroup_t *cand = cands[cur].mgroup + cid;
+
+            int proved = 1;
+            for (int ai = 0; ai < pddl->action.action_size; ++ai){
+                if (pddlLiftedMGroupIsActionTooHeavy(cand, pddl, ai)
+                        || !pddlLiftedMGroupIsActionBalanced(cand, pddl, ai,
+                                                             cands + next)){
+                    proved = 0;
+                    break;
+                }
+            }
+
+            if (proved)
+                pddlLiftedMGroupsAdd(lm, cand);
+        }
+
+
+        pddlLiftedMGroupsFree(cands + cur);
+    }
+    pddlLiftedMGroupsFree(cands + cur);
+
+    pddlLiftedMGroupsSortAndUniq(lm);
+}
+
 void pddlLiftedMGroupsPrint(const pddl_t *pddl,
                             const pddl_lifted_mgroups_t *lm,
                             FILE *fout)
