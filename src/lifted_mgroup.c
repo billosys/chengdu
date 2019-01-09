@@ -278,7 +278,7 @@ static int canUnifyActionAddEffectPairCand(ctx_action_t *ctx,
     // ((not a1) and (not a2)) is not satisfiable in the state where we
     // apply this action, then this action cannot increase the number of
     // facts in the resulting state.
-    if (atomInPre(ctx, a1) && atomInPre(ctx, a2))
+    if (atomInPre(ctx, a1) || atomInPre(ctx, a2))
         return 0;
 
     return 1;
