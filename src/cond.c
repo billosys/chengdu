@@ -1015,6 +1015,28 @@ pddl_cond_when_t *pddlCondRemoveFirstNonStaticWhen(pddl_cond_t *c,
     return NULL;
 }
 
+pddl_cond_when_t *pddlCondRemoveFirstWhen(pddl_cond_t *c, const pddl_t *pddl)
+{
+    pddl_cond_part_t *cp;
+    pddl_cond_t *cw;
+    bor_list_t *item, *tmp;
+
+    if (c->type != PDDL_COND_AND)
+        return NULL;
+    cp = PDDL_COND_CAST(c, part);
+
+    BOR_LIST_FOR_EACH_SAFE(&cp->part, item, tmp){
+        cw = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (cw->type == PDDL_COND_WHEN){
+            pddl_cond_when_t *w = PDDL_COND_CAST(cw, when);
+            borListDel(item);
+            return w;
+        }
+    }
+
+    return NULL;
+}
+
 pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b)
 {
     pddl_cond_part_t *p = condPartNew(PDDL_COND_AND);

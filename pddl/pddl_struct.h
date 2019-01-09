@@ -88,6 +88,13 @@ void pddlNormalize(pddl_t *pddl);
 void pddlCompileAwayCondEff(pddl_t *pddl);
 
 /**
+ * Generate pddl without conditional effects unless the conditional effects
+ * that have only static predicates in its preconditions.
+ * This is enough for grounding.
+ */
+void pddlCompileAwayNonStaticCondEff(pddl_t *pddl);
+
+/**
  * Returns maximal number of parameters of all predicates and functions.
  */
 int pddlPredFuncMaxParamSize(const pddl_t *pddl);

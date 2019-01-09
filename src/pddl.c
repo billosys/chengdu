@@ -518,7 +518,7 @@ void pddlNormalize(pddl_t *pddl)
     pddlResetPredReadWrite(pddl);
 }
 
-void pddlCompileAwayCondEff(pddl_t *pddl)
+static void compileAwayCondEff(pddl_t *pddl, int only_non_static)
 {
     pddl_action_t *a, *new_a;
     pddl_cond_when_t *w;
@@ -533,7 +533,11 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
         asize = pddl->action.action_size;
         for (int ai = 0; ai < asize; ++ai){
             a = pddl->action.action + ai;
-            w = pddlCondRemoveFirstNonStaticWhen(a->eff, pddl);
+            if (only_non_static){
+                w = pddlCondRemoveFirstNonStaticWhen(a->eff, pddl);
+            }else{
+                w = pddlCondRemoveFirstWhen(a->eff, pddl);
+            }
             if (w != NULL){
                 // Create a new action
                 new_a = pddlActionsAddCopy(&pddl->action, ai);
@@ -563,6 +567,16 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
         }
     } while (change);
     pddlResetPredReadWrite(pddl);
+}
+
+void pddlCompileAwayCondEff(pddl_t *pddl)
+{
+    compileAwayCondEff(pddl, 0);
+}
+
+void pddlCompileAwayNonStaticCondEff(pddl_t *pddl)
+{
+    compileAwayCondEff(pddl, 1);
 }
 
 int pddlPredFuncMaxParamSize(const pddl_t *pddl)

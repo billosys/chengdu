@@ -194,6 +194,7 @@ void pddlCondRebuild(pddl_cond_t **c,
  */
 pddl_cond_when_t *pddlCondRemoveFirstNonStaticWhen(pddl_cond_t *c,
                                                    const pddl_t *pddl);
+pddl_cond_when_t *pddlCondRemoveFirstWhen(pddl_cond_t *c, const pddl_t *pddl);
 
 /**
  * Creates a new (and a b) node.
