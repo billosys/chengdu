@@ -480,66 +480,48 @@ static void refineCandidateWithDelEff(const ctx_action_t *ctx,
                                       int num_counted_vars,
                                       pddl_lifted_mgroups_t *refined)
 {
-    int del_eff_param, del_eff_obj;
-   
-    if (del_eff_argi < del_eff->arg_size){
-        del_eff_param = del_eff->arg[del_eff_argi].param;
-        del_eff_obj = del_eff->arg[del_eff_argi].obj;
-    }
-
     if (del_eff_argi == del_eff->arg_size){
         if (atomInPre(ctx, del_eff))
             addRefinedCandidate(ctx->cand, del_eff, del_eff_params, refined);
+        return;
+    }
 
-    }else if (del_eff_obj != PDDL_OBJ_ID_UNDEF
-                || ctx->action_var[del_eff_param] >= ctx->obj_offset
-                || ctx->action_var[del_eff_param] == 0){
-        // This must be counted variable
-        del_eff_params[del_eff_argi] = -1;
-        if (num_counted_vars >= 1)
-            return;
+    int del_eff_param, del_eff_obj;
+    del_eff_param = del_eff->arg[del_eff_argi].param;
+    del_eff_obj = del_eff->arg[del_eff_argi].obj;
 
-        CTX_PUSH(ctx, ctx2);
-        if (ctx->action_var[del_eff_param] == 0)
-            ctx2.action_var[del_eff_param] = ctx2.next_name++;
+    if (del_eff_param >= 0 && ctx->action_var[del_eff_param] == 0){
+        if (num_counted_vars == 0){
+            del_eff_params[del_eff_argi] = -1;
+            CTX_PUSH(ctx, ctx2);
+            if (ctx->action_var[del_eff_param] == 0)
+                ctx2.action_var[del_eff_param] = ctx2.next_name++;
 
-        refineCandidateWithDelEff(&ctx2,
-                                  del_eff, del_eff_params, del_eff_argi + 1,
-                                  num_counted_vars + 1,
-                                  refined);
+            refineCandidateWithDelEff(&ctx2, del_eff, del_eff_params,
+                                      del_eff_argi + 1, num_counted_vars + 1,
+                                      refined);
+        }
 
     }else{
+        int varname = ctx->obj_offset + del_eff_obj;
+        if (del_eff_param >= 0)
+            varname = ctx->action_var[del_eff_param];
+
         int tried_counted_var = 0;
-        int avar = ctx->action_var[del_eff_param];
         for (int ci = 0; ci < ctx->cand->param.param_size; ++ci){
-            if (ctx->cand_var[ci] != avar)
-                continue;
-            if (ctx->cand->param.param[ci].is_counted_var){
-                if (num_counted_vars == 0){
-                    tried_counted_var = 1;
-                    del_eff_params[del_eff_argi] = -1;
-                    refineCandidateWithDelEff(ctx,
-                                              del_eff, del_eff_params,
-                                              del_eff_argi + 1,
-                                              num_counted_vars + 1,
-                                              refined);
-                }
-            }else{
+            if (ctx->cand_var[ci] == varname
+                    && !ctx->cand->param.param[ci].is_counted_var){
                 del_eff_params[del_eff_argi] = ci;
-                refineCandidateWithDelEff(ctx,
-                                          del_eff, del_eff_params,
-                                          del_eff_argi + 1,
-                                          num_counted_vars,
+                refineCandidateWithDelEff(ctx, del_eff, del_eff_params,
+                                          del_eff_argi + 1, num_counted_vars,
                                           refined);
             }
         }
 
-        if (num_counted_vars == 0 && !tried_counted_var){
+        if (num_counted_vars == 0){
             del_eff_params[del_eff_argi] = -1;
-            refineCandidateWithDelEff(ctx,
-                                      del_eff, del_eff_params,
-                                      del_eff_argi + 1,
-                                      num_counted_vars + 1,
+            refineCandidateWithDelEff(ctx, del_eff, del_eff_params,
+                                      del_eff_argi + 1, num_counted_vars + 1,
                                       refined);
         }
     }
