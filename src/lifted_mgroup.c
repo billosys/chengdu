@@ -274,6 +274,13 @@ static int canUnifyActionAddEffectPairCand(ctx_action_t *ctx,
     if (atomsEq(ctx, a1, a2))
         return 0;
 
+    // If exactly the same atoms are in the precondition, i.e.,
+    // ((not a1) and (not a2)) is not satisfiable in the state where we
+    // apply this action, then this action cannot increase the number of
+    // facts in the resulting state.
+    if (atomInPre(ctx, a1) && atomInPre(ctx, a2))
+        return 0;
+
     return 1;
 }
 
@@ -941,6 +948,7 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
     for (cur = 0; cands[cur].mgroup_size > 0; cur = (cur + 1) % 2){
         int next = (cur + 1) % 2;
 
+        pddlLiftedMGroupsSortAndUniq(cands + cur);
         pddlLiftedMGroupsInit(cands + next);
         for (int cid = 0; cid < cands[cur].mgroup_size; ++cid){
             const pddl_lifted_mgroup_t *cand = cands[cur].mgroup + cid;
