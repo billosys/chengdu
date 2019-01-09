@@ -108,7 +108,7 @@ void pddlFuncsPrintPDDL(const pddl_preds_t *ps,
 /**** INLINES: ****/
 _bor_inline int pddlPredIsStatic(const pddl_pred_t *pred)
 {
-    return pred->read && !pred->write;
+    return !pred->write;
 }
 
 #ifdef __cplusplus

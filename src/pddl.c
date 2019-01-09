@@ -483,6 +483,16 @@ static void removeIrrelevantActions(pddl_t *pddl)
     }
 }
 
+static void pddlResetPredReadWrite(pddl_t *pddl)
+{
+    for (int i = 0; i < pddl->pred.pred_size; ++i)
+        pddl->pred.pred[i].read = pddl->pred.pred[i].write = 0;
+    for (int i = 0; i < pddl->action.action_size; ++i){
+        const pddl_action_t *a = pddl->action.action + i;
+        pddlCondSetPredRead(a->pre, &pddl->pred);
+        pddlCondSetPredReadWriteEff(a->eff, &pddl->pred);
+    }
+}
 
 void pddlNormalize(pddl_t *pddl)
 {
@@ -505,6 +515,7 @@ void pddlNormalize(pddl_t *pddl)
 
     compileOutNonStaticNegPre(pddl);
     pddl->normalized = 1;
+    pddlResetPredReadWrite(pddl);
 }
 
 void pddlCompileAwayCondEff(pddl_t *pddl)
@@ -551,6 +562,7 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
             }
         }
     } while (change);
+    pddlResetPredReadWrite(pddl);
 }
 
 int pddlPredFuncMaxParamSize(const pddl_t *pddl)
