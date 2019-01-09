@@ -2871,6 +2871,33 @@ int pddlCondAtomInConflict(const pddl_cond_atom_t *a1,
 }
 
 
+static int setParamToObj(pddl_cond_t *cond, void *ud)
+{
+    const pddl_cond_atom_arg_t *arg = ud;
+
+    if (cond->type == PDDL_COND_ATOM){
+        pddl_cond_atom_t *atom = OBJ(cond, atom);
+        for (int i = 0; i < atom->arg_size; ++i){
+            if (atom->arg[i].param == arg->param){
+                atom->arg[i].param = -1;
+                atom->arg[i].obj = arg->obj;
+            }
+        }
+    }
+
+    return 0;
+}
+
+void pddlCondSetParamToObj(pddl_cond_t *c, int param_id, pddl_obj_id_t obj_id)
+{
+    pddl_cond_atom_arg_t arg;
+    arg.param = param_id;
+    arg.obj = obj_id;
+
+    pddlCondTraverse(c, NULL, setParamToObj, &arg);
+}
+
+
 /*** PRINT ***/
 static void condPartPrint(const pddl_t *pddl,
                           pddl_cond_part_t *cond,

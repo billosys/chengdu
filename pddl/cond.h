@@ -325,6 +325,11 @@ int pddlCondAtomInConflict(const pddl_cond_atom_t *a1,
                            const pddl_cond_atom_t *a2,
                            const pddl_t *pddl);
 
+/**
+ * Sets all param_id parameters to the specified object.
+ */
+void pddlCondSetParamToObj(pddl_cond_t *c, int param_id, pddl_obj_id_t obj_id);
+
 void pddlCondPrint(const pddl_t *pddl,
                    const pddl_cond_t *cond,
                    const pddl_params_t *params,
