@@ -63,6 +63,10 @@ void pddlLiftedMGroupInitCandFromPred(pddl_lifted_mgroup_t *mgroup,
  */
 void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup);
 
+/**
+ * Sort mutex group's atoms and parameters.
+ */
+void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m);
 
 /**
  * Returns true if two or more facts from the initial state are covered by
