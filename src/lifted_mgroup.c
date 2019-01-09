@@ -507,7 +507,6 @@ static void refineCandidateWithDelEff(const ctx_action_t *ctx,
         if (del_eff_param >= 0)
             varname = ctx->action_var[del_eff_param];
 
-        int tried_counted_var = 0;
         for (int ci = 0; ci < ctx->cand->param.param_size; ++ci){
             if (ctx->cand_var[ci] == varname
                     && !ctx->cand->param.param[ci].is_counted_var){
