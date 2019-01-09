@@ -218,70 +218,27 @@ static int argTypesAreValid(const ctx_action_t *ctx)
     return 1;
 }
 
-struct inequality_pre_hold {
-    int pred_eq;
-    int obj_offset;
-    const int *action_arg;
-    int ret;
-};
-
-static int _inequalityPreHold(pddl_cond_t *c, void *ud)
-{
-    struct inequality_pre_hold *ctx = ud;
-    if (c->type == PDDL_COND_ATOM){
-        const pddl_cond_atom_t *a = PDDL_COND_CAST(c, atom);
-        if (a->pred == ctx->pred_eq && a->neg){
-            if (a->arg[0].param >= 0 && a->arg[1].param >= 0){
-                int p0 = a->arg[0].param;
-                int p1 = a->arg[1].param;
-                if (ctx->action_arg[p0] > 0
-                        && ctx->action_arg[p1] > 0
-                        && ctx->action_arg[p0] == ctx->action_arg[p1]){
-                    ctx->ret = -1;
-                    return -2;
-                }
-            }else if (a->arg[0].param >= 0){
-                int p0 = a->arg[0].param;
-                int o1 = ctx->obj_offset + a->arg[1].obj;
-                if (ctx->action_arg[p0] > 0 && ctx->action_arg[p0] == o1){
-                    ctx->ret = -1;
-                    return -2;
-                }
-
-            }else if (a->arg[1].param >= 0){
-                int o0 = ctx->obj_offset + a->arg[0].obj;
-                int p1 = a->arg[1].param;
-                if (ctx->action_arg[p1] > 0 && ctx->action_arg[p1] == o0){
-                    ctx->ret = -1;
-                    return -2;
-                }
-            }
-        }
-    }
-
-    return 0;
-}
-
 /** Returns true the inequalities in the precondition holds given the
  *  variable assignements */
-static int inequalityPreHold(const ctx_action_t *c)
+static int inequalityPreHold(const ctx_action_t *ctx)
 {
-    struct inequality_pre_hold ctx = {
-        c->pddl->pred.eq_pred,
-        c->obj_offset,
-        c->action_var,
-        0
-    };
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *a;
 
-    if (ctx.pred_eq < 0)
-        return 1;
-
-    pddlCondTraverse(c->action->pre, _inequalityPreHold, NULL, &ctx);
-    if (ctx.ret < 0)
-        return 0;
+    PDDL_COND_FOR_EACH_ATOM(ctx->action->pre, &it, a){
+        if (a->neg && a->pred == ctx->pddl->pred.eq_pred){
+            int v0 = atomArgValue(ctx, a, 0);
+            int v1 = atomArgValue(ctx, a, 1);
+            if (v0 == v1 && v0 != 0)
+                return 0;
+        }
+    }
     return 1;
 }
 
+/** Returns true if c1 can be unified with a1 and c2 cand be unified with
+ *  a2 so that a1 != a2, the types are compatible, and inequalities of
+ *  ctx->action hold. */
 static int canUnifyActionAddEffectPairCand(ctx_action_t *ctx,
                                            const pddl_cond_atom_t *c1,
                                            const pddl_cond_atom_t *c2,
@@ -320,6 +277,8 @@ static int canUnifyActionAddEffectPairCand(ctx_action_t *ctx,
     return 1;
 }
 
+/** Returns true if a1 and a2 cand be unified with some candidate atoms so
+ *  that a1 != a2 and preconditions of ctx->action are satisfiable. */
 static int canUnifyActionAddEffectPair(ctx_action_t *ctx,
                                        const pddl_cond_atom_t *a1,
                                        const pddl_cond_atom_t *a2)
@@ -339,15 +298,16 @@ static int canUnifyActionAddEffectPair(ctx_action_t *ctx,
     return 0;
 }
 
-static int canUnifyToGroundedPair(const pddl_lifted_mgroup_t *cand,
-                                  const pddl_cond_atom_t *a1,
-                                  const pddl_cond_atom_t *a2)
+/** Returns true if the candidate atoms can be unified with a pair of
+ *  grounded atoms so that a1 != a2 */
+static int canUnifyGroundedPair(const pddl_lifted_mgroup_t *cand,
+                                const pddl_cond_atom_t *a1,
+                                const pddl_cond_atom_t *a2)
 {
     pddl_obj_id_t arg[cand->param.param_size];
+    const pddl_cond_atom_t *cand1, *cand2;
 
-    for (int c1i = 0; c1i < cand->cond.size; ++c1i){
-        const pddl_cond_t *c1 = cand->cond.cond[c1i];
-        const pddl_cond_atom_t *cand1 = PDDL_COND_CAST(c1, atom);
+    FOR_EACH_CAND(cand, cand1){
         if (cand1->pred != a1->pred)
             continue;
 
@@ -374,9 +334,7 @@ static int canUnifyToGroundedPair(const pddl_lifted_mgroup_t *cand,
             continue;
 
         // and with fixed variables for a1, try to unify a2
-        for (int c2i = 0; c2i < cand->cond.size; ++c2i){
-            const pddl_cond_t *c2 = cand->cond.cond[c2i];
-            const pddl_cond_atom_t *cand2 = PDDL_COND_CAST(c2, atom);
+        FOR_EACH_CAND(cand, cand2){
             if (cand2->pred != a2->pred)
                 continue;
 
@@ -400,94 +358,8 @@ static int canUnifyToGroundedPair(const pddl_lifted_mgroup_t *cand,
     return 0;
 }
 
-void pddlLiftedMGroupInitCopy(pddl_lifted_mgroup_t *dst,
-                              const pddl_lifted_mgroup_t *src)
-{
-    bzero(dst, sizeof(*dst));
-    pddlParamsInitCopy(&dst->param, &src->param);
-    for (int i = 0; i < src->cond.size; ++i)
-        pddlCondArrAdd(&dst->cond, pddlCondClone(src->cond.cond[i]));
-}
-
-void pddlLiftedMGroupInitCandFromPred(pddl_lifted_mgroup_t *mgroup,
-                                      const pddl_pred_t *pred,
-                                      int counted_var)
-{
-    pddlParamsInit(&mgroup->param);
-    pddlCondArrInit(&mgroup->cond);
-
-    for (int param_id = 0; param_id < pred->param_size; ++param_id){
-        pddl_param_t *param = pddlParamsAdd(&mgroup->param);
-        param->type = pred->param[param_id];
-        if (counted_var == param_id)
-            param->is_counted_var = 1;
-    }
-
-    pddl_cond_atom_t *atom;
-    atom = pddlCondNewEmptyAtom(pred->param_size);
-    atom->pred = pred->id;
-    for (int param_id = 0; param_id < pred->param_size; ++param_id){
-        atom->arg[param_id].param = param_id;
-        atom->arg[param_id].obj = PDDL_OBJ_ID_UNDEF;
-    }
-    pddlCondArrAdd(&mgroup->cond, &atom->cls);
-}
-
-void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup)
-{
-    for (int i = 0; i < mgroup->cond.size; ++i)
-        pddlCondDel((pddl_cond_t *)mgroup->cond.cond[i]);
-    pddlParamsFree(&mgroup->param);
-    pddlCondArrFree(&mgroup->cond);
-}
-
-int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
-                                   const pddl_t *pddl)
-{
-    pddl_cond_const_it_atom_t it1, it2;
-    const pddl_cond_atom_t *a1, *a2;
-
-    PDDL_COND_FOR_EACH_ATOM(&pddl->init->cls, &it1, a1){
-        if (a1->neg || !candHasPred(cand, a1->pred))
-            continue;
-        it2 = it1;
-        PDDL_COND_FOR_EACH_CONT(&it2, a2){
-            if (!a2->neg
-                    && candHasPred(cand, a2->pred)
-                    && canUnifyToGroundedPair(cand, a1, a2)){
-                return 1;
-            }
-        }
-    }
-
-    return 0;
-}
-
-
-int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
-                                     const pddl_t *pddl,
-                                     int action_id)
-{
-    CTX_ACTION(ctx, pddl, action_id, cand);
-    pddl_cond_const_it_atom_t it1, it2;
-    const pddl_cond_atom_t *a1, *a2;
-
-    PDDL_COND_FOR_EACH_ATOM(ctx.action->eff, &it1, a1){
-        if (a1->neg || !candHasPred(cand, a1->pred))
-            continue;
-        it2 = it1;
-        PDDL_COND_FOR_EACH_CONT(&it2, a2){
-            if (!a2->neg
-                    && candHasPred(cand, a2->pred)
-                    && canUnifyActionAddEffectPair(&ctx, a1, a2)){
-                return 1;
-            }
-        }
-    }
-
-    return 0;
-}
-
+/** Returns true if the candidate atom is balanced with the given delete
+ *  effect */
 static int isBalancedWith(const ctx_action_t *ctx_in,
                           const pddl_cond_atom_t *catom,
                           const pddl_cond_atom_t *del_eff)
@@ -560,6 +432,9 @@ static int isBalancedWith(const ctx_action_t *ctx_in,
     return 0;
 }
 
+/** Add a new candidate refined from the given candidate and atom with
+ *  specified parameters (-1 means counted variable, >=0 is an ID of the
+ *  parameter. */
 static void addRefinedCandidate(const pddl_lifted_mgroup_t *cand_in,
                                 const pddl_cond_atom_t *atom,
                                 const int *atom_params,
@@ -589,6 +464,8 @@ static void addRefinedCandidate(const pddl_lifted_mgroup_t *cand_in,
     pddlLiftedMGroupFree(&new_cand);
 }
 
+/** Recursive function for refinement of candidates with the given delete
+ *  effect */
 static void refineCandidateWithDelEff(const ctx_action_t *ctx,
                                       const pddl_cond_atom_t *del_eff,
                                       int *del_eff_params,
@@ -670,12 +547,14 @@ static void refineCandidate(const ctx_action_t *ctx,
     PDDL_COND_FOR_EACH_ATOM(ctx->action->eff, &it, a){
         if (a->neg && !candHasPred(ctx->cand, a->pred)){
             int del_eff_params[a->arg_size];
-            refineCandidateWithDelEff(ctx, a, del_eff_params, 0, 0,
-                                      refined);
+            refineCandidateWithDelEff(ctx, a, del_eff_params, 0, 0, refined);
         }
     }
 }
 
+/** Returns true if the given add effect can be balanced by some delete
+ *  effect. If it is not and refined != NULL, then new candidates are
+ *  created. */
 static int isAddEffBalanced(ctx_action_t *ctx,
                             const pddl_cond_atom_t *add_eff,
                             pddl_lifted_mgroups_t *refined)
@@ -722,6 +601,95 @@ static int isAddEffBalanced(ctx_action_t *ctx,
     }
 
     return 1;
+}
+
+
+
+void pddlLiftedMGroupInitCopy(pddl_lifted_mgroup_t *dst,
+                              const pddl_lifted_mgroup_t *src)
+{
+    bzero(dst, sizeof(*dst));
+    pddlParamsInitCopy(&dst->param, &src->param);
+    for (int i = 0; i < src->cond.size; ++i)
+        pddlCondArrAdd(&dst->cond, pddlCondClone(src->cond.cond[i]));
+}
+
+void pddlLiftedMGroupInitCandFromPred(pddl_lifted_mgroup_t *mgroup,
+                                      const pddl_pred_t *pred,
+                                      int counted_var)
+{
+    pddlParamsInit(&mgroup->param);
+    pddlCondArrInit(&mgroup->cond);
+
+    for (int param_id = 0; param_id < pred->param_size; ++param_id){
+        pddl_param_t *param = pddlParamsAdd(&mgroup->param);
+        param->type = pred->param[param_id];
+        if (counted_var == param_id)
+            param->is_counted_var = 1;
+    }
+
+    pddl_cond_atom_t *atom;
+    atom = pddlCondNewEmptyAtom(pred->param_size);
+    atom->pred = pred->id;
+    for (int param_id = 0; param_id < pred->param_size; ++param_id){
+        atom->arg[param_id].param = param_id;
+        atom->arg[param_id].obj = PDDL_OBJ_ID_UNDEF;
+    }
+    pddlCondArrAdd(&mgroup->cond, &atom->cls);
+}
+
+void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup)
+{
+    for (int i = 0; i < mgroup->cond.size; ++i)
+        pddlCondDel((pddl_cond_t *)mgroup->cond.cond[i]);
+    pddlParamsFree(&mgroup->param);
+    pddlCondArrFree(&mgroup->cond);
+}
+
+int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
+                                   const pddl_t *pddl)
+{
+    pddl_cond_const_it_atom_t it1, it2;
+    const pddl_cond_atom_t *a1, *a2;
+
+    PDDL_COND_FOR_EACH_ATOM(&pddl->init->cls, &it1, a1){
+        if (a1->neg || !candHasPred(cand, a1->pred))
+            continue;
+        it2 = it1;
+        PDDL_COND_FOR_EACH_CONT(&it2, a2){
+            if (!a2->neg
+                    && candHasPred(cand, a2->pred)
+                    && canUnifyGroundedPair(cand, a1, a2)){
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
+                                     const pddl_t *pddl,
+                                     int action_id)
+{
+    CTX_ACTION(ctx, pddl, action_id, cand);
+    pddl_cond_const_it_atom_t it1, it2;
+    const pddl_cond_atom_t *a1, *a2;
+
+    PDDL_COND_FOR_EACH_ATOM(ctx.action->eff, &it1, a1){
+        if (a1->neg || !candHasPred(cand, a1->pred))
+            continue;
+        it2 = it1;
+        PDDL_COND_FOR_EACH_CONT(&it2, a2){
+            if (!a2->neg
+                    && candHasPred(cand, a2->pred)
+                    && canUnifyActionAddEffectPair(&ctx, a1, a2)){
+                return 1;
+            }
+        }
+    }
+
+    return 0;
 }
 
 int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
@@ -931,7 +899,6 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
                 pddlLiftedMGroupsAdd(lm, cand);
             }
         }
-
 
         pddlLiftedMGroupsFree(cands + cur);
     }
