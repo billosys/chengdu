@@ -236,14 +236,51 @@ static int inequalityPreHold(const ctx_action_t *ctx)
     return 1;
 }
 
+static int staticAtomHasEqArgs(const ctx_action_t *ctx, int pred_id,
+                               int arg0, int arg1)
+{
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *a;
+
+    PDDL_COND_FOR_EACH_ATOM(&ctx->pddl->init->cls, &it, a){
+        if (!a->neg && a->pred == pred_id){
+            if (a->arg[arg0].obj == a->arg[arg1].obj)
+                return 1;
+        }
+    }
+    return 0;
+}
+
+static int staticPreHold(const ctx_action_t *ctx)
+{
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *a;
+
+    PDDL_COND_FOR_EACH_ATOM(ctx->action->pre, &it, a){
+        if (!a->neg && pddlPredIsStatic(ctx->pddl->pred.pred + a->pred)){
+            for (int i = 0; i < a->arg_size; ++i){
+                int arg0 = atomArgValue(ctx, a, i);
+                for (int j = i + 1; arg0 > 0 && j < a->arg_size; ++j){
+                    if (arg0 == atomArgValue(ctx, a, j)){
+                        if (!staticAtomHasEqArgs(ctx, a->pred, i, j))
+                            return 0;
+                    }
+                }
+            }
+        }
+    }
+
+    return 1;
+}
+
 /** Returns true if c1 can be unified with a1 and c2 cand be unified with
  *  a2 so that a1 != a2, the types are compatible, and inequalities of
  *  ctx->action hold. */
-static int canUnifyActionAddEffectPairCand(ctx_action_t *ctx,
-                                           const pddl_cond_atom_t *c1,
-                                           const pddl_cond_atom_t *c2,
-                                           const pddl_cond_atom_t *a1,
-                                           const pddl_cond_atom_t *a2)
+static int isPairTooHeavyCand(ctx_action_t *ctx,
+                              const pddl_cond_atom_t *c1,
+                              const pddl_cond_atom_t *c2,
+                              const pddl_cond_atom_t *a1,
+                              const pddl_cond_atom_t *a2)
 {
     CTX_RESET(ctx);
     if (!unifyAtoms(ctx, c1, a1))
@@ -281,14 +318,18 @@ static int canUnifyActionAddEffectPairCand(ctx_action_t *ctx,
     if (atomInPre(ctx, a1) || atomInPre(ctx, a2))
         return 0;
 
+    // Check whether static preconditions are satisfiable
+    if (!staticPreHold(ctx))
+        return 0;
+
     return 1;
 }
 
 /** Returns true if a1 and a2 cand be unified with some candidate atoms so
  *  that a1 != a2 and preconditions of ctx->action are satisfiable. */
-static int canUnifyActionAddEffectPair(ctx_action_t *ctx,
-                                       const pddl_cond_atom_t *a1,
-                                       const pddl_cond_atom_t *a2)
+static int isPairTooHeavy(ctx_action_t *ctx,
+                          const pddl_cond_atom_t *a1,
+                          const pddl_cond_atom_t *a2)
 {
     const pddl_cond_atom_t *cand1, *cand2;
 
@@ -298,7 +339,7 @@ static int canUnifyActionAddEffectPair(ctx_action_t *ctx,
         FOR_EACH_CAND(ctx->cand, cand2){
             if (cand2->pred != a2->pred)
                 continue;
-            if (canUnifyActionAddEffectPairCand(ctx, cand1, cand2, a1, a2))
+            if (isPairTooHeavyCand(ctx, cand1, cand2, a1, a2))
                 return 1;
         }
     }
@@ -743,7 +784,7 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
         PDDL_COND_FOR_EACH_CONT(&it2, a2){
             if (!a2->neg
                     && candHasPred(cand, a2->pred)
-                    && canUnifyActionAddEffectPair(&ctx, a1, a2)){
+                    && isPairTooHeavy(&ctx, a1, a2)){
                 return 1;
             }
         }
