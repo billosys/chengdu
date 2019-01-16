@@ -570,11 +570,15 @@ static void refineCandidateWithDelEff(const ctx_action_t *ctx,
 static void refineCandidate(const ctx_action_t *ctx,
                             pddl_lifted_mgroups_t *refined)
 {
-    pddl_cond_const_it_atom_t it;
+    pddl_cond_const_it_eff_t it;
+    //pddl_cond_const_it_atom_t it;
     const pddl_cond_atom_t *a;
+    const pddl_cond_t *pre;
 
-    PDDL_COND_FOR_EACH_ATOM(ctx->action->eff, &it, a){
-        if (a->neg && !candHasPred(ctx->cand, a->pred)){
+    PDDL_COND_FOR_EACH_DEL_EFF(ctx->action->eff, &it, a, pre){
+        ASSERT(pre == NULL);
+        ASSERT(a->neg);
+        if (!candHasPred(ctx->cand, a->pred)){
             int del_eff_params[a->arg_size];
             refineCandidateWithDelEff(ctx, a, del_eff_params, 0, 0, refined);
         }
@@ -601,11 +605,14 @@ static int isAddEffBalanced(ctx_action_t *ctx,
             continue;
         }
 
-        pddl_cond_const_it_atom_t it_del;
+        pddl_cond_const_it_eff_t it_del;
         const pddl_cond_atom_t *del_eff;
+        const pddl_cond_t *pre;
         int is_balanced = 0;
-        PDDL_COND_FOR_EACH_ATOM(ctx->action->eff, &it_del, del_eff){
-            if (!del_eff->neg || !candHasPred(ctx->cand, del_eff->pred))
+        PDDL_COND_FOR_EACH_DEL_EFF(ctx->action->eff, &it_del, del_eff, pre){
+            ASSERT(del_eff->neg);
+            ASSERT(pre == NULL);
+            if (!candHasPred(ctx->cand, del_eff->pred))
                 continue;
             if (is_balanced)
                 break;
@@ -774,19 +781,21 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                                      int action_id)
 {
     CTX_ACTION(ctx, pddl, action_id, cand);
-    pddl_cond_const_it_atom_t it1, it2;
+    pddl_cond_const_it_eff_t it1, it2;
     const pddl_cond_atom_t *a1, *a2;
+    const pddl_cond_t *pre1, *pre2;
 
-    PDDL_COND_FOR_EACH_ATOM(ctx.action->eff, &it1, a1){
-        if (a1->neg || !candHasPred(cand, a1->pred))
+    PDDL_COND_FOR_EACH_ADD_EFF(ctx.action->eff, &it1, a1, pre1){
+        ASSERT(!a1->neg);
+        ASSERT(pre1 == NULL);
+        if (!candHasPred(cand, a1->pred))
             continue;
         it2 = it1;
-        PDDL_COND_FOR_EACH_CONT(&it2, a2){
-            if (!a2->neg
-                    && candHasPred(cand, a2->pred)
-                    && isPairTooHeavy(&ctx, a1, a2)){
+        PDDL_COND_FOR_EACH_ADD_EFF_CONT(&it2, a2, pre2){
+            ASSERT(!a2->neg);
+            ASSERT(pre2 == NULL);
+            if (candHasPred(cand, a2->pred) && isPairTooHeavy(&ctx, a1, a2))
                 return 1;
-            }
         }
     }
 
@@ -799,11 +808,14 @@ int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
                                      pddl_lifted_mgroups_t *refined)
 {
     CTX_ACTION(ctx, pddl, action_id, cand);
-    pddl_cond_const_it_atom_t it;
+    pddl_cond_const_it_eff_t it;
     const pddl_cond_atom_t *a;
+    const pddl_cond_t *pre;
 
-    PDDL_COND_FOR_EACH_ATOM(ctx.action->eff, &it, a){
-        if (a->neg || !candHasPred(cand, a->pred))
+    PDDL_COND_FOR_EACH_ADD_EFF(ctx.action->eff, &it, a, pre){
+        ASSERT(!a->neg);
+        ASSERT(pre == NULL);
+        if (!candHasPred(cand, a->pred))
             continue;
         if (!isAddEffBalanced(&ctx, a, refined))
             return 0;

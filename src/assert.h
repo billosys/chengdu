@@ -39,5 +39,14 @@
     } while (0)
 #endif /* PDDL_DEBUG */
 
+# define ASSERT_RUNTIME_M(X, M) \
+    do { \
+    if (!(X)){ \
+        fprintf(stderr, "%s:%d Assertion `" #X "' failed: %s\n", \
+                __FILE__, __LINE__, (M)); \
+        exit(-1); \
+    } \
+    } while (0)
+
 
 #endif /* __PDDL_ASSERT_H__ */

@@ -363,6 +363,44 @@ const pddl_cond_atom_t *pddlCondConstItAtomNext(pddl_cond_const_it_atom_t *it);
             (ATOM) != NULL; \
             (ATOM) = pddlCondConstItAtomNext((IT)))
 
+struct pddl_cond_const_it_eff {
+    const bor_list_t *list;
+    const bor_list_t *cur;
+    const pddl_cond_t *when_pre;
+    const bor_list_t *when_list;
+    const bor_list_t *when_cur;
+};
+typedef struct pddl_cond_const_it_eff pddl_cond_const_it_eff_t;
+
+const pddl_cond_atom_t *pddlCondConstItEffInit(pddl_cond_const_it_eff_t *it,
+                                               const pddl_cond_t *cond,
+                                               const pddl_cond_t **pre);
+const pddl_cond_atom_t *pddlCondConstItEffNext(pddl_cond_const_it_eff_t *it,
+                                               const pddl_cond_t **pre);
+
+#define PDDL_COND_FOR_EACH_EFF(COND, IT, ATOM, PRE) \
+    for ((ATOM) = pddlCondConstItEffInit((IT), (COND), &(PRE)); \
+            (ATOM) != NULL; \
+            (ATOM) = pddlCondConstItEffNext((IT), &(PRE)))
+#define PDDL_COND_FOR_EACH_EFF_CONT(IT, ATOM, PRE) \
+    for ((ATOM) = pddlCondConstItEffNext((IT), &(PRE)); \
+            (ATOM) != NULL; \
+            (ATOM) = pddlCondConstItEffNext((IT), &(PRE)))
+
+#define PDDL_COND_FOR_EACH_ADD_EFF(COND, IT, ATOM, PRE) \
+    PDDL_COND_FOR_EACH_EFF((COND), (IT), (ATOM), (PRE)) \
+        if (!(ATOM)->neg)
+#define PDDL_COND_FOR_EACH_ADD_EFF_CONT(IT, ATOM, PRE) \
+    PDDL_COND_FOR_EACH_EFF_CONT((IT), (ATOM), (PRE)) \
+        if (!(ATOM)->neg)
+
+#define PDDL_COND_FOR_EACH_DEL_EFF(COND, IT, ATOM, PRE) \
+    PDDL_COND_FOR_EACH_EFF((COND), (IT), (ATOM), (PRE)) \
+        if ((ATOM)->neg)
+#define PDDL_COND_FOR_EACH_DEL_EFF_CONT(IT, ATOM, PRE) \
+    PDDL_COND_FOR_EACH_EFF_CONT((IT), (ATOM), (PRE)) \
+        if ((ATOM)->neg)
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

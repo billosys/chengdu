@@ -3097,3 +3097,134 @@ const pddl_cond_atom_t *pddlCondConstItAtomNext(pddl_cond_const_it_atom_t *it)
 
     return NULL;
 }
+
+
+
+static const pddl_cond_t *constItEffNextCond(pddl_cond_const_it_eff_t *it,
+                                             const pddl_cond_t **pre)
+{
+    if (pre != NULL)
+        *pre = NULL;
+
+    if (it->when_cur != NULL){
+        it->when_cur = borListNext((bor_list_t *)it->when_cur);
+        if (it->when_cur == it->when_list){
+            it->when_cur = it->when_list = NULL;
+            it->when_pre = NULL;
+        }else{
+            if (pre != NULL)
+                *pre = it->when_pre;
+            return BOR_LIST_ENTRY(it->when_cur, pddl_cond_t, conn);
+        }
+    }
+
+    if (it->list == it->cur)
+        return NULL;
+    if (it->cur == NULL){
+        it->cur = borListNext((bor_list_t *)it->list);
+    }else{
+        it->cur = borListNext((bor_list_t *)it->cur);
+    }
+    if (it->list == it->cur)
+        return NULL;
+    return BOR_LIST_ENTRY(it->cur, pddl_cond_t, conn);
+}
+
+static const pddl_cond_atom_t *constItEffWhen(pddl_cond_const_it_eff_t *it,
+                                              const pddl_cond_when_t *w,
+                                              const pddl_cond_t **pre)
+{
+    if (w->eff == NULL){
+        return NULL;
+
+    }else if (w->eff->type == PDDL_COND_ATOM){
+        if (pre != NULL)
+            *pre = w->pre;
+        return PDDL_COND_CAST(w->eff, atom);
+
+    }else if (w->eff->type == PDDL_COND_AND){
+        const pddl_cond_part_t *p = PDDL_COND_CAST(w->eff, part);
+        it->when_pre = w->pre;
+        it->when_list = &p->part;
+        it->when_cur = it->when_list;
+        return NULL;
+
+    }else{
+        ASSERT_RUNTIME_M(
+            w->eff->type != PDDL_COND_OR
+                && w->eff->type != PDDL_COND_FORALL
+                && w->eff->type != PDDL_COND_EXIST
+                && w->eff->type != PDDL_COND_IMPLY
+                && w->eff->type != PDDL_COND_WHEN,
+            "Effect is not normalized.");
+    }
+    return NULL;
+}
+
+const pddl_cond_atom_t *pddlCondConstItEffInit(pddl_cond_const_it_eff_t *it,
+                                               const pddl_cond_t *cond,
+                                               const pddl_cond_t **pre)
+{
+    bzero(it, sizeof(*it));
+
+    if (pre != NULL)
+        *pre = NULL;
+    if (cond == NULL)
+        return NULL;
+
+    if (cond->type == PDDL_COND_ATOM){
+        return PDDL_COND_CAST(cond, atom);
+
+    }else if (cond->type == PDDL_COND_AND){
+        const pddl_cond_part_t *p = PDDL_COND_CAST(cond, part);
+        it->list = &p->part;
+        return pddlCondConstItEffNext(it, pre);
+
+    }else if (cond->type == PDDL_COND_WHEN){
+        const pddl_cond_when_t *w = PDDL_COND_CAST(cond, when);
+        const pddl_cond_atom_t *a = constItEffWhen(it, w, pre);
+        if (a != NULL)
+            return a;
+        return pddlCondConstItEffNext(it, pre);
+
+    }else{
+        ASSERT_RUNTIME_M(
+            cond->type != PDDL_COND_OR
+                && cond->type != PDDL_COND_FORALL
+                && cond->type != PDDL_COND_EXIST
+                && cond->type != PDDL_COND_IMPLY,
+            "Effect is not normalized.");
+    }
+    return NULL;
+}
+
+const pddl_cond_atom_t *pddlCondConstItEffNext(pddl_cond_const_it_eff_t *it,
+                                               const pddl_cond_t **pre)
+{
+    const pddl_cond_t *c;
+
+    while (1){
+        c = constItEffNextCond(it, pre);
+        if (c == NULL){
+            return NULL;
+
+        }else if (c->type == PDDL_COND_ATOM){
+            return PDDL_COND_CAST(c, atom);
+
+        }else if (c->type == PDDL_COND_WHEN){
+            const pddl_cond_when_t *w = PDDL_COND_CAST(c, when);
+            const pddl_cond_atom_t *a = constItEffWhen(it, w, pre);
+            if (a != NULL)
+                return a;
+        }else{
+            ASSERT_RUNTIME_M(
+                c->type != PDDL_COND_AND
+                    && c->type != PDDL_COND_OR
+                    && c->type != PDDL_COND_FORALL
+                    && c->type != PDDL_COND_EXIST
+                    && c->type != PDDL_COND_IMPLY
+                    && c->type != PDDL_COND_WHEN,
+                "Effect is not normalized.");
+        }
+    }
+}
