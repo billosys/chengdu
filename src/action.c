@@ -22,6 +22,7 @@
 #include "pddl/pddl.h"
 #include "pddl/action.h"
 #include "lisp_err.h"
+#include "assert.h"
 
 
 #define PDDL_ACTIONS_ALLOC_INIT 4
@@ -162,9 +163,33 @@ void pddlActionInitCopy(pddl_action_t *dst, const pddl_action_t *src)
 struct propagate_eq {
     pddl_action_t *a;
     int eq_pred;
+
+    const pddl_cond_atom_t *eq_atom;
+    int param;
+    pddl_obj_id_t obj;
 };
 
-static int _propagateEqualityToEff(pddl_cond_t *c, void *ud)
+static int setParamToObj(pddl_cond_t *cond, void *ud)
+{
+    struct propagate_eq *ctx = ud;
+
+    if (cond->type == PDDL_COND_ATOM){
+        pddl_cond_atom_t *atom = PDDL_COND_CAST(cond, atom);
+        if (atom == ctx->eq_atom)
+            return 0;
+
+        for (int i = 0; i < atom->arg_size; ++i){
+            if (atom->arg[i].param == ctx->param){
+                atom->arg[i].param = -1;
+                atom->arg[i].obj = ctx->obj;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int _propagateEquality(pddl_cond_t *c, void *ud)
 {
     struct propagate_eq *ctx = ud;
 
@@ -172,29 +197,33 @@ static int _propagateEqualityToEff(pddl_cond_t *c, void *ud)
         const pddl_cond_atom_t *atom = PDDL_COND_CAST(c, atom);
         if (atom->pred == ctx->eq_pred && !atom->neg){
             if (atom->arg[0].param >= 0 && atom->arg[1].obj >= 0){
-                pddlCondSetParamToObj(ctx->a->eff, atom->arg[0].param,
-                                                   atom->arg[1].obj);
+                ctx->eq_atom = atom;
+                ctx->param = atom->arg[0].param;
+                ctx->obj = atom->arg[1].obj;
+                pddlCondTraverse(ctx->a->pre, NULL, setParamToObj, ctx);
+                pddlCondTraverse(ctx->a->eff, NULL, setParamToObj, ctx);
             }else if (atom->arg[1].param >= 0 && atom->arg[0].obj >= 0){
-                pddlCondSetParamToObj(ctx->a->eff, atom->arg[1].param,
-                                                   atom->arg[0].obj);
+                ctx->eq_atom = atom;
+                ctx->param = atom->arg[1].param;
+                ctx->obj = atom->arg[0].obj;
+                pddlCondTraverse(ctx->a->pre, NULL, setParamToObj, ctx);
+                pddlCondTraverse(ctx->a->eff, NULL, setParamToObj, ctx);
             }
         }
-
-    }else if (c->type != PDDL_COND_AND){
-        return -1;
     }
     return 0;
 }
 
-static void propagateEqualityToEff(pddl_action_t *a, const pddl_t *pddl)
+static void propagateEquality(pddl_action_t *a, const pddl_t *pddl)
 {
-    if (pddl->pred.eq_pred < 0)
+    if (a->pre == NULL || pddl->pred.eq_pred < 0)
         return;
 
-    struct propagate_eq ctx = { a, pddl->pred.eq_pred };
-    if (a->pre->type != PDDL_COND_AND)
+    struct propagate_eq ctx = { a, pddl->pred.eq_pred, NULL, -1, -1 };
+    if (a->pre->type != PDDL_COND_AND
+            && a->pre->type != PDDL_COND_ATOM)
         return;
-    pddlCondTraverse(a->pre, _propagateEqualityToEff, NULL, &ctx);
+    pddlCondTraverse(a->pre, _propagateEquality, NULL, &ctx);
 }
 
 void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl)
@@ -215,7 +244,7 @@ void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl)
         a->eff = pddlCondAtomToAnd(a->eff);
     }
 
-    propagateEqualityToEff(a, pddl);
+    propagateEquality(a, pddl);
 }
 
 pddl_action_t *pddlActionsAddEmpty(pddl_actions_t *as)
