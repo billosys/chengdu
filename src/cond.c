@@ -2183,6 +2183,17 @@ static pddl_cond_t *removeBoolPart(pddl_cond_part_t *part)
         }
     }
 
+    if (borListEmpty(&part->part)){
+        if (part->cls.type == PDDL_COND_AND){
+            pddlCondDel(&part->cls);
+            return &condBoolNew(1)->cls;
+
+        }else{ // PDDL_COND_OR
+            pddlCondDel(&part->cls);
+            return &condBoolNew(0)->cls;
+        }
+    }
+
     return &part->cls;
 }
 
