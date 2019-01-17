@@ -164,6 +164,11 @@ pddl_cond_t *pddlCondNegate(const pddl_cond_t *cond,
                             const pddl_t *pddl);
 
 /**
+ * Returns true if the conds match exactly.
+ */
+int pddlCondEq(const pddl_cond_t *c1, const pddl_cond_t *c2);
+
+/**
  * Traverse all conditionals in a tree and call in pre/post order callbacks
  * if non-NULL.
  * If pre returns -1 the element is skipped (it is not traversed deeper).
