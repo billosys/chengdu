@@ -514,6 +514,7 @@ void pddlNormalize(pddl_t *pddl)
         pddl->goal = pddlCondNormalize(pddl->goal, pddl, NULL);
 
     compileOutNonStaticNegPre(pddl);
+    removeIrrelevantActions(pddl);
     pddl->normalized = 1;
     pddlResetPredReadWrite(pddl);
 }
