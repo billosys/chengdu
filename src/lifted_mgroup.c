@@ -663,6 +663,71 @@ static void refineCandidate(const ctx_action_t *ctx,
     }
 }
 
+static void candInstantiateParamWithObj(pddl_lifted_mgroup_t *dst,
+                                        const pddl_lifted_mgroup_t *src,
+                                        int param,
+                                        pddl_obj_id_t obj)
+{
+    pddlLiftedMGroupInitCopy(dst, src);
+    for (int ci = 0; ci < dst->cond.size; ++ci){
+        pddl_cond_atom_t *a = PDDL_COND_CAST(dst->cond.cond[ci], atom);
+        for (int i = 0; i < a->arg_size; ++i){
+            if (a->arg[i].param == param){
+                a->arg[i].param = -1;
+                a->arg[i].obj = obj;
+            }else if (a->arg[i].param > param){
+                --a->arg[i].param;
+            }
+        }
+    }
+
+    // shift parameters
+    for (int pi = param + 1; pi < dst->param.param_size; ++pi)
+        dst->param.param[pi - 1] = dst->param.param[pi];
+    --dst->param.param_size;
+}
+
+static void _tryInstantiateGivenInitTooHeavy(const pddl_t *pddl,
+                                             const pddl_lifted_mgroup_t *cand,
+                                             pddl_lifted_mgroups_t *lm,
+                                             int param)
+{
+    ASSERT(!cand->param.param[param].is_counted_var);
+    ASSERT(cand->param.param[param].type >= 0);
+    const pddl_obj_id_t *obj;
+    int obj_size;
+
+    int type = cand->param.param[param].type;
+    obj = pddlTypesObjsByType(&pddl->type, type, &obj_size);
+    for (int oi = 0; oi < obj_size; ++oi){
+        pddl_lifted_mgroup_t new_cand;
+        candInstantiateParamWithObj(&new_cand, cand, param, obj[oi]);
+
+        if (!pddlLiftedMGroupIsInitTooHeavy(&new_cand, pddl)){
+            pddlLiftedMGroupsAdd(lm, &new_cand);
+        }else{
+            for (int next = param; next < new_cand.param.param_size; ++next){
+                if (!new_cand.param.param[next].is_counted_var){
+                    _tryInstantiateGivenInitTooHeavy(pddl, &new_cand, lm,
+                                                     next);
+                }
+            }
+        }
+
+        pddlLiftedMGroupFree(&new_cand);
+    }
+}
+
+static void tryInstantiateGivenInitTooHeavy(const pddl_t *pddl,
+                                            const pddl_lifted_mgroup_t *cand,
+                                            pddl_lifted_mgroups_t *mgroup)
+{
+    for (int i = 0; i < cand->param.param_size; ++i){
+        if (!cand->param.param[i].is_counted_var)
+            _tryInstantiateGivenInitTooHeavy(pddl, cand, mgroup, i);
+    }
+}
+
 /** Returns true if the given add effect can be balanced by some delete
  *  effect. If it is not and refined != NULL, then new candidates are
  *  created. */
@@ -1114,10 +1179,12 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
                 }
             }
 
-            if (proved
-                    && !pddlLiftedMGroupIsInitTooHeavy(cand, pddl)
-                    && !isSingleFact(cand)){
-                pddlLiftedMGroupsAdd(lm, cand);
+            if (proved && !isSingleFact(cand)){
+                if (pddlLiftedMGroupIsInitTooHeavy(cand, pddl)){
+                    tryInstantiateGivenInitTooHeavy(pddl, cand, lm);
+                }else{
+                    pddlLiftedMGroupsAdd(lm, cand);
+                }
             }
         }
 
