@@ -655,7 +655,7 @@ static int isAddEffBalanced(ctx_action_t *ctx,
             // candidate mgroup and that agree on the precondition with the
             // add effect it is suppose to cover.
             if (!candHasPred(ctx->cand, del_eff->pred)
-                    || (pre != NULL && pre != add_eff->pre)){
+                    || !pddlCondEq(pre, add_eff->pre)){
                 continue;
             }
 
