@@ -99,6 +99,48 @@ static int candHasPred(const pddl_lifted_mgroup_t *cand, int pred)
     return 0;
 }
 
+/** Returns true if atom_i's atom from the candidate has only counted
+ *  variables */
+static int candAtomHasOnlyCountedVars(const pddl_lifted_mgroup_t *cand,
+                                      int atom_i)
+{
+    const pddl_cond_atom_t *a = PDDL_COND_CAST(cand->cond.cond[atom_i], atom);
+    for (int i = 0; i < a->arg_size; ++i){
+        if (a->arg[i].obj != PDDL_OBJ_ID_UNDEF
+                || !cand->param.param[a->arg[i].param].is_counted_var)
+            return 0;
+    }
+    return 1;
+}
+
+static void selectOnlyAtomsWithCountedVars(pddl_lifted_mgroup_t *dst,
+                                           const pddl_lifted_mgroup_t *src)
+{
+    pddlLiftedMGroupInitCopy(dst, src);
+    dst->cond.size = 0;
+    for (int i = 0; i < src->cond.size; ++i){
+        if (candAtomHasOnlyCountedVars(src, i))
+            pddlCondArrAdd(&dst->cond, src->cond.cond[i]);
+    }
+}
+
+static int isInitTooHeavyForCountedVars(const pddl_lifted_mgroup_t *cand_in,
+                                        const pddl_t *pddl)
+{
+    int ret = 0;
+
+    pddl_lifted_mgroup_t cand;
+    selectOnlyAtomsWithCountedVars(&cand, cand_in);
+
+    if (cand.cond.size > 0)
+        ret = pddlLiftedMGroupIsInitTooHeavy(&cand, pddl);
+
+    cand.cond.size = 0;
+    pddlLiftedMGroupFree(&cand);
+    return ret;
+}
+
+
 /** Returns value corresponding to the specified argument */
 static int atomArgValue(const ctx_action_t *ctx,
                         const pddl_cond_atom_t *atom,
@@ -1056,6 +1098,11 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
         pddlLiftedMGroupsInit(cands + next);
         for (int cid = 0; cid < cands[cur].mgroup_size; ++cid){
             const pddl_lifted_mgroup_t *cand = cands[cur].mgroup + cid;
+            if (isInitTooHeavyForCountedVars(cand, pddl)){
+                // Quickly throw away candidates that cannot be mgroups
+                // under any circumstances
+                continue;
+            }
 
             int proved = 1;
             for (int ai = 0; ai < pddl->action.action_size; ++ai){
