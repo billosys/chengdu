@@ -504,7 +504,8 @@ static int isBalancedWith(const ctx_action_t *ctx_in,
 /** Add a new candidate refined from the given candidate and atom with
  *  specified parameters (-1 means counted variable, >=0 is an ID of the
  *  parameter. */
-static void addRefinedCandidate(const pddl_lifted_mgroup_t *cand_in,
+static void addRefinedCandidate(const pddl_t *pddl,
+                                const pddl_lifted_mgroup_t *cand_in,
                                 const pddl_cond_atom_t *atom,
                                 const int *atom_params,
                                 pddl_lifted_mgroups_t *refine)
@@ -522,8 +523,18 @@ static void addRefinedCandidate(const pddl_lifted_mgroup_t *cand_in,
         if (atom_params[i] < 0){
             new_atom->arg[i].param = new_cand.param.param_size;
             pddl_param_t *param = pddlParamsAdd(&new_cand.param);
+            param->type = pddl->pred.pred[atom->pred].param[i];
             param->is_counted_var = 1;
         }else{
+            int type_cand = new_cand.param.param[atom_params[i]].type;
+            int type_atom = pddl->pred.pred[new_atom->pred].param[i];
+            if (pddlTypesAreDisjunct(&pddl->type, type_cand, type_atom)){
+                pddlLiftedMGroupFree(&new_cand);
+                return;
+            }
+            if (pddlTypesIsParent(&pddl->type, type_cand, type_atom))
+                new_cand.param.param[atom_params[i]].type = type_atom;
+
             new_atom->arg[i].param = atom_params[i];
         }
     }
@@ -545,8 +556,8 @@ static void refineCandidateWithDelEff(const ctx_action_t *ctx,
     if (del_eff_argi == del_eff->atom->arg_size){
         if (atomInPre(ctx, ctx->action->pre, del_eff->atom)
                 || atomInPre(ctx, del_eff->pre, del_eff->atom)){
-            addRefinedCandidate(ctx->cand, del_eff->atom, del_eff_params,
-                                refined);
+            addRefinedCandidate(ctx->pddl, ctx->cand, del_eff->atom,
+                                del_eff_params, refined);
         }
         return;
     }
@@ -898,6 +909,8 @@ void pddlLiftedMGroupPrint(const pddl_t *pddl,
             if (atom->arg[j].param >= 0){
                 int param_id = atom->arg[j].param;
                 const pddl_param_t *p = mgroup->param.param + param_id;
+                ASSERT(!pddlTypesAreDisjunct(&pddl->type, p->type,
+                            pddl->pred.pred[atom->pred].param[j]));
                 if (p->is_counted_var){
                     fprintf(fout, " C%d", param_id);
                 }else{
