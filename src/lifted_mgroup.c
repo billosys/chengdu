@@ -733,8 +733,11 @@ void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m)
         return;
 
     int *remap_param = BOR_ALLOC_ARR(int, m->param.param_size);
-    for (int i = 0; i < m->param.param_size; ++i)
+    int *remap_param_inv = BOR_ALLOC_ARR(int, m->param.param_size);
+    for (int i = 0; i < m->param.param_size; ++i){
         remap_param[i] = -1;
+        remap_param_inv[i] = -1;
+    }
 
     int num_non_counted = 0;
     for (int i = 0; i < m->param.param_size; ++i){
@@ -751,11 +754,15 @@ void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m)
                 continue;
             int param = a->arg[ai].param;
             if (m->param.param[param].is_counted_var){
-                if (remap_param[param] < 0)
+                if (remap_param[param] < 0){
+                    remap_param_inv[next_counted] = param;
                     remap_param[param] = next_counted++;
+                }
             }else{
-                if (remap_param[param] < 0)
+                if (remap_param[param] < 0){
+                    remap_param_inv[next] = param;
                     remap_param[param] = next++;
+                }
             }
         }
     }
@@ -766,11 +773,15 @@ void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m)
     }
 #endif /* PDDL_DEBUG */
 
-    int i;
-    for (i = 0; i < num_non_counted; ++i)
-        m->param.param[i].is_counted_var = 0;
-    for (; i < m->param.param_size; ++i)
-        m->param.param[i].is_counted_var = 1;
+    pddl_params_t param;
+    pddlParamsInit(&param);
+    for (int i = 0; i < m->param.param_size; ++i){
+        ASSERT_RUNTIME(remap_param_inv[i] >= 0);
+        pddl_param_t *p = pddlParamsAdd(&param);
+        *p = m->param.param[remap_param_inv[i]];
+    }
+    pddlParamsFree(&m->param);
+    m->param = param;
 
     for (int i = 0; i < m->cond.size; ++i){
         pddl_cond_atom_t *a = PDDL_COND_CAST(m->cond.cond[i], atom);
@@ -783,6 +794,7 @@ void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m)
     }
 
     BOR_FREE(remap_param);
+    BOR_FREE(remap_param_inv);
 }
 
 int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
