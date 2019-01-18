@@ -377,64 +377,52 @@ static int isPairTooHeavy(ctx_action_t *ctx,
     return 0;
 }
 
-/** Returns true if the candidate atoms can be unified with a pair of
- *  grounded atoms so that a1 != a2 */
-static int canUnifyGroundedPair(const pddl_lifted_mgroup_t *cand,
-                                const pddl_cond_atom_t *a1,
-                                const pddl_cond_atom_t *a2)
+static int unifyGroundedAtom(const pddl_cond_atom_t *atom,
+                             const pddl_lifted_mgroup_t *cand,
+                             const pddl_cond_atom_t *cand_atom,
+                             pddl_obj_id_t *arg)
 {
-    pddl_obj_id_t arg[cand->param.param_size];
-    const pddl_cond_atom_t *cand1, *cand2;
+    for (int i = 0; i < cand->param.param_size; ++i)
+        arg[i] = PDDL_OBJ_ID_UNDEF;
 
-    FOR_EACH_CAND(cand, cand1){
-        if (cand1->pred != a1->pred)
-            continue;
-
-        // Fix quantified (non-counted) variables
-        for (int i = 0; i < cand->param.param_size; ++i)
-            arg[i] = PDDL_OBJ_ID_UNDEF;
-
-        int cont = 0;
-        for (int i = 0; i < cand1->arg_size; ++i){
-            ASSERT(cand1->arg[i].obj == PDDL_OBJ_ID_UNDEF);
-            ASSERT(a1->arg[i].obj >= 0);
-            int param = cand1->arg[i].param;
-            if (!cand->param.param[param].is_counted_var){
-                if (arg[param] == PDDL_OBJ_ID_UNDEF){
-                    arg[param] = a1->arg[i].obj;
-                }else if (arg[param] != a1->arg[i].obj){
-                    cont = 1;
-                    break;
-                }
+    for (int i = 0; i < cand_atom->arg_size; ++i){
+        ASSERT(atom->arg[i].obj >= 0);
+        int param = cand_atom->arg[i].param;
+        pddl_obj_id_t obj = cand_atom->arg[i].obj;
+        if (obj != PDDL_OBJ_ID_UNDEF && obj != atom->arg[i].obj){
+            return 0;
+        }else if (param >= 0 && !cand->param.param[param].is_counted_var){
+            if (arg[param] == PDDL_OBJ_ID_UNDEF){
+                arg[param] = atom->arg[i].obj;
+            }else if (arg[param] != atom->arg[i].obj){
+                return 0;
             }
-        }
-
-        if (cont)
-            continue;
-
-        // and with fixed variables for a1, try to unify a2
-        FOR_EACH_CAND(cand, cand2){
-            if (cand2->pred != a2->pred)
-                continue;
-
-            int can_unify = 1;
-            for (int i = 0; i < cand2->arg_size; ++i){
-                ASSERT(cand2->arg[i].obj == PDDL_OBJ_ID_UNDEF);
-                ASSERT(a2->arg[i].obj >= 0);
-                int param = cand2->arg[i].param;
-                if (!cand->param.param[param].is_counted_var
-                        && arg[param] != a2->arg[i].obj){
-                    can_unify = 0;
-                    break;
-                }
-            }
-
-            if (can_unify)
-                return 1;
         }
     }
 
-    return 0;
+    return 1;
+}
+
+/** Returns true if atom can be unified with cand_atom given bounding of
+ *  cand arguments in arg. */
+static int canUnifyGroundedAtom(const pddl_cond_atom_t *atom,
+                                const pddl_lifted_mgroup_t *cand,
+                                const pddl_cond_atom_t *cand_atom,
+                                const pddl_obj_id_t *arg)
+{
+    for (int i = 0; i < cand_atom->arg_size; ++i){
+        ASSERT(atom->arg[i].obj >= 0);
+        int param = cand_atom->arg[i].param;
+        pddl_obj_id_t obj = cand_atom->arg[i].obj;
+        if (obj != PDDL_OBJ_ID_UNDEF && obj != atom->arg[i].obj){
+            return 0;
+        }else if (param >= 0
+                    && !cand->param.param[param].is_counted_var
+                    && arg[param] != atom->arg[i].obj){
+            return 0;
+        }
+    }
+    return 1;
 }
 
 /** Returns true if the candidate atom is balanced with the given delete
@@ -800,18 +788,31 @@ void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m)
 int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
                                    const pddl_t *pddl)
 {
+    pddl_obj_id_t arg[cand->param.param_size];
     pddl_cond_const_it_atom_t it1, it2;
     const pddl_cond_atom_t *a1, *a2;
+    const pddl_cond_atom_t *cand1, *cand2;
+
 
     PDDL_COND_FOR_EACH_ATOM(&pddl->init->cls, &it1, a1){
-        if (a1->neg || !candHasPred(cand, a1->pred))
+        if (a1->neg)
             continue;
-        it2 = it1;
-        PDDL_COND_FOR_EACH_CONT(&it2, a2){
-            if (!a2->neg
-                    && candHasPred(cand, a2->pred)
-                    && canUnifyGroundedPair(cand, a1, a2)){
-                return 1;
+        FOR_EACH_CAND(cand, cand1){
+            if (cand1->pred != a1->pred)
+                continue;
+            if (!unifyGroundedAtom(a1, cand, cand1, arg))
+                continue;
+
+            it2 = it1;
+            PDDL_COND_FOR_EACH_CONT(&it2, a2){
+                if (a2->neg)
+                    continue;
+                FOR_EACH_CAND(cand, cand2){
+                    if (cand2->pred != a2->pred)
+                        continue;
+                    if (canUnifyGroundedAtom(a2, cand, cand2, arg))
+                        return 1;
+                }
             }
         }
     }
