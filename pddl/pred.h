@@ -29,6 +29,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_pred {
+    int id; /*!< ID of the predicate */
     const char *name; /*!< Name of the predicate */
     int *param;       /*!< IDs of types of parameters */
     int param_size;   /*!< Number of parameters */
@@ -41,8 +42,6 @@ struct pddl_pred {
     int neg_of;       /*!< ID of the predicate this predicate is negation of */
 };
 typedef struct pddl_pred pddl_pred_t;
-
-void pddlPredInitCopy(pddl_pred_t *dst, const pddl_pred_t *src);
 
 _bor_inline int pddlPredIsStatic(const pddl_pred_t *pred);
 
@@ -82,6 +81,12 @@ int pddlPredsGet(const pddl_preds_t *ps, const char *name);
 pddl_pred_t *pddlPredsAdd(pddl_preds_t *ps);
 
 /**
+ * Adds a new predicate that is exact copy (except its ID) of the one
+ * specified by its ID.
+ */
+pddl_pred_t *pddlPredsAddCopy(pddl_preds_t *ps, int src_id);
+
+/**
  * Removes last predicate from the array.
  */
 void pddlPredsRemoveLast(pddl_preds_t *ps);
@@ -103,7 +108,7 @@ void pddlFuncsPrintPDDL(const pddl_preds_t *ps,
 /**** INLINES: ****/
 _bor_inline int pddlPredIsStatic(const pddl_pred_t *pred)
 {
-    return pred->read && !pred->write;
+    return !pred->write;
 }
 
 #ifdef __cplusplus

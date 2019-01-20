@@ -42,13 +42,15 @@ const char *pddlCondTypeName(int type)
 {
     if (type >= 0 && type < PDDL_COND_NUM_TYPES)
         return type_names[type];
-    return "unkown";
+    return "unknown";
 }
 
 typedef void (*pddl_cond_method_del_fn)(pddl_cond_t *);
 typedef pddl_cond_t *(*pddl_cond_method_clone_fn)(const pddl_cond_t *);
 typedef pddl_cond_t *(*pddl_cond_method_negate_fn)(const pddl_cond_t *,
                                                    const pddl_t *);
+typedef int (*pddl_cond_method_eq_fn)(const pddl_cond_t *,
+                                      const pddl_cond_t *);
 typedef int (*pddl_cond_method_traverse_fn)(pddl_cond_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -64,6 +66,7 @@ typedef void (*pddl_cond_method_print_pddl_fn)(
                             const pddl_params_t *params,
                             FILE *fout);
 
+static int condEq(const pddl_cond_t *, const pddl_cond_t *);
 static int condTraverse(pddl_cond_t *c,
                         int (*pre)(pddl_cond_t *, void *),
                         int (*post)(pddl_cond_t *, void *),
@@ -77,6 +80,7 @@ struct pddl_cond_cls {
     pddl_cond_method_del_fn del;
     pddl_cond_method_clone_fn clone;
     pddl_cond_method_negate_fn negate;
+    pddl_cond_method_eq_fn eq;
     pddl_cond_method_traverse_fn traverse;
     pddl_cond_method_rebuild_fn rebuild;
     pddl_cond_method_print_pddl_fn print_pddl;
@@ -88,6 +92,7 @@ typedef struct pddl_cond_cls pddl_cond_cls_t;
     { .del = METHOD(cond##NAME##Del, del), \
       .clone = METHOD(cond##NAME##Clone, clone), \
       .negate = METHOD(cond##NAME##Negate, negate), \
+      .eq = METHOD(cond##NAME##Eq, eq), \
       .traverse = METHOD(cond##NAME##Traverse, traverse), \
       .rebuild = METHOD(cond##NAME##Rebuild, rebuild), \
       .print_pddl = METHOD(cond##NAME##PrintPDDL, print_pddl), \
@@ -111,6 +116,7 @@ static void condPartDel(pddl_cond_part_t *);
 static pddl_cond_part_t *condPartClone(const pddl_cond_part_t *p);
 static pddl_cond_part_t *condPartNegate(const pddl_cond_part_t *p,
                                         const pddl_t *pddl);
+static int condPartEq(const pddl_cond_part_t *c1, const pddl_cond_part_t *c2);
 static void condPartAdd(pddl_cond_part_t *p, pddl_cond_t *add);
 static int condPartTraverse(pddl_cond_part_t *,
                             int (*pre)(pddl_cond_t *, void *),
@@ -129,6 +135,8 @@ static void condQuantDel(pddl_cond_quant_t *);
 static pddl_cond_quant_t *condQuantClone(const pddl_cond_quant_t *q);
 static pddl_cond_quant_t *condQuantNegate(const pddl_cond_quant_t *q,
                                           const pddl_t *pddl);
+static int condQuantEq(const pddl_cond_quant_t *c1,
+                       const pddl_cond_quant_t *c2);
 static int condQuantTraverse(pddl_cond_quant_t *,
                              int (*pre)(pddl_cond_t *, void *),
                              int (*post)(pddl_cond_t *, void *),
@@ -146,6 +154,7 @@ static void condWhenDel(pddl_cond_when_t *);
 static pddl_cond_when_t *condWhenClone(const pddl_cond_when_t *w);
 static pddl_cond_when_t *condWhenNegate(const pddl_cond_when_t *w,
                                         const pddl_t *pddl);
+static int condWhenEq(const pddl_cond_when_t *c1, const pddl_cond_when_t *c2);
 static int condWhenTraverse(pddl_cond_when_t *w,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -163,6 +172,7 @@ static void condAtomDel(pddl_cond_atom_t *);
 static pddl_cond_atom_t *condAtomClone(const pddl_cond_atom_t *a);
 static pddl_cond_atom_t *condAtomNegate(const pddl_cond_atom_t *a,
                                         const pddl_t *pddl);
+static int condAtomEq(const pddl_cond_atom_t *c1, const pddl_cond_atom_t *c2);
 static int condAtomTraverse(pddl_cond_atom_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -180,6 +190,8 @@ static void condFuncOpDel(pddl_cond_func_op_t *);
 static pddl_cond_func_op_t *condFuncOpClone(const pddl_cond_func_op_t *);
 static pddl_cond_func_op_t *condFuncOpNegate(const pddl_cond_func_op_t *,
                                              const pddl_t *pddl);
+static int condFuncOpEq(const pddl_cond_func_op_t *c1,
+                        const pddl_cond_func_op_t *c2);
 static int condFuncOpTraverse(pddl_cond_func_op_t *,
                               int (*pre)(pddl_cond_t *, void *),
                               int (*post)(pddl_cond_t *, void *),
@@ -197,6 +209,7 @@ static void condBoolDel(pddl_cond_bool_t *);
 static pddl_cond_bool_t *condBoolClone(const pddl_cond_bool_t *a);
 static pddl_cond_bool_t *condBoolNegate(const pddl_cond_bool_t *a,
                                         const pddl_t *pddl);
+static int condBoolEq(const pddl_cond_bool_t *c1, const pddl_cond_bool_t *c2);
 static int condBoolTraverse(pddl_cond_bool_t *,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -214,6 +227,8 @@ static void condImplyDel(pddl_cond_imply_t *);
 static pddl_cond_imply_t *condImplyClone(const pddl_cond_imply_t *a);
 static pddl_cond_t *condImplyNegate(const pddl_cond_imply_t *a,
                                     const pddl_t *pddl);
+static int condImplyEq(const pddl_cond_imply_t *c1,
+                       const pddl_cond_imply_t *c2);
 static int condImplyTraverse(pddl_cond_imply_t *,
                              int (*pre)(pddl_cond_t *, void *),
                              int (*post)(pddl_cond_t *, void *),
@@ -315,6 +330,28 @@ static pddl_cond_part_t *condPartNegate(const pddl_cond_part_t *p,
         borListAppend(&n->part, &nc->conn);
     }
     return n;
+}
+
+static int condPartEq(const pddl_cond_part_t *p1,
+                      const pddl_cond_part_t *p2)
+{
+    pddl_cond_t *c1, *c2;
+    bor_list_t *item1, *item2;
+    BOR_LIST_FOR_EACH(&p1->part, item1){
+        c1 = BOR_LIST_ENTRY(item1, pddl_cond_t, conn);
+        int found = 0;
+        BOR_LIST_FOR_EACH(&p2->part, item2){
+            c2 = BOR_LIST_ENTRY(item2, pddl_cond_t, conn);
+            if(condEq(c1, c2)){
+                found = 1;
+                break;
+            }
+        }
+        if (!found)
+            return 0;
+    }
+
+    return 1;
 }
 
 static void condPartAdd(pddl_cond_part_t *p, pddl_cond_t *add)
@@ -441,6 +478,20 @@ static pddl_cond_quant_t *condQuantNegate(const pddl_cond_quant_t *q,
     return n;
 }
 
+static int condQuantEq(const pddl_cond_quant_t *q1,
+                       const pddl_cond_quant_t *q2)
+{
+    if (q1->param.param_size != q2->param.param_size)
+        return 0;
+    for (int i = 0; i < q1->param.param_size; ++i){
+        if (q1->param.param[i].type != q2->param.param[i].type
+                || q1->param.param[i].is_agent != q2->param.param[i].is_agent
+                || q1->param.param[i].inherit != q2->param.param[i].inherit)
+            return 0;
+    }
+    return condEq(q1->cond, q2->cond);
+}
+
 static int condQuantTraverse(pddl_cond_quant_t *q,
                              int (*pre)(pddl_cond_t *, void *),
                              int (*post)(pddl_cond_t *, void *),
@@ -517,6 +568,12 @@ static pddl_cond_when_t *condWhenNegate(const pddl_cond_when_t *w,
 {
     fprintf(stderr, "Fatal Error: Cannot negate (when ...)\n");
     exit(-1);
+}
+
+static int condWhenEq(const pddl_cond_when_t *w1,
+                      const pddl_cond_when_t *w2)
+{
+    return condEq(w1->pre, w2->pre) && condEq(w1->eff, w2->eff);
 }
 
 static int condWhenTraverse(pddl_cond_when_t *w,
@@ -600,6 +657,22 @@ static pddl_cond_atom_t *condAtomNegate(const pddl_cond_atom_t *a,
         n->neg = !a->neg;
     }
     return n;
+}
+
+static int condAtomEq(const pddl_cond_atom_t *a1,
+                      const pddl_cond_atom_t *a2)
+{
+    if (a1->pred != a2->pred
+            || a1->neg != a2->neg
+            || a1->arg_size != a2->arg_size)
+        return 0;
+    for (int i = 0; i < a1->arg_size; ++i){
+        if (a1->arg[i].param != a2->arg[i].param
+                || a1->arg[i].obj != a2->arg[i].obj){
+            return 0;
+        }
+    }
+    return 1;
 }
 
 static int condAtomTraverse(pddl_cond_atom_t *a,
@@ -688,6 +761,21 @@ static pddl_cond_func_op_t *condFuncOpNegate(const pddl_cond_func_op_t *op,
     exit(-1);
 }
 
+static int condFuncOpEq(const pddl_cond_func_op_t *f1,
+                        const pddl_cond_func_op_t *f2)
+{
+    if (f1->fvalue == NULL && f2->fvalue != NULL)
+        return 0;
+    if (f1->fvalue != NULL && f2->fvalue == NULL)
+        return 0;
+    if (f1->fvalue != NULL){
+        return condAtomEq(f1->lvalue, f2->lvalue)
+                    && condAtomEq(f1->fvalue, f2->fvalue);
+    }else{
+        return f1->value == f2->value && condAtomEq(f1->lvalue, f2->lvalue);
+    }
+}
+
 static int condFuncOpTraverse(pddl_cond_func_op_t *op,
                               int (*pre)(pddl_cond_t *, void *),
                               int (*post)(pddl_cond_t *, void *),
@@ -757,6 +845,13 @@ static pddl_cond_bool_t *condBoolNegate(const pddl_cond_bool_t *a,
     return b;
 }
 
+static int condBoolEq(const pddl_cond_bool_t *b1,
+                      const pddl_cond_bool_t *b2)
+{
+    return b1->val == b2->val;
+}
+
+
 static int condBoolTraverse(pddl_cond_bool_t *a,
                             int (*pre)(pddl_cond_t *, void *),
                             int (*post)(pddl_cond_t *, void *),
@@ -823,6 +918,12 @@ static pddl_cond_t *condImplyNegate(const pddl_cond_imply_t *a,
     pddlCondPartAdd(or, left);
     pddlCondPartAdd(or, right);
     return &or->cls;
+}
+
+static int condImplyEq(const pddl_cond_imply_t *i1,
+                       const pddl_cond_imply_t *i2)
+{
+    return condEq(i1->left, i2->left) && condEq(i1->right, i2->right);
 }
 
 static int condImplyTraverse(pddl_cond_imply_t *imp,
@@ -894,6 +995,23 @@ pddl_cond_t *pddlCondNegate(const pddl_cond_t *cond,
                             const pddl_t *pddl)
 {
     return cond_cls[cond->type].negate(cond, pddl);
+}
+
+static int condEq(const pddl_cond_t *c1, const pddl_cond_t *c2)
+{
+    if (c1 == c2)
+        return 1;
+    if ((c1 == NULL && c2 != NULL)
+            || (c1 != NULL && c2 == NULL))
+        return 0;
+    if (c1->type != c2->type)
+        return 0;
+    return cond_cls[c1->type].eq(c1, c2);
+}
+
+int pddlCondEq(const pddl_cond_t *c1, const pddl_cond_t *c2)
+{
+    return condEq(c1, c2);
 }
 
 static int condTraverse(pddl_cond_t *c,
@@ -1015,6 +1133,28 @@ pddl_cond_when_t *pddlCondRemoveFirstNonStaticWhen(pddl_cond_t *c,
     return NULL;
 }
 
+pddl_cond_when_t *pddlCondRemoveFirstWhen(pddl_cond_t *c, const pddl_t *pddl)
+{
+    pddl_cond_part_t *cp;
+    pddl_cond_t *cw;
+    bor_list_t *item, *tmp;
+
+    if (c->type != PDDL_COND_AND)
+        return NULL;
+    cp = PDDL_COND_CAST(c, part);
+
+    BOR_LIST_FOR_EACH_SAFE(&cp->part, item, tmp){
+        cw = BOR_LIST_ENTRY(item, pddl_cond_t, conn);
+        if (cw->type == PDDL_COND_WHEN){
+            pddl_cond_when_t *w = PDDL_COND_CAST(cw, when);
+            borListDel(item);
+            return w;
+        }
+    }
+
+    return NULL;
+}
+
 pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b)
 {
     pddl_cond_part_t *p = condPartNew(PDDL_COND_AND);
@@ -1027,6 +1167,22 @@ pddl_cond_t *pddlCondNewEmptyAnd(void)
 {
     pddl_cond_part_t *p = condPartNew(PDDL_COND_AND);
     return &p->cls;
+}
+
+pddl_cond_atom_t *pddlCondNewEmptyAtom(int num_args)
+{
+    pddl_cond_atom_t *atom = condAtomNew();
+
+    if (num_args > 0){
+        atom->arg_size = num_args;
+        atom->arg = BOR_ALLOC_ARR(pddl_cond_atom_arg_t, atom->arg_size);
+        for (int i = 0; i < atom->arg_size; ++i){
+            atom->arg[i].param = -1;
+            atom->arg[i].obj = PDDL_OBJ_ID_UNDEF;
+        }
+    }
+
+    return atom;
 }
 
 static int hasAtom(pddl_cond_t *c, void *_ret)
@@ -2027,6 +2183,17 @@ static pddl_cond_t *removeBoolPart(pddl_cond_part_t *part)
         }
     }
 
+    if (borListEmpty(&part->part)){
+        if (part->cls.type == PDDL_COND_AND){
+            pddlCondDel(&part->cls);
+            return &condBoolNew(1)->cls;
+
+        }else{ // PDDL_COND_OR
+            pddlCondDel(&part->cls);
+            return &condBoolNew(0)->cls;
+        }
+    }
+
     return &part->cls;
 }
 
@@ -2987,4 +3154,179 @@ void pddlCondPrintPDDL(const pddl_cond_t *cond,
                        FILE *fout)
 {
     cond_cls[cond->type].print_pddl(cond, pddl, params, fout);
+}
+
+
+const pddl_cond_atom_t *pddlCondConstItAtomInit(pddl_cond_const_it_atom_t *it,
+                                                const pddl_cond_t *cond)
+{
+    bzero(it, sizeof(*it));
+
+    if (cond == NULL)
+        return NULL;
+
+    if (cond->type == PDDL_COND_ATOM)
+        return PDDL_COND_CAST(cond, atom);
+
+    if (cond->type == PDDL_COND_AND || cond->type == PDDL_COND_OR){
+        const pddl_cond_part_t *p = PDDL_COND_CAST(cond, part);
+        it->list = &p->part;
+        for (it->cur = borListNext((bor_list_t *)it->list);
+                it->cur != it->list;
+                it->cur = borListNext((bor_list_t *)it->cur)){
+            const pddl_cond_t *c = BOR_LIST_ENTRY(it->cur, pddl_cond_t, conn);
+            if (c->type == PDDL_COND_ATOM)
+                return PDDL_COND_CAST(c, atom);
+        }
+        return NULL;
+    }
+
+    return NULL;
+}
+
+const pddl_cond_atom_t *pddlCondConstItAtomNext(pddl_cond_const_it_atom_t *it)
+{
+    if (it->cur == it->list)
+        return NULL;
+
+    for (it->cur = borListNext((bor_list_t *)it->cur);
+            it->cur != it->list;
+            it->cur = borListNext((bor_list_t *)it->cur)){
+        const pddl_cond_t *c = BOR_LIST_ENTRY(it->cur, pddl_cond_t, conn);
+        if (c->type == PDDL_COND_ATOM)
+            return PDDL_COND_CAST(c, atom);
+    }
+
+    return NULL;
+}
+
+
+
+static const pddl_cond_t *constItEffNextCond(pddl_cond_const_it_eff_t *it,
+                                             const pddl_cond_t **pre)
+{
+    if (pre != NULL)
+        *pre = NULL;
+
+    if (it->when_cur != NULL){
+        it->when_cur = borListNext((bor_list_t *)it->when_cur);
+        if (it->when_cur == it->when_list){
+            it->when_cur = it->when_list = NULL;
+            it->when_pre = NULL;
+        }else{
+            if (pre != NULL)
+                *pre = it->when_pre;
+            return BOR_LIST_ENTRY(it->when_cur, pddl_cond_t, conn);
+        }
+    }
+
+    if (it->list == it->cur)
+        return NULL;
+    if (it->cur == NULL){
+        it->cur = borListNext((bor_list_t *)it->list);
+    }else{
+        it->cur = borListNext((bor_list_t *)it->cur);
+    }
+    if (it->list == it->cur)
+        return NULL;
+    return BOR_LIST_ENTRY(it->cur, pddl_cond_t, conn);
+}
+
+static const pddl_cond_atom_t *constItEffWhen(pddl_cond_const_it_eff_t *it,
+                                              const pddl_cond_when_t *w,
+                                              const pddl_cond_t **pre)
+{
+    if (w->eff == NULL){
+        return NULL;
+
+    }else if (w->eff->type == PDDL_COND_ATOM){
+        if (pre != NULL)
+            *pre = w->pre;
+        return PDDL_COND_CAST(w->eff, atom);
+
+    }else if (w->eff->type == PDDL_COND_AND){
+        const pddl_cond_part_t *p = PDDL_COND_CAST(w->eff, part);
+        it->when_pre = w->pre;
+        it->when_list = &p->part;
+        it->when_cur = it->when_list;
+        return NULL;
+
+    }else{
+        ASSERT_RUNTIME_M(
+            w->eff->type != PDDL_COND_OR
+                && w->eff->type != PDDL_COND_FORALL
+                && w->eff->type != PDDL_COND_EXIST
+                && w->eff->type != PDDL_COND_IMPLY
+                && w->eff->type != PDDL_COND_WHEN,
+            "Effect is not normalized.");
+    }
+    return NULL;
+}
+
+const pddl_cond_atom_t *pddlCondConstItEffInit(pddl_cond_const_it_eff_t *it,
+                                               const pddl_cond_t *cond,
+                                               const pddl_cond_t **pre)
+{
+    bzero(it, sizeof(*it));
+
+    if (pre != NULL)
+        *pre = NULL;
+    if (cond == NULL)
+        return NULL;
+
+    if (cond->type == PDDL_COND_ATOM){
+        return PDDL_COND_CAST(cond, atom);
+
+    }else if (cond->type == PDDL_COND_AND){
+        const pddl_cond_part_t *p = PDDL_COND_CAST(cond, part);
+        it->list = &p->part;
+        return pddlCondConstItEffNext(it, pre);
+
+    }else if (cond->type == PDDL_COND_WHEN){
+        const pddl_cond_when_t *w = PDDL_COND_CAST(cond, when);
+        const pddl_cond_atom_t *a = constItEffWhen(it, w, pre);
+        if (a != NULL)
+            return a;
+        return pddlCondConstItEffNext(it, pre);
+
+    }else{
+        ASSERT_RUNTIME_M(
+            cond->type != PDDL_COND_OR
+                && cond->type != PDDL_COND_FORALL
+                && cond->type != PDDL_COND_EXIST
+                && cond->type != PDDL_COND_IMPLY,
+            "Effect is not normalized.");
+    }
+    return NULL;
+}
+
+const pddl_cond_atom_t *pddlCondConstItEffNext(pddl_cond_const_it_eff_t *it,
+                                               const pddl_cond_t **pre)
+{
+    const pddl_cond_t *c;
+
+    while (1){
+        c = constItEffNextCond(it, pre);
+        if (c == NULL){
+            return NULL;
+
+        }else if (c->type == PDDL_COND_ATOM){
+            return PDDL_COND_CAST(c, atom);
+
+        }else if (c->type == PDDL_COND_WHEN){
+            const pddl_cond_when_t *w = PDDL_COND_CAST(c, when);
+            const pddl_cond_atom_t *a = constItEffWhen(it, w, pre);
+            if (a != NULL)
+                return a;
+        }else{
+            ASSERT_RUNTIME_M(
+                c->type != PDDL_COND_AND
+                    && c->type != PDDL_COND_OR
+                    && c->type != PDDL_COND_FORALL
+                    && c->type != PDDL_COND_EXIST
+                    && c->type != PDDL_COND_IMPLY
+                    && c->type != PDDL_COND_WHEN,
+                "Effect is not normalized.");
+        }
+    }
 }

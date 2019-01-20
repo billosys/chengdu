@@ -42,11 +42,11 @@ extern "C" {
 #define PDDL_COND_FORALL 2u /*!< Universal quantifier */
 #define PDDL_COND_EXIST  3u /*!< Existential quantifier */
 #define PDDL_COND_WHEN   4u /*!< Conditional effect */
-#define PDDL_COND_ATOM   5u
-#define PDDL_COND_ASSIGN 6u
-#define PDDL_COND_INCREASE 7u
-#define PDDL_COND_BOOL   8u
-#define PDDL_COND_IMPLY  9u
+#define PDDL_COND_ATOM   5u /*!< Atom in a positive or negative form */
+#define PDDL_COND_ASSIGN 6u /*!< Assignement to a function (= ...) */
+#define PDDL_COND_INCREASE 7u /*!< (increase ...) */
+#define PDDL_COND_BOOL   8u /*!< True/False */
+#define PDDL_COND_IMPLY  9u /*!< (imply X Y) */
 #define PDDL_COND_NUM_TYPES 10
 
 const char *pddlCondTypeName(int type);
@@ -164,6 +164,11 @@ pddl_cond_t *pddlCondNegate(const pddl_cond_t *cond,
                             const pddl_t *pddl);
 
 /**
+ * Returns true if the conds match exactly.
+ */
+int pddlCondEq(const pddl_cond_t *c1, const pddl_cond_t *c2);
+
+/**
  * Traverse all conditionals in a tree and call in pre/post order callbacks
  * if non-NULL.
  * If pre returns -1 the element is skipped (it is not traversed deeper).
@@ -194,6 +199,7 @@ void pddlCondRebuild(pddl_cond_t **c,
  */
 pddl_cond_when_t *pddlCondRemoveFirstNonStaticWhen(pddl_cond_t *c,
                                                    const pddl_t *pddl);
+pddl_cond_when_t *pddlCondRemoveFirstWhen(pddl_cond_t *c, const pddl_t *pddl);
 
 /**
  * Creates a new (and a b) node.
@@ -205,6 +211,12 @@ pddl_cond_t *pddlCondNewAnd2(pddl_cond_t *a, pddl_cond_t *b);
  * Creates a new empty (and ) node.
  */
 pddl_cond_t *pddlCondNewEmptyAnd(void);
+
+/**
+ * Creates a new empty atom with the specified number of arguments all set
+ * as "undefined".
+ */
+pddl_cond_atom_t *pddlCondNewEmptyAtom(int num_args);
 
 /**
  * Returns true if the conditional contains any atom.
@@ -327,6 +339,67 @@ void pddlCondPrintPDDL(const pddl_cond_t *cond,
                        const pddl_t *pddl,
                        const pddl_params_t *params,
                        FILE *fout);
+
+
+
+struct pddl_cond_const_it_atom {
+    const bor_list_t *list;
+    const bor_list_t *cur;
+};
+typedef struct pddl_cond_const_it_atom pddl_cond_const_it_atom_t;
+
+
+const pddl_cond_atom_t *pddlCondConstItAtomInit(pddl_cond_const_it_atom_t *it,
+                                                const pddl_cond_t *cond);
+const pddl_cond_atom_t *pddlCondConstItAtomNext(pddl_cond_const_it_atom_t *it);
+
+#define PDDL_COND_FOR_EACH_ATOM(COND, IT, ATOM) \
+    for ((ATOM) = pddlCondConstItAtomInit((IT), (COND)); \
+            (ATOM) != NULL; \
+            (ATOM) = pddlCondConstItAtomNext((IT)))
+
+#define PDDL_COND_FOR_EACH_CONT(IT, ATOM) \
+    for ((ATOM) = pddlCondConstItAtomNext((IT)); \
+            (ATOM) != NULL; \
+            (ATOM) = pddlCondConstItAtomNext((IT)))
+
+struct pddl_cond_const_it_eff {
+    const bor_list_t *list;
+    const bor_list_t *cur;
+    const pddl_cond_t *when_pre;
+    const bor_list_t *when_list;
+    const bor_list_t *when_cur;
+};
+typedef struct pddl_cond_const_it_eff pddl_cond_const_it_eff_t;
+
+const pddl_cond_atom_t *pddlCondConstItEffInit(pddl_cond_const_it_eff_t *it,
+                                               const pddl_cond_t *cond,
+                                               const pddl_cond_t **pre);
+const pddl_cond_atom_t *pddlCondConstItEffNext(pddl_cond_const_it_eff_t *it,
+                                               const pddl_cond_t **pre);
+
+#define PDDL_COND_FOR_EACH_EFF(COND, IT, ATOM, PRE) \
+    for ((ATOM) = pddlCondConstItEffInit((IT), (COND), &(PRE)); \
+            (ATOM) != NULL; \
+            (ATOM) = pddlCondConstItEffNext((IT), &(PRE)))
+#define PDDL_COND_FOR_EACH_EFF_CONT(IT, ATOM, PRE) \
+    for ((ATOM) = pddlCondConstItEffNext((IT), &(PRE)); \
+            (ATOM) != NULL; \
+            (ATOM) = pddlCondConstItEffNext((IT), &(PRE)))
+
+#define PDDL_COND_FOR_EACH_ADD_EFF(COND, IT, ATOM, PRE) \
+    PDDL_COND_FOR_EACH_EFF((COND), (IT), (ATOM), (PRE)) \
+        if (!(ATOM)->neg)
+#define PDDL_COND_FOR_EACH_ADD_EFF_CONT(IT, ATOM, PRE) \
+    PDDL_COND_FOR_EACH_EFF_CONT((IT), (ATOM), (PRE)) \
+        if (!(ATOM)->neg)
+
+#define PDDL_COND_FOR_EACH_DEL_EFF(COND, IT, ATOM, PRE) \
+    PDDL_COND_FOR_EACH_EFF((COND), (IT), (ATOM), (PRE)) \
+        if ((ATOM)->neg)
+#define PDDL_COND_FOR_EACH_DEL_EFF_CONT(IT, ATOM, PRE) \
+    PDDL_COND_FOR_EACH_EFF_CONT((IT), (ATOM), (PRE)) \
+        if ((ATOM)->neg)
 
 #ifdef __cplusplus
 } /* extern "C" */

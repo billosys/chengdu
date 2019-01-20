@@ -21,19 +21,7 @@
 #include "pddl/pddl.h"
 #include "pddl/pred.h"
 #include "lisp_err.h"
-
-void pddlPredInitCopy(pddl_pred_t *dst, const pddl_pred_t *src)
-{
-    memcpy(dst, src, sizeof(*src));
-    if (src->param != NULL){
-        dst->param = BOR_ALLOC_ARR(int, src->param_size);
-        memcpy(dst->param, src->param, sizeof(int) * src->param_size);
-    }
-
-    if (src->free_name){
-        dst->name = BOR_STRDUP(src->name);
-    }
-}
+#include "assert.h"
 
 struct _set_t {
     pddl_pred_t *pred;
@@ -296,9 +284,31 @@ pddl_pred_t *pddlPredsAdd(pddl_preds_t *ps)
 
     p = ps->pred + ps->pred_size++;
     bzero(p, sizeof(*p));
+    p->id = ps->pred_size - 1;
     p->owner_param = -1;
     p->neg_of = -1;
     return p;
+}
+
+pddl_pred_t *pddlPredsAddCopy(pddl_preds_t *ps, int src_id)
+{
+    pddl_pred_t *dst = pddlPredsAdd(ps);
+    const pddl_pred_t *src = ps->pred + src_id;
+    int dst_id = dst->id;
+
+    memcpy(dst, src, sizeof(*src));
+    dst->id = dst_id;
+
+    if (src->param != NULL){
+        dst->param = BOR_ALLOC_ARR(int, src->param_size);
+        memcpy(dst->param, src->param, sizeof(int) * src->param_size);
+    }
+
+    if (src->free_name){
+        dst->name = BOR_STRDUP(src->name);
+    }
+
+    return dst;
 }
 
 void pddlPredsRemoveLast(pddl_preds_t *ps)
@@ -308,6 +318,8 @@ void pddlPredsRemoveLast(pddl_preds_t *ps)
     p = ps->pred + --ps->pred_size;
     if (p->param != NULL)
         BOR_FREE(p->param);
+    if (p->free_name)
+        BOR_FREE((char *)p->name);
 }
 
 void pddlPredsPrint(const pddl_preds_t *ps,
@@ -315,6 +327,9 @@ void pddlPredsPrint(const pddl_preds_t *ps,
 {
     fprintf(fout, "%s[%d]:\n", title, ps->pred_size);
     for (int i = 0; i < ps->pred_size; ++i){
+        if (ps->pred[i].id != i)
+            fprintf(stderr, "%d %d -- %s\n", ps->pred[i].id, i, ps->pred[i].name);
+        ASSERT(ps->pred[i].id == i);
         fprintf(fout, "    %s:", ps->pred[i].name);
         for (int j = 0; j < ps->pred[i].param_size; ++j){
             fprintf(fout, " %d", ps->pred[i].param[j]);

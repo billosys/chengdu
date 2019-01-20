@@ -36,6 +36,9 @@ struct pddl_param {
     int is_agent;     /*!< True if this is :agent parameter */
     int inherit;      /*!< -1 or ID of the parent parameter of which this
                            is a copy */
+
+    int is_counted_var; /*!< True if it is counted variable -- this is used
+                             for inference of lifted mutex groups */
 };
 typedef struct pddl_param pddl_param_t;
 

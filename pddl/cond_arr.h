@@ -33,6 +33,8 @@ struct pddl_cond_arr {
 };
 typedef struct pddl_cond_arr pddl_cond_arr_t;
 
+#define PDDL_COND_ARR_INIT { 0 }
+
 void pddlCondArrInit(pddl_cond_arr_t *ca);
 void pddlCondArrFree(pddl_cond_arr_t *ca);
 void pddlCondArrAdd(pddl_cond_arr_t *ca, const pddl_cond_t *c);

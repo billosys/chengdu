@@ -288,19 +288,15 @@ static int createNewNotPred(pddl_t *pddl, int pred_id)
     strcpy(name, "NOT-");
     strcpy(name + 4, pos->name);
 
-    neg = pddlPredsAdd(&pddl->pred);
-    // pddlPredsAdd() can reallocate, so we need to probe positive
-    // predicate again
-    pos = pddl->pred.pred + pred_id;
-    pddlPredInitCopy(neg, pos);
+    neg = pddlPredsAddCopy(&pddl->pred, pred_id);
     if (neg->free_name)
         BOR_FREE((char *)neg->name);
     neg->name = name;
     neg->free_name = 1;
     neg->neg_of = pred_id;
-    pos->neg_of = pddl->pred.pred_size - 1;
+    pddl->pred.pred[pred_id].neg_of = neg->id;
 
-    return pddl->pred.pred_size - 1;
+    return neg->id;
 }
 
 static int replaceNegPre(pddl_cond_t **c, void *_ids)
@@ -487,6 +483,16 @@ static void removeIrrelevantActions(pddl_t *pddl)
     }
 }
 
+static void pddlResetPredReadWrite(pddl_t *pddl)
+{
+    for (int i = 0; i < pddl->pred.pred_size; ++i)
+        pddl->pred.pred[i].read = pddl->pred.pred[i].write = 0;
+    for (int i = 0; i < pddl->action.action_size; ++i){
+        const pddl_action_t *a = pddl->action.action + i;
+        pddlCondSetPredRead(a->pre, &pddl->pred);
+        pddlCondSetPredReadWriteEff(a->eff, &pddl->pred);
+    }
+}
 
 void pddlNormalize(pddl_t *pddl)
 {
@@ -508,10 +514,12 @@ void pddlNormalize(pddl_t *pddl)
         pddl->goal = pddlCondNormalize(pddl->goal, pddl, NULL);
 
     compileOutNonStaticNegPre(pddl);
+    removeIrrelevantActions(pddl);
     pddl->normalized = 1;
+    pddlResetPredReadWrite(pddl);
 }
 
-void pddlCompileAwayCondEff(pddl_t *pddl)
+static void compileAwayCondEff(pddl_t *pddl, int only_non_static)
 {
     pddl_action_t *a, *new_a;
     pddl_cond_when_t *w;
@@ -526,7 +534,11 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
         asize = pddl->action.action_size;
         for (int ai = 0; ai < asize; ++ai){
             a = pddl->action.action + ai;
-            w = pddlCondRemoveFirstNonStaticWhen(a->eff, pddl);
+            if (only_non_static){
+                w = pddlCondRemoveFirstNonStaticWhen(a->eff, pddl);
+            }else{
+                w = pddlCondRemoveFirstWhen(a->eff, pddl);
+            }
             if (w != NULL){
                 // Create a new action
                 new_a = pddlActionsAddCopy(&pddl->action, ai);
@@ -555,6 +567,17 @@ void pddlCompileAwayCondEff(pddl_t *pddl)
             }
         }
     } while (change);
+    pddlResetPredReadWrite(pddl);
+}
+
+void pddlCompileAwayCondEff(pddl_t *pddl)
+{
+    compileAwayCondEff(pddl, 0);
+}
+
+void pddlCompileAwayNonStaticCondEff(pddl_t *pddl)
+{
+    compileAwayCondEff(pddl, 1);
 }
 
 int pddlPredFuncMaxParamSize(const pddl_t *pddl)
