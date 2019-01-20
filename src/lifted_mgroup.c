@@ -117,11 +117,18 @@ static void selectOnlyAtomsWithCountedVars(pddl_lifted_mgroup_t *dst,
                                            const pddl_lifted_mgroup_t *src)
 {
     pddlLiftedMGroupInitCopy(dst, src);
-    dst->cond.size = 0;
-    for (int i = 0; i < src->cond.size; ++i){
-        if (candAtomHasOnlyCountedVars(src, i))
-            pddlCondArrAdd(&dst->cond, src->cond.cond[i]);
+    for (int i = 0; i < dst->cond.size; ++i){
+        if (!candAtomHasOnlyCountedVars(dst, i)){
+            pddlCondDel((pddl_cond_t *)dst->cond.cond[i]);
+            dst->cond.cond[i] = NULL;
+        }
     }
+    int ins = 0;
+    for (int i = 0; i < dst->cond.size; ++i){
+        if (dst->cond.cond[i] != NULL)
+            dst->cond.cond[ins++] = dst->cond.cond[i];
+    }
+    dst->cond.size = ins;
 }
 
 static int isInitTooHeavyForCountedVars(const pddl_lifted_mgroup_t *cand_in,
@@ -135,7 +142,6 @@ static int isInitTooHeavyForCountedVars(const pddl_lifted_mgroup_t *cand_in,
     if (cand.cond.size > 0)
         ret = pddlLiftedMGroupIsInitTooHeavy(&cand, pddl);
 
-    cand.cond.size = 0;
     pddlLiftedMGroupFree(&cand);
     return ret;
 }
