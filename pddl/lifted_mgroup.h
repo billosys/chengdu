@@ -97,6 +97,15 @@ int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
 
 
 /**
+ * Returns true if conjuction of atoms in arr are too heavy considering
+ * parameters bound to arguments in arr_args.
+ * TODO: Change name to *IsGroundedPreTooHeavy()
+ */
+int pddlLiftedMGroupIsArrTooHeavy(const pddl_lifted_mgroup_t *cand,
+                                  const pddl_cond_arr_t *arr,
+                                  const pddl_obj_id_t *arr_args);
+
+/**
  * Prints a formatted lifted mutex group (or a candidate if there are some
  * counted variables).
  */
