@@ -104,10 +104,9 @@ int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
 int pddlLiftedMGroupIsGroundedConjTooHeavy(const pddl_lifted_mgroup_t *mg,
                                            const pddl_cond_arr_t *conj,
                                            const pddl_obj_id_t *conj_args);
-
-int pddlLiftedMGroupsIsGroundedConjTooHeavy(const pddl_lifted_mgroups_t *cand,
-                                           const pddl_cond_arr_t *conj,
-                                           const pddl_obj_id_t *conj_args);
+int pddlLiftedMGroupsIsGroundedConjTooHeavy(const pddl_lifted_mgroups_t *mgs,
+                                            const pddl_cond_arr_t *conj,
+                                            const pddl_obj_id_t *conj_args);
 
 /**
  * Prints a formatted lifted mutex group (or a candidate if there are some

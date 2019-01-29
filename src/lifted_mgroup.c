@@ -425,39 +425,12 @@ static int isPairTooHeavy(ctx_action_t *ctx,
     return 0;
 }
 
-static int unifyGroundedAtom(const pddl_cond_atom_t *atom,
-                             const pddl_lifted_mgroup_t *cand,
-                             const pddl_cond_atom_t *cand_atom,
-                             pddl_obj_id_t *arg)
-{
-    for (int i = 0; i < cand->param.param_size; ++i)
-        arg[i] = PDDL_OBJ_ID_UNDEF;
-
-    for (int i = 0; i < cand_atom->arg_size; ++i){
-        ASSERT(atom->arg[i].obj >= 0);
-        int param = cand_atom->arg[i].param;
-        pddl_obj_id_t obj = cand_atom->arg[i].obj;
-        if (obj != PDDL_OBJ_ID_UNDEF && obj != atom->arg[i].obj){
-            return 0;
-        }else if (param >= 0 && !cand->param.param[param].is_counted_var){
-            if (arg[param] == PDDL_OBJ_ID_UNDEF){
-                arg[param] = atom->arg[i].obj;
-            }else if (arg[param] != atom->arg[i].obj){
-                return 0;
-            }
-        }
-    }
-
-    return 1;
-}
-
 static int unifyAtomGroundedWithArgs(const pddl_cond_atom_t *atom,
                                      const pddl_obj_id_t *atom_args,
                                      const pddl_lifted_mgroup_t *cand,
                                      const pddl_cond_atom_t *cand_atom,
                                      pddl_obj_id_t *arg)
 {
-    // TODO: Refactor with unifyGroundedAtom()
     for (int i = 0; i < cand->param.param_size; ++i)
         arg[i] = PDDL_OBJ_ID_UNDEF;
 
@@ -482,26 +455,12 @@ static int unifyAtomGroundedWithArgs(const pddl_cond_atom_t *atom,
     return 1;
 }
 
-/** Returns true if atom can be unified with cand_atom given bounding of
- *  cand arguments in arg. */
-static int canUnifyGroundedAtom(const pddl_cond_atom_t *atom,
-                                const pddl_lifted_mgroup_t *cand,
-                                const pddl_cond_atom_t *cand_atom,
-                                const pddl_obj_id_t *arg)
+static int unifyGroundedAtom(const pddl_cond_atom_t *atom,
+                             const pddl_lifted_mgroup_t *cand,
+                             const pddl_cond_atom_t *cand_atom,
+                             pddl_obj_id_t *arg)
 {
-    for (int i = 0; i < cand_atom->arg_size; ++i){
-        ASSERT(atom->arg[i].obj >= 0);
-        int param = cand_atom->arg[i].param;
-        pddl_obj_id_t obj = cand_atom->arg[i].obj;
-        if (obj != PDDL_OBJ_ID_UNDEF && obj != atom->arg[i].obj){
-            return 0;
-        }else if (param >= 0
-                    && !cand->param.param[param].is_counted_var
-                    && arg[param] != atom->arg[i].obj){
-            return 0;
-        }
-    }
-    return 1;
+    return unifyAtomGroundedWithArgs(atom, NULL, cand, cand_atom, arg);
 }
 
 static int canUnifyAtomGroundedWithArgs(const pddl_cond_atom_t *atom,
@@ -510,7 +469,6 @@ static int canUnifyAtomGroundedWithArgs(const pddl_cond_atom_t *atom,
                                         const pddl_cond_atom_t *cand_atom,
                                         const pddl_obj_id_t *arg)
 {
-    // TODO: Refactor with canUnifyGroundedAtom
     for (int i = 0; i < cand_atom->arg_size; ++i){
         pddl_obj_id_t atom_obj = atom->arg[i].obj;
         if (atom->arg[i].param >= 0 && atom_args != NULL)
@@ -527,6 +485,16 @@ static int canUnifyAtomGroundedWithArgs(const pddl_cond_atom_t *atom,
         }
     }
     return 1;
+}
+
+/** Returns true if atom can be unified with cand_atom given bounding of
+ *  cand arguments in arg. */
+static int canUnifyGroundedAtom(const pddl_cond_atom_t *atom,
+                                const pddl_lifted_mgroup_t *cand,
+                                const pddl_cond_atom_t *cand_atom,
+                                const pddl_obj_id_t *arg)
+{
+    return canUnifyAtomGroundedWithArgs(atom, NULL, cand, cand_atom, arg);
 }
 
 /** Returns true if the candidate atom is balanced with the given delete
