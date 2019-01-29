@@ -1061,32 +1061,32 @@ int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
     return 1;
 }
 
-int pddlLiftedMGroupIsArrTooHeavy(const pddl_lifted_mgroup_t *cand,
-                                  const pddl_cond_arr_t *arr,
-                                  const pddl_obj_id_t *arr_args)
+int pddlLiftedMGroupIsGroundedConjTooHeavy(const pddl_lifted_mgroup_t *mg,
+                                           const pddl_cond_arr_t *arr,
+                                           const pddl_obj_id_t *arr_args)
 {
-    pddl_obj_id_t cand_arg[cand->param.param_size];
+    pddl_obj_id_t mg_arg[mg->param.param_size];
 
     for (int i = 0; i < arr->size; ++i){
         const pddl_cond_atom_t *a1 = PDDL_COND_CAST(arr->cond[i], atom);
         ASSERT(!a1->neg);
 
-        const pddl_cond_atom_t *c1;
-        FOR_EACH_CAND(cand, c1){
-            if (c1->pred != a1->pred)
+        const pddl_cond_atom_t *m1;
+        FOR_EACH_CAND(mg, m1){
+            if (m1->pred != a1->pred)
                 continue;
-            if (!unifyAtomGroundedWithArgs(a1, arr_args, cand, c1, cand_arg))
+            if (!unifyAtomGroundedWithArgs(a1, arr_args, mg, m1, mg_arg))
                 continue;
 
             for (int j = i + 1; j < arr->size; ++j){
                 const pddl_cond_atom_t *a2 = PDDL_COND_CAST(arr->cond[j], atom);
                 ASSERT(!a2->neg);
-                const pddl_cond_atom_t *c2;
-                FOR_EACH_CAND(cand, c2){
-                    if (c2->pred != a2->pred)
+                const pddl_cond_atom_t *m2;
+                FOR_EACH_CAND(mg, m2){
+                    if (m2->pred != a2->pred)
                         continue;
                     if (canUnifyAtomGroundedWithArgs(a2, arr_args,
-                                                     cand, c2, cand_arg)){
+                                                     mg, m2, mg_arg)){
                         return 1;
                     }
                 }
@@ -1094,6 +1094,17 @@ int pddlLiftedMGroupIsArrTooHeavy(const pddl_lifted_mgroup_t *cand,
         }
     }
 
+    return 0;
+}
+
+int pddlLiftedMGroupsIsGroundedConjTooHeavy(const pddl_lifted_mgroups_t *mgs,
+                                            const pddl_cond_arr_t *c,
+                                            const pddl_obj_id_t *args)
+{
+    for (int i = 0; i < mgs->mgroup_size; ++i){
+        if (pddlLiftedMGroupIsGroundedConjTooHeavy(mgs->mgroup + i, c, args))
+            return 1;
+    }
     return 0;
 }
 

@@ -697,13 +697,9 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
     if (!pddlPrepActionCheck(a, &g->static_facts, arg))
         return;
     if (g->cfg.lifted_mgroups != NULL){
-        // TODO
-        for (int i = 0; i < g->cfg.lifted_mgroups->mgroup_size; ++i){
-            const pddl_lifted_mgroup_t *m = g->cfg.lifted_mgroups->mgroup + i;
-            if (pddlLiftedMGroupIsArrTooHeavy(m, &a->pre, arg)){
-                fprintf(stderr, "SKIP\n");
-                return;
-            }
+        if (pddlLiftedMGroupsIsGroundedConjTooHeavy(g->cfg.lifted_mgroups,
+                                                    &a->pre, arg)){
+            return;
         }
     }
 
