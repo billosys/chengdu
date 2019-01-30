@@ -135,9 +135,24 @@ void pddlLiftedMGroupsAdd(pddl_lifted_mgroups_t *lm,
                           const pddl_lifted_mgroup_t *lmg);
 
 /**
+ * Adds (partially) instantiated copy of the given lifted group.
+ */
+void pddlLiftedMGroupsAddInst(pddl_lifted_mgroups_t *lm,
+                              const pddl_lifted_mgroup_t *lmg,
+                              const pddl_obj_id_t *args);
+
+/**
  * Sort mgroups according to size and predicates and removes duplicates.
  */
 void pddlLiftedMGroupsSortAndUniq(pddl_lifted_mgroups_t *lm);
+
+/**
+ * Fills dst with (partially) instantiated lifted mutex groups from src
+ * that has non-empty intersection with goal.
+ */
+void pddlLiftedMGroupsExtractGoalAware(pddl_lifted_mgroups_t *dst,
+                                       const pddl_lifted_mgroups_t *src,
+                                       const pddl_t *pddl);
 
 /**
  * Find lifted mgroups using "guess, check, refine" approach.

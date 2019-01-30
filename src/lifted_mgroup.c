@@ -1138,6 +1138,44 @@ void pddlLiftedMGroupsAdd(pddl_lifted_mgroups_t *lm,
     pddlLiftedMGroupSort(add);
 }
 
+void pddlLiftedMGroupsAddInst(pddl_lifted_mgroups_t *lm,
+                              const pddl_lifted_mgroup_t *lmg,
+                              const pddl_obj_id_t *args)
+{
+    pddlLiftedMGroupsAdd(lm, lmg);
+
+    pddl_lifted_mgroup_t *mg = lm->mgroup + lm->mgroup_size - 1;
+    pddl_cond_atom_t *a;
+    FOR_EACH_CAND(mg, a){
+        for (int ai = 0; ai < a->arg_size; ++ai){
+            if (a->arg[ai].param >= 0 && args[a->arg[ai].param] >= 0){
+                a->arg[ai].obj = args[a->arg[ai].param];
+                a->arg[ai].param = -1;
+            }
+        }
+    }
+
+    int remap_param[mg->param.param_size];
+    int idx = 0;
+    for (int i = 0; i < mg->param.param_size; ++i){
+        if (args[i] >= 0){
+            remap_param[i] = -1;
+        }else{
+            mg->param.param[idx] = mg->param.param[i];
+            remap_param[i] = idx++;
+        }
+    }
+    mg->param.param_size = idx;
+
+    for (int i = 0; i < mg->cond.size; ++i){
+        const pddl_cond_atom_t *a = PDDL_COND_CAST(mg->cond.cond[i], atom);
+        for (int ai = 0; ai < a->arg_size; ++ai){
+            if (a->arg[ai].param >= 0)
+                a->arg[ai].param = remap_param[a->arg[ai].param];
+        }
+    }
+}
+
 static int cmpLiftedMGroups(const void *a, const void *b, void *_)
 {
     const pddl_lifted_mgroup_t *m1 = a;
@@ -1188,6 +1226,33 @@ void pddlLiftedMGroupsSortAndUniq(pddl_lifted_mgroups_t *lm)
         }
     }
     lm->mgroup_size = ins;
+}
+
+void pddlLiftedMGroupsExtractGoalAware(pddl_lifted_mgroups_t *dst,
+                                       const pddl_lifted_mgroups_t *src,
+                                       const pddl_t *pddl)
+{
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *a;
+
+    for (int i = 0; i < src->mgroup_size; ++i){
+        const pddl_lifted_mgroup_t *mg = src->mgroup + i;
+        pddl_obj_id_t arg[mg->param.param_size];
+
+        PDDL_COND_FOR_EACH_ATOM(pddl->goal, &it, a){
+            ASSERT(!a->neg);
+            const pddl_cond_atom_t *c;
+            FOR_EACH_CAND(mg, c){
+                if (c->pred != a->pred)
+                    continue;
+
+                if (unifyGroundedAtom(a, mg, c, arg)){
+                    pddlLiftedMGroupsAddInst(dst, mg, arg);
+                }
+            }
+        }
+    }
+    pddlLiftedMGroupsSortAndUniq(dst);
 }
 
 static void initialCandidates(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
