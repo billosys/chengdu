@@ -109,6 +109,22 @@ int pddlLiftedMGroupsIsGroundedConjTooHeavy(const pddl_lifted_mgroups_t *mgs,
                                             const pddl_obj_id_t *conj_args);
 
 /**
+ * Returns true if the action (pre, add_eff, del_eff) fully grounded with
+ * args deletes the given mutex group, i.e., the resulting state will have
+ * empty intersection with mg.
+ */
+int pddlLiftedMGroupIsDeleted(const pddl_lifted_mgroup_t *mg,
+                              const pddl_cond_arr_t *pre,
+                              const pddl_cond_arr_t *add_eff,
+                              const pddl_cond_arr_t *del_eff,
+                              const pddl_obj_id_t *args);
+int pddlLiftedMGroupsAnyIsDeleted(const pddl_lifted_mgroups_t *mgs,
+                                  const pddl_cond_arr_t *pre,
+                                  const pddl_cond_arr_t *add_eff,
+                                  const pddl_cond_arr_t *del_eff,
+                                  const pddl_obj_id_t *args);
+
+/**
  * Prints a formatted lifted mutex group (or a candidate if there are some
  * counted variables).
  */

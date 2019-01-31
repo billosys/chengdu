@@ -701,6 +701,10 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
                                                     &a->pre, arg)){
             return;
         }
+        if (pddlLiftedMGroupsAnyIsDeleted(&g->goal_mgroup, &a->pre,
+                                          &a->add_eff, &a->del_eff, arg)){
+            return;
+        }
     }
 
     const pddl_cond_atom_t *atom;
@@ -1062,6 +1066,11 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     if (pddlPrepActionsInit(pddl, &g->action, g->err) != 0)
         BOR_TRACE_RET(g->err, -1);
 
+    if (g->cfg.lifted_mgroups != NULL){
+        pddlLiftedMGroupsExtractGoalAware(&g->goal_mgroup,
+                                          g->cfg.lifted_mgroups, pddl);
+    }
+
     pddlGroundAtomsInit(&g->static_facts);
     g->static_facts_unified = 0;
     pddlGroundAtomsInit(&g->facts);
@@ -1090,6 +1099,7 @@ static void groundFree(pddl_strips_ground_t *g)
         BOR_FREE(g->ground_atom_to_fact_id);
     pddlGroundAtomsFree(&g->funcs);
     pddlPrepActionsFree(&g->action);
+    pddlLiftedMGroupsFree(&g->goal_mgroup);
     groundArgsFree(&g->ground_args);
 }
 
