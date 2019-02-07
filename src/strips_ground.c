@@ -29,7 +29,7 @@
 
 
 #ifdef PDDL_DEBUG
-typedef uint32_t pre_mask_t;
+typedef uint64_t pre_mask_t;
 #endif /* PDDL_DEBUG */
 
 struct tnode_flags {
@@ -237,7 +237,8 @@ static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
 
     for (int i = 0; i < tr->pre_size; ++i){
 #ifdef PDDL_DEBUG
-        tr->pre_mask = (tr->pre_mask << 1u) | 1u;
+        if (i < sizeof(pre_mask_t) / 8)
+            tr->pre_mask = (tr->pre_mask << 1u) | 1u;
 #endif /* PDDL_DEBUG */
         atom = PDDL_COND_CAST(tr->action->pre.cond[i], atom);
         pred = tr->g->pddl->pred.pred + atom->pred;
@@ -409,8 +410,10 @@ static void unifyPre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
 {
     // TODO: Check action for equality and predicates?
 #ifdef PDDL_DEBUG
-    ASSERT(!(tn->pre_mask & (1u << ((pre_mask_t)pre_i))));
-    tn->pre_mask |= ((pre_mask_t)1u << ((pre_mask_t)pre_i));
+    if (pre_i < sizeof(pre_mask_t) / 8){
+        ASSERT(!(tn->pre_mask & (1lu << ((pre_mask_t)pre_i))));
+        tn->pre_mask |= ((pre_mask_t)1lu << ((pre_mask_t)pre_i));
+    }
 #endif /* PDDL_DEBUG */
     ++tn->pre_unified;
     tn->flags.pre_unified = 1;
@@ -485,7 +488,8 @@ static void unify(pddl_strips_ground_tree_t *tr, tnode_t *tn,
         ASSERT(ch->obj_id != PDDL_OBJ_ID_UNDEF);
         arg[ch->argi] = arg_pre[ch->argi];
         if (ch->obj_id == arg[ch->argi]){
-            ASSERT(!(ch->pre_mask & (1u << pre_i)));
+            if (pre_i < sizeof(pre_mask_t) / 8)
+                ASSERT(!(ch->pre_mask & (1u << pre_i)));
             if (static_fact)
                 ch->flags.static_arg = 1;
             // Found exact match on the argument
@@ -493,7 +497,8 @@ static void unify(pddl_strips_ground_tree_t *tr, tnode_t *tn,
             match = 1;
 
         }else if (arg[ch->argi] == PDDL_OBJ_ID_UNDEF){
-            ASSERT(!(ch->pre_mask & (1u << pre_i)));
+            if (pre_i < sizeof(pre_mask_t) / 8)
+                ASSERT(!(ch->pre_mask & (1u << pre_i)));
             // Argument is not set therefore we need to unify with all set
             // arguments
             arg[ch->argi] = ch->obj_id;
@@ -1206,7 +1211,7 @@ static void tnodePrint(pddl_strips_ground_tree_t *tr, tnode_t *tn, int offset, F
         off += fprintf(fout, ":%d", tn->obj_id);
     }
 #ifdef PDDL_DEBUG
-    off += fprintf(fout, ":M%x", tn->pre_mask);
+    off += fprintf(fout, ":M%lx", tn->pre_mask);
 #endif /* PDDL_DEBUG */
     off += fprintf(fout, ":P%d", tn->pre_unified);
     if (tn->flags.blocked)
