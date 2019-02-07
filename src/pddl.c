@@ -22,6 +22,19 @@
 #include "pddl/pddl_struct.h"
 #include "err.h"
 
+static int checkDerivedPredicates(const pddl_t *pddl, bor_err_t *err)
+{
+    const pddl_lisp_node_t *root = &pddl->domain_lisp->root;
+    for (int i = 0; i < root->child_size; ++i){
+        const pddl_lisp_node_t *n = root->child + i;
+        if (pddlLispNodeHeadKw(n) == PDDL_KW_DERIVED){
+            BOR_ERR_RET(err, -1, "Derived predicates are not supported"
+                                 " (line %d).", n->lineno);
+        }
+    }
+    return 0;
+}
+
 static int checkConfig(const pddl_config_t *cfg)
 {
     return 1;
@@ -169,8 +182,8 @@ int pddlInit(pddl_t *pddl, const char *domain_fn, const char *problem_fn,
     if (pddl->domain_name == NULL)
         goto pddl_fail;
 
-
-    if (checkDomainName(pddl, err) != 0
+    if (checkDerivedPredicates(pddl, err) != 0
+            || checkDomainName(pddl, err) != 0
             || pddlRequireParse(pddl, err) != 0
             || pddlTypesParse(pddl, err) != 0
             || pddlObjsParse(pddl, err) != 0
