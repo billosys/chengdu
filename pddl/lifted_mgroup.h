@@ -44,6 +44,11 @@ typedef struct pddl_lifted_mgroups pddl_lifted_mgroups_t;
 #define PDDL_LIFTED_MGROUPS_INIT { 0 }
 
 /**
+ * Initialize empty liftd mutex group.
+ */
+void pddlLiftedMGroupInitEmpty(pddl_lifted_mgroup_t *dst);
+
+/**
  * Initialize lifted mgroup as a copy of src.
  */
 void pddlLiftedMGroupInitCopy(pddl_lifted_mgroup_t *dst,

@@ -235,6 +235,22 @@ static int unifyAtoms(ctx_action_t *ctx,
                       const pddl_cond_atom_t *c1,
                       const pddl_cond_atom_t *a1)
 {
+    // Check that types are compatible.
+    for (int i = 0; i < c1->arg_size; ++i){
+        int cparam = c1->arg[i].param;
+        ASSERT_RUNTIME(cparam >= 0);
+        int ctype = ctx->cand->param.param[cparam].type;
+        if (a1->arg[i].param >= 0){
+            int aparam = a1->arg[i].param;
+            int atype = ctx->action->param.param[aparam].type;
+            if (pddlTypesAreDisjunct(&ctx->pddl->type, ctype, atype))
+                return 0;
+        }else{
+            if (!pddlTypesObjHasType(&ctx->pddl->type, ctype, a1->arg[i].obj))
+                return 0;
+        }
+    }
+
     for (int i = 0; i < c1->arg_size; ++i){
         int cparam = c1->arg[i].param;
         if (a1->arg[i].param >= 0){
@@ -870,6 +886,11 @@ static int isAddEffBalanced(ctx_action_t *ctx,
 }
 
 
+
+void pddlLiftedMGroupInitEmpty(pddl_lifted_mgroup_t *dst)
+{
+    bzero(dst, sizeof(*dst));
+}
 
 void pddlLiftedMGroupInitCopy(pddl_lifted_mgroup_t *dst,
                               const pddl_lifted_mgroup_t *src)
