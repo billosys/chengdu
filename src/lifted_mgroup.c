@@ -640,6 +640,29 @@ static int isBalancedWith(const ctx_action_t *ctx_in,
     return 0;
 }
 
+
+/** Restrict types of parameters so it is valid for all atoms. */
+static void restrictParamTypes(const pddl_t *pddl, pddl_lifted_mgroup_t *mg)
+{
+    for (int ai = 0; ai < mg->cond.size; ++ai){
+        const pddl_cond_atom_t *a = PDDL_COND_CAST(mg->cond.cond[ai], atom);
+        const pddl_pred_t *pred = pddl->pred.pred + a->pred;
+
+        for (int i = 0; i < a->arg_size; ++i){
+            if (a->arg[i].param >= 0){
+                int mg_type = mg->param.param[a->arg[i].param].type;
+                int pred_type = pred->param[i];
+                if (pred_type != mg_type
+                        && pddlTypesIsParent(&pddl->type, pred_type, mg_type)){
+                    mg->param.param[a->arg[i].param].type = pred_type;
+                }
+
+                ASSERT(!pddlTypesAreDisjunct(&pddl->type, pred_type, mg_type));
+            }
+        }
+    }
+}
+
 /** Add a new candidate refined from the given candidate and atom with
  *  specified parameters (-1 means counted variable, >=0 is an ID of the
  *  parameter. */
@@ -678,6 +701,8 @@ static void addRefinedCandidate(const pddl_t *pddl,
         }
     }
     pddlCondArrAdd(&new_cand.cond, &new_atom->cls);
+
+    restrictParamTypes(pddl, &new_cand);
 
     pddlLiftedMGroupsAdd(refine, &new_cand);
     pddlLiftedMGroupFree(&new_cand);
