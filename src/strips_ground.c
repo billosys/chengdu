@@ -703,10 +703,10 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
         return;
     if (g->cfg.lifted_mgroups != NULL){
         if (pddlLiftedMGroupsIsGroundedConjTooHeavy(g->cfg.lifted_mgroups,
-                                                    &a->pre, arg)){
+                                                    g->pddl, &a->pre, arg)){
             return;
         }
-        if (pddlLiftedMGroupsAnyIsDeleted(&g->goal_mgroup, &a->pre,
+        if (pddlLiftedMGroupsAnyIsDeleted(&g->goal_mgroup, g->pddl, &a->pre,
                                           &a->add_eff, &a->del_eff, arg)){
             return;
         }
