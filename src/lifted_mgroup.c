@@ -1187,9 +1187,11 @@ void pddlLiftedMGroupPrint(const pddl_t *pddl,
                 ASSERT(!pddlTypesAreDisjunct(&pddl->type, p->type,
                             pddl->pred.pred[atom->pred].param[j]));
                 if (p->is_counted_var){
-                    fprintf(fout, " C%d", param_id);
+                    fprintf(fout, " C%d:%s",
+                            param_id, pddl->type.type[p->type].name);
                 }else{
-                    fprintf(fout, " V%d", param_id);
+                    fprintf(fout, " V%d:%s",
+                            param_id, pddl->type.type[p->type].name);
                 }
             }else{
                 fprintf(fout, " %s", pddl->obj.obj[atom->arg[j].obj].name);
