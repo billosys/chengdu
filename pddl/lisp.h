@@ -89,6 +89,8 @@ typedef enum {
 
     PDDL_KW_PRIVATE,
     PDDL_KW_AGENT,
+
+    PDDL_KW_DERIVED,
 } pddl_kw_t;
 
 typedef struct pddl_lisp_node pddl_lisp_node_t;

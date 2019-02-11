@@ -25,18 +25,19 @@
 
 #include <pddl/common.h>
 #include <pddl/strips_op.h>
+#include <pddl/lifted_mgroup.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_ground_config {
-    int dummy;
+    const pddl_lifted_mgroups_t *lifted_mgroups;
 };
 typedef struct pddl_ground_config pddl_ground_config_t;
 
 #define PDDL_GROUND_CONFIG_INIT { \
-        0, /* dummy */ \
+        NULL, /* .lifted_mgroups */ \
     }
 
 struct pddl_strips {

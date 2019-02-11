@@ -97,6 +97,34 @@ int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
 
 
 /**
+ * Returns true if the conjuction of atoms grounded using given arguments
+ * is too heavy, i.e., if the candidate can be unified with at least two
+ * atoms.
+ */
+int pddlLiftedMGroupIsGroundedConjTooHeavy(const pddl_lifted_mgroup_t *mg,
+                                           const pddl_cond_arr_t *conj,
+                                           const pddl_obj_id_t *conj_args);
+int pddlLiftedMGroupsIsGroundedConjTooHeavy(const pddl_lifted_mgroups_t *mgs,
+                                            const pddl_cond_arr_t *conj,
+                                            const pddl_obj_id_t *conj_args);
+
+/**
+ * Returns true if the action (pre, add_eff, del_eff) fully grounded with
+ * args deletes the given mutex group, i.e., the resulting state will have
+ * empty intersection with mg.
+ */
+int pddlLiftedMGroupIsDeleted(const pddl_lifted_mgroup_t *mg,
+                              const pddl_cond_arr_t *pre,
+                              const pddl_cond_arr_t *add_eff,
+                              const pddl_cond_arr_t *del_eff,
+                              const pddl_obj_id_t *args);
+int pddlLiftedMGroupsAnyIsDeleted(const pddl_lifted_mgroups_t *mgs,
+                                  const pddl_cond_arr_t *pre,
+                                  const pddl_cond_arr_t *add_eff,
+                                  const pddl_cond_arr_t *del_eff,
+                                  const pddl_obj_id_t *args);
+
+/**
  * Prints a formatted lifted mutex group (or a candidate if there are some
  * counted variables).
  */
@@ -123,9 +151,24 @@ void pddlLiftedMGroupsAdd(pddl_lifted_mgroups_t *lm,
                           const pddl_lifted_mgroup_t *lmg);
 
 /**
+ * Adds (partially) instantiated copy of the given lifted group.
+ */
+void pddlLiftedMGroupsAddInst(pddl_lifted_mgroups_t *lm,
+                              const pddl_lifted_mgroup_t *lmg,
+                              const pddl_obj_id_t *args);
+
+/**
  * Sort mgroups according to size and predicates and removes duplicates.
  */
 void pddlLiftedMGroupsSortAndUniq(pddl_lifted_mgroups_t *lm);
+
+/**
+ * Fills dst with (partially) instantiated lifted mutex groups from src
+ * that has non-empty intersection with goal.
+ */
+void pddlLiftedMGroupsExtractGoalAware(pddl_lifted_mgroups_t *dst,
+                                       const pddl_lifted_mgroups_t *src,
+                                       const pddl_t *pddl);
 
 /**
  * Find lifted mgroups using "guess, check, refine" approach.

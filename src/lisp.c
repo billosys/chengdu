@@ -51,6 +51,7 @@ static kw_t kw[] = {
     { ":parameters", PDDL_KW_PARAMETERS },
     { ":precondition", PDDL_KW_PRE },
     { ":effect", PDDL_KW_EFF },
+    { ":derived", PDDL_KW_DERIVED },
 
     { ":strips", PDDL_KW_STRIPS },
     { ":typing", PDDL_KW_TYPING },
