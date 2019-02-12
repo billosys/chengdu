@@ -1361,6 +1361,8 @@ static int cmpLiftedMGroups(const void *a, const void *b, void *_)
     for (int i = 0; cmp == 0 && i < m1->param.param_size; ++i){
         cmp = m1->param.param[i].is_counted_var
                 - m2->param.param[i].is_counted_var;
+        if (cmp == 0)
+            cmp = m1->param.param[i].type - m2->param.param[i].type;
     }
 
     return cmp;
