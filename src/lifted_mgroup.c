@@ -113,6 +113,42 @@ static int candAtomHasOnlyCountedVars(const pddl_lifted_mgroup_t *cand,
     return 1;
 }
 
+/** Returns true if the atoms are compatible, i.e., they are the same
+ *  predicate and arguments have matching types/objects */
+static int atomsAreCompatible(const pddl_t *pddl,
+                              const pddl_cond_atom_t *a1,
+                              const pddl_params_t *a1_params,
+                              const pddl_cond_atom_t *a2,
+                              const pddl_params_t *a2_params)
+{
+    if (a1->pred != a2->pred)
+        return 0;
+
+    for (int i = 0; i < a1->arg_size; ++i){
+        if (a1->arg[i].param >= 0 && a2->arg[i].param >= 0){
+            int a1type = a1_params->param[a1->arg[i].param].type;
+            int a2type = a2_params->param[a2->arg[i].param].type;
+            if (pddlTypesAreDisjunct(&pddl->type, a1type, a2type))
+                return 0;
+
+        }else if (a1->arg[i].param >= 0){ // && a2->arg[i].obj >= 0
+            int a1type = a1_params->param[a1->arg[i].param].type;
+            if (!pddlTypesObjHasType(&pddl->type, a1type, a2->arg[i].obj))
+                return 0;
+
+        }else if (a2->arg[i].param >= 0){ // && a1->arg[i].obj >= 0
+            int a2type = a2_params->param[a2->arg[i].param].type;
+            if (!pddlTypesObjHasType(&pddl->type, a2type, a1->arg[i].obj))
+                return 0;
+
+        }else{ // a1->arg[i].obj >= 0 && a2->arg[i].obj >= 0
+            if (a1->arg[i].obj != a2->arg[i].obj)
+                return 0;
+        }
+    }
+    return 1;
+}
+
 static void selectOnlyAtomsWithCountedVars(pddl_lifted_mgroup_t *dst,
                                            const pddl_lifted_mgroup_t *src)
 {
@@ -235,20 +271,10 @@ static int unifyAtoms(ctx_action_t *ctx,
                       const pddl_cond_atom_t *c1,
                       const pddl_cond_atom_t *a1)
 {
-    // Check that types are compatible.
-    for (int i = 0; i < c1->arg_size; ++i){
-        int cparam = c1->arg[i].param;
-        ASSERT_RUNTIME(cparam >= 0);
-        int ctype = ctx->cand->param.param[cparam].type;
-        if (a1->arg[i].param >= 0){
-            int aparam = a1->arg[i].param;
-            int atype = ctx->action->param.param[aparam].type;
-            if (pddlTypesAreDisjunct(&ctx->pddl->type, ctype, atype))
-                return 0;
-        }else{
-            if (!pddlTypesObjHasType(&ctx->pddl->type, ctype, a1->arg[i].obj))
-                return 0;
-        }
+    if (!atomsAreCompatible(ctx->pddl,
+                            c1, &ctx->cand->param,
+                            a1, &ctx->action->param)){
+        return 0;
     }
 
     for (int i = 0; i < c1->arg_size; ++i){
@@ -587,6 +613,12 @@ static int isBalancedWith(const ctx_action_t *ctx_in,
                           const pddl_cond_atom_t *catom,
                           const ce_atom_t *del_eff)
 {
+    if (!atomsAreCompatible(ctx_in->pddl,
+                            catom, &ctx_in->cand->param,
+                            del_eff->atom, &ctx_in->action->param)){
+        return 0;
+    }
+
     CTX_PUSH(ctx_in, ctx);
 
     // Empty counted variables
@@ -907,9 +939,6 @@ static int isAddEffBalanced(ctx_action_t *ctx,
             CE_ATOM(ce_del_eff, pre, del_eff);
             const pddl_cond_atom_t *balance_cand;
             FOR_EACH_CAND(ctx->cand, balance_cand){
-                if (balance_cand->pred != del_eff->pred)
-                    continue;
-
                 if (isBalancedWith(ctx, balance_cand, &ce_del_eff)){
                     is_balanced = 1;
                     break;
