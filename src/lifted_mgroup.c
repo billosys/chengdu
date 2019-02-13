@@ -267,6 +267,8 @@ static void renameVars(ctx_action_t *ctx, int from, int to)
     }
 }
 
+/** Unify candidate parameters of c1 with atom a1 and return true if there
+ * *exist* any renaming of variables matching c1 and a1. */
 static int unifyAtoms(ctx_action_t *ctx,
                       const pddl_cond_atom_t *c1,
                       const pddl_cond_atom_t *a1)
@@ -607,8 +609,8 @@ static int canUnifyGroundedAtom(const pddl_t *pddl,
     return canUnifyAtomGroundedWithArgs(pddl, atom, NULL, cand, cand_atom, arg);
 }
 
-/** Returns true if the candidate atom is balanced with the given delete
- *  effect */
+/** Returns true if the candidate atom is *necessarily* balanced with the
+ *  given delete effect */
 static int isBalancedWith(const ctx_action_t *ctx_in,
                           const pddl_cond_atom_t *catom,
                           const ce_atom_t *del_eff)
@@ -632,8 +634,20 @@ static int isBalancedWith(const ctx_action_t *ctx_in,
         int dparam = del_eff->atom->arg[ai].param;
         int dobj = ctx.obj_offset + del_eff->atom->arg[ai].obj;
         if (ctx.cand->param.param[cparam].is_counted_var){
-            // Counted variables can be instantiated with anything...
+            // Counted variables can be instantiated with anything with the
+            // given type.
             if (dparam >= 0){
+                // check that the type of the candidate's param is not too
+                // narrow, i.e., if it may be possible to instantiate
+                // the delete effect with something outside the candidate's
+                // type
+                int dtype = ctx.action->param.param[dparam].type;
+                int ctype = ctx.cand->param.param[cparam].type;
+                if (dtype != ctype
+                        && pddlTypesIsParent(&ctx.pddl->type, ctype, dtype)){
+                    return 0;
+                }
+
                 if (ctx.action_var[dparam] == 0)
                     ctx.action_var[dparam] = ctx.next_name++;
                 ctx.cand_var[cparam] = ctx.action_var[dparam];
@@ -650,7 +664,7 @@ static int isBalancedWith(const ctx_action_t *ctx_in,
             //    either a) the delete effect already has assigned a value
             //    therefore we can instantiate the candidate with a
             //    different value so that the delete effect does not agree,
-            //    or b) or the delete effect doesn't have assigned any
+            //    or b) the delete effect doesn't have assigned any
             //    value, therefore we can, again, instantiate the action
             //    differently from the candidate
             if (dparam >= 0){
@@ -899,8 +913,8 @@ static void tryInstantiateGivenInitTooHeavy(const pddl_t *pddl,
     }
 }
 
-/** Returns true if the given add effect can be balanced by some delete
- *  effect. If it is not and refined != NULL, then new candidates are
+/** Returns true if the given add effect is *necessarily* balanced by some
+ *  delete effect. If it is not and refined != NULL, then new candidates are
  *  created. */
 static int isAddEffBalanced(ctx_action_t *ctx,
                             const ce_atom_t *add_eff,
@@ -1097,6 +1111,7 @@ int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
     const pddl_cond_atom_t *cand1, *cand2;
 
 
+    // TODO: Refactor with *IsGroundedConjTooHeavy
     PDDL_COND_FOR_EACH_ATOM(&pddl->init->cls, &it1, a1){
         if (a1->neg)
             continue;
