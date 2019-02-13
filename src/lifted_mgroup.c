@@ -496,29 +496,30 @@ static int isPairTooHeavy(ctx_action_t *ctx,
     return 0;
 }
 
-static int unifyAtomGroundedWithArgs(const pddl_t *pddl,
-                                     const pddl_cond_atom_t *atom,
-                                     const pddl_obj_id_t *atom_args,
-                                     const pddl_lifted_mgroup_t *cand,
-                                     const pddl_cond_atom_t *cand_atom,
-                                     pddl_obj_id_t *arg)
+static int _unifyAtomGroundedWithArgs(const pddl_t *pddl,
+                                      const pddl_cond_atom_t *atom,
+                                      const pddl_obj_id_t *atom_args,
+                                      const pddl_lifted_mgroup_t *cand,
+                                      const pddl_cond_atom_t *cand_atom,
+                                      pddl_obj_id_t *arg)
 {
-    for (int i = 0; i < cand->param.param_size; ++i)
-        arg[i] = PDDL_OBJ_ID_UNDEF;
+    if (atom->pred != cand_atom->pred)
+        return 0;
 
     for (int i = 0; i < cand_atom->arg_size; ++i){
         pddl_obj_id_t atom_obj = atom->arg[i].obj;
         if (atom->arg[i].param >= 0 && atom_args != NULL)
             atom_obj = atom_args[atom->arg[i].param];
         ASSERT(atom_obj >= 0);
+
         int param = cand_atom->arg[i].param;
         pddl_obj_id_t obj = cand_atom->arg[i].obj;
-        if (param >= 0
-                && !pddlTypesObjHasType(&pddl->type,
-                                        cand->param.param[param].type,
-                                        atom_obj)){
+        if (param >= 0 && !pddlTypesObjHasType(&pddl->type,
+                                               cand->param.param[param].type,
+                                               atom_obj)){
             return 0;
         }
+
         if (obj != PDDL_OBJ_ID_UNDEF && obj != atom_obj){
             return 0;
         }else if (param >= 0 && !cand->param.param[param].is_counted_var){
@@ -531,6 +532,19 @@ static int unifyAtomGroundedWithArgs(const pddl_t *pddl,
     }
 
     return 1;
+}
+
+static int unifyAtomGroundedWithArgs(const pddl_t *pddl,
+                                     const pddl_cond_atom_t *atom,
+                                     const pddl_obj_id_t *atom_args,
+                                     const pddl_lifted_mgroup_t *cand,
+                                     const pddl_cond_atom_t *cand_atom,
+                                     pddl_obj_id_t *arg)
+{
+    for (int i = 0; i < cand->param.param_size; ++i)
+        arg[i] = PDDL_OBJ_ID_UNDEF;
+    return _unifyAtomGroundedWithArgs(pddl, atom, atom_args,
+                                      cand, cand_atom, arg);
 }
 
 static int unifyGroundedAtom(const pddl_t *pddl,
@@ -547,30 +561,12 @@ static int canUnifyAtomGroundedWithArgs(const pddl_t *pddl,
                                         const pddl_obj_id_t *atom_args,
                                         const pddl_lifted_mgroup_t *cand,
                                         const pddl_cond_atom_t *cand_atom,
-                                        const pddl_obj_id_t *arg)
+                                        const pddl_obj_id_t *arg_in)
 {
-    for (int i = 0; i < cand_atom->arg_size; ++i){
-        pddl_obj_id_t atom_obj = atom->arg[i].obj;
-        if (atom->arg[i].param >= 0 && atom_args != NULL)
-            atom_obj = atom_args[atom->arg[i].param];
-        ASSERT(atom_obj >= 0);
-        int param = cand_atom->arg[i].param;
-        pddl_obj_id_t obj = cand_atom->arg[i].obj;
-        if (param >= 0
-                && !pddlTypesObjHasType(&pddl->type,
-                                        cand->param.param[param].type,
-                                        atom_obj)){
-            return 0;
-        }
-        if (obj != PDDL_OBJ_ID_UNDEF && obj != atom_obj){
-            return 0;
-        }else if (param >= 0
-                    && !cand->param.param[param].is_counted_var
-                    && arg[param] != atom_obj){
-            return 0;
-        }
-    }
-    return 1;
+    pddl_obj_id_t arg[cand->param.param_size];
+    memcpy(arg, arg_in, sizeof(pddl_obj_id_t) * cand->param.param_size);
+    return _unifyAtomGroundedWithArgs(pddl, atom, atom_args,
+                                      cand, cand_atom, arg);
 }
 
 static int canUnifyAtomArrGroundedWithArgs(const pddl_t *pddl,
