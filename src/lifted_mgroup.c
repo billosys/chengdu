@@ -1252,7 +1252,7 @@ int pddlLiftedMGroupIsDeleted(const pddl_lifted_mgroup_t *mg,
         FOR_EACH_CAND(mg, m){
             if (m->pred != d->pred)
                 continue;
-            if (canUnifyAtomGroundedWithArgs(pddl, d, args, mg, m, mg_arg)
+            if (unifyAtomGroundedWithArgs(pddl, d, args, mg, m, mg_arg)
                     && atomInArrGroundedWithArgs(d, pre, args)){
                 return 1;
             }
