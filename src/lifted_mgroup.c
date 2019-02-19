@@ -17,10 +17,131 @@
  * See the License for more information.
  */
 
-#include "boruvka/sort.h"
+#include <boruvka/sort.h>
+#include <boruvka/hfunc.h>
+#include <boruvka/htable.h>
+#include <boruvka/extarr.h>
 #include "pddl/pddl.h"
 #include "pddl/lifted_mgroup.h"
 #include "assert.h"
+
+struct lifted_mgroup {
+    int id;
+    pddl_lifted_mgroup_t mgroup;
+    bor_htable_key_t hash;
+    bor_list_t htable;
+};
+typedef struct lifted_mgroup lifted_mgroup_t;
+
+struct lifted_mgroups_pool {
+    bor_htable_t *htable;
+    bor_extarr_t *mgroup;
+    int mgroup_size;
+};
+typedef struct lifted_mgroups_pool lifted_mgroups_pool_t;
+
+static int cmpLiftedMGroups(const void *a, const void *b, void *_);
+static int mgroupsEq(const pddl_lifted_mgroup_t *m1,
+                     const pddl_lifted_mgroup_t *m2);
+
+static bor_htable_key_t mgroupHash(const pddl_lifted_mgroup_t *m)
+{
+    int *buf;
+    int bufsize;
+
+    bufsize = m->param.param_size * 2;
+    for (int i = 0; i < m->cond.size; ++i){
+        const pddl_cond_atom_t *a = PDDL_COND_CAST(m->cond.cond[i], atom);
+        bufsize += 1 + a->arg_size;
+    }
+
+    buf = BOR_ALLOC_ARR(int, bufsize);
+
+    for (int i = 0; i < m->param.param_size; ++i){
+        buf[2 * i] = m->param.param[i].type;
+        buf[2 * i + 1] = m->param.param[i].is_counted_var;
+    }
+
+    int ins = 2 * m->param.param_size;
+    for (int i = 0; i < m->cond.size; ++i){
+        const pddl_cond_atom_t *a = PDDL_COND_CAST(m->cond.cond[i], atom);
+        buf[ins++] = a->pred;
+        for (int ai = 0; ai < a->arg_size; ++ai){
+            if (a->arg[ai].param >= 0){
+                buf[ins++] = a->arg[ai].param;
+            }else{
+                buf[ins++] = a->arg[ai].obj * -1;
+            }
+        }
+    }
+
+    ASSERT(ins == bufsize);
+    bor_htable_key_t hash = borCityHash_64(buf, bufsize * sizeof(int));
+
+    BOR_FREE(buf);
+    return hash;
+}
+
+static bor_htable_key_t htableHash(const bor_list_t *k, void *_)
+{
+    lifted_mgroup_t *m = BOR_LIST_ENTRY(k, lifted_mgroup_t, htable);
+    return m->hash;
+}
+
+static int htableEq(const bor_list_t *k1, const bor_list_t *k2, void *_)
+{
+    lifted_mgroup_t *m1 = BOR_LIST_ENTRY(k1, lifted_mgroup_t, htable);
+    lifted_mgroup_t *m2 = BOR_LIST_ENTRY(k2, lifted_mgroup_t, htable);
+    return mgroupsEq(&m1->mgroup, &m2->mgroup);
+}
+
+static void liftedMGroupsPoolInit(lifted_mgroups_pool_t *p)
+{
+    lifted_mgroup_t mg;
+
+    bzero(p, sizeof(*p));
+    p->htable = borHTableNew(htableHash, htableEq, p);
+
+    bzero(&mg, sizeof(mg));
+    p->mgroup = borExtArrNew(sizeof(mg), NULL, &mg);
+}
+
+static void liftedMGroupsPoolFree(lifted_mgroups_pool_t *p)
+{
+    for (int i = 0; i < p->mgroup_size; ++i){
+        lifted_mgroup_t *m = borExtArrGet(p->mgroup, i);
+        pddlLiftedMGroupFree(&m->mgroup);
+    }
+
+    borHTableDel(p->htable);
+    borExtArrDel(p->mgroup);
+}
+
+static int liftedMGroupsPoolAdd(lifted_mgroups_pool_t *p,
+                                const pddl_lifted_mgroup_t *m)
+{
+    lifted_mgroup_t *el = borExtArrGet(p->mgroup, p->mgroup_size);
+    el->mgroup = *m;
+    el->hash = mgroupHash(m);
+
+    bor_list_t *ins = borHTableInsertUnique(p->htable, &el->htable);
+    if (ins == NULL){
+        pddlLiftedMGroupInitCopy(&el->mgroup, m);
+        el->id = p->mgroup_size;
+        ++p->mgroup_size;
+        return el->id;
+    }else{
+        return -1;
+    }
+}
+
+static const pddl_lifted_mgroup_t *
+        liftedMGroupsPoolGetMGroup(lifted_mgroups_pool_t *p, int id)
+{
+    ASSERT(id < p->mgroup_size);
+    lifted_mgroup_t *m = borExtArrGet(p->mgroup, id);
+    return &m->mgroup;
+}
 
 struct ce_atom {
     const pddl_cond_t *pre;
@@ -42,6 +163,7 @@ struct ctx {
 };
 typedef struct ctx ctx_action_t;
 
+// TODO
 #define CTX_ACTION(NAME, PDDL, ACTION_ID, CAND) \
     int __action_var[(PDDL)->action.action[(ACTION_ID)].param.param_size]; \
     int __cand_var[(CAND)->param.param_size]; \
@@ -729,7 +851,8 @@ static void addRefinedCandidate(const pddl_t *pddl,
                                 const pddl_lifted_mgroup_t *cand_in,
                                 const pddl_cond_atom_t *atom,
                                 const int *atom_params,
-                                pddl_lifted_mgroups_t *refine)
+                                lifted_mgroups_pool_t *mgroups,
+                                bor_iset_t *refine)
 {
     pddl_lifted_mgroup_t new_cand;
     pddl_cond_atom_t *new_atom;
@@ -763,7 +886,10 @@ static void addRefinedCandidate(const pddl_t *pddl,
 
     restrictParamTypes(pddl, &new_cand);
 
-    pddlLiftedMGroupsAdd(refine, &new_cand);
+    pddlLiftedMGroupSort(&new_cand);
+    int cand_id = liftedMGroupsPoolAdd(mgroups, &new_cand);
+    if (cand_id >= 0)
+        borISetAdd(refine, cand_id);
     pddlLiftedMGroupFree(&new_cand);
 }
 
@@ -774,13 +900,14 @@ static void refineCandidateWithDelEff(const ctx_action_t *ctx,
                                       int *del_eff_params,
                                       int del_eff_argi,
                                       int num_counted_vars,
-                                      pddl_lifted_mgroups_t *refined)
+                                      lifted_mgroups_pool_t *mgroups,
+                                      bor_iset_t *refined)
 {
     if (del_eff_argi == del_eff->atom->arg_size){
         if (atomInPre(ctx, ctx->action->pre, del_eff->atom)
                 || atomInPre(ctx, del_eff->pre, del_eff->atom)){
             addRefinedCandidate(ctx->pddl, ctx->cand, del_eff->atom,
-                                del_eff_params, refined);
+                                del_eff_params, mgroups, refined);
         }
         return;
     }
@@ -798,7 +925,7 @@ static void refineCandidateWithDelEff(const ctx_action_t *ctx,
 
             refineCandidateWithDelEff(&ctx2, del_eff, del_eff_params,
                                       del_eff_argi + 1, num_counted_vars + 1,
-                                      refined);
+                                      mgroups, refined);
         }
 
     }else{
@@ -812,7 +939,7 @@ static void refineCandidateWithDelEff(const ctx_action_t *ctx,
                 del_eff_params[del_eff_argi] = ci;
                 refineCandidateWithDelEff(ctx, del_eff, del_eff_params,
                                           del_eff_argi + 1, num_counted_vars,
-                                          refined);
+                                          mgroups, refined);
             }
         }
 
@@ -820,13 +947,14 @@ static void refineCandidateWithDelEff(const ctx_action_t *ctx,
             del_eff_params[del_eff_argi] = -1;
             refineCandidateWithDelEff(ctx, del_eff, del_eff_params,
                                       del_eff_argi + 1, num_counted_vars + 1,
-                                      refined);
+                                      mgroups, refined);
         }
     }
 }
 
 static void refineCandidate(const ctx_action_t *ctx,
-                            pddl_lifted_mgroups_t *refined)
+                            lifted_mgroups_pool_t *mgroups,
+                            bor_iset_t *refined)
 {
     pddl_cond_const_it_eff_t it;
     //pddl_cond_const_it_atom_t it;
@@ -839,7 +967,7 @@ static void refineCandidate(const ctx_action_t *ctx,
             int del_eff_params[a->arg_size];
             CE_ATOM(ce_a, pre, a);
             refineCandidateWithDelEff(ctx, &ce_a, del_eff_params,
-                                      0, 0, refined);
+                                      0, 0, mgroups, refined);
         }
     }
 }
@@ -914,7 +1042,8 @@ static void tryInstantiateGivenInitTooHeavy(const pddl_t *pddl,
  *  created. */
 static int isAddEffBalanced(ctx_action_t *ctx,
                             const ce_atom_t *add_eff,
-                            pddl_lifted_mgroups_t *refined)
+                            lifted_mgroups_pool_t *mgroups,
+                            bor_iset_t *refined)
 {
     const pddl_cond_atom_t *cand_atom;
 
@@ -957,8 +1086,8 @@ static int isAddEffBalanced(ctx_action_t *ctx,
         }
 
         if (!is_balanced){
-            if (refined != NULL)
-                refineCandidate(ctx, refined);
+            if (mgroups != NULL && refined != NULL)
+                refineCandidate(ctx, mgroups, refined);
             return 0;
         }
     }
@@ -1004,6 +1133,8 @@ void pddlLiftedMGroupInitCandFromPred(pddl_lifted_mgroup_t *mgroup,
         atom->arg[param_id].obj = PDDL_OBJ_ID_UNDEF;
     }
     pddlCondArrAdd(&mgroup->cond, &atom->cls);
+
+    pddlLiftedMGroupSort(mgroup);
 }
 
 void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup)
@@ -1160,10 +1291,11 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
     return 0;
 }
 
-int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
-                                     const pddl_t *pddl,
-                                     int action_id,
-                                     pddl_lifted_mgroups_t *refined)
+static int isActionBalanced(const pddl_lifted_mgroup_t *cand,
+                            const pddl_t *pddl,
+                            int action_id,
+                            lifted_mgroups_pool_t *mgroups,
+                            bor_iset_t *refined)
 {
     CTX_ACTION(ctx, pddl, action_id, cand);
     pddl_cond_const_it_eff_t it;
@@ -1176,11 +1308,38 @@ int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
             continue;
 
         CE_ATOM(ce_a, pre, a);
-        if (!isAddEffBalanced(&ctx, &ce_a, refined))
+        if (!isAddEffBalanced(&ctx, &ce_a, mgroups, refined))
             return 0;
     }
 
     return 1;
+}
+
+int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
+                                     const pddl_t *pddl,
+                                     int action_id,
+                                     pddl_lifted_mgroups_t *refined)
+{
+    if (refined == NULL){
+        return isActionBalanced(cand, pddl, action_id, NULL, NULL);
+    }else{
+        lifted_mgroups_pool_t mgroups;
+        BOR_ISET(ref);
+        liftedMGroupsPoolInit(&mgroups);
+
+        int ret = isActionBalanced(cand, pddl, action_id, &mgroups, &ref);
+
+        int cand_id;
+        const pddl_lifted_mgroup_t *mg;
+        BOR_ISET_FOR_EACH(&ref, cand_id){
+            mg = liftedMGroupsPoolGetMGroup(&mgroups, cand_id);
+            pddlLiftedMGroupsAdd(refined, mg);
+        }
+
+        borISetFree(&ref);
+        liftedMGroupsPoolFree(&mgroups);
+        return ret;
+    }
 }
 
 int pddlLiftedMGroupIsGroundedConjTooHeavy(const pddl_lifted_mgroup_t *mg,
@@ -1460,8 +1619,12 @@ void pddlLiftedMGroupsExtractGoalAware(pddl_lifted_mgroups_t *dst,
     pddlLiftedMGroupsSortAndUniq(dst);
 }
 
-static void initialCandidates(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
+static void initialCandidates(const pddl_t *pddl,
+                              lifted_mgroups_pool_t *mgroups,
+                              bor_iset_t *cand)
 {
+    int cand_id;
+
     for (int pred_id = 0; pred_id < pddl->pred.pred_size; ++pred_id){
         const pddl_pred_t *pred = pddl->pred.pred + pred_id;
         if (pddlPredIsStatic(pred) || pred_id == pddl->pred.eq_pred)
@@ -1470,12 +1633,14 @@ static void initialCandidates(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
         pddl_lifted_mgroup_t m;
 
         pddlLiftedMGroupInitCandFromPred(&m, pred, -1);
-        pddlLiftedMGroupsAdd(lm, &m);
+        if ((cand_id = liftedMGroupsPoolAdd(mgroups, &m)) >= 0)
+            borISetAdd(cand, cand_id);
         pddlLiftedMGroupFree(&m);
 
         for (int i = 0; i < pred->param_size; ++i){
             pddlLiftedMGroupInitCandFromPred(&m, pred, i);
-            pddlLiftedMGroupsAdd(lm, &m);
+            if ((cand_id = liftedMGroupsPoolAdd(mgroups, &m)) >= 0)
+                borISetAdd(cand, cand_id);
             pddlLiftedMGroupFree(&m);
         }
     }
@@ -1496,19 +1661,23 @@ static int isSingleFact(const pddl_lifted_mgroup_t *cand)
 
 void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
 {
-    pddl_lifted_mgroups_t cands[2] = { 0 };
+    lifted_mgroups_pool_t mgroups;
+    bor_iset_t cands[2] = { 0 };
+
+    liftedMGroupsPoolInit(&mgroups);
 
     // TODO: Parametrize number of candidates
 
-    initialCandidates(pddl, cands + 0);
+    initialCandidates(pddl, &mgroups, cands + 0);
     int cur = 0;
-    for (cur = 0; cands[cur].mgroup_size > 0; cur = (cur + 1) % 2){
+    while (borISetSize(&cands[cur]) > 0){
         int next = (cur + 1) % 2;
+        borISetEmpty(cands + next);
 
-        pddlLiftedMGroupsSortAndUniq(cands + cur);
-        pddlLiftedMGroupsInit(cands + next);
-        for (int cid = 0; cid < cands[cur].mgroup_size; ++cid){
-            const pddl_lifted_mgroup_t *cand = cands[cur].mgroup + cid;
+        int cand_id;
+        const pddl_lifted_mgroup_t *cand;
+        BOR_ISET_FOR_EACH(&cands[cur], cand_id){
+            cand = liftedMGroupsPoolGetMGroup(&mgroups, cand_id);
             if (isInitTooHeavyForCountedVars(cand, pddl)){
                 // Quickly throw away candidates that cannot be mgroups
                 // under any circumstances
@@ -1518,8 +1687,8 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
             int proved = 1;
             for (int ai = 0; ai < pddl->action.action_size; ++ai){
                 if (pddlLiftedMGroupIsActionTooHeavy(cand, pddl, ai)
-                        || !pddlLiftedMGroupIsActionBalanced(cand, pddl, ai,
-                                                             cands + next)){
+                        || !isActionBalanced(cand, pddl, ai,
+                                             &mgroups, cands + next)){
                     proved = 0;
                     break;
                 }
@@ -1534,11 +1703,14 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
             }
         }
 
-        pddlLiftedMGroupsFree(cands + cur);
+        cur = next;
     }
-    pddlLiftedMGroupsFree(cands + cur);
 
     pddlLiftedMGroupsSortAndUniq(lm);
+
+    borISetFree(cands + 0);
+    borISetFree(cands + 1);
+    liftedMGroupsPoolFree(&mgroups);
 }
 
 void pddlLiftedMGroupsPrint(const pddl_t *pddl,
