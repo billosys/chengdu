@@ -1474,101 +1474,9 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
 
 int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
                                      const pddl_t *pddl,
-                                     int action_id,
-                                     pddl_lifted_mgroups_t *refined)
+                                     int action_id)
 {
-    const pddl_action_t *action = pddl->action.action + action_id;
-    if (refined == NULL){
-        return isActionBalanced(cand, pddl, action, NULL);
-    }else{
-        candidates_t cands;
-        candidatesInit(&cands, pddl);
-
-        int ret = isActionBalanced(cand, pddl, action, &cands);
-        for (int cid = 0; cid < cands.cand_size; ++cid){
-            const pddl_lifted_mgroup_t *mg = candidatesMGroup(&cands, cid);
-            pddlLiftedMGroupsAdd(refined, mg);
-        }
-
-        candidatesFree(&cands);
-        return ret;
-    }
-}
-
-int pddlLiftedMGroupIsGroundedConjTooHeavy(const pddl_lifted_mgroup_t *mg,
-                                           const pddl_t *pddl,
-                                           const pddl_cond_arr_t *arr,
-                                           const pddl_obj_id_t *arr_args)
-{
-    return isGroundedCondArrTooHeavy(mg, pddl, arr, arr_args);
-}
-
-int pddlLiftedMGroupsIsGroundedConjTooHeavy(const pddl_lifted_mgroups_t *mgs,
-                                            const pddl_t *pddl,
-                                            const pddl_cond_arr_t *c,
-                                            const pddl_obj_id_t *args)
-{
-    for (int i = 0; i < mgs->mgroup_size; ++i){
-        if (pddlLiftedMGroupIsGroundedConjTooHeavy(mgs->mgroup + i, pddl,
-                                                   c, args)){
-            return 1;
-        }
-    }
-    return 0;
-}
-
-int pddlLiftedMGroupIsDeleted(const pddl_lifted_mgroup_t *mg,
-                              const pddl_t *pddl,
-                              const pddl_cond_arr_t *pre,
-                              const pddl_cond_arr_t *add_eff,
-                              const pddl_cond_arr_t *del_eff,
-                              const pddl_obj_id_t *args)
-{
-    pddl_obj_id_t mg_arg[mg->param.param_size];
-
-    // First check whether there is a matching add effect. If there is one,
-    // then mg cannot be deleted
-    for (int addi = 0; addi < add_eff->size; ++addi){
-        const pddl_cond_atom_t *a = PDDL_COND_CAST(add_eff->cond[addi], atom);
-        const pddl_cond_atom_t *m;
-        FOR_EACH_CAND(mg, m){
-            if (m->pred != a->pred)
-                continue;
-            if (unifyFact(pddl, a, args, &mg->param, m, mg_arg))
-                return 0;
-        }
-    }
-
-    // Then find out if there is a matching delete effect and precondition
-    for (int di = 0; di < del_eff->size; ++di){
-        const pddl_cond_atom_t *d = PDDL_COND_CAST(del_eff->cond[di], atom);
-        const pddl_cond_atom_t *m;
-        FOR_EACH_CAND(mg, m){
-            if (m->pred != d->pred)
-                continue;
-            if (unifyFact(pddl, d, args, &mg->param, m, mg_arg)
-                    && equalAtomInArr(d, pre, args)){
-                return 1;
-            }
-        }
-    }
-    return 0;
-}
-
-int pddlLiftedMGroupsAnyIsDeleted(const pddl_lifted_mgroups_t *mgs,
-                                  const pddl_t *pddl,
-                                  const pddl_cond_arr_t *pre,
-                                  const pddl_cond_arr_t *add_eff,
-                                  const pddl_cond_arr_t *del_eff,
-                                  const pddl_obj_id_t *args)
-{
-    for (int i = 0; i < mgs->mgroup_size; ++i){
-        if (pddlLiftedMGroupIsDeleted(mgs->mgroup + i, pddl,
-                                      pre, add_eff, del_eff, args)){
-            return 1;
-        }
-    }
-    return 0;
+    return isActionBalanced(cand, pddl, pddl->action.action + action_id, NULL);
 }
 
 void pddlLiftedMGroupPrint(const pddl_t *pddl,
@@ -1717,6 +1625,74 @@ void pddlLiftedMGroupsExtractGoalAware(pddl_lifted_mgroups_t *dst,
         }
     }
     pddlLiftedMGroupsSortAndUniq(dst);
+}
+
+int pddlLiftedMGroupsIsGroundedConjTooHeavy(const pddl_lifted_mgroups_t *mgs,
+                                            const pddl_t *pddl,
+                                            const pddl_cond_arr_t *c,
+                                            const pddl_obj_id_t *args)
+{
+    for (int i = 0; i < mgs->mgroup_size; ++i){
+        if (isGroundedCondArrTooHeavy(mgs->mgroup + i, pddl, c, args))
+            return 1;
+    }
+    return 0;
+}
+
+static int mgroupIsDeleted(const pddl_lifted_mgroup_t *mg,
+                           const pddl_t *pddl,
+                           const pddl_cond_arr_t *pre,
+                           const pddl_cond_arr_t *add_eff,
+                           const pddl_cond_arr_t *del_eff,
+                           const pddl_obj_id_t *args)
+{
+    pddl_obj_id_t mg_arg[mg->param.param_size];
+
+    // First check whether there is a matching add effect. If there is one,
+    // then mg cannot be deleted
+    // TODO: We should actually be looking if there is a possibility that
+    //       the add effect is not there.
+    for (int addi = 0; addi < add_eff->size; ++addi){
+        const pddl_cond_atom_t *a = PDDL_COND_CAST(add_eff->cond[addi], atom);
+        const pddl_cond_atom_t *m;
+        FOR_EACH_CAND(mg, m){
+            if (m->pred != a->pred)
+                continue;
+            if (unifyFact(pddl, a, args, &mg->param, m, mg_arg))
+                return 0;
+        }
+    }
+
+    // Then find out if there is a matching delete effect and precondition
+    for (int di = 0; di < del_eff->size; ++di){
+        const pddl_cond_atom_t *d = PDDL_COND_CAST(del_eff->cond[di], atom);
+        const pddl_cond_atom_t *m;
+        FOR_EACH_CAND(mg, m){
+            if (m->pred != d->pred)
+                continue;
+            if (unifyFact(pddl, d, args, &mg->param, m, mg_arg)
+                    && equalAtomInArr(d, pre, args)){
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int pddlLiftedMGroupsAnyIsDeleted(const pddl_lifted_mgroups_t *mgs,
+                                  const pddl_t *pddl,
+                                  const pddl_cond_arr_t *pre,
+                                  const pddl_cond_arr_t *add_eff,
+                                  const pddl_cond_arr_t *del_eff,
+                                  const pddl_obj_id_t *args)
+{
+    for (int i = 0; i < mgs->mgroup_size; ++i){
+        if (mgroupIsDeleted(mgs->mgroup + i, pddl,
+                            pre, add_eff, del_eff, args)){
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static int proveOrRefineCandidate(const pddl_t *pddl,
