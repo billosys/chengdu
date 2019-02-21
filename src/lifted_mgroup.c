@@ -749,7 +749,9 @@ static int isGroundedCondArrTooHeavy(const pddl_lifted_mgroup_t *cand,
 }
 
 
-static int isInitTooHeavy(const pddl_lifted_mgroup_t *cand, const pddl_t *pddl)
+static int isConjTooHeavy(const pddl_lifted_mgroup_t *cand,
+                          const pddl_t *pddl,
+                          const pddl_cond_t *conj)
 {
     pddl_cond_arr_t arr;
 
@@ -757,7 +759,7 @@ static int isInitTooHeavy(const pddl_lifted_mgroup_t *cand, const pddl_t *pddl)
 
     pddl_cond_const_it_atom_t it;
     const pddl_cond_atom_t *a;
-    PDDL_COND_FOR_EACH_ATOM(&pddl->init->cls, &it, a){
+    PDDL_COND_FOR_EACH_ATOM(conj, &it, a){
         if (a->neg)
             continue;
         pddlCondArrAdd(&arr, &a->cls);
@@ -765,6 +767,11 @@ static int isInitTooHeavy(const pddl_lifted_mgroup_t *cand, const pddl_t *pddl)
     int ret = isGroundedCondArrTooHeavy(cand, pddl, &arr, NULL);
     pddlCondArrFree(&arr);
     return ret;
+}
+
+static int isInitTooHeavy(const pddl_lifted_mgroup_t *cand, const pddl_t *pddl)
+{
+    return isConjTooHeavy(cand, pddl, &pddl->init->cls);
 }
 
 /** Returns true if atom_i's atom from the candidate has only counted
@@ -1173,7 +1180,8 @@ static void refineCandidate(const unify_action_ctx_t *ctx,
 
 
 
-/** TODO **/
+/*** PARTIAL INSTANTIATION ***/
+/** Set all parameters param to object obj and removes parameter param **/
 static void candInstantiateParamWithObj(pddl_lifted_mgroup_t *dst,
                                         const pddl_lifted_mgroup_t *src,
                                         int param,
@@ -1198,10 +1206,11 @@ static void candInstantiateParamWithObj(pddl_lifted_mgroup_t *dst,
     --dst->param.param_size;
 }
 
-static void _tryInstantiateGivenInitTooHeavy(const pddl_t *pddl,
-                                             const pddl_lifted_mgroup_t *cand,
-                                             pddl_lifted_mgroups_t *lm,
-                                             int param)
+static void _removeHeavinessByInst(const pddl_t *pddl,
+                                   const pddl_cond_t *conj,
+                                   const pddl_lifted_mgroup_t *cand,
+                                   int param,
+                                   pddl_lifted_mgroups_t *lm)
 {
     ASSERT(!cand->param.param[param].is_counted_var);
     ASSERT(cand->param.param[param].type >= 0);
@@ -1214,14 +1223,12 @@ static void _tryInstantiateGivenInitTooHeavy(const pddl_t *pddl,
         pddl_lifted_mgroup_t new_cand;
         candInstantiateParamWithObj(&new_cand, cand, param, obj[oi]);
 
-        if (!pddlLiftedMGroupIsInitTooHeavy(&new_cand, pddl)){
+        if (!isConjTooHeavy(&new_cand, pddl, conj)){
             pddlLiftedMGroupsAdd(lm, &new_cand);
         }else{
             for (int next = param; next < new_cand.param.param_size; ++next){
-                if (!new_cand.param.param[next].is_counted_var){
-                    _tryInstantiateGivenInitTooHeavy(pddl, &new_cand, lm,
-                                                     next);
-                }
+                if (!new_cand.param.param[next].is_counted_var)
+                    _removeHeavinessByInst(pddl, conj, &new_cand, next, lm);
             }
         }
 
@@ -1229,13 +1236,17 @@ static void _tryInstantiateGivenInitTooHeavy(const pddl_t *pddl,
     }
 }
 
-static void tryInstantiateGivenInitTooHeavy(const pddl_t *pddl,
-                                            const pddl_lifted_mgroup_t *cand,
-                                            pddl_lifted_mgroups_t *mgroup)
+/** Try to instantiate some non-counted variables in cand to have at most
+ *  one matching atom in conj. Successfuly instantiate mgroups are added to
+ *  mgroup. */
+static void removeHeavinessByInst(const pddl_t *pddl,
+                                  const pddl_cond_t *conj,
+                                  const pddl_lifted_mgroup_t *cand,
+                                  pddl_lifted_mgroups_t *mgroup)
 {
     for (int i = 0; i < cand->param.param_size; ++i){
         if (!cand->param.param[i].is_counted_var)
-            _tryInstantiateGivenInitTooHeavy(pddl, cand, mgroup, i);
+            _removeHeavinessByInst(pddl, conj, cand, i, mgroup);
     }
 }
 
@@ -1709,8 +1720,8 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
             continue;
 
         if (!isSingleFact(cand)){
-            if (pddlLiftedMGroupIsInitTooHeavy(cand, pddl)){
-                tryInstantiateGivenInitTooHeavy(pddl, cand, lm);
+            if (isInitTooHeavy(cand, pddl)){
+                removeHeavinessByInst(pddl, &pddl->init->cls, cand, lm);
             }else{
                 pddlLiftedMGroupsAdd(lm, cand);
             }
