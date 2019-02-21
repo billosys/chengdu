@@ -100,10 +100,6 @@ static int mgroupsEq(const pddl_lifted_mgroup_t *m1,
 /** Returns hash key of the mutex group */
 static bor_htable_key_t mgroupHash(const pddl_lifted_mgroup_t *m);
 
-/** Callback functions for candidates_t.htable */
-static bor_htable_key_t htableHash(const bor_list_t *k, void *_);
-static int htableEq(const bor_list_t *k1, const bor_list_t *k2, void *_);
-
 /** Initialize pool of candidates */
 static void candidatesInit(candidates_t *p, const pddl_t *pddl);
 /** Free allocated memory */
@@ -117,10 +113,50 @@ static const pddl_lifted_mgroup_t *candidatesMGroup(candidates_t *p, int id);
 
 /** Returns true if the candidate contains atom of the specified predicate */
 static int candHasPred(const pddl_lifted_mgroup_t *cand, int pred);
-/** Returns true if atom_i's atom from the candidate has only counted
- *  variables and nothing else */
-static int candAtomHasOnlyCountedVars(const pddl_lifted_mgroup_t *cand,
-                                      int atom_i);
+/** Returns false if there are two action arguments that have assigned the
+ *  same value, but their types are disjunct. */
+static int actionArgTypesAreValid(const pddl_t *pddl,
+                                  const pddl_params_t *params,
+                                  const int *args);
+/** Returns value corresponding to the specified argument */
+static int atomArg(const pddl_cond_atom_t *atom, int argi, const int *args);
+/** Returns true if the atoms are equal under the given variable assignment */
+static int atomsEqual(const pddl_cond_atom_t *atom1,
+                      const pddl_cond_atom_t *atom2,
+                      const int *args);
+/** Returns true if the exactly same atom can be found in conj */
+static int equalAtomIn(const pddl_cond_atom_t *atom,
+                       const pddl_cond_t *conj,
+                       const int *args);
+static int equalAtomInArr(const pddl_cond_atom_t *atom,
+                          const pddl_cond_arr_t *arr,
+                          const int *args);
+/** Returns true the inequalities in the conjuction hold given the
+ *  bound arguments */
+static int inequalitiesHold(const pddl_t *pddl,
+                            const pddl_cond_t *pre,
+                            const int *args);
+/** Returns true if static preconditions are not violated with the given
+ *  arguments */
+static int staticPreHold(const pddl_t *pddl,
+                         const pddl_cond_t *pre,
+                         const int *args);
+
+/** Unify fact (grounded with fact_arg) with the candidate atom */
+static int unifyFact(const pddl_t *pddl,
+                     const pddl_cond_atom_t *fact,
+                     const pddl_obj_id_t *fact_arg,
+                     const pddl_params_t *cand_params,
+                     const pddl_cond_atom_t *cand_atom,
+                     pddl_obj_id_t *cand_arg);
+/** Returns true if fact (grounded with fact_arg) can be unified with the
+ *  given candidate atom and arguments. */
+static int canUnifyFact(const pddl_t *pddl,
+                        const pddl_cond_atom_t *fact,
+                        const pddl_obj_id_t *fact_arg,
+                        const pddl_params_t *cand_params,
+                        const pddl_cond_atom_t *cand_atom,
+                        const pddl_obj_id_t *cand_arg);
 /** Returns true if the atoms are compatible, i.e., they are the same
  *  predicate and arguments have matching types/objects */
 static int atomsAreCompatible(const pddl_t *pddl,
@@ -128,26 +164,57 @@ static int atomsAreCompatible(const pddl_t *pddl,
                               const pddl_params_t *a1_params,
                               const pddl_cond_atom_t *a2,
                               const pddl_params_t *a2_params);
+/** Unify action's atom with the candidate atom */
+static int unifyActionAtom(unify_action_ctx_t *ctx,
+                           const pddl_cond_atom_t *action_atom,
+                           const pddl_cond_atom_t *cand_atom);
 
 
-/** Generates the initial candidates */
-static void initialCandidates(const pddl_t *pddl, candidates_t *cands);
-
-/** Create a copy of src but only with atoms having only counted variables
- *  and nothing else. */
-static void selectOnlyAtomsWithCountedVars(pddl_lifted_mgroup_t *dst,
-                                           const pddl_lifted_mgroup_t *src);
-/** Returns true if the initial state is too heavy because of atoms having
- *  only counted variables */
+/** Returns true if the conjuction of grounded atoms is too heavy for the
+ *  candidate mutex group */
+static int isGroundedCondArrTooHeavy(const pddl_lifted_mgroup_t *cand,
+                                     const pddl_t *pddl,
+                                     const pddl_cond_arr_t *arr,
+                                     const pddl_obj_id_t *arr_args);
+static int isGroundedConjTooHeavy(const pddl_lifted_mgroup_t *cand,
+                                  const pddl_t *pddl,
+                                  const pddl_cond_t *conj);
+/** Returns the if the initial state is too heavy */
+static int isInitTooHeavy(const pddl_lifted_mgroup_t *cand, const pddl_t *pddl);
+/** Returns true if the intial state is too heavy for the counted variables */
 static int isInitTooHeavyForCountedVars(const pddl_lifted_mgroup_t *cand_in,
                                         const pddl_t *pddl);
+/** Returns true if the action is too heavy */
+static int isActionTooHeavy(const pddl_lifted_mgroup_t *cand,
+                            const pddl_t *pddl,
+                            const pddl_action_t *action);
 
+/** Returns true if the action has balanced all add effects.
+ *  If it has not, the candidate is refined and added to cands. */
+static int isActionBalanced(const pddl_lifted_mgroup_t *cand,
+                            const pddl_t *pddl,
+                            const pddl_action_t *action,
+                            candidates_t *cands);
 
-/** TODO **/
+/** Refine candidate for the given binding to arguments in ctx **/
 static void refineCandidate(const unify_action_ctx_t *ctx,
                             const pddl_action_t *action,
                             const pddl_lifted_mgroup_t *cand,
                             candidates_t *cands);
+
+/** Try to instantiate some non-counted variables in cand to have at most
+ *  one matching atom in conj. Successfuly instantiate mgroups are added to
+ *  mgroup. */
+static void removeHeavinessByInst(const pddl_t *pddl,
+                                  const pddl_cond_t *conj,
+                                  const pddl_lifted_mgroup_t *cand,
+                                  pddl_lifted_mgroups_t *mgroup);
+
+/** Generates the initial candidates */
+static void initialCandidates(const pddl_t *pddl, candidates_t *cands);
+
+
+
 
 static int cmpLiftedMGroups(const void *a, const void *b, void *_)
 {
@@ -290,7 +357,6 @@ static const pddl_lifted_mgroup_t *candidatesMGroup(candidates_t *p, int id)
 
 
 
-/** Returns true if the candidate contains atom of the specified predicate */
 static int candHasPred(const pddl_lifted_mgroup_t *cand, int pred)
 {
     for (int i = 0; i < cand->cond.size; ++i){
@@ -301,9 +367,6 @@ static int candHasPred(const pddl_lifted_mgroup_t *cand, int pred)
     return 0;
 }
 
-
-/** Returns false if there are two action arguments that have assigned the
- *  same value, but their types are disjunct. */
 static int actionArgTypesAreValid(const pddl_t *pddl,
                                   const pddl_params_t *params,
                                   const int *args)
@@ -325,7 +388,6 @@ static int actionArgTypesAreValid(const pddl_t *pddl,
     return 1;
 }
 
-/** Returns value corresponding to the specified argument */
 static int atomArg(const pddl_cond_atom_t *atom, int argi, const int *args)
 {
     int param = atom->arg[argi].param;
@@ -334,7 +396,6 @@ static int atomArg(const pddl_cond_atom_t *atom, int argi, const int *args)
     return atom->arg[argi].obj;
 }
 
-/** Returns true if the atoms are equal under the given variable assignment */
 static int atomsEqual(const pddl_cond_atom_t *atom1,
                       const pddl_cond_atom_t *atom2,
                       const int *args)
@@ -349,7 +410,6 @@ static int atomsEqual(const pddl_cond_atom_t *atom1,
     return 1;
 }
 
-/** Returns true if the exactly same atom can be found in conj */
 static int equalAtomIn(const pddl_cond_atom_t *atom,
                        const pddl_cond_t *conj,
                        const int *args)
@@ -382,8 +442,6 @@ static int equalAtomInArr(const pddl_cond_atom_t *atom,
     return 0;
 }
 
-/** Returns true the inequalities in the conjuction hold given the
- *  bound arguments */
 static int inequalitiesHold(const pddl_t *pddl,
                             const pddl_cond_t *pre,
                             const int *args)
@@ -492,7 +550,6 @@ static int _unifyFact(const pddl_t *pddl,
     return 1;
 }
 
-/** TODO **/
 static int unifyFact(const pddl_t *pddl,
                      const pddl_cond_atom_t *fact,
                      const pddl_obj_id_t *fact_arg,
@@ -505,7 +562,6 @@ static int unifyFact(const pddl_t *pddl,
     return _unifyFact(pddl, fact, fact_arg, cand_params, cand_atom, cand_arg);
 }
 
-/** TODO **/
 static int canUnifyFact(const pddl_t *pddl,
                         const pddl_cond_atom_t *fact,
                         const pddl_obj_id_t *fact_arg,
@@ -564,10 +620,9 @@ static void renameArgs(unify_action_ctx_t *ctx, int from, int to)
     }
 }
 
-/** TODO **/
-static int unifyActionAtoms(unify_action_ctx_t *ctx,
-                            const pddl_cond_atom_t *action_atom,
-                            const pddl_cond_atom_t *cand_atom)
+static int unifyActionAtom(unify_action_ctx_t *ctx,
+                           const pddl_cond_atom_t *action_atom,
+                           const pddl_cond_atom_t *cand_atom)
 {
     if (!atomsAreCompatible(ctx->pddl,
                             cand_atom, ctx->cand_param,
@@ -657,7 +712,8 @@ static int unifyActionAtoms(unify_action_ctx_t *ctx,
 }
 
 /*** HEAVINESS TEST ***/
-/** TODO **/
+/** Returns true if the effect pair can be unified with the candidate atom
+ *  pair. **/
 static int canUnifyEffPair(const pddl_t *pddl,
                            const pddl_action_t *action,
                            const ce_atom_t *eff1,
@@ -667,8 +723,8 @@ static int canUnifyEffPair(const pddl_t *pddl,
                            const pddl_cond_atom_t *cand2)
 {
     UNIFY_ACTION_CTX(ctx, pddl, &action->param, cand_params);
-    if (!unifyActionAtoms(&ctx, eff1->atom, cand1)
-            || !unifyActionAtoms(&ctx, eff2->atom, cand2)){
+    if (!unifyActionAtom(&ctx, eff1->atom, cand1)
+            || !unifyActionAtom(&ctx, eff2->atom, cand2)){
         return 0;
     }
 
@@ -710,7 +766,6 @@ static int canUnifyEffPair(const pddl_t *pddl,
     return 1;
 }
 
-/** TODO **/
 static int isGroundedCondArrTooHeavy(const pddl_lifted_mgroup_t *cand,
                                      const pddl_t *pddl,
                                      const pddl_cond_arr_t *arr,
@@ -748,10 +803,9 @@ static int isGroundedCondArrTooHeavy(const pddl_lifted_mgroup_t *cand,
     return 0;
 }
 
-
-static int isConjTooHeavy(const pddl_lifted_mgroup_t *cand,
-                          const pddl_t *pddl,
-                          const pddl_cond_t *conj)
+static int isGroundedConjTooHeavy(const pddl_lifted_mgroup_t *cand,
+                                  const pddl_t *pddl,
+                                  const pddl_cond_t *conj)
 {
     pddl_cond_arr_t arr;
 
@@ -771,7 +825,7 @@ static int isConjTooHeavy(const pddl_lifted_mgroup_t *cand,
 
 static int isInitTooHeavy(const pddl_lifted_mgroup_t *cand, const pddl_t *pddl)
 {
-    return isConjTooHeavy(cand, pddl, &pddl->init->cls);
+    return isGroundedConjTooHeavy(cand, pddl, &pddl->init->cls);
 }
 
 /** Returns true if atom_i's atom from the candidate has only counted
@@ -860,20 +914,19 @@ static int isActionTooHeavy(const pddl_lifted_mgroup_t *cand,
 
 
 /*** BALANCE TEST ***/
-/** TODO **/
 static int unifyActionAddEff(unify_action_ctx_t *ctx,
                              const pddl_action_t *action,
                              const ce_atom_t *eff,
                              const pddl_cond_atom_t *cand_atom)
 {
-    return unifyActionAtoms(ctx, eff->atom, cand_atom)
+    return unifyActionAtom(ctx, eff->atom, cand_atom)
                 && actionArgTypesAreValid(ctx->pddl, &action->param,
                                           ctx->action_arg)
                 && inequalitiesHold(ctx->pddl, action->pre, ctx->action_arg)
                 && inequalitiesHold(ctx->pddl, eff->pre, ctx->action_arg);
 }
 
-/** TODO **/
+/** Returns true if the add effect is balanced by the given delete effect **/
 static int isAddEffBalancedWith(const unify_action_ctx_t *ctx_in,
                                 const pddl_action_t *action,
                                 const ce_atom_t *del_eff,
@@ -963,7 +1016,6 @@ static int isAddEffBalancedWith(const unify_action_ctx_t *ctx_in,
     return 0;
 }
 
-/** TODO **/
 static int isAddEffBalanced(const unify_action_ctx_t *ctx,
                             const pddl_action_t *action,
                             const ce_atom_t *add_eff,
@@ -993,7 +1045,6 @@ static int isAddEffBalanced(const unify_action_ctx_t *ctx,
 }
                             
 
-/** TODO **/
 static int isActionBalanced(const pddl_lifted_mgroup_t *cand,
                             const pddl_t *pddl,
                             const pddl_action_t *action,
@@ -1223,7 +1274,7 @@ static void _removeHeavinessByInst(const pddl_t *pddl,
         pddl_lifted_mgroup_t new_cand;
         candInstantiateParamWithObj(&new_cand, cand, param, obj[oi]);
 
-        if (!isConjTooHeavy(&new_cand, pddl, conj)){
+        if (!isGroundedConjTooHeavy(&new_cand, pddl, conj)){
             pddlLiftedMGroupsAdd(lm, &new_cand);
         }else{
             for (int next = param; next < new_cand.param.param_size; ++next){
@@ -1236,9 +1287,6 @@ static void _removeHeavinessByInst(const pddl_t *pddl,
     }
 }
 
-/** Try to instantiate some non-counted variables in cand to have at most
- *  one matching atom in conj. Successfuly instantiate mgroups are added to
- *  mgroup. */
 static void removeHeavinessByInst(const pddl_t *pddl,
                                   const pddl_cond_t *conj,
                                   const pddl_lifted_mgroup_t *cand,
