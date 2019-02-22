@@ -202,6 +202,14 @@ static void refineCandidate(const unify_action_ctx_t *ctx,
                             const pddl_lifted_mgroup_t *cand,
                             candidates_t *cands);
 
+/** TODO **/
+static void refineCandidateWithSubtypes(const pddl_types_t *ts,
+                                        const pddl_params_t *action_param,
+                                        const pddl_cond_atom_t *add_eff,
+                                        const pddl_lifted_mgroup_t *cand,
+                                        const pddl_cond_atom_t *cand_add_atom,
+                                        candidates_t *cands);
+
 /** Try to instantiate some non-counted variables in cand to have at most
  *  one matching atom in conj. Successfuly instantiate mgroups are added to
  *  mgroup. */
@@ -354,7 +362,47 @@ static const pddl_lifted_mgroup_t *candidatesMGroup(candidates_t *p, int id)
 }
 
 
+static void _genAllSubtypes(const pddl_t *pddl,
+                            const pddl_lifted_mgroup_t *cand,
+                            int param_id,
+                            candidates_t *cands)
+{
+    const pddl_types_t *ts = &pddl->type;
+    const pddl_param_t *p = cand->param.param + param_id;
 
+    for (int new_type = 0; new_type < ts->type_size; ++new_type){
+        if (new_type == p->type)
+            continue;
+
+        if (pddlTypesIsParent(ts, new_type, p->type)){
+            pddl_lifted_mgroup_t new_cand;
+            pddlLiftedMGroupInitCopy(&new_cand, cand);
+            new_cand.param.param[param_id].type = new_type;
+            candidatesAdd(cands, &new_cand);
+            /*
+            pddlLiftedMGroupPrint(pddl, cand, stderr);
+            pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
+            fprintf(stderr, "^^^ %d\n", param_id);
+            fflush(stderr);
+            */
+
+            if (param_id + 1 < cand->param.param_size)
+                _genAllSubtypes(pddl, &new_cand, param_id + 1, cands);
+            pddlLiftedMGroupFree(&new_cand);
+        }
+    }
+
+    if (param_id + 1 < cand->param.param_size)
+        _genAllSubtypes(pddl, cand, param_id + 1, cands);
+}
+
+static void genAllSubtypes(const pddl_t *pddl,
+                           const pddl_lifted_mgroup_t *cand,
+                           candidates_t *cands)
+{
+    if (cand->param.param_size > 0)
+        _genAllSubtypes(pddl, cand, 0, cands);
+}
 
 
 static int candHasPred(const pddl_lifted_mgroup_t *cand, int pred)
@@ -1065,8 +1113,16 @@ static int isActionBalanced(const pddl_lifted_mgroup_t *cand,
             UNIFY_ACTION_CTX(ctx, pddl, &action->param, &cand->param);
             if (unifyActionAddEff(&ctx, action, &add_eff, cand_atom)){
                 if (!isAddEffBalanced(&ctx, action, &add_eff, cand)){
-                    if (cands != NULL)
+                    if (cands != NULL){
                         refineCandidate(&ctx, action, cand, cands);
+                        refineCandidateWithSubtypes(&pddl->type,
+                                                    &action->param,
+                                                    add_eff.atom,
+                                                    cand,
+                                                    cand_atom,
+                                                    cands);
+                        //genAllSubtypes(pddl, cand, cands);
+                    }
                     return 0;
                 }
             }
@@ -1228,6 +1284,148 @@ static void refineCandidate(const unify_action_ctx_t *ctx,
     }
 }
 
+static void addCandidateWithChangedParamType(const pddl_lifted_mgroup_t *cand,
+                                             int param,
+                                             int type,
+                                             candidates_t *cands)
+{
+    pddl_lifted_mgroup_t new_cand;
+    pddlLiftedMGroupInitCopy(&new_cand, cand);
+    new_cand.param.param[param].type = type;
+    candidatesAdd(cands, &new_cand);
+    /*
+       pddlLiftedMGroupPrint(pddl, cand, stderr);
+       pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
+       fprintf(stderr, "^^^ %d\n", param_id);
+       fflush(stderr);
+     */
+
+    pddlLiftedMGroupFree(&new_cand);
+}
+
+static void _refineCandidateWithSubtypes(const pddl_types_t *ts,
+                                         const pddl_params_t *action_param,
+                                         const pddl_cond_atom_t *add_eff,
+                                         const pddl_lifted_mgroup_t *cand,
+                                         const pddl_cond_atom_t *cand_add_atom,
+                                         int argi,
+                                         candidates_t *cands)
+{
+    if (argi + 1 < cand_add_atom->arg_size){
+        _refineCandidateWithSubtypes(ts, action_param, add_eff,
+                                     cand, cand_add_atom,
+                                     argi + 1, cands);
+    }
+
+    int cparam = cand_add_atom->arg[argi].param;
+    int aparam = add_eff->arg[argi].param;
+    pddl_obj_id_t aobj = add_eff->arg[argi].obj;
+
+    if (cand_add_atom->arg[argi].obj >= 0)
+        return;
+
+    int ctype = cand->param.param[cparam].type;
+    if (aobj >= 0){
+        for (int type = 0; type < ts->type_size; ++type){
+            if (type != ctype
+                    && !pddlTypesObjHasType(ts, type, aobj)
+                    && pddlTypesIsParent(ts, type, ctype)){
+                // TODO: Refactor
+                pddl_lifted_mgroup_t new_cand;
+                pddlLiftedMGroupInitCopy(&new_cand, cand);
+                new_cand.param.param[cparam].type = type;
+                candidatesAdd(cands, &new_cand);
+                /*
+                   pddlLiftedMGroupPrint(pddl, cand, stderr);
+                   pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
+                   fprintf(stderr, "^^^ %d\n", param_id);
+                   fflush(stderr);
+                 */
+
+                if (argi + 1 < cand_add_atom->arg_size){
+                    _refineCandidateWithSubtypes(ts, action_param, add_eff,
+                                                 &new_cand, cand_add_atom,
+                                                 argi + 1, cands);
+                }
+                pddlLiftedMGroupFree(&new_cand);
+            }
+        }
+    }else{
+        int atype = action_param->param[aparam].type;
+        for (int type = 0; type < ts->type_size; ++type){
+            if (type != ctype
+                    && pddlTypesAreDisjunct(ts, type, atype)
+                    && pddlTypesIsParent(ts, type, ctype)){
+                pddl_lifted_mgroup_t new_cand;
+                pddlLiftedMGroupInitCopy(&new_cand, cand);
+                new_cand.param.param[cparam].type = type;
+                candidatesAdd(cands, &new_cand);
+                /*
+                   pddlLiftedMGroupPrint(pddl, cand, stderr);
+                   pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
+                   fprintf(stderr, "^^^ %d\n", param_id);
+                   fflush(stderr);
+                 */
+
+                if (argi + 1 < cand_add_atom->arg_size){
+                    _refineCandidateWithSubtypes(ts, action_param, add_eff,
+                                                 &new_cand, cand_add_atom,
+                                                 argi + 1, cands);
+                }
+                pddlLiftedMGroupFree(&new_cand);
+            }
+        }
+    }
+    
+
+}
+
+static void refineCandidateWithAllSubtypes(const pddl_types_t *ts,
+                                           const pddl_params_t *action_param,
+                                           const pddl_cond_atom_t *add_eff,
+                                           const pddl_lifted_mgroup_t *cand,
+                                           const pddl_cond_atom_t *cand_add_atom,
+                                           candidates_t *cands)
+{
+    if (add_eff->arg_size > 0)
+        _refineCandidateWithSubtypes(ts, action_param, add_eff,
+                                     cand, cand_add_atom, 0, cands);
+}
+
+static void refineCandidateWithSubtypes(const pddl_types_t *ts,
+                                        const pddl_params_t *action_param,
+                                        const pddl_cond_atom_t *add_eff,
+                                        const pddl_lifted_mgroup_t *cand,
+                                        const pddl_cond_atom_t *cand_add_atom,
+                                        candidates_t *cands)
+{
+    for (int argi = 0; argi < add_eff->arg_size; ++argi){
+        if (cand_add_atom->arg[argi].obj >= 0)
+            continue;
+
+        int cparam = cand_add_atom->arg[argi].param;
+        int ctype = cand->param.param[cparam].type;
+
+        int aparam = add_eff->arg[argi].param;
+        pddl_obj_id_t aobj = add_eff->arg[argi].obj;
+        int atype = -1;
+        if (aparam >= 0)
+            atype = action_param->param[aparam].type;
+
+        // TODO: Use type tree instead and only types that are nearest to
+        //       ctype possible
+        for (int type = 0; type < ts->type_size; ++type){
+            if (type == ctype || !pddlTypesIsParent(ts, type, ctype))
+                continue;
+            if ((atype >= 0 && pddlTypesAreDisjunct(ts, type, atype))
+                    || (aobj >= 0 && !pddlTypesObjHasType(ts, type, aobj))){
+                addCandidateWithChangedParamType(cand, cparam, type, cands);
+            }
+        }
+    }
+}
+
+
 
 
 
@@ -1312,11 +1510,13 @@ static void initialCandidates(const pddl_t *pddl, candidates_t *cands)
 
         pddlLiftedMGroupInitCandFromPred(&m, pred, -1);
         candidatesAdd(cands, &m);
+        //genAllSubtypes(pddl, &m, cands);
         pddlLiftedMGroupFree(&m);
 
         for (int i = 0; i < pred->param_size; ++i){
             pddlLiftedMGroupInitCandFromPred(&m, pred, i);
             candidatesAdd(cands, &m);
+            //genAllSubtypes(pddl, &m, cands);
             pddlLiftedMGroupFree(&m);
         }
     }
@@ -1738,7 +1938,8 @@ void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
     // TODO: Parametrize number of candidates
 
     initialCandidates(pddl, &cands);
-    for (int cand_id = 0; cand_id < cands.cand_size; ++cand_id){
+    // TODO: Parametrize 100000
+    for (int cand_id = 0; cand_id < cands.cand_size && cand_id < 100000; ++cand_id){
         const pddl_lifted_mgroup_t *cand = candidatesMGroup(&cands, cand_id);
         if (proveOrRefineCandidate(pddl, cand, &cands) != 0)
             continue;
