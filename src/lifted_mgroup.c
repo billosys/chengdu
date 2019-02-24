@@ -187,7 +187,8 @@ static int isInitTooHeavyForCountedVars(const pddl_lifted_mgroup_t *cand_in,
 /** Returns true if the action is too heavy */
 static int isActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                             const pddl_t *pddl,
-                            const pddl_action_t *action);
+                            const pddl_action_t *action,
+                            candidates_t *cands);
 
 /** Returns true if the action has balanced all add effects.
  *  If it has not, the candidate is refined and added to cands. */
@@ -927,7 +928,8 @@ static int isInitTooHeavyForCountedVars(const pddl_lifted_mgroup_t *cand_in,
 
 static int isActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                             const pddl_t *pddl,
-                            const pddl_action_t *action)
+                            const pddl_action_t *action,
+                            candidates_t *cands)
 {
     pddl_cond_const_it_eff_t it1, it2;
     const pddl_cond_atom_t *a1, *a2, *cand1, *cand2;
@@ -950,6 +952,14 @@ static int isActionTooHeavy(const pddl_lifted_mgroup_t *cand,
 
                     if (canUnifyEffPair(pddl, action, &ce_a1, &ce_a2,
                                         &cand->param, cand1, cand2)){
+                        if (cands != NULL){
+                            refineCandidateWithSubtypes(&pddl->type,
+                                    &action->param, a1,
+                                    cand, cand1, cands);
+                            refineCandidateWithSubtypes(&pddl->type,
+                                    &action->param, a2,
+                                    cand, cand2, cands);
+                        }
                         return 1;
                     }
                 }
@@ -1409,15 +1419,19 @@ static void refineCandidateWithSubtypes(const pddl_types_t *ts,
         int aparam = add_eff->arg[argi].param;
         pddl_obj_id_t aobj = add_eff->arg[argi].obj;
         int atype = -1;
-        if (aparam >= 0)
+        const pddl_type_t *at;
+        if (aparam >= 0){
             atype = action_param->param[aparam].type;
+            at = ts->type + atype;
+        }
 
-        // TODO: Use type tree instead and only types that are nearest to
-        //       ctype possible
         for (int type = 0; type < ts->type_size; ++type){
             if (type == ctype || !pddlTypesIsParent(ts, type, ctype))
                 continue;
-            if ((atype >= 0 && pddlTypesAreDisjunct(ts, type, atype))
+            const pddl_type_t *t = ts->type + type;
+            if ((atype >= 0
+                        && pddlTypesAreDisjunct(ts, type, atype)
+                        && (t->parent == ctype || t->parent == at->parent))
                     || (aobj >= 0 && !pddlTypesObjHasType(ts, type, aobj))){
                 addCandidateWithChangedParamType(cand, cparam, type, cands);
             }
@@ -1669,7 +1683,7 @@ int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                                      const pddl_t *pddl,
                                      int action_id)
 {
-    return isActionTooHeavy(cand, pddl, pddl->action.action + action_id);
+    return isActionTooHeavy(cand, pddl, pddl->action.action + action_id, NULL);
 }
 
 int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
@@ -1907,7 +1921,7 @@ static int proveOrRefineCandidate(const pddl_t *pddl,
 
     for (int ai = 0; ai < pddl->action.action_size; ++ai){
         const pddl_action_t *a = pddl->action.action + ai;
-        if (isActionTooHeavy(cand, pddl, a)
+        if (isActionTooHeavy(cand, pddl, a, cands)
                 || !isActionBalanced(cand, pddl, a, cands)){
             return -1;
         }
