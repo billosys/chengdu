@@ -30,8 +30,6 @@ struct candidate {
     pddl_lifted_mgroup_t mgroup;
     bor_htable_key_t hash;
     bor_list_t htable;
-
-    int *args; /*!< Arguments bound to mgroup's parameters */
 };
 typedef struct candidate candidate_t;
 
@@ -39,8 +37,10 @@ struct candidates {
     bor_htable_t *htable; /*!< Hash table of all candidates */
     bor_extarr_t *cand; /*!< Extensible array holding candidates */
     int cand_size; /*!< Number of candidates */
+    int next;
 
     const pddl_t *pddl;
+    pddl_lifted_mgroups_infer_config_t cfg;
 };
 typedef struct candidates candidates_t;
 
@@ -101,14 +101,18 @@ static int mgroupsEq(const pddl_lifted_mgroup_t *m1,
 static bor_htable_key_t mgroupHash(const pddl_lifted_mgroup_t *m);
 
 /** Initialize pool of candidates */
-static void candidatesInit(candidates_t *p, const pddl_t *pddl);
+static void candidatesInit(candidates_t *p,
+                           const pddl_t *pddl,
+                           const pddl_lifted_mgroups_infer_config_t *cfg);
 /** Free allocated memory */
 static void candidatesFree(candidates_t *p);
 /** Adds the given mcandidate. If m is already there -1 is returned,
- *  otherwise ID of the new candidate is returned */
+ *  otherwise 0 is returned. */
 static int candidatesAdd(candidates_t *p, const pddl_lifted_mgroup_t *m);
-/** Returns candidate mutex group with the given ID */
-static const pddl_lifted_mgroup_t *candidatesMGroup(candidates_t *p, int id);
+/** Returns true if no more candidates are available */
+static int candidatesEmpty(const candidates_t *p);
+/** Returns next candidate from the pool */
+static const pddl_lifted_mgroup_t *candidatesNext(candidates_t *p);
 
 
 /** Returns true if the candidate contains atom of the specified predicate */
@@ -311,7 +315,9 @@ static int htableEq(const bor_list_t *k1, const bor_list_t *k2, void *_)
     return mgroupsEq(&m1->mgroup, &m2->mgroup);
 }
 
-static void candidatesInit(candidates_t *p, const pddl_t *pddl)
+static void candidatesInit(candidates_t *p,
+                           const pddl_t *pddl,
+                           const pddl_lifted_mgroups_infer_config_t *cfg)
 {
     candidate_t mg;
 
@@ -320,7 +326,9 @@ static void candidatesInit(candidates_t *p, const pddl_t *pddl)
 
     bzero(&mg, sizeof(mg));
     p->cand = borExtArrNew(sizeof(mg), NULL, &mg);
+    p->next = 0;
 
+    p->cfg = *cfg;
     p->pddl = pddl;
 }
 
@@ -329,8 +337,6 @@ static void candidatesFree(candidates_t *p)
     for (int i = 0; i < p->cand_size; ++i){
         candidate_t *m = borExtArrGet(p->cand, i);
         pddlLiftedMGroupFree(&m->mgroup);
-        if (m->args != NULL)
-            BOR_FREE(m->args);
     }
 
     borHTableDel(p->htable);
@@ -339,71 +345,38 @@ static void candidatesFree(candidates_t *p)
 
 static int candidatesAdd(candidates_t *p, const pddl_lifted_mgroup_t *m)
 {
+    if (p->cand_size >= p->cfg.max_candidates)
+        return -1;
+
     candidate_t *el = borExtArrGet(p->cand, p->cand_size);
     el->mgroup = *m;
     el->hash = mgroupHash(m);
-    el->args = NULL;
 
     bor_list_t *ins = borHTableInsertUnique(p->htable, &el->htable);
     if (ins == NULL){
         pddlLiftedMGroupInitCopy(&el->mgroup, m);
         el->id = p->cand_size;
         ++p->cand_size;
-        return el->id;
+        return 0;
+
     }else{
         return -1;
     }
 }
 
-static const pddl_lifted_mgroup_t *candidatesMGroup(candidates_t *p, int id)
+static int candidatesEmpty(const candidates_t *p)
 {
-    ASSERT(id < p->cand_size);
-    candidate_t *m = borExtArrGet(p->cand, id);
-    return &m->mgroup;
+    return p->cand_size == p->next;
 }
 
-
-static void _genAllSubtypes(const pddl_t *pddl,
-                            const pddl_lifted_mgroup_t *cand,
-                            int param_id,
-                            candidates_t *cands)
+static const pddl_lifted_mgroup_t *candidatesNext(candidates_t *p)
 {
-    const pddl_types_t *ts = &pddl->type;
-    const pddl_param_t *p = cand->param.param + param_id;
+    candidate_t *cand;
 
-    for (int new_type = 0; new_type < ts->type_size; ++new_type){
-        if (new_type == p->type)
-            continue;
-
-        if (pddlTypesIsParent(ts, new_type, p->type)){
-            pddl_lifted_mgroup_t new_cand;
-            pddlLiftedMGroupInitCopy(&new_cand, cand);
-            new_cand.param.param[param_id].type = new_type;
-            candidatesAdd(cands, &new_cand);
-            /*
-            pddlLiftedMGroupPrint(pddl, cand, stderr);
-            pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
-            fprintf(stderr, "^^^ %d\n", param_id);
-            fflush(stderr);
-            */
-
-            if (param_id + 1 < cand->param.param_size)
-                _genAllSubtypes(pddl, &new_cand, param_id + 1, cands);
-            pddlLiftedMGroupFree(&new_cand);
-        }
-    }
-
-    if (param_id + 1 < cand->param.param_size)
-        _genAllSubtypes(pddl, cand, param_id + 1, cands);
+    cand = borExtArrGet(p->cand, p->next++);
+    return &cand->mgroup;
 }
 
-static void genAllSubtypes(const pddl_t *pddl,
-                           const pddl_lifted_mgroup_t *cand,
-                           candidates_t *cands)
-{
-    if (cand->param.param_size > 0)
-        _genAllSubtypes(pddl, cand, 0, cands);
-}
 
 
 static int candHasPred(const pddl_lifted_mgroup_t *cand, int pred)
@@ -952,7 +925,9 @@ static int isActionTooHeavy(const pddl_lifted_mgroup_t *cand,
 
                     if (canUnifyEffPair(pddl, action, &ce_a1, &ce_a2,
                                         &cand->param, cand1, cand2)){
-                        if (cands != NULL){
+                        if (cands != NULL
+                                && cands->cfg.use_type_refinement
+                                && cands->cfg.use_type_refinement_too_heavy){
                             refineCandidateWithSubtypes(&pddl->type,
                                     &action->param, a1,
                                     cand, cand1, cands);
@@ -1125,13 +1100,14 @@ static int isActionBalanced(const pddl_lifted_mgroup_t *cand,
                 if (!isAddEffBalanced(&ctx, action, &add_eff, cand)){
                     if (cands != NULL){
                         refineCandidate(&ctx, action, cand, cands);
-                        refineCandidateWithSubtypes(&pddl->type,
-                                                    &action->param,
-                                                    add_eff.atom,
-                                                    cand,
-                                                    cand_atom,
-                                                    cands);
-                        //genAllSubtypes(pddl, cand, cands);
+
+                        if (cands->cfg.use_type_refinement
+                                && cands->cfg.use_type_refinement_balance){
+                            refineCandidateWithSubtypes(&pddl->type,
+                                                        &action->param,
+                                                        add_eff.atom, cand,
+                                                        cand_atom, cands);
+                        }
                     }
                     return 0;
                 }
@@ -1278,6 +1254,9 @@ static void refineCandidate(const unify_action_ctx_t *ctx,
                             const pddl_lifted_mgroup_t *cand,
                             candidates_t *cands)
 {
+    if (cands == NULL || cands->cand_size >= cands->cfg.max_candidates)
+        return;
+
     pddl_cond_const_it_eff_t it;
     //pddl_cond_const_it_atom_t it;
     const pddl_cond_atom_t *a;
@@ -1313,95 +1292,6 @@ static void addCandidateWithChangedParamType(const pddl_lifted_mgroup_t *cand,
     pddlLiftedMGroupFree(&new_cand);
 }
 
-static void _refineCandidateWithSubtypes(const pddl_types_t *ts,
-                                         const pddl_params_t *action_param,
-                                         const pddl_cond_atom_t *add_eff,
-                                         const pddl_lifted_mgroup_t *cand,
-                                         const pddl_cond_atom_t *cand_add_atom,
-                                         int argi,
-                                         candidates_t *cands)
-{
-    if (argi + 1 < cand_add_atom->arg_size){
-        _refineCandidateWithSubtypes(ts, action_param, add_eff,
-                                     cand, cand_add_atom,
-                                     argi + 1, cands);
-    }
-
-    int cparam = cand_add_atom->arg[argi].param;
-    int aparam = add_eff->arg[argi].param;
-    pddl_obj_id_t aobj = add_eff->arg[argi].obj;
-
-    if (cand_add_atom->arg[argi].obj >= 0)
-        return;
-
-    int ctype = cand->param.param[cparam].type;
-    if (aobj >= 0){
-        for (int type = 0; type < ts->type_size; ++type){
-            if (type != ctype
-                    && !pddlTypesObjHasType(ts, type, aobj)
-                    && pddlTypesIsParent(ts, type, ctype)){
-                // TODO: Refactor
-                pddl_lifted_mgroup_t new_cand;
-                pddlLiftedMGroupInitCopy(&new_cand, cand);
-                new_cand.param.param[cparam].type = type;
-                candidatesAdd(cands, &new_cand);
-                /*
-                   pddlLiftedMGroupPrint(pddl, cand, stderr);
-                   pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
-                   fprintf(stderr, "^^^ %d\n", param_id);
-                   fflush(stderr);
-                 */
-
-                if (argi + 1 < cand_add_atom->arg_size){
-                    _refineCandidateWithSubtypes(ts, action_param, add_eff,
-                                                 &new_cand, cand_add_atom,
-                                                 argi + 1, cands);
-                }
-                pddlLiftedMGroupFree(&new_cand);
-            }
-        }
-    }else{
-        int atype = action_param->param[aparam].type;
-        for (int type = 0; type < ts->type_size; ++type){
-            if (type != ctype
-                    && pddlTypesAreDisjunct(ts, type, atype)
-                    && pddlTypesIsParent(ts, type, ctype)){
-                pddl_lifted_mgroup_t new_cand;
-                pddlLiftedMGroupInitCopy(&new_cand, cand);
-                new_cand.param.param[cparam].type = type;
-                candidatesAdd(cands, &new_cand);
-                /*
-                   pddlLiftedMGroupPrint(pddl, cand, stderr);
-                   pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
-                   fprintf(stderr, "^^^ %d\n", param_id);
-                   fflush(stderr);
-                 */
-
-                if (argi + 1 < cand_add_atom->arg_size){
-                    _refineCandidateWithSubtypes(ts, action_param, add_eff,
-                                                 &new_cand, cand_add_atom,
-                                                 argi + 1, cands);
-                }
-                pddlLiftedMGroupFree(&new_cand);
-            }
-        }
-    }
-    
-
-}
-
-static void refineCandidateWithAllSubtypes(const pddl_types_t *ts,
-                                           const pddl_params_t *action_param,
-                                           const pddl_cond_atom_t *add_eff,
-                                           const pddl_lifted_mgroup_t *cand,
-                                           const pddl_cond_atom_t *cand_add_atom,
-                                           candidates_t *cands)
-{
-    if (add_eff->arg_size > 0)
-        _refineCandidateWithSubtypes(ts, action_param, add_eff,
-                                     cand, cand_add_atom, 0, cands);
-}
-
 static void refineCandidateWithSubtypes(const pddl_types_t *ts,
                                         const pddl_params_t *action_param,
                                         const pddl_cond_atom_t *add_eff,
@@ -1409,6 +1299,11 @@ static void refineCandidateWithSubtypes(const pddl_types_t *ts,
                                         const pddl_cond_atom_t *cand_add_atom,
                                         candidates_t *cands)
 {
+    if (cands == NULL
+            || cands->cand_size >= cands->cfg.max_candidates
+            || !cands->cfg.use_type_refinement)
+        return;
+
     for (int argi = 0; argi < add_eff->arg_size; ++argi){
         if (cand_add_atom->arg[argi].obj >= 0)
             continue;
@@ -1524,13 +1419,11 @@ static void initialCandidates(const pddl_t *pddl, candidates_t *cands)
 
         pddlLiftedMGroupInitCandFromPred(&m, pred, -1);
         candidatesAdd(cands, &m);
-        //genAllSubtypes(pddl, &m, cands);
         pddlLiftedMGroupFree(&m);
 
         for (int i = 0; i < pred->param_size; ++i){
             pddlLiftedMGroupInitCandFromPred(&m, pred, i);
             candidatesAdd(cands, &m);
-            //genAllSubtypes(pddl, &m, cands);
             pddlLiftedMGroupFree(&m);
         }
     }
@@ -1921,10 +1814,14 @@ static int proveOrRefineCandidate(const pddl_t *pddl,
 
     for (int ai = 0; ai < pddl->action.action_size; ++ai){
         const pddl_action_t *a = pddl->action.action + ai;
-        if (isActionTooHeavy(cand, pddl, a, cands)
-                || !isActionBalanced(cand, pddl, a, cands)){
+        if (isActionTooHeavy(cand, pddl, a, cands))
             return -1;
-        }
+    }
+
+    for (int ai = 0; ai < pddl->action.action_size; ++ai){
+        const pddl_action_t *a = pddl->action.action + ai;
+        if (!isActionBalanced(cand, pddl, a, cands))
+            return -1;
     }
 
     return 0;
@@ -1943,18 +1840,16 @@ static int isSingleFact(const pddl_lifted_mgroup_t *cand)
     return 1;
 }
 
-void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm)
+void pddlLiftedMGroupsInfer(const pddl_t *pddl,
+                            const pddl_lifted_mgroups_infer_config_t *cfg,
+                            pddl_lifted_mgroups_t *lm)
 {
     candidates_t cands;
-
-    candidatesInit(&cands, pddl);
-
-    // TODO: Parametrize number of candidates
+    candidatesInit(&cands, pddl, cfg);
 
     initialCandidates(pddl, &cands);
-    // TODO: Parametrize 100000
-    for (int cand_id = 0; cand_id < cands.cand_size && cand_id < 100000; ++cand_id){
-        const pddl_lifted_mgroup_t *cand = candidatesMGroup(&cands, cand_id);
+    while (!candidatesEmpty(&cands) && lm->mgroup_size < cfg->max_mgroups){
+        const pddl_lifted_mgroup_t *cand = candidatesNext(&cands);
         if (proveOrRefineCandidate(pddl, cand, &cands) != 0)
             continue;
 
