@@ -716,7 +716,7 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
                 && pddlLiftedMGroupsAnyIsDeleted(&g->goal_mgroup, g->pddl,
                                                  &a->pre, &a->add_eff,
                                                  &a->del_eff, arg)){
-            //return;
+            return;
         }
     }
 
