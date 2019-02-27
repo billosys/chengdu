@@ -1406,6 +1406,27 @@ static void removeHeavinessByInst(const pddl_t *pddl,
 }
 
 
+static void _initialCandidates(const pddl_t *pddl,
+                               const pddl_lifted_mgroup_t *m,
+                               int param,
+                               candidates_t *cands)
+{
+    pddl_lifted_mgroup_t cand;
+
+    pddlLiftedMGroupInitCopy(&cand, m);
+    if (param == cand.param.param_size - 1){
+        cand.param.param[param].is_counted_var = 0;
+        candidatesAdd(cands, &cand);
+        cand.param.param[param].is_counted_var = 1;
+        candidatesAdd(cands, &cand);
+    }else{
+        cand.param.param[param].is_counted_var = 0;
+        _initialCandidates(pddl, &cand, param + 1, cands);
+        cand.param.param[param].is_counted_var = 1;
+        _initialCandidates(pddl, &cand, param + 1, cands);
+    }
+    pddlLiftedMGroupFree(&cand);
+}
 
 
 static void initialCandidates(const pddl_t *pddl, candidates_t *cands)
@@ -1418,14 +1439,12 @@ static void initialCandidates(const pddl_t *pddl, candidates_t *cands)
         pddl_lifted_mgroup_t m;
 
         pddlLiftedMGroupInitCandFromPred(&m, pred, -1);
-        candidatesAdd(cands, &m);
-        pddlLiftedMGroupFree(&m);
-
-        for (int i = 0; i < pred->param_size; ++i){
-            pddlLiftedMGroupInitCandFromPred(&m, pred, i);
+        if (m.param.param_size > 0){
+            _initialCandidates(pddl, &m, 0, cands);
+        }else{
             candidatesAdd(cands, &m);
-            pddlLiftedMGroupFree(&m);
         }
+        pddlLiftedMGroupFree(&m);
     }
 }
 
