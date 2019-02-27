@@ -113,6 +113,12 @@ void pddlLiftedMGroupPrint(const pddl_t *pddl,
 void pddlLiftedMGroupsInit(pddl_lifted_mgroups_t *lm);
 
 /**
+ * Initialize dst as a copy of src.
+ */
+void pddlLiftedMGroupsInitCopy(pddl_lifted_mgroups_t *dst,
+                               const pddl_lifted_mgroups_t *src);
+
+/**
  * Free allocated memory.
  */
 void pddlLiftedMGroupsFree(pddl_lifted_mgroups_t *lm);
