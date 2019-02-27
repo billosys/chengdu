@@ -162,6 +162,7 @@ static void buildPredTrees(pred_tree_t *tree,
     }
 }
 
+/* DEBUG
 static void predTNodePrint(pred_tnode_t *tn,
                            int obj,
                            int depth,
@@ -188,6 +189,7 @@ static void predTreePrint(pred_tree_t *tree,
 {
     predTNodePrint(&tree->root, -1, 0, strips, fout);
 }
+*/
 
 
 static void _genMGroups(pred_tree_t *tree,
@@ -251,12 +253,14 @@ static void groundMGroup(pddl_ground_mgroups_t *mg,
     pred_tree_t tree[lifted_mg->cond.size];
     buildPredTrees(tree, pddl, strips, lifted_mg);
 
+    /* DEBUG
     for (int i = 0; i < lifted_mg->cond.size; ++i){
         fprintf(stderr, "[[%d]]: ", i);
         pddlLiftedMGroupPrint(pddl, lifted_mg, stderr);
         predTreePrint(tree + i, strips, stderr);
     }
     fprintf(stderr, "\n");
+    */
 
     genMGroups(mg, tree, lifted_mg, lifted_mg_id);
 
@@ -314,6 +318,8 @@ static int cmpMGroup(const void *a, const void *b, void *_)
     int cmp = borISetSize(&m1->mgroup) - borISetSize(&m2->mgroup);
     if (cmp == 0)
         cmp = borISetCmp(&m1->mgroup, &m2->mgroup);
+    if (cmp == 0)
+        cmp = m1->lifted_mgroup_id - m2->lifted_mgroup_id;
     return cmp;
 }
 
@@ -346,18 +352,28 @@ void pddlGroundMGroupsPrint(const pddl_t *pddl,
                             const pddl_ground_mgroups_t *mg,
                             FILE *fout)
 {
+    BOR_ISET(lmgs);
     for (int i = 0; i < mg->mgroup_size; ++i){
         const pddl_ground_mgroup_t *m = mg->mgroup + i;
-        fprintf(fout, "[%d]:", i);
-        if (m->lifted_mgroup_id >= 0){
-            const pddl_lifted_mgroup_t *lm;
-            lm = mg->lifted_mgroup.mgroup + m->lifted_mgroup_id;
-            pddlLiftedMGroupPrint(pddl, lm, fout);
+        borISetAdd(&lmgs, m->lifted_mgroup_id);
+    }
+
+    int lmgid;
+    BOR_ISET_FOR_EACH(&lmgs, lmgid){
+        if (lmgid >= 0){
+            pddlLiftedMGroupPrint(pddl, mg->lifted_mgroup.mgroup + lmgid, fout);
         }
-        fprintf(fout, "  ->");
-        int fact;
-        BOR_ISET_FOR_EACH(&m->mgroup, fact){
-            fprintf(fout, " (%s)", strips->fact.fact[fact]->name);
+
+        for (int i = 0; i < mg->mgroup_size; ++i){
+            const pddl_ground_mgroup_t *m = mg->mgroup + i;
+            if (m->lifted_mgroup_id != lmgid)
+                continue;
+            fprintf(fout, "[%d]:", i);
+            int fact;
+            BOR_ISET_FOR_EACH(&m->mgroup, fact){
+                fprintf(fout, " (%s)", strips->fact.fact[fact]->name);
+            }
+            fprintf(fout, "\n");
         }
         fprintf(fout, "\n");
     }
