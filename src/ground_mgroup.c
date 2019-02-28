@@ -31,9 +31,9 @@ void pddlGroundMGroupsSortUniq(pddl_ground_mgroups_t *mg);
 
 typedef struct pred_tnode pred_tnode_t;
 struct pred_tnode {
-    int argi;
-    int mg_param;
-    pddl_obj_id_t *child_obj;
+    int depth;
+    int leaf;
+    pddl_obj_id_t obj;
     pred_tnode_t *child;
     int child_size;
     int child_alloc;
@@ -41,6 +41,9 @@ struct pred_tnode {
 };
 
 struct pred_tree {
+    int arg_size;
+    int *arg;
+    int *param;
     pred_tnode_t root;
 };
 typedef struct pred_tree pred_tree_t;
@@ -75,47 +78,113 @@ static void predTNodeFree(pred_tnode_t *tnode)
         predTNodeFree(tnode->child + i);
     if (tnode->child != NULL)
         BOR_FREE(tnode->child);
-    if (tnode->child_obj != NULL)
-        BOR_FREE(tnode->child_obj);
     borISetFree(&tnode->fact);
+}
+
+static void predTreeInitNode(pred_tree_t *tree,
+                             pred_tnode_t *tnode,
+                             int next,
+                             pddl_obj_id_t obj)
+{
+    bzero(tnode, sizeof(*tnode));
+    tnode->depth = next;
+    tnode->obj = obj;
+    if (next >= tree->arg_size){
+        tnode->leaf = 1;
+    }else{
+        tnode->leaf = 0;
+    }
+}
+
+struct arg_order {
+    const pddl_cond_atom_t *atom;
+    const pddl_params_t *mg_params;
+};
+
+static int cmpArgOrder(const void *a, const void *b, void *_ao)
+{
+    int ai1 = *(int *)a;
+    int ai2 = *(int *)b;
+    const struct arg_order *ao = _ao;
+    const pddl_cond_atom_t *atom = ao->atom;
+    const pddl_params_t *params = ao->mg_params;
+
+    int a1obj = atom->arg[ai1].obj;
+    int a1param = atom->arg[ai1].param;
+    int a2obj = atom->arg[ai2].obj;
+    int a2param = atom->arg[ai2].param;
+    if (a1obj >= 0 && a2obj >= 0){
+        return a1obj - a2obj;
+    }else if (a1obj >= 0){
+        return 1;
+    }else if (a2obj >= 0){
+        return -1;
+    }else{
+        if (params->param[a1param].is_counted_var
+                == params->param[a2param].is_counted_var){
+            return a1param - a2param;
+        }else if (params->param[a1param].is_counted_var){
+            return 1;
+        }else{
+            return -1;
+        }
+    }
+
+}
+
+static void predTreeInit(pred_tree_t *tree,
+                         const pddl_lifted_mgroup_t *mg,
+                         const pddl_cond_atom_t *atom)
+{
+    bzero(tree, sizeof(*tree));
+    tree->arg_size = atom->arg_size;
+    tree->arg = BOR_ALLOC_ARR(int, atom->arg_size);
+
+    for (int i = 0; i < tree->arg_size; ++i)
+        tree->arg[i] = i;
+    struct arg_order ao = { atom, &mg->param };
+    borSort(tree->arg, tree->arg_size, sizeof(int), cmpArgOrder, &ao);
+
+    int arg_size = 0;
+    for (; arg_size < tree->arg_size; ++arg_size){
+        int argi = tree->arg[arg_size];
+        if (atom->arg[argi].obj >= 0
+                || mg->param.param[atom->arg[argi].param].is_counted_var){
+            break;
+        }
+    }
+    tree->arg_size = arg_size;
+
+    tree->param = BOR_ALLOC_ARR(int, tree->arg_size);
+    for (int i = 0; i < tree->arg_size; ++i){
+        tree->param[i] = atom->arg[tree->arg[i]].param;
+    }
+
+    predTreeInitNode(tree, &tree->root, 0, -1);
 }
 
 static void predTreeFree(pred_tree_t *tree)
 {
+    if (tree->arg != NULL)
+        BOR_FREE(tree->arg);
+    if (tree->param != NULL)
+        BOR_FREE(tree->param);
     predTNodeFree(&tree->root);
 }
 
-static void treeInitNode(pred_tnode_t *tnode,
-                         int prev_argi,
-                         const pddl_lifted_mgroup_t *mg,
-                         const pddl_cond_atom_t *mg_atom)
+static void _predTreeAdd(pred_tree_t *tree,
+                         pred_tnode_t *tnode,
+                         const pddl_fact_t *fact)
 {
-    bzero(tnode, sizeof(*tnode));
-    tnode->argi = -1;
-    for (int ai = prev_argi + 1; ai < mg_atom->arg_size; ++ai){
-        int atom_param = mg_atom->arg[ai].param;
-        if (atom_param >= 0
-                && !mg->param.param[atom_param].is_counted_var){
-            tnode->argi = ai;
-            tnode->mg_param = atom_param;
-            return;
-        }
-    }
-}
-
-static void predTreeAdd(pred_tnode_t *tnode,
-                        const pddl_fact_t *fact,
-                        const pddl_lifted_mgroup_t *mg,
-                        const pddl_cond_atom_t *mg_atom)
-{
-    if (tnode->argi < 0){
+    if (tnode->leaf){
         borISetAdd(&tnode->fact, fact->id);
     }else{
-        int argi = tnode->argi;
+        int argi = tree->arg[tnode->depth];
         pddl_obj_id_t fact_obj = fact->ground_atom->arg[argi];
+
         for (int i = 0; i < tnode->child_size; ++i){
-            if (tnode->child_obj[i] == fact_obj){
-                predTreeAdd(tnode->child + i, fact, mg, mg_atom);
+            if (tnode->child[i].obj == fact_obj){
+                _predTreeAdd(tree, tnode->child + i, fact);
                 return;
             }
         }
@@ -126,16 +195,19 @@ static void predTreeAdd(pred_tnode_t *tnode,
             tnode->child_alloc *= 2;
             tnode->child = BOR_REALLOC_ARR(tnode->child, pred_tnode_t,
                                            tnode->child_alloc);
-            tnode->child_obj = BOR_REALLOC_ARR(tnode->child_obj, pddl_obj_id_t,
-                                               tnode->child_alloc);
         }
 
-        tnode->child_obj[tnode->child_size] = fact_obj;
         pred_tnode_t *next = tnode->child + tnode->child_size++;
-        treeInitNode(next, argi, mg, mg_atom);
-        predTreeAdd(next, fact, mg, mg_atom);
+        predTreeInitNode(tree, next, tnode->depth + 1, fact_obj);
+        _predTreeAdd(tree, next, fact);
     }
 }
+
+static void predTreeAdd(pred_tree_t *tree, const pddl_fact_t *fact)
+{
+    _predTreeAdd(tree, &tree->root, fact);
+}
+
 
 static void buildPredTrees(pred_tree_t *tree,
                            const pddl_t *pddl,
@@ -144,9 +216,8 @@ static void buildPredTrees(pred_tree_t *tree,
 {
     bzero(tree, sizeof(*tree) * mg->cond.size);
     for (int ci = 0; ci < mg->cond.size; ++ci){
-        bzero(tree + ci, sizeof(*tree));
         const pddl_cond_atom_t *a = PDDL_COND_CAST(mg->cond.cond[ci], atom);
-        treeInitNode(&tree[ci].root, -1, mg, a);
+        predTreeInit(tree + ci, mg, a);
     }
 
     const pddl_fact_t *fact;
@@ -157,21 +228,102 @@ static void buildPredTrees(pred_tree_t *tree,
         for (int ci = 0; ci < mg->cond.size; ++ci){
             const pddl_cond_atom_t *a = PDDL_COND_CAST(mg->cond.cond[ci], atom);
             if (a->pred == ga->pred && checkFact(&pddl->type, ga, mg, a))
-                predTreeAdd(&tree[ci].root, fact, mg, a);
+                predTreeAdd(&tree[ci], fact);
         }
     }
 }
 
-/* DEBUG
+static void _gen(pred_tree_t *tree,
+                 pred_tnode_t **tnode,
+                 int tree_size,
+                 int param_i,
+                 const bor_iset_t *params,
+                 int lifted_mgroup_id,
+                 pddl_ground_mgroups_t *mg)
+{
+    if (param_i == borISetSize(params)){
+        // We have fixed all variables -- create the mutex group from all
+        // leaf nodes
+        BOR_ISET(mgroup);
+        for (int i = 0; i < tree_size; ++i){
+            if (tnode[i]->leaf)
+                borISetUnion(&mgroup, &tnode[i]->fact);
+        }
+        if (borISetSize(&mgroup) > 0)
+            pddlGroundMGroupsAdd(mg, &mgroup, lifted_mgroup_id);
+        borISetFree(&mgroup);
+        return;
+    }
+
+    // Find all nodes corresponding to the current parameter and collect
+    // all possible objects that can be bound to this parameter
+    int param = borISetGet(params, param_i);
+    BOR_ISET(relevant_tree);
+    BOR_ISET(param_obj);
+    for (int i = 0; i < tree_size; ++i){
+        if (tnode[i]->depth < tree[i].arg_size
+                && tree[i].param[tnode[i]->depth] == param){
+            borISetAdd(&relevant_tree, i);
+            for (int ci = 0; ci < tnode[i]->child_size; ++ci)
+                borISetAdd(&param_obj, tnode[i]->child[ci].obj);
+        }
+    }
+
+    // Prepare an array of tree nodes for recursive descent
+    pred_tnode_t *next_tnode[tree_size];
+    int obj;
+    BOR_ISET_FOR_EACH(&param_obj, obj){
+        // For each object find nodes that match and descent in those nodes
+        memcpy(next_tnode, tnode, sizeof(pred_tnode_t *) * tree_size);
+        int tree_i;
+        BOR_ISET_FOR_EACH(&relevant_tree, tree_i){
+            for (int ci = 0; ci < tnode[tree_i]->child_size; ++ci){
+                pred_tnode_t *ch = tnode[tree_i]->child + ci;
+                if (ch->obj == obj)
+                    next_tnode[tree_i] = ch;
+            }
+        }
+
+        // All trees are matched, we can descent for the current
+        // combination of objects
+        // Note that at least one next_tnode[] must be changed because we
+        // collected objects into param_obj in that way
+        _gen(tree, next_tnode, tree_size, param_i + 1, params,
+             lifted_mgroup_id, mg);
+    }
+
+    borISetFree(&relevant_tree);
+    borISetFree(&param_obj);
+}
+
+static void gen(pred_tree_t *tree, int tree_size,
+                int lifted_mgroup_id, pddl_ground_mgroups_t *mg)
+{
+    BOR_ISET(param);
+    for (int i = 0; i < tree_size; ++i){
+        for (int j = 0; j < tree[i].arg_size; ++j){
+            borISetAdd(&param, tree[i].param[j]);
+        }
+    }
+
+    pred_tnode_t *tnode[tree_size];
+    for (int i = 0; i < tree_size; ++i)
+        tnode[i] = &tree[i].root;
+
+    _gen(tree, tnode, tree_size, 0, &param, lifted_mgroup_id, mg);
+
+    borISetFree(&param);
+}
+
+
+/** DEBUG
 static void predTNodePrint(pred_tnode_t *tn,
-                           int obj,
-                           int depth,
                            const pddl_strips_t *strips,
                            FILE *fout)
 {
-    for (int i = 0; i < depth; ++i)
+    for (int i = 0; i < tn->depth; ++i)
         fprintf(fout, "  ");
-    fprintf(fout, "%d:%d ::", obj, tn->argi);
+    fprintf(fout, "%d:%d:%d ::", tn->obj, tn->depth, tn->leaf);
     int fact;
     BOR_ISET_FOR_EACH(&tn->fact, fact){
         fprintf(fout, " (%s)", strips->fact.fact[fact]->name);
@@ -179,7 +331,7 @@ static void predTNodePrint(pred_tnode_t *tn,
     fprintf(fout, "\n");
 
     for (int i = 0; i < tn->child_size; ++i){
-        predTNodePrint(tn->child + i, tn->child_obj[i], depth + 1, strips, fout);
+        predTNodePrint(tn->child + i, strips, fout);
     }
 }
 
@@ -187,60 +339,17 @@ static void predTreePrint(pred_tree_t *tree,
                           const pddl_strips_t *strips,
                           FILE *fout)
 {
-    predTNodePrint(&tree->root, -1, 0, strips, fout);
+    fprintf(fout, "arg:");
+    for (int i = 0; i < tree->arg_size; ++i)
+        fprintf(fout, " %d", tree->arg[i]);
+    fprintf(fout, ", param:");
+    for (int i = 0; i < tree->arg_size; ++i)
+        fprintf(fout, " %d", tree->param[i]);
+    fprintf(fout, "\n");
+    predTNodePrint(&tree->root, strips, fout);
 }
 */
 
-
-static void _genMGroups(pred_tree_t *tree,
-                        int tree_id,
-                        pred_tnode_t *tnode,
-                        pddl_obj_id_t *mg_arg,
-                        const bor_iset_t *fact,
-                        const pddl_lifted_mgroup_t *lifted_mg,
-                        int lifted_mg_id,
-                        pddl_ground_mgroups_t *mg)
-{
-    if (tnode->argi == -1){
-        BOR_ISET(fact_union);
-        borISetUnion2(&fact_union, fact, &tnode->fact);
-
-        if (tree_id == lifted_mg->cond.size - 1){
-            if (borISetSize(&fact_union) > 0)
-                pddlGroundMGroupsAdd(mg, &fact_union, lifted_mg_id);
-        }else{
-            _genMGroups(tree, tree_id + 1, &tree[tree_id + 1].root,
-                        mg_arg, &fact_union, lifted_mg, lifted_mg_id, mg);
-        }
-        borISetFree(&fact_union);
-
-    }else{
-        pddl_obj_id_t arg = mg_arg[tnode->mg_param];
-        for (int ci = 0; ci < tnode->child_size; ++ci){
-            if (arg == -1 || arg == tnode->child_obj[ci]){
-                mg_arg[tnode->mg_param] = tnode->child_obj[ci];
-                _genMGroups(tree, tree_id, tnode->child + ci, mg_arg, fact,
-                            lifted_mg, lifted_mg_id, mg);
-                mg_arg[tnode->mg_param] = arg;
-            }
-        }
-    }
-}
-
-static void genMGroups(pddl_ground_mgroups_t *mg,
-                       pred_tree_t *tree,
-                       const pddl_lifted_mgroup_t *lifted_mg,
-                       int lifted_mg_id)
-{
-    BOR_ISET(fact);
-    pddl_obj_id_t arg[lifted_mg->param.param_size];
-    for (int i = 0; i < lifted_mg->param.param_size; ++i)
-        arg[i] = -1;
-
-    _genMGroups(tree, 0, &tree[0].root, arg, &fact,
-                lifted_mg, lifted_mg_id, mg);
-    borISetFree(&fact);
-}
 
 static void groundMGroup(pddl_ground_mgroups_t *mg,
                          const pddl_t *pddl,
@@ -254,7 +363,7 @@ static void groundMGroup(pddl_ground_mgroups_t *mg,
     pred_tree_t tree[lifted_mg->cond.size];
     buildPredTrees(tree, pddl, strips, lifted_mg);
 
-    /* DEBUG
+    /** DEBUG
     for (int i = 0; i < lifted_mg->cond.size; ++i){
         fprintf(stderr, "[[%d]]: ", i);
         pddlLiftedMGroupPrint(pddl, lifted_mg, stderr);
@@ -263,7 +372,7 @@ static void groundMGroup(pddl_ground_mgroups_t *mg,
     fprintf(stderr, "\n");
     */
 
-    genMGroups(mg, tree, lifted_mg, lifted_mg_id);
+    gen(tree, lifted_mg->cond.size, lifted_mg_id, mg);
 
     for (int i = 0; i < lifted_mg->cond.size; ++i)
         predTreeFree(tree + i);
