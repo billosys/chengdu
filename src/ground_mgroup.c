@@ -206,7 +206,8 @@ static void _genMGroups(pred_tree_t *tree,
         borISetUnion2(&fact_union, fact, &tnode->fact);
 
         if (tree_id == lifted_mg->cond.size - 1){
-            pddlGroundMGroupsAdd(mg, &fact_union, lifted_mg_id);
+            if (borISetSize(&fact_union) > 0)
+                pddlGroundMGroupsAdd(mg, &fact_union, lifted_mg_id);
         }else{
             _genMGroups(tree, tree_id + 1, &tree[tree_id + 1].root,
                         mg_arg, &fact_union, lifted_mg, lifted_mg_id, mg);
