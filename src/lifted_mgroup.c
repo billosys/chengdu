@@ -1645,6 +1645,14 @@ void pddlLiftedMGroupsInit(pddl_lifted_mgroups_t *lm)
     bzero(lm, sizeof(*lm));
 }
 
+void pddlLiftedMGroupsInitCopy(pddl_lifted_mgroups_t *dst,
+                               const pddl_lifted_mgroups_t *src)
+{
+    pddlLiftedMGroupsInit(dst);
+    for (int i = 0; i < src->mgroup_size; ++i)
+        pddlLiftedMGroupsAdd(dst, src->mgroup + i);
+}
+
 void pddlLiftedMGroupsFree(pddl_lifted_mgroups_t *lm)
 {
     for (int i = 0; i < lm->mgroup_size; ++i)

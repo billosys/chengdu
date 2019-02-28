@@ -27,6 +27,7 @@ OBJS += ground_atom
 OBJS += profile
 OBJS += helper
 OBJS += lifted_mgroup
+OBJS += ground_mgroup
 OBJS += pddl_file
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)

@@ -366,6 +366,143 @@ void pddlStripsApplicableOps(const pddl_strips_t *strips,
     }
 }
 
+static int isFAMGroup(const bor_iset_t *facts,
+                      const bor_iset_t *pre,
+                      const bor_iset_t *add_eff,
+                      const bor_iset_t *del_eff)
+{
+    BOR_ISET(predel);
+
+    borISetIntersect2(&predel, pre, del_eff);
+    int add_size = borISetIntersectionSize(add_eff, facts);
+    if (add_size > borISetIntersectionSize(&predel, facts)){
+        borISetFree(&predel);
+        return 0;
+    }
+
+    borISetFree(&predel);
+    return 1;
+}
+
+static int condEffAreDisjunct(const pddl_strips_op_t *op,
+                              const bor_iset_t *facts)        
+{
+    BOR_ISET(del_eff);
+    BOR_ISET(del_eff2);
+    BOR_ISET(add_eff);
+    BOR_ISET(add_eff2);
+
+    for (int cei = 0; cei < op->cond_eff_size; ++cei){
+        borISetIntersect2(&del_eff, &op->cond_eff[cei].del_eff, facts);
+        borISetIntersect2(&add_eff, &op->cond_eff[cei].add_eff, facts);
+
+        for (int cei2 = cei + 1; cei2 < op->cond_eff_size; ++cei2){
+            borISetIntersect2(&del_eff2, &op->cond_eff[cei2].del_eff, facts);
+            borISetIntersect2(&add_eff2, &op->cond_eff[cei2].add_eff, facts);
+            if (!borISetIsDisjunct(&del_eff, &del_eff2)
+                    || !borISetIsDisjunct(&add_eff, &add_eff2)){
+                borISetFree(&del_eff);
+                borISetFree(&del_eff2);
+                borISetFree(&add_eff);
+                borISetFree(&add_eff2);
+                return 0;
+            }
+        }
+    }
+
+    borISetFree(&del_eff);
+    borISetFree(&del_eff2);
+    borISetFree(&add_eff);
+    borISetFree(&add_eff2);
+
+    return 1;
+}
+
+static int isFAMGroupCERec(const pddl_strips_t *strips,
+                           const bor_iset_t *facts,
+                           const pddl_strips_op_t *op,
+                           int cond_eff_i,
+                           const bor_iset_t *pre_in,
+                           const bor_iset_t *add_eff_in,
+                           const bor_iset_t *del_eff_in)
+{
+    BOR_ISET(pre);
+    BOR_ISET(add_eff);
+    BOR_ISET(del_eff);
+
+    for (int cei = cond_eff_i; cei < op->cond_eff_size; ++cei){
+        borISetUnion2(&pre, pre_in, &op->cond_eff[cei].pre);
+        borISetUnion2(&add_eff, add_eff_in, &op->cond_eff[cei].add_eff);
+        borISetUnion2(&del_eff, del_eff_in, &op->cond_eff[cei].del_eff);
+        if (!isFAMGroup(facts, &pre, &add_eff, &del_eff)){
+            borISetFree(&pre);
+            borISetFree(&add_eff);
+            borISetFree(&del_eff);
+            return 0;
+        }
+
+        if (cond_eff_i + 1 < op->cond_eff_size){
+            if (!isFAMGroupCERec(strips, facts, op, cond_eff_i + 1,
+                                 &pre, &add_eff, &del_eff)){
+                borISetFree(&pre);
+                borISetFree(&add_eff);
+                borISetFree(&del_eff);
+                return 0;
+            }
+        }
+    }
+
+    borISetFree(&pre);
+    borISetFree(&add_eff);
+    borISetFree(&del_eff);
+    return 1;
+}
+
+static int isFAMGroupCE(const pddl_strips_t *strips,
+                        const bor_iset_t *facts,
+                        const pddl_strips_op_t *op)
+{
+    if (condEffAreDisjunct(op, facts)){
+        BOR_ISET(pre);
+        BOR_ISET(add_eff);
+        BOR_ISET(del_eff);
+
+        for (int cei = 0; cei < op->cond_eff_size; ++cei){
+            borISetUnion2(&pre, &op->pre, &op->cond_eff[cei].pre);
+            borISetUnion2(&add_eff, &op->add_eff, &op->cond_eff[cei].add_eff);
+            borISetUnion2(&del_eff, &op->del_eff, &op->cond_eff[cei].del_eff);
+            if (!isFAMGroup(facts, &pre, &add_eff, &del_eff)){
+                borISetFree(&pre);
+                borISetFree(&add_eff);
+                borISetFree(&del_eff);
+                return 0;
+            }
+        }
+
+        borISetFree(&pre);
+        borISetFree(&add_eff);
+        borISetFree(&del_eff);
+        return 1;
+
+    }else{
+        return isFAMGroupCERec(strips, facts, op, 0,
+                               &op->pre, &op->add_eff, &op->del_eff);
+    }
+}
+
+int pddlStripsIsFAMGroup(const pddl_strips_t *strips, const bor_iset_t *facts)
+{
+    for (int oi = 0; oi < strips->op.op_size; ++oi){
+        const pddl_strips_op_t *op = strips->op.op[oi];
+        if (!isFAMGroup(facts, &op->pre, &op->add_eff, &op->del_eff))
+            return 0;
+
+        if (op->cond_eff_size > 0 && !isFAMGroupCE(strips, facts, op))
+            return 0;
+    }
+
+    return 1;
+}
 
 static void printPythonISet(const bor_iset_t *s, FILE *fout)
 {
