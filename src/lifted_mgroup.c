@@ -793,13 +793,13 @@ static int unifyActionAtom(unify_action_ctx_t *ctx,
 
         }else if (aparam >= 0){
             int obj_id = cand_atom->arg[i].obj;
-            if (ctx->action_arg[cparam] < 0){
-                ctx->action_arg[cparam] = obj_id;
-            }else if (ctx->action_arg[cparam] < ctx->pddl->obj.obj_size){
-                if (ctx->action_arg[cparam] != obj_id)
+            if (ctx->action_arg[aparam] < 0){
+                ctx->action_arg[aparam] = obj_id;
+            }else if (ctx->action_arg[aparam] < ctx->pddl->obj.obj_size){
+                if (ctx->action_arg[aparam] != obj_id)
                     return 0;
             }else{
-                renameArgs(ctx, ctx->action_arg[cparam], obj_id);
+                renameArgs(ctx, ctx->action_arg[aparam], obj_id);
             }
 
         }else{
