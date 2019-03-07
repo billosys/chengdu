@@ -1569,10 +1569,6 @@ static void initialCandidates(const pddl_t *pddl,
                               const pddl_lifted_mgroups_infer_config_t *cfg,
                               candidates_t *cands)
 {
-    candidates_t init_cands;
-
-    candidatesInit(&init_cands, pddl, cfg);
-
     // TODO: Parametrize
     for (int pred_id = 0; pred_id < pddl->pred.pred_size; ++pred_id){
         const pddl_pred_t *pred = pddl->pred.pred + pred_id;
@@ -1584,28 +1580,12 @@ static void initialCandidates(const pddl_t *pddl,
         pddlLiftedMGroupInitCandFromPred(&m, pred, -1);
         for (int i = 0; i < m.param.param_size; ++i)
             m.param.param[i].is_counted_var = 1;
-        candidatesAdd(&init_cands, &m);
         candidatesAdd(cands, &m);
         //pddlLiftedMGroupPrint(pddl, &m, stderr);
         pddlLiftedMGroupFree(&m);
     }
-    return;
 
-
-    while (!candidatesEmpty(&init_cands)){
-        const pddl_lifted_mgroup_t *cand = candidatesNext(&init_cands);
-        //pddlLiftedMGroupPrint(pddl, cand, stderr);
-        if (isInitExactlyOne(pddl, cand, &init_cands)
-                && !isAnyActionTooHeavy(pddl, cand, &init_cands)){
-            fprintf(stderr, "Hit: ");
-            pddlLiftedMGroupPrint(pddl, cand, stderr);
-            candidatesAdd(cands, cand);
-        }
-    }
-    candidatesFree(&init_cands);
-    return;
-    exit(-1);
-
+    /*
     for (int pred_id = 0; pred_id < pddl->pred.pred_size; ++pred_id){
         const pddl_pred_t *pred = pddl->pred.pred + pred_id;
         if (pddlPredIsStatic(pred) || pred_id == pddl->pred.eq_pred)
@@ -1621,6 +1601,7 @@ static void initialCandidates(const pddl_t *pddl,
         }
         pddlLiftedMGroupFree(&m);
     }
+    */
 }
 
 
