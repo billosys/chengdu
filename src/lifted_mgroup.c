@@ -123,11 +123,11 @@ static int cmpAtoms(const void *a, const void *b, void *_)
 
 void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m)
 {
-    if (m->cond.size <= 1)
-        return;
+    if (m->cond.size > 1){
+        borSort(m->cond.cond, m->cond.size, sizeof(const pddl_cond_t *),
+                cmpAtoms, NULL);
+    }
 
-    borSort(m->cond.cond, m->cond.size, sizeof(const pddl_cond_t *),
-            cmpAtoms, NULL);
     if (m->param.param_size <= 1)
         return;
 
