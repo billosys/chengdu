@@ -22,26 +22,13 @@
 // TODO: Merge candidates with proved mgroups if possible (e.g., when types
 //       of variables are subtypes)
 
-#include <boruvka/sort.h>
-#include <boruvka/hfunc.h>
-#include <boruvka/htable.h>
-#include <boruvka/extarr.h>
 #include "pddl/pddl.h"
+#include "pddl/lifted_mgroup_htable.h"
 #include "pddl/lifted_mgroup_infer.h"
 #include "assert.h"
 
-struct candidate {
-    int id;
-    pddl_lifted_mgroup_t mgroup;
-    bor_htable_key_t hash;
-    bor_list_t htable;
-};
-typedef struct candidate candidate_t;
-
 struct candidates {
-    bor_htable_t *htable; /*!< Hash table of all candidates */
-    bor_extarr_t *cand; /*!< Extensible array holding candidates */
-    int cand_size; /*!< Number of candidates */
+    pddl_lifted_mgroup_htable_t mgroup;
     int next;
 
     const pddl_t *pddl;
@@ -97,9 +84,6 @@ typedef struct unify_action_ctx unify_action_ctx_t;
                 ++___i)
 
 
-/** Returns hash key of the mutex group */
-static bor_htable_key_t mgroupHash(const pddl_lifted_mgroup_t *m);
-
 /** Initialize pool of candidates */
 static void candidatesInit(candidates_t *p,
                            const pddl_t *pddl,
@@ -108,7 +92,7 @@ static void candidatesInit(candidates_t *p,
 static void candidatesFree(candidates_t *p);
 /** Adds the given mcandidate. If m is already there -1 is returned,
  *  otherwise 0 is returned. */
-static int candidatesAdd(candidates_t *p, const pddl_lifted_mgroup_t *m);
+static void candidatesAdd(candidates_t *p, const pddl_lifted_mgroup_t *m);
 /** Returns true if no more candidates are available */
 static int candidatesEmpty(const candidates_t *p);
 /** Returns next candidate from the pool */
@@ -145,6 +129,8 @@ static int inequalitiesHold(const pddl_t *pddl,
 static int staticPreHold(const pddl_t *pddl,
                          const pddl_cond_t *pre,
                          const int *args);
+
+
 
 /** Unify fact (grounded with fact_arg) with the candidate atom */
 static int unifyFact(const pddl_t *pddl,
@@ -185,9 +171,6 @@ static int isGroundedConjTooHeavy(const pddl_lifted_mgroup_t *cand,
                                   const pddl_cond_t *conj);
 /** Returns the if the initial state is too heavy */
 static int isInitTooHeavy(const pddl_lifted_mgroup_t *cand, const pddl_t *pddl);
-/** Returns true if the intial state is too heavy for the counted variables */
-static int isInitTooHeavyForCountedVars(const pddl_lifted_mgroup_t *cand_in,
-                                        const pddl_t *pddl);
 /** Returns true if the action is too heavy */
 static int isActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                             const pddl_t *pddl,
@@ -200,15 +183,6 @@ static int isActionBalanced(const pddl_lifted_mgroup_t *cand,
                             const pddl_t *pddl,
                             const pddl_action_t *action,
                             candidates_t *cands);
-
-/** TODO **/
-static void refineTooHeavyInit(const pddl_t *pddl,
-                               const pddl_cond_atom_t *a1,
-                               const pddl_cond_atom_t *a2,
-                               const pddl_lifted_mgroup_t *cand,
-                               const pddl_cond_atom_t *cand_atom1,
-                               const pddl_cond_atom_t *cand_atom2,
-                               candidates_t *cands);
 
 /** TODO **/
 /** Refine candidate cand by extending it with more atoms so that add
@@ -273,118 +247,35 @@ static void initialCandidates(const pddl_t *pddl,
 
 
 
-
-static bor_htable_key_t mgroupHash(const pddl_lifted_mgroup_t *m)
-{
-    int *buf;
-    int bufsize;
-
-    bufsize = m->param.param_size * 2;
-    for (int i = 0; i < m->cond.size; ++i){
-        const pddl_cond_atom_t *a = PDDL_COND_CAST(m->cond.cond[i], atom);
-        bufsize += 1 + a->arg_size;
-    }
-
-    buf = BOR_ALLOC_ARR(int, bufsize);
-
-    for (int i = 0; i < m->param.param_size; ++i){
-        buf[2 * i] = m->param.param[i].type;
-        buf[2 * i + 1] = m->param.param[i].is_counted_var;
-    }
-
-    int ins = 2 * m->param.param_size;
-    for (int i = 0; i < m->cond.size; ++i){
-        const pddl_cond_atom_t *a = PDDL_COND_CAST(m->cond.cond[i], atom);
-        buf[ins++] = a->pred;
-        for (int ai = 0; ai < a->arg_size; ++ai){
-            if (a->arg[ai].param >= 0){
-                buf[ins++] = a->arg[ai].param;
-            }else{
-                buf[ins++] = a->arg[ai].obj * -1;
-            }
-        }
-    }
-
-    ASSERT(ins == bufsize);
-    bor_htable_key_t hash = borCityHash_64(buf, bufsize * sizeof(int));
-
-    BOR_FREE(buf);
-    return hash;
-}
-
-static bor_htable_key_t htableHash(const bor_list_t *k, void *_)
-{
-    candidate_t *m = BOR_LIST_ENTRY(k, candidate_t, htable);
-    return m->hash;
-}
-
-static int htableEq(const bor_list_t *k1, const bor_list_t *k2, void *_)
-{
-    candidate_t *m1 = BOR_LIST_ENTRY(k1, candidate_t, htable);
-    candidate_t *m2 = BOR_LIST_ENTRY(k2, candidate_t, htable);
-    return pddlLiftedMGroupEq(&m1->mgroup, &m2->mgroup);
-}
-
 static void candidatesInit(candidates_t *p,
                            const pddl_t *pddl,
                            const pddl_lifted_mgroups_infer_config_t *cfg)
 {
-    candidate_t mg;
-
     bzero(p, sizeof(*p));
-    p->htable = borHTableNew(htableHash, htableEq, p);
-
-    bzero(&mg, sizeof(mg));
-    p->cand = borExtArrNew(sizeof(mg), NULL, &mg);
+    pddlLiftedMGroupHTableInit(&p->mgroup);
     p->next = 0;
-
     p->cfg = *cfg;
     p->pddl = pddl;
 }
 
 static void candidatesFree(candidates_t *p)
 {
-    for (int i = 0; i < p->cand_size; ++i){
-        candidate_t *m = borExtArrGet(p->cand, i);
-        pddlLiftedMGroupFree(&m->mgroup);
-    }
-
-    borHTableDel(p->htable);
-    borExtArrDel(p->cand);
+    pddlLiftedMGroupHTableFree(&p->mgroup);
 }
 
-static int candidatesAdd(candidates_t *p, const pddl_lifted_mgroup_t *m)
+static void candidatesAdd(candidates_t *p, const pddl_lifted_mgroup_t *m)
 {
-    if (p->cand_size >= p->cfg.max_candidates)
-        return -1;
-
-    candidate_t *el = borExtArrGet(p->cand, p->cand_size);
-    el->mgroup = *m;
-    el->hash = mgroupHash(m);
-
-    bor_list_t *ins = borHTableInsertUnique(p->htable, &el->htable);
-    if (ins == NULL){
-        pddlLiftedMGroupInitCopy(&el->mgroup, m);
-        el->id = p->cand_size;
-        ++p->cand_size;
-        return 0;
-
-    }else{
-        return -1;
-    }
+    pddlLiftedMGroupHTableAdd(&p->mgroup, m);
 }
 
 static int candidatesEmpty(const candidates_t *p)
 {
-    return p->cand_size == p->next;
+    return p->mgroup.mgroup_size == p->next;
 }
 
 static const pddl_lifted_mgroup_t *candidatesNext(candidates_t *p)
 {
-    candidate_t *cand;
-
-    cand = borExtArrGet(p->cand, p->next++);
-    return &cand->mgroup;
+    return pddlLiftedMGroupHTableGet(&p->mgroup, p->next++);
 }
 
 
@@ -564,6 +455,7 @@ static int staticPreHold(const pddl_t *pddl,
 
     return 1;
 }
+
 
 
 static int _unifyFact(const pddl_t *pddl,
@@ -931,55 +823,6 @@ static int isInitTooHeavy(const pddl_lifted_mgroup_t *cand, const pddl_t *pddl)
     return isGroundedConjTooHeavy(cand, pddl, &pddl->init->cls);
 }
 
-/** Returns true if atom_i's atom from the candidate has only counted
- *  variables */
-static int candAtomHasOnlyCountedVars(const pddl_lifted_mgroup_t *cand,
-                                      int atom_i)
-{
-    const pddl_cond_atom_t *a = PDDL_COND_CAST(cand->cond.cond[atom_i], atom);
-    for (int i = 0; i < a->arg_size; ++i){
-        if (a->arg[i].obj != PDDL_OBJ_ID_UNDEF
-                || !cand->param.param[a->arg[i].param].is_counted_var)
-            return 0;
-    }
-    return 1;
-}
-
-static void selectOnlyAtomsWithCountedVars(pddl_lifted_mgroup_t *dst,
-                                           const pddl_lifted_mgroup_t *src)
-{
-    pddlLiftedMGroupInitCopy(dst, src);
-    for (int i = 0; i < dst->cond.size; ++i){
-        if (!candAtomHasOnlyCountedVars(dst, i)){
-            pddlCondDel((pddl_cond_t *)dst->cond.cond[i]);
-            dst->cond.cond[i] = NULL;
-        }
-    }
-    int ins = 0;
-    for (int i = 0; i < dst->cond.size; ++i){
-        if (dst->cond.cond[i] != NULL)
-            dst->cond.cond[ins++] = dst->cond.cond[i];
-    }
-    dst->cond.size = ins;
-}
-
-static int isInitTooHeavyForCountedVars(const pddl_lifted_mgroup_t *cand_in,
-                                        const pddl_t *pddl)
-{
-    // TODO: Generalize for any counted variable (not just atoms having
-    //       only counted variables
-    int ret = 0;
-
-    pddl_lifted_mgroup_t cand;
-    selectOnlyAtomsWithCountedVars(&cand, cand_in);
-
-    if (cand.cond.size > 0)
-        ret = isInitTooHeavy(&cand, pddl);
-
-    pddlLiftedMGroupFree(&cand);
-    return ret;
-}
-
 static int isActionTooHeavy(const pddl_lifted_mgroup_t *cand,
                             const pddl_t *pddl,
                             const pddl_action_t *action,
@@ -1333,7 +1176,8 @@ static void refineExtend(const unify_action_ctx_t *ctx,
                          const pddl_lifted_mgroup_t *cand,
                          candidates_t *cands)
 {
-    if (cands == NULL || cands->cand_size >= cands->cfg.max_candidates)
+    if (cands == NULL
+            || cands->mgroup.mgroup_size >= cands->cfg.max_candidates)
         return;
 
     pddl_cond_const_it_eff_t it;
@@ -1438,7 +1282,8 @@ static void refineExtendProved(const pddl_t *pddl,
                                const pddl_lifted_mgroup_t *cand,
                                candidates_t *cands)
 {
-    if (cands == NULL || cands->cand_size >= cands->cfg.max_candidates)
+    if (cands == NULL
+            || cands->mgroup.mgroup_size >= cands->cfg.max_candidates)
         return;
 
     pddl_cond_const_it_eff_t it;
@@ -1491,7 +1336,7 @@ static void refineTypes(const pddl_types_t *ts,
                         candidates_t *cands)
 {
     if (cands == NULL
-            || cands->cand_size >= cands->cfg.max_candidates
+            || cands->mgroup.mgroup_size >= cands->cfg.max_candidates
             || !cands->cfg.use_type_refinement){
         return;
     }
@@ -1548,7 +1393,7 @@ static void refineVariables(const pddl_cond_atom_t *a1,
     // TODO: Add variable -> object refinement
     // TODO: parametrize
     if (cands == NULL
-            || cands->cand_size >= cands->cfg.max_candidates){
+            || cands->mgroup.mgroup_size >= cands->cfg.max_candidates){
         return;
     }
 
@@ -1600,7 +1445,8 @@ static void refineTooHeavy(const pddl_types_t *ts,
                            candidates_t *cands)
 {
     //fprintf(stderr, "refineTooHeavy\n");
-    if (cands == NULL || cands->cand_size >= cands->cfg.max_candidates){
+    if (cands == NULL
+            || cands->mgroup.mgroup_size >= cands->cfg.max_candidates){
         return;
     }
 
@@ -1616,7 +1462,8 @@ static void refineActionUnbalanced(const unify_action_ctx_t *ctx,
                                    const pddl_cond_atom_t *cand_add_eff,
                                    candidates_t *cands)
 {
-    if (cands == NULL || cands->cand_size >= cands->cfg.max_candidates){
+    if (cands == NULL
+            || cands->mgroup.mgroup_size >= cands->cfg.max_candidates){
         return;
     }
 
@@ -1624,56 +1471,6 @@ static void refineActionUnbalanced(const unify_action_ctx_t *ctx,
     refineTypes(&ctx->pddl->type, &action->param, add_eff,
                 cand, cand_add_eff, cands);
 }
-
-static void refineTooHeavyInit(const pddl_t *pddl,
-                               const pddl_cond_atom_t *a1,
-                               const pddl_cond_atom_t *a2,
-                               const pddl_lifted_mgroup_t *cand,
-                               const pddl_cond_atom_t *cand_atom1,
-                               const pddl_cond_atom_t *cand_atom2,
-                               candidates_t *cands)
-{
-    if (cands == NULL)
-        return;
-
-    refineTypes(&pddl->type, NULL, a1, cand, cand_atom1, cands);
-    refineTypes(&pddl->type, NULL, a2, cand, cand_atom2, cands);
-
-    pddl_obj_id_t arg[cand->param.param_size];
-    for (int i = 0; i < cand->param.param_size; ++i)
-        arg[i] = PDDL_OBJ_ID_UNDEF;
-
-    ASSERT(a1->pred == cand_atom1->pred);
-    ASSERT(a1->arg_size == cand_atom1->arg_size);
-    ASSERT(a2->pred == cand_atom2->pred);
-    ASSERT(a2->arg_size == cand_atom2->arg_size);
-    for (int ai = 0; ai < cand_atom1->arg_size; ++ai){
-        ASSERT(a1->arg[ai].obj >= 0);
-        if (cand_atom1->arg[ai].param >= 0){
-            ASSERT(arg[cand_atom1->arg[ai].param] == PDDL_OBJ_ID_UNDEF
-                    || arg[cand_atom1->arg[ai].param] == a1->arg[ai].obj);
-            arg[cand_atom1->arg[ai].param] = a1->arg[ai].obj;
-        }
-    }
-
-    for (int ai = 0; ai < cand_atom2->arg_size; ++ai){
-        ASSERT(a2->arg[ai].obj >= 0);
-        if (cand_atom2->arg[ai].param >= 0){
-            if (arg[cand_atom2->arg[ai].param] == PDDL_OBJ_ID_UNDEF){
-                arg[cand_atom2->arg[ai].param] = a2->arg[ai].obj;
-            }else if (arg[cand_atom2->arg[ai].param] != a2->arg[ai].obj){
-                ASSERT(cand->param.param[cand_atom2->arg[ai].param].is_counted_var);
-                pddl_lifted_mgroup_t m;
-                pddlLiftedMGroupInitCopy(&m, cand);
-                m.param.param[cand_atom2->arg[ai].param].is_counted_var = 0;
-                candidatesAdd(cands, &m);
-                pddlLiftedMGroupFree(&m);
-            }
-        }
-    }
-}
-
-
 
 
 
@@ -1949,13 +1746,6 @@ static int proveOrRefineCandidate(const pddl_t *pddl,
                                   const pddl_lifted_mgroup_t *cand,
                                   candidates_t *cands)
 {
-    /*
-    if (isInitTooHeavyForCountedVars(cand, pddl)){
-        // Quickly throw away candidates that cannot be mgroups
-        // under any circumstances
-        return -1;
-    }
-    */
     if (!isInitExactlyOne(pddl, cand, cands)){
         //fprintf(stderr, "  !isInitExactlyOne()\n");
         return -1;
