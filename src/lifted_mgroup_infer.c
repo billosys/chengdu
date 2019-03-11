@@ -28,14 +28,17 @@
 #include "assert.h"
 
 struct cand {
+    int id;
     const pddl_lifted_mgroup_t *mgroup;
-    int refined_from;
-    int refined_type;
+    int refined_from; /*!< ID of the candidate this was refined from */
+    int refined_var; /*!< True if fefined by changing variables */
+    int refined_type; /*!< True if refined by changing types */
+    int refined_by_extend; /*!< True if refined by adding predicates */
 };
 typedef struct cand cand_t;
 
 #define CAND_LOCAL(NAME, MGROUP) \
-    cand_t NAME = { (MGROUP), -1, 0 }
+    cand_t NAME = { -1, (MGROUP), -1, 0, 0, 0 }
 
 struct refine {
     const pddl_t *pddl;
@@ -958,14 +961,27 @@ static const cand_t *refineNextCand(refine_t *r)
     return borExtArrGet(r->cand, r->cand_next++);
 }
 
-static void refineAddCand(refine_t *r, const pddl_lifted_mgroup_t *m)
+static cand_t *refineAddCand(refine_t *r,
+                             const pddl_lifted_mgroup_t *m,
+                             const cand_t *parent)
 {
     int id = pddlLiftedMGroupHTableAdd(&r->mgroup, m);
     if (id >= r->cand_size){
         r->cand_size = id + 1;
         cand_t *cand = borExtArrGet(r->cand, id);
+        cand->id = id;
         cand->mgroup = pddlLiftedMGroupHTableGet(&r->mgroup, id);
+        cand->refined_from = -1;
+        if (parent != NULL)
+            cand->refined_from = parent->id;
+        ASSERT(!cand->refined_var);
         ASSERT(!cand->refined_type);
+        ASSERT(!cand->refined_by_extend);
+
+        return cand;
+    }else{
+        ASSERT(((cand_t *)borExtArrGet(r->cand, id))->id == id);
+        return NULL;
     }
 }
 
@@ -1031,7 +1047,9 @@ static void addRefinedCandidate(refine_t *r,
 
     restrictParamTypes(r->pddl, &new_cand);
     pddlLiftedMGroupSort(&new_cand);
-    refineAddCand(r, &new_cand);
+    cand_t *c = refineAddCand(r, &new_cand, cand_in);
+    if (c != NULL)
+        c->refined_by_extend = 1;
     pddlLiftedMGroupFree(&new_cand);
 }
 
@@ -1188,7 +1206,7 @@ static void refineExtendProvedWithAddEff(refine_t *refine,
     const pddl_cond_t *pre;
 
     PDDL_COND_FOR_EACH_ADD_EFF(action->eff, &it, a, pre){
-        ASSERT(a->neg);
+        ASSERT(!a->neg);
         CE_ATOM(ce_a, pre, a);
         int eff_params[a->arg_size];
         //fprintf(stderr, "Extend with %s\n",
@@ -1239,7 +1257,9 @@ static void addCandidateWithChangedParamType(refine_t *refine,
     pddl_lifted_mgroup_t new_cand;
     pddlLiftedMGroupInitCopy(&new_cand, cand->mgroup);
     new_cand.param.param[param].type = type;
-    refineAddCand(refine, &new_cand);
+    cand_t *c = refineAddCand(refine, &new_cand, cand);
+    if (c != NULL)
+        c->refined_type = 1;
     /*
        pddlLiftedMGroupPrint(pddl, cand, stderr);
        pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
@@ -1353,7 +1373,9 @@ static void refineVariables(refine_t *refine,
                     pddlLiftedMGroupInitCopy(&new_cand, cand->mgroup);
                     ASSERT(new_cand.param.param[counted_var].is_counted_var);
                     new_cand.param.param[counted_var].is_counted_var = 0;
-                    refineAddCand(refine, &new_cand);
+                    cand_t *c = refineAddCand(refine, &new_cand, cand);
+                    if (c != NULL)
+                        c->refined_var = 1;
                     pddlLiftedMGroupFree(&new_cand);
                 }
             }
@@ -1432,8 +1454,8 @@ static void _removeHeavinessByInst(const pddl_t *pddl,
                                    int param,
                                    pddl_lifted_mgroups_t *lm)
 {
-    ASSERT(!cand->param.param[param].is_counted_var);
-    ASSERT(cand->param.param[param].type >= 0);
+    ASSERT(!cand->mgroup->param.param[param].is_counted_var);
+    ASSERT(cand->mgroup->param.param[param].type >= 0);
     const pddl_obj_id_t *obj;
     int obj_size;
 
@@ -1480,9 +1502,9 @@ static void _initialCandidates(const pddl_t *pddl,
     pddlLiftedMGroupInitCopy(&cand, m);
     if (param == cand.param.param_size - 1){
         cand.param.param[param].is_counted_var = 0;
-        refineAddCand(refine, &cand);
+        refineAddCand(refine, &cand, NULL);
         cand.param.param[param].is_counted_var = 1;
-        refineAddCand(refine, &cand);
+        refineAddCand(refine, &cand, NULL);
     }else{
         cand.param.param[param].is_counted_var = 0;
         _initialCandidates(pddl, &cand, param + 1, refine);
@@ -1508,7 +1530,7 @@ static void initialCandidates(const pddl_t *pddl,
         pddlLiftedMGroupInitCandFromPred(&m, pred, -1);
         for (int i = 0; i < m.param.param_size; ++i)
             m.param.param[i].is_counted_var = 1;
-        refineAddCand(refine, &m);
+        refineAddCand(refine, &m, NULL);
         //pddlLiftedMGroupPrint(pddl, &m, stderr);
         pddlLiftedMGroupFree(&m);
     }
