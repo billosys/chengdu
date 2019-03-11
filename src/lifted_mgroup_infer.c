@@ -1053,62 +1053,73 @@ static void addRefinedCandidate(refine_t *r,
     pddlLiftedMGroupFree(&new_cand);
 }
 
-/** Recursive function for refinement of candidates with the given delete
- *  effect */
-static void refineCandidateWithDelEff(refine_t *r,
+// Allow more than one counted variable
+static void refineCandidateWithEff(refine_t *refine,
                                       const unify_action_ctx_t *ctx,
                                       const pddl_action_t *action,
                                       const cand_t *cand,
-                                      const ce_atom_t *del_eff,
-                                      int *del_eff_params,
-                                      int del_eff_argi,
-                                      int num_counted_vars)
+                                      const ce_atom_t *atom,
+                                      int *atom_params,
+                                      int atom_argi,
+                                      int pre_test,
+                                      int num_counted_vars,
+                                      int max_counted_vars)
 {
-    if (del_eff_argi == del_eff->atom->arg_size){
-        if (equalAtomIn(del_eff->atom, action->pre, ctx->action_arg)
-                || equalAtomIn(del_eff->atom, del_eff->pre, ctx->action_arg)){
-            addRefinedCandidate(r, cand, del_eff->atom, del_eff_params);
+    if (atom_argi == atom->atom->arg_size){
+        //fprintf(stderr, "NEW CAND\n");
+        if (!pre_test
+                || equalAtomIn(atom->atom, action->pre, ctx->action_arg)
+                || equalAtomIn(atom->atom, atom->pre, ctx->action_arg)){
+            addRefinedCandidate(refine, cand, atom->atom, atom_params);
         }
         return;
     }
 
-    int del_eff_param = del_eff->atom->arg[del_eff_argi].param;
-    int del_eff_obj = del_eff->atom->arg[del_eff_argi].obj;
+    int atom_param = atom->atom->arg[atom_argi].param;
+    int atom_obj = atom->atom->arg[atom_argi].obj;
 
-    if (del_eff_param >= 0 && ctx->action_arg[del_eff_param] < 0){
-        // TODO
-        //if (num_counted_vars == 0){
-            del_eff_params[del_eff_argi] = -1;
+    if (atom_param >= 0 && ctx->action_arg[atom_param] < 0){
+        if (max_counted_vars < 0 || num_counted_vars < max_counted_vars){
+            atom_params[atom_argi] = -1;
             UNIFY_ACTION_CTX_PUSH(ctx2, ctx);
-            if (ctx->action_arg[del_eff_param] < 0)
-                ctx2.action_arg[del_eff_param] = ctx2.next_name++;
+            if (ctx->action_arg[atom_param] < 0)
+                ctx2.action_arg[atom_param] = ctx2.next_name++;
 
-            refineCandidateWithDelEff(r, &ctx2, action, cand,
-                                      del_eff, del_eff_params,
-                                      del_eff_argi + 1, num_counted_vars + 1);
-        //}
+            refineCandidateWithEff(refine, &ctx2, action, cand,
+                                   atom, atom_params,
+                                   atom_argi + 1,
+                                   pre_test,
+                                   num_counted_vars + 1,
+                                   max_counted_vars);
+        }
 
     }else{
-        int arg = del_eff_obj;
-        if (del_eff_param >= 0)
-            arg = ctx->action_arg[del_eff_param];
+        int arg = atom_obj;
+        if (atom_param >= 0)
+            arg = ctx->action_arg[atom_param];
 
         for (int ci = 0; ci < cand->mgroup->param.param_size; ++ci){
             if (ctx->cand_arg[ci] == arg
                     && !cand->mgroup->param.param[ci].is_counted_var){
-                del_eff_params[del_eff_argi] = ci;
-                refineCandidateWithDelEff(r, ctx, action, cand,
-                                          del_eff, del_eff_params,
-                                          del_eff_argi + 1, num_counted_vars);
+                atom_params[atom_argi] = ci;
+                refineCandidateWithEff(refine, ctx, action, cand,
+                                       atom, atom_params,
+                                       atom_argi + 1,
+                                       pre_test,
+                                       num_counted_vars,
+                                       max_counted_vars);
             }
         }
 
-        //if (num_counted_vars == 0){
-            del_eff_params[del_eff_argi] = -1;
-            refineCandidateWithDelEff(r, ctx, action, cand,
-                                      del_eff, del_eff_params,
-                                      del_eff_argi + 1, num_counted_vars + 1);
-        //}
+        if (max_counted_vars < 0 || num_counted_vars < max_counted_vars){
+            atom_params[atom_argi] = -1;
+            refineCandidateWithEff(refine, ctx, action, cand,
+                                   atom, atom_params,
+                                   atom_argi + 1,
+                                   pre_test,
+                                   num_counted_vars + 1,
+                                   max_counted_vars);
+        }
     }
 }
 
@@ -1133,66 +1144,9 @@ static void refineExtend(refine_t *refine,
         if (!candHasPred(cand->mgroup, a->pred)){
             int del_eff_params[a->arg_size];
             CE_ATOM(ce_a, pre, a);
-            refineCandidateWithDelEff(refine, ctx, action, cand,
-                                      &ce_a, del_eff_params, 0, 0);
+            refineCandidateWithEff(refine, ctx, action, cand, &ce_a,
+                                   del_eff_params, 0, 1, 0, -1);
         }
-    }
-}
-
-// TODO: Refactor with refineCandidateWithDelEff()
-// Allow more than one counted variable
-static void refineCandidateWithAddEff(refine_t *refine,
-                                      const unify_action_ctx_t *ctx,
-                                      const pddl_action_t *action,
-                                      const cand_t *cand,
-                                      const ce_atom_t *atom,
-                                      int *atom_params,
-                                      int atom_argi,
-                                      int num_counted_vars)
-{
-    if (atom_argi == atom->atom->arg_size){
-        //fprintf(stderr, "NEW CAND\n");
-        addRefinedCandidate(refine, cand, atom->atom, atom_params);
-        return;
-    }
-
-    int atom_param = atom->atom->arg[atom_argi].param;
-    int atom_obj = atom->atom->arg[atom_argi].obj;
-
-    if (atom_param >= 0 && ctx->action_arg[atom_param] < 0){
-        // TODO
-        //if (num_counted_vars == 0){
-            atom_params[atom_argi] = -1;
-            UNIFY_ACTION_CTX_PUSH(ctx2, ctx);
-            if (ctx->action_arg[atom_param] < 0)
-                ctx2.action_arg[atom_param] = ctx2.next_name++;
-
-            refineCandidateWithAddEff(refine, &ctx2, action, cand,
-                                      atom, atom_params,
-                                      atom_argi + 1, num_counted_vars + 1);
-        //}
-
-    }else{
-        int arg = atom_obj;
-        if (atom_param >= 0)
-            arg = ctx->action_arg[atom_param];
-
-        for (int ci = 0; ci < cand->mgroup->param.param_size; ++ci){
-            if (ctx->cand_arg[ci] == arg
-                    && !cand->mgroup->param.param[ci].is_counted_var){
-                atom_params[atom_argi] = ci;
-                refineCandidateWithAddEff(refine, ctx, action, cand,
-                                          atom, atom_params,
-                                          atom_argi + 1, num_counted_vars);
-            }
-        }
-
-        //if (num_counted_vars == 0){
-            atom_params[atom_argi] = -1;
-            refineCandidateWithAddEff(refine, ctx, action, cand,
-                                      atom, atom_params,
-                                      atom_argi + 1, num_counted_vars + 1);
-        //}
     }
 }
 
@@ -1211,8 +1165,8 @@ static void refineExtendProvedWithAddEff(refine_t *refine,
         int eff_params[a->arg_size];
         //fprintf(stderr, "Extend with %s\n",
         //        ctx->pddl->pred.pred[a->pred].name);
-        refineCandidateWithAddEff(refine, ctx, action, cand,
-                                  &ce_a, eff_params, 0, 0);
+        refineCandidateWithEff(refine, ctx, action, cand,
+                               &ce_a, eff_params, 0, 0, 0, -1);
     }
 }
 
