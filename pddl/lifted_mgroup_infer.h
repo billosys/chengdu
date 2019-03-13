@@ -80,11 +80,35 @@ int pddlLiftedMGroupsAnyIsDeleted(const pddl_lifted_mgroups_t *mgs,
                                   const pddl_cond_arr_t *del_eff,
                                   const pddl_obj_id_t *args);
 
-struct pddl_lifted_mgroups_infer_config {
+struct pddl_lifted_mgroups_infer_limits {
     /** Maximum of generated candidates. Default: 100000 */
     int max_candidates;
     /** Maximum of proved lifted mutex groups. Default: 100000 */
     int max_mgroups;
+};
+typedef struct pddl_lifted_mgroups_infer_limits
+            pddl_lifted_mgroups_infer_limits_t;
+
+#define PDDL_LIFTED_MGROUPS_INFER_LIMITS_INIT \
+    { \
+        100000, /* .max_candidates */ \
+        100000, /* .max_mgroups */ \
+    }
+
+
+/** Create a single candidate per non-static predicate that has all
+ *  variables counted. */
+#define PDDL_LIFTED_MGROUPS_INFER_INITIAL_CANDIDATES_ALL_COUNTED_VARS 0
+/** Create a set of candidates per non-static predicate each having at most
+ *  one counted variable */
+#define PDDL_LIFTED_MGROUPS_INFER_INITIAL_CANDIDATES_COMBINE 1
+
+struct pddl_lifted_mgroups_infer_config {
+    /** Maximum counted variables per predicate */
+    int max_counted_vars;
+    /** One of PDDL_LIFTED_MGROUPS_INFER_INITIAL_CANDIDATES_* */
+    int initial_candidate;
+
     /** If true candidates are refined by changing types of parameters.
      *  Default: 1 */
     int use_type_refinement;
@@ -98,8 +122,8 @@ typedef struct pddl_lifted_mgroups_infer_config
 
 #define PDDL_LIFTED_MGROUPS_INFER_CONFIG_INIT \
     { \
-        100000, /* .max_candidates */ \
-        100000, /* .max_mgroups */ \
+        -1, \
+        PDDL_LIFTED_MGROUPS_INFER_INITIAL_CANDIDATES_ALL_COUNTED_VARS, \
         1, /* .use_type_refinement */ \
         1, /* .use_type_refinement_balance */ \
         1, /* .use_type_refinement_too_heavy */ \
@@ -109,8 +133,20 @@ typedef struct pddl_lifted_mgroups_infer_config
  * Find lifted mgroups using "guess, check, refine" approach.
  */
 void pddlLiftedMGroupsInfer(const pddl_t *pddl,
+                            const pddl_lifted_mgroups_infer_limits_t *limit,
                             const pddl_lifted_mgroups_infer_config_t *cfg,
                             pddl_lifted_mgroups_t *lm);
+
+/**
+ * Find monotonicity invariants (as in fast-downward) and stores them in
+ * inv if non-NULL. If mgroups is non-NULL, lifted mutex groups based on
+ * monotinicity invariants are stored there.
+ */
+void pddlLiftedMGroupsInferMonotonicity(
+                            const pddl_t *pddl,
+                            const pddl_lifted_mgroups_infer_limits_t *limit,
+                            pddl_lifted_mgroups_t *inv,
+                            pddl_lifted_mgroups_t *mgroups);
 
 #ifdef __cplusplus
 } /* extern "C" */
