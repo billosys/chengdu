@@ -54,6 +54,8 @@ struct cfg {
     int refine_type_unbalanced_action;
     int refine_var_too_heavy_init;
     int refine_var_too_heavy_action;
+    int refine_var_proved;
+    int refine_extend_proved;
 };
 typedef struct cfg cfg_t;
 
@@ -995,12 +997,14 @@ static void refineInit(refine_t *r,
     r->limit = *limit;
 
     bzero(&r->cfg, sizeof(r->cfg));
-    r->cfg.max_counted_vars = -1;
+    r->cfg.max_counted_vars = INT_MAX;
     r->cfg.refine_type_too_heavy_init = 1;
     r->cfg.refine_type_too_heavy_action = 1;
     r->cfg.refine_type_unbalanced_action = 1;
     r->cfg.refine_var_too_heavy_init = 1;
     r->cfg.refine_var_too_heavy_action = 1;
+    r->cfg.refine_var_proved = 1;
+    r->cfg.refine_extend_proved = 1;
 
     pddlLiftedMGroupHTableInit(&r->mgroup);
 
@@ -1177,7 +1181,7 @@ static void refineCandidateWithEff(refine_t *refine,
     int atom_obj = atom->atom->arg[atom_argi].obj;
 
     if (atom_param >= 0 && ctx->action_arg[atom_param] < 0){
-        if (max_counted_vars < 0 || num_counted_vars < max_counted_vars){
+        if (num_counted_vars < max_counted_vars){
             atom_params[atom_argi] = -1;
             UNIFY_ACTION_CTX_PUSH(ctx2, ctx);
             if (ctx->action_arg[atom_param] < 0)
@@ -1209,7 +1213,7 @@ static void refineCandidateWithEff(refine_t *refine,
             }
         }
 
-        if (max_counted_vars < 0 || num_counted_vars < max_counted_vars){
+        if (num_counted_vars < max_counted_vars){
             atom_params[atom_argi] = -1;
             refineCandidateWithEff(refine, ctx, action, cand,
                                    atom, atom_params,
@@ -1532,11 +1536,13 @@ static void refineProved(refine_t *refine,
                          const cand_t *cand,
                          pddl_lifted_mgroups_t *mgroups)
 {
-    // TODO: Parametrize
-    refineVariablesProved(refine, cand, mgroups);
-    for (int ai = 0; ai < refine->pddl->action.action_size; ++ai){
-        const pddl_action_t *a = refine->pddl->action.action + ai;
-        refineExtendProved(refine, a, cand);
+    if (refine->cfg.refine_var_proved)
+        refineVariablesProved(refine, cand, mgroups);
+    if (refine->cfg.refine_extend_proved){
+        for (int ai = 0; ai < refine->pddl->action.action_size; ++ai){
+            const pddl_action_t *a = refine->pddl->action.action + ai;
+            refineExtendProved(refine, a, cand);
+        }
     }
 }
 
