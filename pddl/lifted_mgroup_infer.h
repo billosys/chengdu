@@ -95,46 +95,12 @@ typedef struct pddl_lifted_mgroups_infer_limits
         100000, /* .max_mgroups */ \
     }
 
-
-/** Create a single candidate per non-static predicate that has all
- *  variables counted. */
-#define PDDL_LIFTED_MGROUPS_INFER_INITIAL_CANDIDATES_ALL_COUNTED_VARS 0
-/** Create a set of candidates per non-static predicate each having at most
- *  one counted variable */
-#define PDDL_LIFTED_MGROUPS_INFER_INITIAL_CANDIDATES_COMBINE 1
-
-struct pddl_lifted_mgroups_infer_config {
-    /** Maximum counted variables per predicate */
-    int max_counted_vars;
-    /** One of PDDL_LIFTED_MGROUPS_INFER_INITIAL_CANDIDATES_* */
-    int initial_candidate;
-
-    /** If true candidates are refined by changing types of parameters.
-     *  Default: 1 */
-    int use_type_refinement;
-    /** Use type-refinement if is-action-balanaced test fails. Default: 1 */
-    int use_type_refinement_balance;
-    /** Use type-refinement if is-action-too-heavy test fails. Default: 1 */
-    int use_type_refinement_too_heavy;
-};
-typedef struct pddl_lifted_mgroups_infer_config
-    pddl_lifted_mgroups_infer_config_t;
-
-#define PDDL_LIFTED_MGROUPS_INFER_CONFIG_INIT \
-    { \
-        -1, \
-        PDDL_LIFTED_MGROUPS_INFER_INITIAL_CANDIDATES_ALL_COUNTED_VARS, \
-        1, /* .use_type_refinement */ \
-        1, /* .use_type_refinement_balance */ \
-        1, /* .use_type_refinement_too_heavy */ \
-    }
-
 /**
- * Find lifted mgroups using "guess, check, refine" approach.
+ * Find lifted fam-groups.
  */
-void pddlLiftedMGroupsInfer(const pddl_t *pddl,
+void pddlLiftedMGroupsInferFAMGroups(
+                            const pddl_t *pddl,
                             const pddl_lifted_mgroups_infer_limits_t *limit,
-                            const pddl_lifted_mgroups_infer_config_t *cfg,
                             pddl_lifted_mgroups_t *lm);
 
 /**

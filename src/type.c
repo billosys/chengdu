@@ -181,6 +181,11 @@ const pddl_obj_id_t *pddlTypesObjsByType(const pddl_types_t *ts, int type_id,
     return ts->obj_by_type[type_id].obj;
 }
 
+int pddlTypeNumObjs(const pddl_types_t *ts, int type_id)
+{
+    return ts->obj_by_type[type_id].obj_size;
+}
+
 int pddlTypesObjHasType(const pddl_types_t *ts, int type, pddl_obj_id_t obj)
 {
     // TODO: can be done in constant time!
