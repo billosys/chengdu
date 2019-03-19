@@ -187,7 +187,8 @@ static int candHasPred(const pddl_lifted_mgroup_t *cand, int pred)
     return 0;
 }
 
-/** TODO **/
+/** Returns true if there is an effect matching one of the predicats from
+ *  cand */
 static int candHasAddEff(const cand_t *cand, const pddl_cond_t *eff)
 {
     pddl_cond_const_it_eff_t it;
@@ -204,7 +205,7 @@ static int candHasAddEff(const cand_t *cand, const pddl_cond_t *eff)
     return 0;
 }
 
-/** TODO **/
+/** Retuens true if cand has at least one counted variable */
 static int candHasCountedVar(const pddl_lifted_mgroup_t *cand)
 {
     for (int i = 0; i < cand->param.param_size; ++i){
@@ -807,11 +808,10 @@ static int isAnyActionTooHeavy(const pddl_t *pddl,
 
 
 /*** BALANCE TEST ***/
-// TODO: Rename to unifyActionEff()
-static int unifyActionAddEff(unify_action_ctx_t *ctx,
-                             const pddl_action_t *action,
-                             const ce_atom_t *eff,
-                             const pddl_cond_atom_t *cand_atom)
+static int unifyActionEff(unify_action_ctx_t *ctx,
+                          const pddl_action_t *action,
+                          const ce_atom_t *eff,
+                          const pddl_cond_atom_t *cand_atom)
 {
     return unifyActionAtom(ctx, eff->atom, cand_atom)
                 && actionArgTypesAreValid(ctx->pddl, &action->param,
@@ -959,7 +959,7 @@ static int isActionBalanced(const cand_t *cand,
                 continue;
 
             UNIFY_ACTION_CTX(ctx, pddl, &action->param, &cand->mgroup->param);
-            if (unifyActionAddEff(&ctx, action, &add_eff, cand_atom)){
+            if (unifyActionEff(&ctx, action, &add_eff, cand_atom)){
                 if (!isAddEffBalanced(&ctx, action, &add_eff, cand)){
                     refineUnbalancedAction(refine, &ctx, action, a,
                                            cand, cand_atom);
@@ -1168,7 +1168,6 @@ static void refineCandidateWithEff(refine_t *refine,
                                    int max_counted_vars)
 {
     if (atom_argi == atom->atom->arg_size){
-        //fprintf(stderr, "NEW CAND\n");
         if (!pre_test
                 || equalAtomIn(atom->atom, action->pre, ctx->action_arg)
                 || equalAtomIn(atom->atom, atom->pre, ctx->action_arg)){
@@ -1265,15 +1264,13 @@ static void refineExtendProvedWithAddEff(refine_t *refine,
         ASSERT(!a->neg);
         CE_ATOM(ce_a, pre, a);
         int eff_params[a->arg_size];
-        //fprintf(stderr, "Extend with %s\n",
-        //        ctx->pddl->pred.pred[a->pred].name);
         refineCandidateWithEff(refine, ctx, action, cand,
                                &ce_a, eff_params, 0, 0, 0,
                                refine->cfg.max_counted_vars);
     }
 }
 
-/** TODO */
+/** Refine proved candidate by extending it with an add effect */
 static void refineExtendProved(refine_t *refine,
                                const pddl_action_t *action,
                                const cand_t *cand)
@@ -1294,8 +1291,10 @@ static void refineExtendProved(refine_t *refine,
                 continue;
             UNIFY_ACTION_CTX(ctx, refine->pddl, &action->param,
                              &cand->mgroup->param);
-            // TODO: Describe the following condition
-            if (unifyActionAddEff(&ctx, action, &ce_a, c)
+            // If we are able to unify pre \cap del_eff, but add effect is
+            // not covered by the mutex group, we can try to extend the
+            // mutex group with add effects
+            if (unifyActionEff(&ctx, action, &ce_a, c)
                     && (equalAtomIn(a, action->pre, ctx.action_arg)
                             || equalAtomIn(a, pre, ctx.action_arg))
                     && !candHasAddEff(cand, action->eff)){
@@ -1317,13 +1316,6 @@ static void addCandidateWithChangedParamType(refine_t *refine,
     cand_t *c = refineAddCand(refine, &new_cand, cand);
     if (c != NULL)
         c->refined_type = 1;
-    /*
-       pddlLiftedMGroupPrint(pddl, cand, stderr);
-       pddlLiftedMGroupPrint(pddl, &new_cand, stderr);
-       fprintf(stderr, "^^^ %d\n", param_id);
-       fflush(stderr);
-     */
-
     pddlLiftedMGroupFree(&new_cand);
 }
 
@@ -1392,9 +1384,7 @@ static void refineVariables(refine_t *refine,
                             const pddl_cond_atom_t *cand_atom1,
                             const pddl_cond_atom_t *cand_atom2)
 {
-    //fprintf(stderr, "refineVariables\n");
     // TODO: Add variable -> object refinement
-    // TODO: parametrize
     if (refine == NULL || refine->cand_size >= refine->limit.max_candidates)
         return;
 
@@ -1406,13 +1396,11 @@ static void refineVariables(refine_t *refine,
     countedVariables(cand->mgroup, cand_atom2, &counted_vars2);
     borISetIntersect(&relevant_params, &counted_vars2);
     borISetFree(&counted_vars2);
-    //fprintf(stderr, "Cs: %d\n", borISetSize(&relevant_params));
 
     // If a1 and a2 differ in a argument corresonding to counted variable,
     // then we can try to change this variable to non-counted variable
     int counted_var;
     BOR_ISET_FOR_EACH(&relevant_params, counted_var){
-        //fprintf(stderr, "C: %d\n", counted_var);
         for (int ai1 = 0; ai1 < cand_atom1->arg_size; ++ai1){
             if (cand_atom1->arg[ai1].param != counted_var)
                 continue;
@@ -1466,7 +1454,8 @@ static void _refineVariablesProved(refine_t *refine,
     }
 }
 
-/** TODO **/
+/** Refine variables for proved candidate, i.e., it tries to find valid
+ *  subsets that are fam-groups. **/
 static void refineVariablesProved(refine_t *refine,
                                   const cand_t *cand,
                                   pddl_lifted_mgroups_t *lm)
@@ -1485,7 +1474,6 @@ static void refineTooHeavyInit(refine_t *refine,
                                const pddl_cond_atom_t *cand_atom1,
                                const pddl_cond_atom_t *cand_atom2)
 {
-    //fprintf(stderr, "refineTooHeavy\n");
     if (refine == NULL || refine->cand_size >= refine->limit.max_candidates)
         return;
 
@@ -1505,7 +1493,6 @@ static void refineTooHeavyAction(refine_t *refine,
                                  const pddl_cond_atom_t *cand_atom1,
                                  const pddl_cond_atom_t *cand_atom2)
 {
-    //fprintf(stderr, "refineTooHeavy\n");
     if (refine == NULL || refine->cand_size >= refine->limit.max_candidates)
         return;
 
