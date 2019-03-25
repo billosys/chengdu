@@ -106,6 +106,13 @@ void pddlStripsApplicableOps(const pddl_strips_t *strips,
                              const bor_iset_t *state,
                              bor_iset_t *app_ops);
 
+
+/**
+ * Returns true if the given set of facts form a fact-alternating mutex
+ * group.
+ */
+int pddlStripsIsFAMGroup(const pddl_strips_t *strips, const bor_iset_t *facts);
+
 /**
  * Print STRIPS problem in a format easily usable from python.
  */
