@@ -43,7 +43,7 @@ struct pddl_ground_mgroups {
 typedef struct pddl_ground_mgroups pddl_ground_mgroups_t;
 
 /**
- * TODO
+ * Ground lifted mutex groups using reachable facts.
  */
 void pddlGroundMGroupsGround(pddl_ground_mgroups_t *mg,
                              const pddl_t *pddl,
@@ -51,12 +51,12 @@ void pddlGroundMGroupsGround(pddl_ground_mgroups_t *mg,
                              const pddl_strips_t *strips);
 
 /**
- * TODO
+ * Free allocated memory.
  */
 void pddlGroundMGroupsFree(pddl_ground_mgroups_t *mg);
 
 /**
- * TODO
+ * Debug print out
  */
 void pddlGroundMGroupsPrint(const pddl_t *pddl,
                             const pddl_strips_t *strips,

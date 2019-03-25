@@ -17,11 +17,6 @@
  * See the License for more information.
  */
 
-// TODO: If there is only one possible object of certain type, treat is as
-//       a object everywhere.
-// TODO: Merge candidates with proved mgroups if possible (e.g., when types
-//       of variables are subtypes)
-
 #include <boruvka/sort.h>
 #include <boruvka/hfunc.h>
 #include "pddl/pddl.h"
