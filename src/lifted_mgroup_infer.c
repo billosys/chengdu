@@ -17,8 +17,6 @@
  * See the License for more information.
  */
 
-// TODO: If there is only one possible object of certain type, treat is as
-//       a object everywhere.
 // TODO: Merge candidates with proved mgroups if possible (e.g., when types
 //       of variables are subtypes)
 
@@ -152,12 +150,6 @@ static void refineUnbalancedAction(refine_t *refine,
 
 static void mgroupFinalize(const pddl_t *pddl, pddl_lifted_mgroup_t *mg)
 {
-    /* TODO: Parametrize this
-    for (int p = 0; p < mg->param.param_size; ++p){
-        if (pddlTypeNumObjs(&pddl->type, mg->param.param[p].type) <= 1)
-            mg->param.param[p].is_counted_var = 0;
-    }
-    */
     pddlLiftedMGroupSort(mg);
 }
 
@@ -1351,7 +1343,6 @@ static void refineTypes(refine_t *refine,
             if (type == ctype || !pddlTypesIsParent(ts, type, ctype))
                 continue;
             const pddl_type_t *t = ts->type + type;
-            // TODO
             if ((atype >= 0
                         && pddlTypesAreDisjunct(ts, type, atype)
                         && (t->parent == ctype || t->parent == at->parent))
@@ -1728,8 +1719,6 @@ static int mgroupIsDeleted(const pddl_lifted_mgroup_t *mg,
 
     // First check whether there is a matching add effect. If there is one,
     // then mg cannot be deleted
-    // TODO: We should actually be looking if there is a possibility that
-    //       the add effect is not there.
     for (int addi = 0; addi < add_eff->size; ++addi){
         const pddl_cond_atom_t *a = PDDL_COND_CAST(add_eff->cond[addi], atom);
         const pddl_cond_atom_t *m;
