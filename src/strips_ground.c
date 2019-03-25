@@ -705,14 +705,16 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
 
     if (!pddlPrepActionCheck(a, &g->static_facts, arg))
         return;
+
     if (g->cfg.lifted_mgroups != NULL){
-        // TODO: parametrize
-        if (pddlLiftedMGroupsIsGroundedConjTooHeavy(g->cfg.lifted_mgroups,
-                                                    g->pddl, &a->pre, arg)){
+        if (g->cfg.prune_op_mutex_pre
+                && pddlLiftedMGroupsIsGroundedConjTooHeavy(
+                            g->cfg.lifted_mgroups, g->pddl, &a->pre, arg)){
             return;
         }
-        // TODO: parametrize
-        if (a->parent_action < 0
+
+        if (g->cfg.prune_op_dead_end
+                && a->parent_action < 0
                 && pddlLiftedMGroupsAnyIsDeleted(&g->goal_mgroup, g->pddl,
                                                  &a->pre, &a->add_eff,
                                                  &a->del_eff, arg)){

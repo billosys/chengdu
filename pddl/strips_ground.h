@@ -91,7 +91,8 @@ int pddlStripsGroundStart(pddl_strips_ground_t *g,
 
 /**
  * Performs one cycle of fixpoint grounding.
- * For each newly generated 
+ * For each newly generated fact, *_unify_new_atom_fn callback specified in
+ * pddlStripsGroundStart() is called.
  */
 int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g);
 

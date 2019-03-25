@@ -33,11 +33,19 @@ extern "C" {
 
 struct pddl_ground_config {
     const pddl_lifted_mgroups_t *lifted_mgroups;
+    /** If .lifted_mgroups != NULL, use lifted mutex groups to prune
+     *  operators that has mutex preconditions. */
+    int prune_op_mutex_pre;
+    /** If .lifted_mgroups != NULL, use lifted mutex groups to prune
+     *  dead-end operators. */
+    int prune_op_dead_end;
 };
 typedef struct pddl_ground_config pddl_ground_config_t;
 
 #define PDDL_GROUND_CONFIG_INIT { \
         NULL, /* .lifted_mgroups */ \
+        1, /* .prune_op_mutex_pre */ \
+        1, /* .prune_op_dead_end */ \
     }
 
 struct pddl_strips {
