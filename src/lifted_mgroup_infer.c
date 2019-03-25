@@ -203,13 +203,6 @@ static int candHasCountedVar(const pddl_lifted_mgroup_t *cand)
     return 0;
 }
 
-static int isSingleFact(const pddl_lifted_mgroup_t *cand)
-{
-    if (cand->cond.size != 1)
-        return 0;
-    return !candHasCountedVar(cand);
-}
-
 /** Returns false if there are two action arguments that have assigned the
  *  same value, but their types are disjunct. */
 static int actionArgTypesAreValid(const pddl_t *pddl,
@@ -255,19 +248,6 @@ static int atomsEqual(const pddl_cond_atom_t *atom1,
             return 0;
     }
     return 1;
-}
-
-/** Returns true if the predicate is in the conjuction */
-static int predInConj(int pred, const pddl_cond_t *conj)
-{
-    pddl_cond_const_it_atom_t it;
-    const pddl_cond_atom_t *a;
-
-    PDDL_COND_FOR_EACH_ATOM(conj, &it, a){
-        if (!a->neg && a->pred == pred)
-            return 1;
-    }
-    return 0;
 }
 
 /** Returns true if the exactly same atom can be found in conj */
@@ -1056,11 +1036,6 @@ static cand_t *refineAddCand(refine_t *r,
         ASSERT(((cand_t *)borExtArrGet(r->cand, id))->id == id);
         return NULL;
     }
-}
-
-static cand_t *refineGetCand(refine_t *r, int id)
-{
-    return borExtArrGet(r->cand, id);
 }
 
 /** Restrict types of parameters so it is valid for all atoms. */
