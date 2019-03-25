@@ -36,7 +36,7 @@ int pddlTypesGet(const pddl_types_t *t, const char *name)
 }
 
 
-static int add(pddl_types_t *t, const char *name)
+static int add(pddl_types_t *t, const char *name, int parent)
 {
     int id;
 
@@ -46,9 +46,11 @@ static int add(pddl_types_t *t, const char *name)
     ++t->type_size;
     t->type = BOR_REALLOC_ARR(t->type, pddl_type_t, t->type_size);
     t->type[t->type_size - 1].name = name;
-    t->type[t->type_size - 1].parent = 0;
-    t->type[t->type_size - 1].either = NULL;
-    t->type[t->type_size - 1].either_size = 0;
+    t->type[t->type_size - 1].parent = parent;
+    borISetInit(&t->type[t->type_size - 1].child);
+    if (parent >= 0)
+        borISetAdd(&t->type[parent].child, t->type_size - 1);
+    borISetInit(&t->type[t->type_size - 1].either);
     return t->type_size - 1;
 }
 
@@ -57,7 +59,7 @@ static int setCB(const pddl_lisp_node_t *root,
                  bor_err_t *err)
 {
     pddl_types_t *t = ud;
-    int tid, pid;
+    int pid;
 
     pid = 0;
     if (child_type >= 0){
@@ -65,7 +67,7 @@ static int setCB(const pddl_lisp_node_t *root,
             ERR_LISP_RET2(err, -1, root->child + child_type,
                           "Invalid typed list. Unexpected expression");
         }
-        pid = add(t, root->child[child_type].value);
+        pid = add(t, root->child[child_type].value, 0);
     }
 
     for (int i = child_from; i < child_to; ++i){
@@ -74,9 +76,7 @@ static int setCB(const pddl_lisp_node_t *root,
         if (root->child[i].value == NULL)
             ERR_LISP_RET2(err, -1, root->child + i, "Unexpected expression");
 
-        tid = add(t, root->child[i].value);
-        if (tid != 0)
-            t->type[tid].parent = pid;
+        add(t, root->child[i].value, pid);
     }
 
     return 0;
@@ -93,8 +93,8 @@ int pddlTypesParse(pddl_t *pddl, bor_err_t *e)
     types->type = BOR_ALLOC(pddl_type_t);
     types->type[0].name = object_name;
     types->type[0].parent = -1;
-    types->type[0].either = NULL;
-    types->type[0].either_size = 0;
+    borISetInit(&types->type[0].child);
+    borISetInit(&types->type[0].either);
 
     n = pddlLispFindNode(&pddl->domain_lisp->root, PDDL_KW_TYPES);
     if (n != NULL){
@@ -115,10 +115,10 @@ int pddlTypesParse(pddl_t *pddl, bor_err_t *e)
 void pddlTypesFree(pddl_types_t *types)
 {
     for (int i = 0; i < types->type_size; ++i){
-        if (types->type[i].either != NULL){
+        if (borISetSize(&types->type[i].either) > 0)
             BOR_FREE((char *)types->type[i].name);
-            BOR_FREE(types->type[i].either);
-        }
+        borISetFree(&types->type[i].child);
+        borISetFree(&types->type[i].either);
     }
 
     if (types->type != NULL)
@@ -137,8 +137,9 @@ void pddlTypesPrint(const pddl_types_t *t, FILE *fout)
 {
     fprintf(fout, "Type[%d]:\n", t->type_size);
     for (int i = 0; i < t->type_size; ++i){
-        fprintf(fout, "    [%d]: %s, parent: %d\n", i,
+        fprintf(fout, "    [%d]: %s, parent: %d", i,
                 t->type[i].name, t->type[i].parent);
+        fprintf(fout, "\n");
     }
 
     fprintf(fout, "Obj-by-Type:\n");
@@ -148,6 +149,11 @@ void pddlTypesPrint(const pddl_types_t *t, FILE *fout)
             fprintf(fout, " %d", (int)t->obj_by_type[i].obj[j]);
         fprintf(fout, "\n");
     }
+}
+
+int pddlTypesIsEither(const pddl_types_t *ts, int tid)
+{
+    return borISetSize(&ts->type[tid].either) > 0;
 }
 
 void pddlTypesAddObj(pddl_types_t *ts, pddl_obj_id_t obj_id, int type_id)
@@ -201,21 +207,17 @@ int pddlTypesObjHasType(const pddl_types_t *ts, int type, pddl_obj_id_t obj)
 }
 
 
-static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
+static int pddlTypesEither(pddl_types_t *ts, const bor_iset_t *either)
 {
     pddl_type_t *type;
     pddl_objs_by_type_t *obj;
     char *cur;
-    int i, j, slen;
     int tid;
 
     // Try to find already created (either ...) type
-    for (i = 0; i < ts->type_size; ++i){
-        if (ts->type[i].either == NULL)
-            continue;
-        if (ts->type[i].either_size == either_size
-                && memcmp(ts->type[i].either, either,
-                          sizeof(int) * either_size) == 0){
+    for (int i = 0; i < ts->type_size; ++i){
+        if (pddlTypesIsEither(ts, i)
+                && borISetEq(&ts->type[i].either, either)){
             return i;
         }
     }
@@ -228,18 +230,21 @@ static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
 
     type = ts->type + ts->type_size - 1;
     type->parent = -1;
-    type->either = BOR_ALLOC_ARR(int, either_size);
-    memcpy(type->either, either, sizeof(int) * either_size);
-    type->either_size = either_size;
+    borISetInit(&type->child);
+    borISetUnion(&type->child, either);
+    borISetInit(&type->either);
+    borISetUnion(&type->either, either);
 
     // Construct a name of the (either ...) type
-    for (i = 0, slen = 0; i < either_size; ++i)
-        slen += 1 + strlen(ts->type[either[i]].name);
+    int eid;
+    int slen = 0;
+    BOR_ISET_FOR_EACH(&type->either, eid)
+        slen += 1 + strlen(ts->type[eid].name);
     slen += 2 + 6 + 1;
     type->name = cur = BOR_ALLOC_ARR(char, slen);
     cur += sprintf(cur, "(either");
-    for (i = 0; i < either_size; ++i)
-        cur += sprintf(cur, " %s", ts->type[either[i]].name);
+    BOR_ISET_FOR_EACH(&type->either, eid)
+        cur += sprintf(cur, " %s", ts->type[eid].name);
     sprintf(cur, ")");
     tid = ts->type_size - 1;
 
@@ -247,9 +252,9 @@ static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
     // type consists of.
     obj = ts->obj_by_type + ts->type_size - 1;
     bzero(obj, sizeof(*obj));
-    for (i = 0; i < either_size; ++i){
-        for (j = 0; j < ts->obj_by_type[either[i]].obj_size; ++j){
-            pddlTypesAddObj(ts, ts->obj_by_type[either[i]].obj[j], tid);
+    BOR_ISET_FOR_EACH(&type->either, eid){
+        for (int j = 0; j < ts->obj_by_type[eid].obj_size; ++j){
+            pddlTypesAddObj(ts, ts->obj_by_type[eid].obj[j], tid);
         }
     }
 
@@ -257,18 +262,9 @@ static int pddlTypesEither(pddl_types_t *ts, const int *either, int either_size)
 }
 
 
-static int cmpInt(const void *a, const void *b)
-{
-    int ia = *(int *)a;
-    int ib = *(int *)b;
-    return ia - ib;
-}
-
 int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
                          bor_err_t *err)
 {
-    int *either;
-    int either_size;
     int tid;
 
     if (node->value != NULL){
@@ -284,8 +280,7 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
     if (node->child_size == 2 && node->child[1].value != NULL)
         return pddlTypeFromLispNode(ts, node->child + 1, err);
 
-    either_size = node->child_size - 1;
-    either = alloca(sizeof(int) * either_size);
+    BOR_ISET(either);
     for (int i = 1; i < node->child_size; ++i){
         if (node->child[i].value == NULL){
             ERR_LISP_RET2(err, -1, node->child + i,
@@ -297,31 +292,32 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
                          node->child[i].value);
         }
 
-        either[i - 1] = tid;
+        borISetAdd(&either, tid);
     }
 
-    qsort(either, either_size, sizeof(int), cmpInt);
-
-    return pddlTypesEither(ts, either, either_size);
+    tid = pddlTypesEither(ts, &either);
+    borISetFree(&either);
+    return tid;
 }
 
 int pddlTypesIsParent(const pddl_types_t *ts, int child, int parent)
 {
     const pddl_type_t *tchild = ts->type + child;
     const pddl_type_t *tparent = ts->type + parent;
+    int eid;
 
     for (int cur_type = child; cur_type >= 0;){
         if (cur_type == parent)
             return 1;
         cur_type = ts->type[cur_type].parent;
-        for (int i = 0; i < tparent->either_size; ++i){
-            if (cur_type == tparent->either[i])
+        BOR_ISET_FOR_EACH(&tparent->either, eid){
+            if (cur_type == eid)
                 return 1;
         }
     }
 
-    for (int i = 0; i < tchild->either_size; ++i){
-        if (pddlTypesIsParent(ts, tchild->either[i], parent))
+    BOR_ISET_FOR_EACH(&tchild->either, eid){
+        if (pddlTypesIsParent(ts, eid, parent))
             return 1;
     }
 
@@ -349,7 +345,7 @@ void pddlTypesPrintPDDL(const pddl_types_t *ts, FILE *fout)
                 ts->type[q[qi]].name,
                 ts->type[ts->type[q[qi]].parent].name);
         for (int i = 0; i < ts->type_size; ++i){
-            if (ts->type[i].parent == q[qi] && ts->type[i].either == NULL)
+            if (ts->type[i].parent == q[qi] && !pddlTypesIsEither(ts, i))
                 q[qsize++] = i;
         }
     }

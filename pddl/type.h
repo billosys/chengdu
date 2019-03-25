@@ -20,6 +20,7 @@
 #ifndef __PDDL_TYPE_H__
 #define __PDDL_TYPE_H__
 
+#include <boruvka/iset.h>
 #include <pddl/common.h>
 #include <pddl/lisp.h>
 
@@ -30,10 +31,8 @@ extern "C" {
 struct pddl_type {
     const char *name; /*!< Name of the type */
     int parent;       /*!< ID of the parent type */
-
-    int *either;      /*!< NULL for normal type, a list type IDs for
-                           special (either ...) type */
-    int either_size;
+    bor_iset_t child; /*!< IDs of children types */
+    bor_iset_t either; /*!< type IDs for special (either ...) type */
 };
 typedef struct pddl_type pddl_type_t;
 
@@ -71,6 +70,11 @@ int pddlTypesGet(const pddl_types_t *t, const char *name);
  * Prints list of types to the specified output.
  */
 void pddlTypesPrint(const pddl_types_t *t, FILE *fout);
+
+/**
+ * Returns true if the specified type is (either ...) type.
+ */
+int pddlTypesIsEither(const pddl_types_t *ts, int tid);
 
 /**
  * Record the given object as being of the given type.
