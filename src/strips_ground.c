@@ -220,8 +220,6 @@ static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
     const pddl_cond_atom_t *atom;
     const pddl_pred_t *pred;
 
-    // TODO: Check limits on pddl_obj_id_t, pre_mask_t, ...
-
     bzero(tr, sizeof(*tr));
     tr->g = g;
     tr->action_id = action_id;
@@ -387,6 +385,7 @@ static void propagatePre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
         //       memory removing part of tree. The question is whether is
         //       it useful.
         groundActionAddEff(tr->g, tr->action, arg);
+        tn->flags.blocked = 1;
         return;
     }
 
@@ -408,7 +407,6 @@ static void propagatePre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
 static void unifyPre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
                      pddl_obj_id_t *arg, int pre_i)
 {
-    // TODO: Check action for equality and predicates?
 #ifdef PDDL_DEBUG
     if (pre_i < sizeof(pre_mask_t) / 8){
         ASSERT(!(tn->pre_mask & (1lu << ((pre_mask_t)pre_i))));
@@ -532,7 +530,6 @@ static void unifyTree(pddl_strips_ground_tree_t *tr,
     int num_args_set = 0;
     int param;
 
-    // TODO: check fact agains action
     // TODO: Static facts -- after using all of them disallow -1 on
     //       arguments of static facts.
     // TODO: Remove -1 nodes if all possible objects are already present
@@ -616,7 +613,6 @@ static int removeIncompleteStatic(pddl_strips_ground_tree_t *tr, tnode_t *tn)
 
 static void treeFixStatic(pddl_strips_ground_tree_t *tr)
 {
-    // TODO: check the action agains the whole arg assignement at leafs
     _fixStatic(tr, tr->root);
     removeIncompleteStatic(tr, tr->root);
 
