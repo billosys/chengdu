@@ -30,20 +30,16 @@
 struct cand {
     int id;
     const pddl_lifted_mgroup_t *mgroup;
-    int proved; /*!< True if proved to be lifted mutex group */
-    int is_too_heavy;
-    int is_unbalanced;
     int refined_from; /*!< ID of the candidate this was refined from */
     int refined_var; /*!< True if fefined by changing variables */
     int refined_type; /*!< True if refined by changing types */
     int refined_by_extend; /*!< True if refined by adding predicates */
     int refined_by_extend_pred;
-    bor_iset_t parent;
 };
 typedef struct cand cand_t;
 
 #define CAND_LOCAL(NAME, MGROUP) \
-    cand_t NAME = { -1, (MGROUP), 0, 0, 0, -1, 0, 0, 0, -1, { 0 } }
+    cand_t NAME = { -1, (MGROUP), -1, 0, 0, 0, -1 }
 
 struct cfg {
     int max_counted_vars;
@@ -1019,11 +1015,6 @@ static void refineInitMonotonicity(
 
 static void refineFree(refine_t *r)
 {
-    for (int i = 0; i < r->cand_size; ++i){
-        cand_t *c = borExtArrGet(r->cand, i);
-        borISetFree(&c->parent);
-    }
-
     pddlLiftedMGroupHTableFree(&r->mgroup);
     borExtArrDel(r->cand);
 }
@@ -1053,10 +1044,8 @@ static cand_t *refineAddCand(refine_t *r,
         cand->id = id;
         cand->mgroup = pddlLiftedMGroupHTableGet(&r->mgroup, id);
         cand->refined_from = -1;
-        if (parent != NULL){
+        if (parent != NULL)
             cand->refined_from = parent->id;
-            borISetAdd(&cand->parent, parent->id);
-        }
         ASSERT(!cand->refined_var);
         ASSERT(!cand->refined_type);
         ASSERT(!cand->refined_by_extend);
@@ -1064,9 +1053,6 @@ static cand_t *refineAddCand(refine_t *r,
 
         return cand;
     }else{
-        cand_t *cand = borExtArrGet(r->cand, id);
-        if (parent != NULL)
-            borISetAdd(&cand->parent, parent->id);
         ASSERT(((cand_t *)borExtArrGet(r->cand, id))->id == id);
         return NULL;
     }
