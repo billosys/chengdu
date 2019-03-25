@@ -84,6 +84,11 @@ const pddl_obj_id_t *pddlTypesObjsByType(const pddl_types_t *ts, int type_id,
                                          int *size);
 
 /**
+ * Returns number of objects of the specified type.
+ */
+int pddlTypeNumObjs(const pddl_types_t *ts, int type_id);
+
+/**
  * Returns true if the object compatible with the specified type.
  */
 int pddlTypesObjHasType(const pddl_types_t *ts, int type, pddl_obj_id_t obj);

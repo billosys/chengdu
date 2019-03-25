@@ -27,6 +27,8 @@ OBJS += ground_atom
 OBJS += profile
 OBJS += helper
 OBJS += lifted_mgroup
+OBJS += lifted_mgroup_infer
+OBJS += lifted_mgroup_htable
 OBJS += ground_mgroup
 OBJS += pddl_file
 
