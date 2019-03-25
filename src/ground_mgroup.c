@@ -478,7 +478,6 @@ void pddlGroundMGroupsPrint(const pddl_t *pddl,
             const pddl_ground_mgroup_t *m = mg->mgroup + i;
             if (m->lifted_mgroup_id != lmgid)
                 continue;
-            fprintf(fout, "[%d]:", i);
             int fact;
             BOR_ISET_FOR_EACH(&m->mgroup, fact){
                 fprintf(fout, " (%s)", strips->fact.fact[fact]->name);

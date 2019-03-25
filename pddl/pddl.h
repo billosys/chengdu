@@ -35,6 +35,8 @@
 #include <pddl/strips.h>
 #include <pddl/strips_ground.h>
 #include <pddl/lifted_mgroup.h>
+#include <pddl/lifted_mgroup_infer.h>
+#include <pddl/lifted_mgroup_htable.h>
 #include <pddl/ground_mgroup.h>
 
 #endif /* __PDDL_H__ */

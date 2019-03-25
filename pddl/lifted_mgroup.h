@@ -69,33 +69,15 @@ void pddlLiftedMGroupInitCandFromPred(pddl_lifted_mgroup_t *mgroup,
 void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup);
 
 /**
+ * Returns true if m1 equals to m2.
+ */
+int pddlLiftedMGroupEq(const pddl_lifted_mgroup_t *m1,
+                       const pddl_lifted_mgroup_t *m2);
+
+/**
  * Sort mutex group's atoms and parameters.
  */
 void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m);
-
-/**
- * Returns true if two or more facts from the initial state are covered by
- * the candidate.
- */
-int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
-                                   const pddl_t *pddl);
-
-/**
- * Returns true if the action could add two or more facts from the
- * given candidate.
- */
-int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
-                                     const pddl_t *pddl,
-                                     int action_id);
-
-/**
- * Returns true if the action is balanced with respect to the given mutex
- * group candidate, i.e., every add effect covered by the candidate has at
- * least one delete effect \cap precondition covered by the candidate.
- */
-int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
-                                     const pddl_t *pddl,
-                                     int action_id);
 
 /**
  * Prints a formatted lifted mutex group (or a candidate if there are some
@@ -140,68 +122,6 @@ void pddlLiftedMGroupsAddInst(pddl_lifted_mgroups_t *lm,
  * Sort mgroups according to size and predicates and removes duplicates.
  */
 void pddlLiftedMGroupsSortAndUniq(pddl_lifted_mgroups_t *lm);
-
-/**
- * Fills dst with (partially) instantiated lifted mutex groups from src
- * that has non-empty intersection with goal.
- */
-void pddlLiftedMGroupsExtractGoalAware(pddl_lifted_mgroups_t *dst,
-                                       const pddl_lifted_mgroups_t *src,
-                                       const pddl_t *pddl);
-
-/**
- * Returns true if the conjuction of atoms grounded using given arguments
- * is too heavy, i.e., if the candidate can be unified with at least two
- * atoms.
- */
-int pddlLiftedMGroupsIsGroundedConjTooHeavy(const pddl_lifted_mgroups_t *mgs,
-                                            const pddl_t *pddl,
-                                            const pddl_cond_arr_t *conj,
-                                            const pddl_obj_id_t *conj_args);
-
-/**
- * Returns true if the action (pre, add_eff, del_eff) fully grounded with
- * args deletes the given mutex group, i.e., the resulting state will have
- * empty intersection with mg.
- */
-int pddlLiftedMGroupsAnyIsDeleted(const pddl_lifted_mgroups_t *mgs,
-                                  const pddl_t *pddl,
-                                  const pddl_cond_arr_t *pre,
-                                  const pddl_cond_arr_t *add_eff,
-                                  const pddl_cond_arr_t *del_eff,
-                                  const pddl_obj_id_t *args);
-
-struct pddl_lifted_mgroups_infer_config {
-    /** Maximum of generated candidates. Default: 100000 */
-    int max_candidates;
-    /** Maximum of proved lifted mutex groups. Default: 100000 */
-    int max_mgroups;
-    /** If true candidates are refined by changing types of parameters.
-     *  Default: 1 */
-    int use_type_refinement;
-    /** Use type-refinement if is-action-balanaced test fails. Default: 1 */
-    int use_type_refinement_balance;
-    /** Use type-refinement if is-action-too-heavy test fails. Default: 1 */
-    int use_type_refinement_too_heavy;
-};
-typedef struct pddl_lifted_mgroups_infer_config
-    pddl_lifted_mgroups_infer_config_t;
-
-#define PDDL_LIFTED_MGROUPS_INFER_CONFIG_INIT \
-    { \
-        100000, /* .max_candidates */ \
-        100000, /* .max_mgroups */ \
-        1, /* .use_type_refinement */ \
-        1, /* .use_type_refinement_balance */ \
-        1, /* .use_type_refinement_too_heavy */ \
-    }
-
-/**
- * Find lifted mgroups using "guess, check, refine" approach.
- */
-void pddlLiftedMGroupsInfer(const pddl_t *pddl,
-                            const pddl_lifted_mgroups_infer_config_t *cfg,
-                            pddl_lifted_mgroups_t *lm);
 
 void pddlLiftedMGroupsPrint(const pddl_t *pddl,
                             const pddl_lifted_mgroups_t *lm,
