@@ -22,6 +22,7 @@
 
 #include <limits.h>
 #include "boruvka/timer.h"
+#include "boruvka/fifo.h"
 #include "pddl/pddl.h"
 #include "pddl/lifted_mgroup_htable.h"
 #include "pddl/lifted_mgroup_infer.h"
@@ -61,7 +62,9 @@ struct refine {
     pddl_lifted_mgroup_htable_t mgroup;
     bor_extarr_t *cand;
     int cand_size;
-    int cand_next;
+
+    bor_fifo_t queue1;
+    bor_fifo_t queue2;
 };
 typedef struct refine refine_t;
 
@@ -980,7 +983,9 @@ static void refineInit(refine_t *r,
     bzero(&c, sizeof(c));
     r->cand = borExtArrNew(sizeof(c), NULL, &c);
     r->cand_size = 0;
-    r->cand_next = 0;
+
+    borFifoInit(&r->queue1, sizeof(int));
+    borFifoInit(&r->queue2, sizeof(int));
 }
 
 static void refineInitMonotonicity(
@@ -997,21 +1002,35 @@ static void refineFree(refine_t *r)
 {
     pddlLiftedMGroupHTableFree(&r->mgroup);
     borExtArrDel(r->cand);
+    borFifoFree(&r->queue1);
+    borFifoFree(&r->queue2);
 }
 
 static int refineCont(const refine_t *r)
 {
-    return r->cand_next < r->cand_size;
+    return !borFifoEmpty(&r->queue1) || !borFifoEmpty(&r->queue2);
 }
 
 static cand_t *refineNextCand(refine_t *r)
 {
-    return borExtArrGet(r->cand, r->cand_next++);
+    int next = 0;
+    if (!borFifoEmpty(&r->queue1)){
+        next = *(int *)borFifoFront(&r->queue1);
+        borFifoPop(&r->queue1);
+
+    }else if (!borFifoEmpty(&r->queue2)){
+        next = *(int *)borFifoFront(&r->queue2);
+        borFifoPop(&r->queue2);
+
+    }else{
+        return NULL;
+    }
+    return borExtArrGet(r->cand, next);
 }
 
-static cand_t *refineAddCand(refine_t *r,
-                             const pddl_lifted_mgroup_t *m,
-                             const cand_t *parent)
+static cand_t *_refineAddCand(refine_t *r,
+                              const pddl_lifted_mgroup_t *m,
+                              const cand_t *parent)
 {
     if (r->cand_size >= r->limit.max_candidates)
         return NULL;
@@ -1038,15 +1057,25 @@ static cand_t *refineAddCand(refine_t *r,
     }
 }
 
+static void refineAddCand(refine_t *r,
+                          const pddl_lifted_mgroup_t *m,
+                          const cand_t *parent)
+{
+    cand_t *c = _refineAddCand(r, m, parent);
+    if (c != NULL)
+        borFifoPush(&r->queue1, &c->id);
+}
+
 static void refineAddCandExtend(refine_t *r,
                                 const pddl_lifted_mgroup_t *m,
                                 const cand_t *parent,
                                 int extend_pred)
 {
-    cand_t *c = refineAddCand(r, m, parent);
+    cand_t *c = _refineAddCand(r, m, parent);
     if (c != NULL){
         c->refined_by_extend = 1;
         c->refined_by_extend_pred = extend_pred;
+        borFifoPush(&r->queue1, &c->id);
     }
 }
 
@@ -1054,18 +1083,22 @@ static void refineAddCandType(refine_t *r,
                               const pddl_lifted_mgroup_t *m,
                               const cand_t *parent)
 {
-    cand_t *c = refineAddCand(r, m, parent);
-    if (c != NULL)
+    cand_t *c = _refineAddCand(r, m, parent);
+    if (c != NULL){
         c->refined_type = 1;
+        borFifoPush(&r->queue2, &c->id);
+    }
 }
 
 static void refineAddCandVar(refine_t *r,
                              const pddl_lifted_mgroup_t *m,
                              const cand_t *parent)
 {
-    cand_t *c = refineAddCand(r, m, parent);
-    if (c != NULL)
+    cand_t *c = _refineAddCand(r, m, parent);
+    if (c != NULL){
         c->refined_var = 1;
+        borFifoPush(&r->queue2, &c->id);
+    }
 }
 
 /** Restrict types of parameters so it is valid for all atoms. */
