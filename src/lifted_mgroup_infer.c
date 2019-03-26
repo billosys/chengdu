@@ -50,6 +50,7 @@ struct cfg {
     int refine_var_too_heavy_init;
     int refine_var_too_heavy_action;
     int refine_var_proved;
+    int refine_var_proved_only_goal_aware;
     int refine_extend_proved;
 };
 typedef struct cfg cfg_t;
@@ -624,6 +625,27 @@ static int canUnifyEffPair(const pddl_t *pddl,
     return 1;
 }
 
+static int isGoalAware(const pddl_t *pddl, const pddl_lifted_mgroup_t *mg)
+{
+    pddl_obj_id_t arg[mg->param.param_size];
+
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *goal;
+    PDDL_COND_FOR_EACH_ATOM(pddl->goal, &it, goal){
+        ASSERT(!goal->neg);
+        const pddl_cond_atom_t *c;
+        FOR_EACH_ATOM(mg, c){
+            if (c->pred != goal->pred)
+                continue;
+
+            if (unifyFact(pddl, goal, NULL, &mg->param, c, arg))
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
 static int initHeaviness(const pddl_t *pddl,
                          const cand_t *cand,
                          refine_t *refine)
@@ -975,6 +997,7 @@ static void refineInit(refine_t *r,
     r->cfg.refine_var_too_heavy_init = 1;
     r->cfg.refine_var_too_heavy_action = 1;
     r->cfg.refine_var_proved = 1;
+    r->cfg.refine_var_proved_only_goal_aware = 1;
     r->cfg.refine_extend_proved = 1;
 
     pddlLiftedMGroupHTableInit(&r->mgroup);
@@ -1506,7 +1529,9 @@ static void _refineVariablesProved(refine_t *refine,
     if (var == cand->mgroup->param.param_size){
         if (isInitExactlyOne(refine->pddl, cand, NULL)
                 && !isAnyActionTooHeavy(refine->pddl, cand, NULL)
-                && !isAnyActionUnbalanced(refine->pddl, cand, NULL)){
+                && !isAnyActionUnbalanced(refine->pddl, cand, NULL)
+                && (!refine->cfg.refine_var_proved_only_goal_aware
+                        || isGoalAware(refine->pddl, cand->mgroup))){
             addProvedLiftedMGroup(refine->pddl, cand->mgroup, lm);
         }
     }else{
@@ -1591,8 +1616,12 @@ static void refineProved(refine_t *refine,
                          const cand_t *cand,
                          pddl_lifted_mgroups_t *mgroups)
 {
-    if (refine->cfg.refine_var_proved)
-        refineVariablesProved(refine, cand, mgroups);
+    if (refine->cfg.refine_var_proved){
+        if (!refine->cfg.refine_var_proved_only_goal_aware
+                || isGoalAware(refine->pddl, cand->mgroup)){
+            refineVariablesProved(refine, cand, mgroups);
+        }
+    }
     if (refine->cfg.refine_extend_proved){
         for (int ai = 0; ai < refine->pddl->action.action_size; ++ai){
             const pddl_action_t *a = refine->pddl->action.action + ai;
