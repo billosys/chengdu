@@ -1090,8 +1090,6 @@ static void addRefinedCandidate(refine_t *r,
                 pddlLiftedMGroupFree(&new_cand);
                 return;
             }
-            if (pddlTypesIsParent(&r->pddl->type, type_cand, type_atom))
-                new_cand.param.param[atom_params[i]].type = type_atom;
 
             new_atom->arg[i].param = atom_params[i];
         }
@@ -1272,6 +1270,66 @@ static void addCandidateWithChangedParamType(refine_t *refine,
     pddlLiftedMGroupFree(&new_cand);
 }
 
+static void refineParamTypesTree(refine_t *refine,
+                                 const cand_t *cand,
+                                 int param,
+                                 int cand_type_id,
+                                 int atom_type_id,
+                                 int atom_parent_type_id)
+{
+    const pddl_types_t *ts = &refine->pddl->type;
+    const pddl_type_t *atom_parent_type = ts->type + atom_parent_type_id;
+
+    int tid;
+    BOR_ISET_FOR_EACH(&atom_parent_type->child, tid){
+        if (tid == atom_type_id)
+            continue;
+        ASSERT(pddlTypesAreDisjunct(ts, tid, atom_type_id));
+        addCandidateWithChangedParamType(refine, cand, param, tid);
+    }
+
+    if (atom_parent_type_id != cand_type_id){
+        refineParamTypesTree(refine, cand, param, cand_type_id,
+                             atom_parent_type_id, atom_parent_type->parent);
+    }
+}
+
+static void refineParamTypes(refine_t *refine,
+                             const cand_t *cand,
+                             int param,
+                             int cand_type_id,
+                             int atom_type_id)
+{
+    const pddl_types_t *ts = &refine->pddl->type;
+    const pddl_type_t *cand_type = ts->type + cand_type_id;
+    const pddl_type_t *atom_type = ts->type + atom_type_id;
+
+    if (cand_type_id == atom_type_id)
+        return;
+
+    if (pddlTypesIsEither(ts, cand_type_id)){
+        int tid;
+        BOR_ISET_FOR_EACH(&cand_type->either, tid)
+            refineParamTypes(refine, cand, param, tid, atom_type_id);
+        return;
+    }
+
+    if (pddlTypesIsEither(ts, atom_type_id)){
+        int tid;
+        BOR_ISET_FOR_EACH(&atom_type->either, tid)
+            refineParamTypes(refine, cand, param, cand_type_id, tid);
+        return;
+    }
+
+    if (!pddlTypesIsParent(ts, atom_type_id, cand_type_id)){
+        addCandidateWithChangedParamType(refine, cand, param, cand_type_id);
+        return;
+    }
+
+    refineParamTypesTree(refine, cand, param, cand_type_id,
+                         atom_type_id, atom_type->parent);
+}
+
 /** Refine candidate cand by changing types of candidate variables so that
  *  atom and cand_atom cannot be unified. */
 static void refineTypes(refine_t *refine,
@@ -1288,27 +1346,30 @@ static void refineTypes(refine_t *refine,
         if (cand_atom->arg[argi].obj >= 0)
             continue;
 
+        int pred_type = refine->pddl->pred.pred[atom->pred].param[argi];
+
         int cparam = cand_atom->arg[argi].param;
         int ctype = cand->mgroup->param.param[cparam].type;
+        if (pred_type != ctype && pddlTypesIsParent(ts, pred_type, ctype))
+            ctype = pred_type;
 
         int aparam = atom->arg[argi].param;
         pddl_obj_id_t aobj = atom->arg[argi].obj;
         int atype = -1;
-        const pddl_type_t *at;
         if (aparam >= 0){
             atype = params->param[aparam].type;
-            at = ts->type + atype;
+        }else{
+            atype = refine->pddl->obj.obj[aobj].type;
         }
 
-        for (int type = 0; type < ts->type_size; ++type){
-            if (type == ctype || !pddlTypesIsParent(ts, type, ctype))
-                continue;
-            const pddl_type_t *t = ts->type + type;
-            if ((atype >= 0
-                        && pddlTypesAreDisjunct(ts, type, atype)
-                        && (t->parent == ctype || t->parent == at->parent))
-                    || (aobj >= 0 && !pddlTypesObjHasType(ts, type, aobj))){
-                addCandidateWithChangedParamType(refine, cand, cparam, type);
+        if (atype != ctype)
+            refineParamTypes(refine, cand, cparam, ctype, atype);
+
+        if (aobj >= 0){
+            int tid;
+            BOR_ISET_FOR_EACH(&ts->type[atype].child, tid){
+                if (!pddlTypesObjHasType(ts, tid, aobj))
+                    addCandidateWithChangedParamType(refine, cand, cparam, tid);
             }
         }
     }

@@ -302,23 +302,17 @@ int pddlTypeFromLispNode(pddl_types_t *ts, const pddl_lisp_node_t *node,
 
 int pddlTypesIsParent(const pddl_types_t *ts, int child, int parent)
 {
-    const pddl_type_t *tchild = ts->type + child;
     const pddl_type_t *tparent = ts->type + parent;
     int eid;
 
     for (int cur_type = child; cur_type >= 0;){
         if (cur_type == parent)
             return 1;
-        cur_type = ts->type[cur_type].parent;
         BOR_ISET_FOR_EACH(&tparent->either, eid){
             if (cur_type == eid)
                 return 1;
         }
-    }
-
-    BOR_ISET_FOR_EACH(&tchild->either, eid){
-        if (pddlTypesIsParent(ts, eid, parent))
-            return 1;
+        cur_type = ts->type[cur_type].parent;
     }
 
     return 0;
