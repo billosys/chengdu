@@ -1038,6 +1038,36 @@ static cand_t *refineAddCand(refine_t *r,
     }
 }
 
+static void refineAddCandExtend(refine_t *r,
+                                const pddl_lifted_mgroup_t *m,
+                                const cand_t *parent,
+                                int extend_pred)
+{
+    cand_t *c = refineAddCand(r, m, parent);
+    if (c != NULL){
+        c->refined_by_extend = 1;
+        c->refined_by_extend_pred = extend_pred;
+    }
+}
+
+static void refineAddCandType(refine_t *r,
+                              const pddl_lifted_mgroup_t *m,
+                              const cand_t *parent)
+{
+    cand_t *c = refineAddCand(r, m, parent);
+    if (c != NULL)
+        c->refined_type = 1;
+}
+
+static void refineAddCandVar(refine_t *r,
+                             const pddl_lifted_mgroup_t *m,
+                             const cand_t *parent)
+{
+    cand_t *c = refineAddCand(r, m, parent);
+    if (c != NULL)
+        c->refined_var = 1;
+}
+
 /** Restrict types of parameters so it is valid for all atoms. */
 static void restrictParamTypes(const pddl_t *pddl, pddl_lifted_mgroup_t *mg)
 {
@@ -1098,11 +1128,7 @@ static void addRefinedCandidate(refine_t *r,
 
     restrictParamTypes(r->pddl, &new_cand);
     mgroupFinalize(r->pddl, &new_cand);
-    cand_t *c = refineAddCand(r, &new_cand, cand_in);
-    if (c != NULL){
-        c->refined_by_extend = 1;
-        c->refined_by_extend_pred = new_atom->pred;
-    }
+    refineAddCandExtend(r, &new_cand, cand_in, new_atom->pred);
     pddlLiftedMGroupFree(&new_cand);
 }
 
@@ -1264,9 +1290,7 @@ static void addCandidateWithChangedParamType(refine_t *refine,
     pddlLiftedMGroupInitCopy(&new_cand, cand->mgroup);
     new_cand.param.param[param].type = type;
     mgroupFinalize(refine->pddl, &new_cand);
-    cand_t *c = refineAddCand(refine, &new_cand, cand);
-    if (c != NULL)
-        c->refined_type = 1;
+    refineAddCandType(refine, &new_cand, cand);
     pddlLiftedMGroupFree(&new_cand);
 }
 
@@ -1428,9 +1452,7 @@ static void refineVariables(refine_t *refine,
                     ASSERT(new_cand.param.param[counted_var].is_counted_var);
                     new_cand.param.param[counted_var].is_counted_var = 0;
                     mgroupFinalize(refine->pddl, &new_cand);
-                    cand_t *c = refineAddCand(refine, &new_cand, cand);
-                    if (c != NULL)
-                        c->refined_var = 1;
+                    refineAddCandVar(refine, &new_cand, cand);
                     pddlLiftedMGroupFree(&new_cand);
                 }
             }
