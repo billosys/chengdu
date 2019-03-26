@@ -81,9 +81,9 @@ int pddlLiftedMGroupsAnyIsDeleted(const pddl_lifted_mgroups_t *mgs,
                                   const pddl_obj_id_t *args);
 
 struct pddl_lifted_mgroups_infer_limits {
-    /** Maximum of generated candidates. Default: 100000 */
+    /** Maximum of generated candidates. Default: 10000 */
     int max_candidates;
-    /** Maximum of proved lifted mutex groups. Default: 100000 */
+    /** Maximum of proved lifted mutex groups. Default: 10000 */
     int max_mgroups;
 };
 typedef struct pddl_lifted_mgroups_infer_limits
@@ -91,8 +91,8 @@ typedef struct pddl_lifted_mgroups_infer_limits
 
 #define PDDL_LIFTED_MGROUPS_INFER_LIMITS_INIT \
     { \
-        100000, /* .max_candidates */ \
-        100000, /* .max_mgroups */ \
+        10000, /* .max_candidates */ \
+        10000, /* .max_mgroups */ \
     }
 
 /**
