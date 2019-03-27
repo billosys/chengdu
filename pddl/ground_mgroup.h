@@ -62,6 +62,10 @@ void pddlGroundMGroupsPrint(const pddl_t *pddl,
                             const pddl_strips_t *strips,
                             const pddl_ground_mgroups_t *mg,
                             FILE *fout);
+void pddlGroundMGroupPrint(const pddl_t *pddl,
+                           const pddl_strips_t *strips,
+                           const pddl_ground_mgroup_t *mg,
+                           FILE *fout);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

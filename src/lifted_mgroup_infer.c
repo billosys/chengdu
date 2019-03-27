@@ -1906,7 +1906,8 @@ void pddlLiftedMGroupsInferMonotonicity(
     refineInitMonotonicity(&refine, pddl, limit);
 
     initialCandidatesFD(pddl, &refine);
-    while (refineCont(&refine) && inv->mgroup_size < limit->max_mgroups){
+    while (refineCont(&refine)
+            && (mgroups == NULL || mgroups->mgroup_size < limit->max_mgroups)){
         cand_t *cand = refineNextCand(&refine);
         if (!isAnyActionTooHeavy(pddl, cand, NULL)
                 && !isAnyActionUnbalanced(pddl, cand, &refine)){

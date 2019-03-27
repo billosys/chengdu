@@ -487,3 +487,19 @@ void pddlGroundMGroupsPrint(const pddl_t *pddl,
         fprintf(fout, "\n");
     }
 }
+
+void pddlGroundMGroupPrint(const pddl_t *pddl,
+                           const pddl_strips_t *strips,
+                           const pddl_ground_mgroup_t *mg,
+                           FILE *fout)
+{
+    int init = 0;
+    int fact;
+    BOR_ISET_FOR_EACH(&mg->mgroup, fact){
+        if (init)
+            fprintf(fout, " ");
+        fprintf(fout, "(%s)", strips->fact.fact[fact]->name);
+        init = 1;
+    }
+    fprintf(fout, "\n");
+}

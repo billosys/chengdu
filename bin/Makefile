@@ -15,7 +15,11 @@ ifeq '$(BIN_STATIC)' 'yes'
   LDFLAGS += -static
 endif
 
-TARGETS = pddl-check pddl-strips pddl-strips-as-py pddl-pddl
+TARGETS = pddl-check
+TARGETS += pddl-strips
+TARGETS += pddl-strips-as-py
+TARGETS += pddl-pddl
+TARGETS += pddl-lifted-mgroups
 
 all: $(TARGETS)
 
