@@ -627,6 +627,7 @@ static void treeFixStatic(pddl_strips_ground_tree_t *tr)
 static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
                         int start_idx, int static_fact)
 {
+    int next_batch = ga->atom_size;
     for (int i = start_idx; i < ga->atom_size; ++i){
         const pddl_ground_atom_t *fact = ga->atom[i];
 
@@ -636,6 +637,15 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
                 unifyTree(tr, fact, tr->pred_to_pre[fact->pred].pre[k],
                           static_fact);
             }
+        }
+
+        if (!static_fact && i == next_batch - 1){
+            BOR_INFO(g->err, "Next batch unified."
+                             " (facts: %d, funcs: %d, add effs: %d)",
+                     g->facts.atom_size,
+                     g->funcs.atom_size,
+                     g->num_unified_add_effs);
+            next_batch = ga->atom_size;
         }
     }
 }
@@ -652,6 +662,13 @@ static int unifyStaticFacts(pddl_strips_ground_t *g)
     for (int i = 0; i < g->action.action_size; ++i)
         treeFixStatic(g->tree + i);
     g->static_facts_unified = 1;
+
+    BOR_INFO(g->err, "Static facts unified."
+                     " (static facts: %d, facts: %d, funcs: %d, add effs: %d)",
+             g->static_facts.atom_size,
+             g->facts.atom_size,
+             g->funcs.atom_size,
+             g->num_unified_add_effs);
 
     return 0;
 }
@@ -717,6 +734,8 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
             return;
         }
     }
+
+    g->num_unified_add_effs += 1;
 
     const pddl_cond_atom_t *atom;
     for (int i = 0; i < a->add_eff.size; ++i){
@@ -1073,6 +1092,7 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     g->err = err;
     g->unify_new_atom_fn = new_atom;
     g->unify_new_atom_data = new_atom_data;
+    g->num_unified_add_effs = 0;
 
     if (pddlPrepActionsInit(pddl, &g->action, g->err) != 0)
         BOR_TRACE_RET(g->err, -1);
@@ -1121,6 +1141,10 @@ int pddlStripsGroundStart(pddl_strips_ground_t *g,
                           pddl_strips_ground_unify_new_atom_fn new_atom,
                           void *new_atom_data)
 {
+    BOR_INFO(err, "PDDL to STRIPS (domain: %s, problem: %s) ...",
+             pddl->domain_lisp->filename,
+             pddl->problem_lisp->filename);
+
     if (groundInit(g, pddl, cfg, err, new_atom, new_atom_data) != 0){
         groundFree(g);
         BOR_TRACE_RET(err, -1);
@@ -1138,6 +1162,12 @@ int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g)
         groundFree(g);
         BOR_TRACE_RET(g->err, -1);
     }
+
+    BOR_INFO(g->err, "Unification finished."
+                     " (facts: %d, funcs: %d, add effs: %d)",
+             g->facts.atom_size,
+             g->funcs.atom_size,
+             g->num_unified_add_effs);
     return 0;
 }
 
@@ -1179,9 +1209,7 @@ int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips)
     if (strips->goal_is_unreachable)
         pddlStripsMakeUnsolvable(strips);
 
-    BOR_INFO(g->err, "PDDL grounded to STRIPS (domain: %s, problem: %s).",
-             g->pddl->domain_lisp->filename,
-             g->pddl->problem_lisp->filename);
+    BOR_INFO2(g->err, "PDDL grounded to STRIPS.");
 
     return 0;
 }
