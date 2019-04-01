@@ -195,6 +195,7 @@ int pddlInit(pddl_t *pddl, const char *domain_fn, const char *problem_fn,
             || parseMetric(pddl, pddl->problem_lisp, err) != 0){
         goto pddl_fail;
     }
+    pddlTypesBuildObjTypeMap(&pddl->type, pddl->obj.obj_size);
     BOR_INFO2(err, "PDDL content parsed.");
 
     return 0;

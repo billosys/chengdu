@@ -48,6 +48,7 @@ struct pddl_types {
     int type_size;
 
     pddl_objs_by_type_t *obj_by_type;
+    char *obj_type_map;
 };
 typedef struct pddl_types pddl_types_t;
 
@@ -80,6 +81,11 @@ int pddlTypesIsEither(const pddl_types_t *ts, int tid);
  * Record the given object as being of the given type.
  */
 void pddlTypesAddObj(pddl_types_t *ts, pddl_obj_id_t obj_id, int type_id);
+
+/**
+ * Build mapping for fast testing whether an object is of a specified type.
+ */
+void pddlTypesBuildObjTypeMap(pddl_types_t *ts, int obj_size);
 
 /**
  * Returns list of object IDs of the specified type.

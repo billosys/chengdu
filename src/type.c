@@ -131,6 +131,9 @@ void pddlTypesFree(pddl_types_t *types)
         }
         BOR_FREE(types->obj_by_type);
     }
+
+    if (types->obj_type_map != NULL)
+        BOR_FREE(types->obj_type_map);
 }
 
 void pddlTypesPrint(const pddl_types_t *t, FILE *fout)
@@ -179,6 +182,18 @@ void pddlTypesAddObj(pddl_types_t *ts, pddl_obj_id_t obj_id, int type_id)
         pddlTypesAddObj(ts, obj_id, ts->type[type_id].parent);
 }
 
+void pddlTypesBuildObjTypeMap(pddl_types_t *ts, int obj_size)
+{
+    ts->obj_type_map = BOR_CALLOC_ARR(char, obj_size * ts->type_size);
+    for (int type_id = 0; type_id < ts->type_size; ++type_id){
+        const pddl_objs_by_type_t *type_to_obj = ts->obj_by_type + type_id;
+        for (int i = 0; i < type_to_obj->obj_size; ++i){
+            int obj = type_to_obj->obj[i];
+            ts->obj_type_map[obj * ts->type_size + type_id] = 1;
+        }
+    }
+}
+
 const pddl_obj_id_t *pddlTypesObjsByType(const pddl_types_t *ts, int type_id,
                                          int *size)
 {
@@ -194,16 +209,20 @@ int pddlTypeNumObjs(const pddl_types_t *ts, int type_id)
 
 int pddlTypesObjHasType(const pddl_types_t *ts, int type, pddl_obj_id_t obj)
 {
-    // TODO: can be done in constant time!
-    const pddl_obj_id_t *objs;
-    int size;
+    if (ts->obj_type_map != NULL){
+        return ts->obj_type_map[obj * ts->type_size + type];
 
-    objs = pddlTypesObjsByType(ts, type, &size);
-    for (int i = 0; i < size; ++i){
-        if (objs[i] == obj)
-            return 1;
+    }else{
+        const pddl_obj_id_t *objs;
+        int size;
+
+        objs = pddlTypesObjsByType(ts, type, &size);
+        for (int i = 0; i < size; ++i){
+            if (objs[i] == obj)
+                return 1;
+        }
+        return 0;
     }
-    return 0;
 }
 
 
