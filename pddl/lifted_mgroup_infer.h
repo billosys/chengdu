@@ -101,7 +101,8 @@ typedef struct pddl_lifted_mgroups_infer_limits
 void pddlLiftedMGroupsInferFAMGroups(
                             const pddl_t *pddl,
                             const pddl_lifted_mgroups_infer_limits_t *limit,
-                            pddl_lifted_mgroups_t *lm);
+                            pddl_lifted_mgroups_t *lm,
+                            bor_err_t *err);
 
 /**
  * Find monotonicity invariants (as in fast-downward) and stores them in
@@ -112,7 +113,8 @@ void pddlLiftedMGroupsInferMonotonicity(
                             const pddl_t *pddl,
                             const pddl_lifted_mgroups_infer_limits_t *limit,
                             pddl_lifted_mgroups_t *inv,
-                            pddl_lifted_mgroups_t *mgroups);
+                            pddl_lifted_mgroups_t *mgroups,
+                            bor_err_t *err);
 
 #ifdef __cplusplus
 } /* extern "C" */

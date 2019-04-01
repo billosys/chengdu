@@ -143,9 +143,9 @@ int main(int argc, char *argv[])
         if (o.fd_monotonicity)
             mono = &monotonicity_invariants;
         pddlLiftedMGroupsInferMonotonicity(&pddl, &limits, mono,
-                                           &lifted_mgroups);
+                                           &lifted_mgroups, &err);
     }else{
-        pddlLiftedMGroupsInferFAMGroups(&pddl, &limits, &lifted_mgroups);
+        pddlLiftedMGroupsInferFAMGroups(&pddl, &limits, &lifted_mgroups, &err);
     }
 
     for (int li = 0; li < lifted_mgroups.mgroup_size; ++li){

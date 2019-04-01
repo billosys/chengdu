@@ -640,7 +640,7 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
         }
 
         if (!static_fact && i == next_batch - 1){
-            BOR_INFO(g->err, "Next batch unified."
+            BOR_INFO(g->err, "  Next batch unified."
                              " (facts: %d, funcs: %d, add effs: %d)",
                      g->facts.atom_size,
                      g->funcs.atom_size,
@@ -663,7 +663,7 @@ static int unifyStaticFacts(pddl_strips_ground_t *g)
         treeFixStatic(g->tree + i);
     g->static_facts_unified = 1;
 
-    BOR_INFO(g->err, "Static facts unified."
+    BOR_INFO(g->err, "  Static facts unified."
                      " (static facts: %d, facts: %d, funcs: %d, add effs: %d)",
              g->static_facts.atom_size,
              g->facts.atom_size,
@@ -1163,7 +1163,7 @@ int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g)
         BOR_TRACE_RET(g->err, -1);
     }
 
-    BOR_INFO(g->err, "Unification finished."
+    BOR_INFO(g->err, "  Unification finished."
                      " (facts: %d, funcs: %d, add effs: %d)",
              g->facts.atom_size,
              g->funcs.atom_size,
