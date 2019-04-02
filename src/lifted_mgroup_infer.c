@@ -31,6 +31,7 @@
 struct cand {
     int id;
     const pddl_lifted_mgroup_t *mgroup;
+    int each_pred_only_once; /*!< True if each predicate is there only once */
     int refined_from; /*!< ID of the candidate this was refined from */
     int refined_var; /*!< True if fefined by changing variables */
     int refined_type; /*!< True if refined by changing types */
@@ -198,12 +199,25 @@ static int candHasAddEff(const cand_t *cand, const pddl_cond_t *eff)
     return 0;
 }
 
-/** Retuens true if cand has at least one counted variable */
+/** Returns true if cand has at least one counted variable */
 static int candHasCountedVar(const pddl_lifted_mgroup_t *cand)
 {
     for (int i = 0; i < cand->param.param_size; ++i){
         if (cand->param.param[i].is_counted_var)
             return 1;
+    }
+    return 0;
+}
+
+/** Returns true if atom has counted variable as one of its arguments */
+static int candAtomHasCountedVar(const pddl_lifted_mgroup_t *cand,
+                                 const pddl_cond_atom_t *atom)
+{
+    for (int i = 0; i < atom->arg_size; ++i){
+        if (atom->arg[i].param >= 0
+                && cand->param.param[atom->arg[i].param].is_counted_var){
+            return 1;
+        }
     }
     return 0;
 }
@@ -572,54 +586,46 @@ static int unifyActionAtom(unify_action_ctx_t *ctx,
 
 
 /*** HEAVINESS TEST ***/
-/** Returns true if the effect pair can be unified with the candidate atom
- *  pair. **/
-static int canUnifyEffPair(const pddl_t *pddl,
-                           const pddl_action_t *action,
-                           const ce_atom_t *eff1,
-                           const ce_atom_t *eff2,
-                           const pddl_params_t *cand_params,
-                           const pddl_cond_atom_t *cand1,
-                           const pddl_cond_atom_t *cand2)
+/** Returns true if unified pair of effects can really be unified
+ *  considering types and inequalities */
+static int checkUnifiedEffPair(unify_action_ctx_t *ctx,
+                               const pddl_t *pddl,
+                               const pddl_action_t *action,
+                               const ce_atom_t *eff1,
+                               const ce_atom_t *eff2)
 {
-    UNIFY_ACTION_CTX(ctx, pddl, &action->param, cand_params);
-    if (!unifyActionAtom(&ctx, eff1->atom, cand1)
-            || !unifyActionAtom(&ctx, eff2->atom, cand2)){
-        return 0;
-    }
-
     // If two variables has the same name, but the corresponding types are
     // disjunct, then we cannot unify the atoms
-    if (!actionArgTypesAreValid(pddl, ctx.action_param, ctx.action_arg))
+    if (!actionArgTypesAreValid(pddl, ctx->action_param, ctx->action_arg))
         return 0;
 
     // Check inequality predicates: we cannot assign the same name to two
     // arguments that cannot be same
-    if (!inequalitiesHold(pddl, action->pre, ctx.action_arg)
-            || !inequalitiesHold(pddl, eff1->pre, ctx.action_arg)
-            || !inequalitiesHold(pddl, eff2->pre, ctx.action_arg)){
+    if (!inequalitiesHold(pddl, action->pre, ctx->action_arg)
+            || !inequalitiesHold(pddl, eff1->pre, ctx->action_arg)
+            || !inequalitiesHold(pddl, eff2->pre, ctx->action_arg)){
         return 0;
     }
 
     // We unified two atoms, but we must check whether they differ
-    if (atomsEqual(eff1->atom, eff2->atom, ctx.action_arg))
+    if (atomsEqual(eff1->atom, eff2->atom, ctx->action_arg))
         return 0;
 
     // If exactly the same atoms are in the precondition, i.e.,
     // ((not a1) and (not a2)) is not satisfiable in the state where we
     // apply this action, then this action cannot increase the number of
     // facts in the resulting state.
-    if (equalAtomIn(eff1->atom, action->pre, ctx.action_arg)
-            || equalAtomIn(eff1->atom, eff1->pre, ctx.action_arg)
-            || equalAtomIn(eff2->atom, action->pre, ctx.action_arg)
-            || equalAtomIn(eff2->atom, eff2->pre, ctx.action_arg)){
+    if (equalAtomIn(eff1->atom, action->pre, ctx->action_arg)
+            || equalAtomIn(eff1->atom, eff1->pre, ctx->action_arg)
+            || equalAtomIn(eff2->atom, action->pre, ctx->action_arg)
+            || equalAtomIn(eff2->atom, eff2->pre, ctx->action_arg)){
         return 0;
     }
 
     // Check whether static preconditions are satisfiable
-    if (!staticPreHold(pddl, action->pre, ctx.action_arg)
-            || !staticPreHold(pddl, eff1->pre, ctx.action_arg)
-            || !staticPreHold(pddl, eff2->pre, ctx.action_arg)){
+    if (!staticPreHold(pddl, action->pre, ctx->action_arg)
+            || !staticPreHold(pddl, eff1->pre, ctx->action_arg)
+            || !staticPreHold(pddl, eff2->pre, ctx->action_arg)){
         return 0;
     }
 
@@ -763,16 +769,29 @@ static int isActionTooHeavy(const cand_t *cand,
             if (cand1->pred != a1->pred)
                 continue;
 
+            UNIFY_ACTION_CTX(ctx, pddl, &action->param, &cand->mgroup->param);
+            if (!unifyActionAtom(&ctx, ce_a1.atom, cand1))
+                continue;
+
             it2 = it1;
             PDDL_COND_FOR_EACH_ADD_EFF_CONT(&it2, a2, pre2){
                 CE_ATOM(ce_a2, pre2, a2);
+
+                if (cand->each_pred_only_once
+                        && a2->pred == a1->pred
+                        && !candAtomHasCountedVar(cand->mgroup, cand1))
+                    continue;
 
                 FOR_EACH_ATOM(cand->mgroup, cand2){
                     if (cand2->pred != a2->pred)
                         continue;
 
-                    if (canUnifyEffPair(pddl, action, &ce_a1, &ce_a2,
-                                        &cand->mgroup->param, cand1, cand2)){
+                    UNIFY_ACTION_CTX_PUSH(ctx2, &ctx);
+                    if (!unifyActionAtom(&ctx2, ce_a2.atom, cand2))
+                        continue;
+
+                    if (checkUnifiedEffPair(&ctx2, pddl, action,
+                                            &ce_a1, &ce_a2)){
                         refineTooHeavyAction(refine, &action->param, a1, a2,
                                              cand, cand1, cand2);
                         return 1;
@@ -1055,6 +1074,19 @@ static cand_t *refineNextCand(refine_t *r)
     return borExtArrGet(r->cand, next);
 }
 
+static int eachPredOnlyOnce(const pddl_lifted_mgroup_t *m)
+{
+    for (int i = 0; i < m->cond.size; ++i){
+        int p1 = PDDL_COND_CAST(m->cond.cond[i], atom)->pred;
+        for (int j = i + 1; j < m->cond.size; ++j){
+            int p2 = PDDL_COND_CAST(m->cond.cond[j], atom)->pred;
+            if (p1 == p2)
+                return 0;
+        }
+    }
+    return 1;
+}
+
 static cand_t *_refineAddCand(refine_t *r,
                               const pddl_lifted_mgroup_t *m,
                               const cand_t *parent)
@@ -1076,6 +1108,8 @@ static cand_t *_refineAddCand(refine_t *r,
         ASSERT(!cand->refined_type);
         ASSERT(!cand->refined_by_extend);
         cand->refined_by_extend_pred = -1;
+
+        cand->each_pred_only_once = eachPredOnlyOnce(m);
 
         return cand;
     }else{
