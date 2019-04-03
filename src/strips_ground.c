@@ -640,11 +640,12 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
         }
 
         if (!static_fact && i == next_batch - 1){
-            BOR_INFO(g->err, "  Next batch unified."
-                             " (facts: %d, funcs: %d, add effs: %d)",
+            BOR_INFO(g->err, "  Next batch unified. (unified facts: %d,"
+                             " facts: %d, funcs: %d, add effs: %d)",
+                     i + 1,
                      g->facts.atom_size,
                      g->funcs.atom_size,
-                     g->num_unified_add_effs);
+                     g->ground_args.size);
             next_batch = ga->atom_size;
         }
     }
@@ -668,7 +669,7 @@ static int unifyStaticFacts(pddl_strips_ground_t *g)
              g->static_facts.atom_size,
              g->facts.atom_size,
              g->funcs.atom_size,
-             g->num_unified_add_effs);
+             g->ground_args.size);
 
     return 0;
 }
@@ -734,8 +735,6 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
             return;
         }
     }
-
-    g->num_unified_add_effs += 1;
 
     const pddl_cond_atom_t *atom;
     for (int i = 0; i < a->add_eff.size; ++i){
@@ -1092,7 +1091,6 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     g->err = err;
     g->unify_new_atom_fn = new_atom;
     g->unify_new_atom_data = new_atom_data;
-    g->num_unified_add_effs = 0;
 
     if (pddlPrepActionsInit(pddl, &g->action, g->err) != 0)
         BOR_TRACE_RET(g->err, -1);
@@ -1149,6 +1147,13 @@ int pddlStripsGroundStart(pddl_strips_ground_t *g,
         groundFree(g);
         BOR_TRACE_RET(err, -1);
     }
+    BOR_INFO(err, "  prep-actions: %d", g->action.action_size);
+    BOR_INFO(err, "  lifted mutex groups: %d",
+             (g->cfg.lifted_mgroups != NULL
+                ?  g->cfg.lifted_mgroups->mgroup_size : -1));
+    BOR_INFO(err, "  goal-aware lifted mutex groups: %d",
+             (g->cfg.lifted_mgroups != NULL
+                ?  g->goal_mgroup.mgroup_size : -1));
     return 0;
 }
 
@@ -1167,7 +1172,7 @@ int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g)
                      " (facts: %d, funcs: %d, add effs: %d)",
              g->facts.atom_size,
              g->funcs.atom_size,
-             g->num_unified_add_effs);
+             g->ground_args.size);
     return 0;
 }
 

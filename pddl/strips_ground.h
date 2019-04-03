@@ -63,7 +63,6 @@ struct pddl_strips_ground {
     pddl_ground_atoms_t funcs;
     pddl_strips_ground_tree_t *tree;
     pddl_strips_ground_args_arr_t ground_args;
-    int num_unified_add_effs;
 };
 typedef struct pddl_strips_ground pddl_strips_ground_t;
 
