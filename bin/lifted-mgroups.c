@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
         pddlLiftedMGroupPrint(&pddl, m, stdout);
     }
 
-    if (o.ground && lifted_mgroups.mgroup_size > 0){
+    if (o.ground){
         pddl_ground_config_t ground_cfg = PDDL_GROUND_CONFIG_INIT;
         if (o.ground_prune_pre || o.ground_prune_dead_end){
             ground_cfg.lifted_mgroups = &lifted_mgroups;
