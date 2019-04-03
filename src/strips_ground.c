@@ -721,7 +721,7 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
         return;
 
     if (g->cfg.lifted_mgroups != NULL){
-        if (g->cfg.prune_op_mutex_pre
+        if (g->cfg.prune_op_pre_mutex
                 && pddlLiftedMGroupsIsGroundedConjTooHeavy(
                             g->cfg.lifted_mgroups, g->pddl, &a->pre, arg)){
             return;
@@ -1088,6 +1088,11 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     bzero(g, sizeof(*g));
     g->pddl = pddl;
     g->cfg = *cfg;
+    if (g->cfg.lifted_mgroups == NULL){
+        g->cfg.prune_op_pre_mutex = 0;
+        g->cfg.prune_op_dead_end = 0;
+    }
+
     g->err = err;
     g->unify_new_atom_fn = new_atom;
     g->unify_new_atom_data = new_atom_data;
@@ -1147,13 +1152,17 @@ int pddlStripsGroundStart(pddl_strips_ground_t *g,
         groundFree(g);
         BOR_TRACE_RET(err, -1);
     }
-    BOR_INFO(err, "  prep-actions: %d", g->action.action_size);
+
     BOR_INFO(err, "  lifted mutex groups: %d",
              (g->cfg.lifted_mgroups != NULL
                 ?  g->cfg.lifted_mgroups->mgroup_size : -1));
     BOR_INFO(err, "  goal-aware lifted mutex groups: %d",
              (g->cfg.lifted_mgroups != NULL
                 ?  g->goal_mgroup.mgroup_size : -1));
+    BOR_INFO(err, "  prune-op-pre-mutex: %d", g->cfg.prune_op_pre_mutex);
+    BOR_INFO(err, "  prune-op-dead-end: %d", g->cfg.prune_op_dead_end);
+    BOR_INFO(err, "  prep-actions: %d", g->action.action_size);
+
     return 0;
 }
 

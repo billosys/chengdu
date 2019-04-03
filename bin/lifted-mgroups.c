@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
         pddl_ground_config_t ground_cfg = PDDL_GROUND_CONFIG_INIT;
         if (o.ground_prune_pre || o.ground_prune_dead_end){
             ground_cfg.lifted_mgroups = &lifted_mgroups;
-            ground_cfg.prune_op_mutex_pre = o.ground_prune_pre;
+            ground_cfg.prune_op_pre_mutex = o.ground_prune_pre;
             ground_cfg.prune_op_dead_end = o.ground_prune_dead_end;
         }
         if (pddlStripsGround(&strips, &pddl, &ground_cfg, &err) != 0){
