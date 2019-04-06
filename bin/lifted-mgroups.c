@@ -59,6 +59,10 @@ int main(int argc, char *argv[])
     optsAddDesc("prune", 0x0, OPTS_NONE, &o.ground_prune, NULL,
                 "Use lifted mutex groups for pruning during grounding.  This"
                 " takes effect only if -g is specified. (default: off)");
+    optsAddDesc("prune-pre", 0x0, OPTS_NONE, &o.ground_prune_pre, NULL,
+                "Use lifted mutex groups for pruning during grounding by"
+                " checking preconditions.  This takes effect only if -g is"
+                " specified. (default: off)");
 
     if (opts(&argc, argv) || o.help || (argc != 3 && argc != 2)){
         fprintf(stderr, "Usage: %s [OPTIONS] domain.pddl problem.pddl\n",
