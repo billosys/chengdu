@@ -38,6 +38,7 @@ struct pddl_pred {
                            owner object */
     int read;         /*!< True if the predicate appears in some precondition */
     int write;        /*!< True if the predicate appreas in some effect */
+    int in_init;      /*!< True if the predicate appear in the initial state */
     int free_name;    /*!< True if .name should be freed */
     int neg_of;       /*!< ID of the predicate this predicate is negation of */
 };

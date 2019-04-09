@@ -1012,9 +1012,14 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
             // Add the fact to the goal specification
             borISetAdd(&strips->goal, g->ground_atom_to_fact_id[ga->id]);
         }else{
-            // The problem is unsolvable, because a goal fact is not
-            // reachable.
-            strips->goal_is_unreachable = 1;
+            // The goal can be static fact in which case we simply skip
+            // this fact
+            ga = pddlGroundAtomsFindAtom(&g->static_facts, atom, NULL);
+            if (ga == NULL){
+                // The problem is unsolvable, because a goal fact is not
+                // reachable.
+                strips->goal_is_unreachable = 1;
+            }
         }
         return 0;
 

@@ -125,6 +125,12 @@ static int parseInit(pddl_t *pddl, bor_err_t *err)
         BOR_TRACE_PREPEND_RET(err, -1, "While parsing :init specification"
                               " in %s: ", pddl->problem_lisp->filename);
     }
+
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *atom;
+    PDDL_COND_FOR_EACH_ATOM(&pddl->init->cls, &it, atom)
+        pddl->pred.pred[atom->pred].in_init = 1;
+
     return 0;
 }
 
@@ -497,6 +503,43 @@ static void removeIrrelevantActions(pddl_t *pddl)
     }
 }
 
+static int isStaticPreUnreachable(const pddl_t *pddl, const pddl_cond_t *c)
+{
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *atom;
+    PDDL_COND_FOR_EACH_ATOM(c, &it, atom){
+        const pddl_pred_t *pred = pddl->pred.pred + atom->pred;
+        if (pred->id != pddl->pred.eq_pred
+                && pddlPredIsStatic(pred)
+                && !pred->in_init){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int removeUnreachableActions(pddl_t *pddl)
+{
+    int ret = 0;
+    for (int ai = 0; ai < pddl->action.action_size;){
+        pddl_action_t *a = pddl->action.action + ai;
+        a->pre = pddlCondDeconflictPre(a->pre, pddl, &a->param);
+        a->eff = pddlCondDeconflictEff(a->eff, pddl, &a->param);
+
+        if (isStaticPreUnreachable(pddl, a->pre)){
+            pddlActionFree(a);
+            if (ai != pddl->action.action_size - 1)
+                *a = pddl->action.action[pddl->action.action_size - 1];
+            --pddl->action.action_size;
+            ret = 1;
+        }else{
+            ++ai;
+        }
+    }
+
+    return ret;
+}
+
 static void pddlResetPredReadWrite(pddl_t *pddl)
 {
     for (int i = 0; i < pddl->pred.pred_size; ++i)
@@ -529,8 +572,10 @@ void pddlNormalize(pddl_t *pddl)
 
     compileOutNonStaticNegPre(pddl);
     removeIrrelevantActions(pddl);
+    do {
+        pddlResetPredReadWrite(pddl);
+    } while (removeUnreachableActions(pddl));
     pddl->normalized = 1;
-    pddlResetPredReadWrite(pddl);
 }
 
 static void compileAwayCondEff(pddl_t *pddl, int only_non_static)
