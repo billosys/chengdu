@@ -486,6 +486,8 @@ void pddlGroundMGroupsPrint(const pddl_t *pddl,
         }
         fprintf(fout, "\n");
     }
+
+    borISetFree(&lmgs);
 }
 
 void pddlGroundMGroupPrint(const pddl_t *pddl,
