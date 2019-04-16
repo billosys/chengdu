@@ -60,14 +60,20 @@ static const char *parseName(pddl_lisp_t *lisp, int kw,
     return n->child[1].value;
 }
 
-static const char *parseDomainName(pddl_lisp_t *lisp, bor_err_t *err)
+static char *parseDomainName(pddl_lisp_t *lisp, bor_err_t *err)
 {
-    return parseName(lisp, PDDL_KW_DOMAIN, "domain", err);
+    const char *name = parseName(lisp, PDDL_KW_DOMAIN, "domain", err);
+    if (name != NULL)
+        return BOR_STRDUP(name);
+    return NULL;
 }
 
-static const char *parseProblemName(pddl_lisp_t *lisp, bor_err_t *err)
+static char *parseProblemName(pddl_lisp_t *lisp, bor_err_t *err)
 {
-    return parseName(lisp, PDDL_KW_PROBLEM, "problem", err);
+    const char *name = parseName(lisp, PDDL_KW_PROBLEM, "problem", err);
+    if (name != NULL)
+        return BOR_STRDUP(name);
+    return NULL;
 }
 
 static int checkDomainName(pddl_t *pddl, bor_err_t *err)
@@ -212,6 +218,30 @@ pddl_fail:
     BOR_TRACE_RET(err, -1);
 }
 
+void pddlInitCopy(pddl_t *dst, const pddl_t *src)
+{
+    bzero(dst, sizeof(*dst));
+    dst->cfg = src->cfg;
+    dst->domain_lisp = pddlLispClone(src->domain_lisp);
+    dst->problem_lisp = pddlLispClone(src->problem_lisp);
+    if (src->domain_name != NULL)
+        dst->domain_name = BOR_STRDUP(src->domain_name);
+    if (src->problem_name != NULL)
+        dst->problem_name = BOR_STRDUP(src->problem_name);
+    dst->require = src->require;
+    pddlTypesInitCopy(&dst->type, &src->type);
+    pddlObjsInitCopy(&dst->obj, &src->obj);
+    pddlPredsInitCopy(&dst->pred, &src->pred);
+    pddlPredsInitCopy(&dst->func, &src->func);
+    if (src->init != NULL)
+        dst->init = PDDL_COND_CAST(pddlCondClone(&src->init->cls), part);
+    if (src->goal != NULL)
+        dst->goal = pddlCondClone(src->goal);
+    pddlActionsInitCopy(&dst->action, &src->action);
+    dst->metric = src->metric;
+    dst->normalized = src->normalized;
+}
+
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
                 const pddl_config_t *cfg, bor_err_t *err)
 {
@@ -237,6 +267,10 @@ void pddlFree(pddl_t *pddl)
         pddlLispDel(pddl->domain_lisp);
     if (pddl->problem_lisp)
         pddlLispDel(pddl->problem_lisp);
+    if (pddl->domain_name != NULL)
+        BOR_FREE(pddl->domain_name);
+    if (pddl->problem_name != NULL)
+        BOR_FREE(pddl->problem_name);
     pddlTypesFree(&pddl->type);
     pddlObjsFree(&pddl->obj);
     pddlPredsFree(&pddl->pred);
@@ -309,10 +343,9 @@ static int createNewNotPred(pddl_t *pddl, int pred_id)
     strcpy(name + 4, pos->name);
 
     neg = pddlPredsAddCopy(&pddl->pred, pred_id);
-    if (neg->free_name)
-        BOR_FREE((char *)neg->name);
+    if (neg->name != NULL)
+        BOR_FREE(neg->name);
     neg->name = name;
-    neg->free_name = 1;
     neg->neg_of = pred_id;
     pddl->pred.pred[pred_id].neg_of = neg->id;
 

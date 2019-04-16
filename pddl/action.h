@@ -33,7 +33,7 @@ extern "C" {
  * Lifted action
  */
 struct pddl_action {
-    const char *name;
+    char *name;
     pddl_params_t param;
     pddl_cond_t *pre;
     pddl_cond_t *eff;
@@ -71,6 +71,11 @@ void pddlActionNormalize(pddl_action_t *a, const pddl_t *pddl);
  * Parses actions from domain PDDL.
  */
 int pddlActionsParse(pddl_t *pddl, bor_err_t *err);
+
+/**
+ * Initializes dst as a deep copy of src.
+ */
+void pddlActionsInitCopy(pddl_actions_t *dst, const pddl_actions_t *src);
 
 /**
  * Free allocated memory.

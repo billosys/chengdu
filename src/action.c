@@ -45,7 +45,7 @@ static int parseAction(pddl_t *pddl, const pddl_lisp_node_t *root,
     }
 
     a = pddlActionsAddEmpty(&pddl->action);
-    a->name = root->child[1].value;
+    a->name = BOR_STRDUP(root->child[1].value);
     for (i = 2; i < root->child_size; i += 2){
         n = root->child + i + 1;
         if (root->child[i].kw == PDDL_KW_AGENT){
@@ -134,6 +134,15 @@ int pddlActionsParse(pddl_t *pddl, bor_err_t *err)
     return 0;
 }
 
+void pddlActionsInitCopy(pddl_actions_t *dst, const pddl_actions_t *src)
+{
+    bzero(dst, sizeof(*dst));
+    dst->action_size = dst->action_alloc = src->action_size;
+    dst->action = BOR_CALLOC_ARR(pddl_action_t, src->action_size);
+    for (int i = 0; i < src->action_size; ++i)
+        pddlActionInitCopy(dst->action + i, src->action + i);
+}
+
 void pddlActionInit(pddl_action_t *a)
 {
     bzero(a, sizeof(*a));
@@ -142,6 +151,8 @@ void pddlActionInit(pddl_action_t *a)
 
 void pddlActionFree(pddl_action_t *a)
 {
+    if (a->name != NULL)
+        BOR_FREE(a->name);
     pddlParamsFree(&a->param);
     if (a->pre != NULL)
         pddlCondDel(a->pre);
@@ -152,7 +163,8 @@ void pddlActionFree(pddl_action_t *a)
 void pddlActionInitCopy(pddl_action_t *dst, const pddl_action_t *src)
 {
     pddlActionInit(dst);
-    dst->name = src->name;
+    if (src->name != NULL)
+        dst->name = BOR_STRDUP(src->name);
     pddlParamsInitCopy(&dst->param, &src->param);
     if (src->pre != NULL)
         dst->pre = pddlCondClone(src->pre);

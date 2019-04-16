@@ -271,12 +271,44 @@ pddl_lisp_t *pddlLispParse(const char *fn, bor_err_t *err)
     return lisp;
 }
 
+static void remapLispNodeValues(pddl_lisp_node_t *n,
+                                char *new_data,
+                                const char *old_data)
+{
+    if (n->value != NULL)
+        n->value = new_data + (n->value - old_data);
+
+    for (int i = 0; i < n->child_size; ++i)
+        remapLispNodeValues(n->child + i, new_data, old_data);
+}
+
+pddl_lisp_t *pddlLispClone(const pddl_lisp_t *src)
+{
+    pddl_lisp_t *lisp = BOR_ALLOC(pddl_lisp_t);
+    bzero(lisp, sizeof(*lisp));
+    if (src->filename)
+        lisp->filename = BOR_STRDUP(src->filename);
+    pddlLispNodeInitCopy(&lisp->root, &src->root);
+    lisp->fd = -1;
+    lisp->size = src->size;
+    lisp->data = BOR_ALLOC_ARR(char, src->size);
+    memcpy(lisp->data, src->data, src->size);
+    remapLispNodeValues(&lisp->root, lisp->data, src->data);
+    return lisp;
+}
+
 void pddlLispDel(pddl_lisp_t *lisp)
 {
     if (lisp->filename)
         BOR_FREE(lisp->filename);
-    if (lisp->data)
-        munmap((void *)lisp->data, lisp->size);
+    if (lisp->data != NULL){
+        if (lisp->fd >= 0){
+            munmap((void *)lisp->data, lisp->size);
+        }else{
+            BOR_FREE(lisp->data);
+        }
+    }
+
     if (lisp->fd >= 0)
         close(lisp->fd);
     lispNodeFree(&lisp->root);

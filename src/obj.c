@@ -213,12 +213,39 @@ int pddlObjsParse(pddl_t *pddl, bor_err_t *err)
     return 0;
 }
 
+void pddlObjsInitCopy(pddl_objs_t *dst, const pddl_objs_t *src)
+{
+    bzero(dst, sizeof(*dst));
+
+    dst->htable = borHTableNew(objHash, objEq, NULL);
+
+    dst->obj_size = dst->obj_alloc = src->obj_size;
+    dst->obj = BOR_CALLOC_ARR(pddl_obj_t, src->obj_size);
+    for (int i = 0; i < src->obj_size; ++i){
+        dst->obj[i] = src->obj[i];
+        if (dst->obj[i].name != NULL)
+            dst->obj[i].name = BOR_STRDUP(src->obj[i].name);
+
+        obj_key_t *key;
+        key = BOR_ALLOC(obj_key_t);
+        key->obj_id = i;
+        key->name = dst->obj[i].name;
+        key->hash = borHashSDBM(dst->obj[i].name);
+        borListInit(&key->htable);
+        borHTableInsert(dst->htable, &key->htable);
+    }
+}
+
 void pddlObjsFree(pddl_objs_t *objs)
 {
     bor_list_t list;
     bor_list_t *item;
     obj_key_t *key;
 
+    for (int i = 0; i < objs->obj_size; ++i){
+        if (objs->obj[i].name != NULL)
+            BOR_FREE(objs->obj[i].name);
+    }
     if (objs->obj != NULL)
         BOR_FREE(objs->obj);
 
@@ -269,7 +296,7 @@ pddl_obj_t *pddlObjsAdd(pddl_objs_t *objs, const char *name)
 
     o = objs->obj + objs->obj_size++;
     bzero(o, sizeof(*o));
-    o->name = name;
+    o->name = BOR_STRDUP(name);
     o->owner = PDDL_OBJ_ID_UNDEF;
 
     key = BOR_ALLOC(obj_key_t);

@@ -29,9 +29,9 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_type {
-    const char *name; /*!< Name of the type */
-    int parent;       /*!< ID of the parent type */
-    bor_iset_t child; /*!< IDs of children types */
+    char *name;        /*!< Name of the type */
+    int parent;        /*!< ID of the parent type */
+    bor_iset_t child;  /*!< IDs of children types */
     bor_iset_t either; /*!< type IDs for special (either ...) type */
 };
 typedef struct pddl_type pddl_type_t;
@@ -49,6 +49,7 @@ struct pddl_types {
 
     pddl_objs_by_type_t *obj_by_type;
     char *obj_type_map;
+    size_t obj_type_map_memsize;
 };
 typedef struct pddl_types pddl_types_t;
 
@@ -56,6 +57,11 @@ typedef struct pddl_types pddl_types_t;
  * Parses :types into type array.
  */
 int pddlTypesParse(pddl_t *pddl, bor_err_t *err);
+
+/**
+ * Initialize dst as a deep copy of src.
+ */
+void pddlTypesInitCopy(pddl_types_t *dst, const pddl_types_t *src);
 
 /**
  * Frees allocated resources.

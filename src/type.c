@@ -45,7 +45,7 @@ static int add(pddl_types_t *t, const char *name, int parent)
 
     ++t->type_size;
     t->type = BOR_REALLOC_ARR(t->type, pddl_type_t, t->type_size);
-    t->type[t->type_size - 1].name = name;
+    t->type[t->type_size - 1].name = BOR_STRDUP(name);
     t->type[t->type_size - 1].parent = parent;
     borISetInit(&t->type[t->type_size - 1].child);
     if (parent >= 0)
@@ -91,7 +91,7 @@ int pddlTypesParse(pddl_t *pddl, bor_err_t *e)
     types = &pddl->type;
     types->type_size = 1;
     types->type = BOR_ALLOC(pddl_type_t);
-    types->type[0].name = object_name;
+    types->type[0].name = BOR_STRDUP(object_name);
     types->type[0].parent = -1;
     borISetInit(&types->type[0].child);
     borISetInit(&types->type[0].either);
@@ -112,11 +112,42 @@ int pddlTypesParse(pddl_t *pddl, bor_err_t *e)
     return 0;
 }
 
+void pddlTypesInitCopy(pddl_types_t *dst, const pddl_types_t *src)
+{
+    bzero(dst, sizeof(*dst));
+    dst->type_size = src->type_size;
+    dst->type = BOR_CALLOC_ARR(pddl_type_t, dst->type_size);
+    for (int i = 0; i < dst->type_size; ++i){
+        if (src->type[i].name != NULL)
+            dst->type[i].name = BOR_STRDUP(src->type[i].name);
+        dst->type[i].parent = src->type[i].parent;
+        borISetUnion(&dst->type[i].child, &src->type[i].child);
+        borISetUnion(&dst->type[i].either, &src->type[i].either);
+    }
+
+    if (src->obj_by_type != NULL){
+        dst->obj_by_type = BOR_CALLOC_ARR(pddl_objs_by_type_t, src->type_size);
+        for (int i = 0; i < src->type_size; ++i){
+            pddl_objs_by_type_t *ot = dst->obj_by_type + i;
+            ot->obj_size = ot->obj_alloc = src->obj_by_type[i].obj_size;
+            ot->obj = BOR_ALLOC_ARR(pddl_obj_id_t, ot->obj_size);
+            memcpy(ot->obj, src->obj_by_type[i].obj,
+                   sizeof(pddl_obj_id_t) * ot->obj_size);
+        }
+    }
+
+    if (src->obj_type_map != NULL){
+        dst->obj_type_map_memsize = src->obj_type_map_memsize;
+        dst->obj_type_map = BOR_ALLOC_ARR(char, dst->obj_type_map_memsize);
+        memcpy(dst->obj_type_map, src->obj_type_map, dst->obj_type_map_memsize);
+    }
+}
+
 void pddlTypesFree(pddl_types_t *types)
 {
     for (int i = 0; i < types->type_size; ++i){
-        if (borISetSize(&types->type[i].either) > 0)
-            BOR_FREE((char *)types->type[i].name);
+        if (types->type[i].name != NULL)
+            BOR_FREE(types->type[i].name);
         borISetFree(&types->type[i].child);
         borISetFree(&types->type[i].either);
     }
@@ -185,6 +216,7 @@ void pddlTypesAddObj(pddl_types_t *ts, pddl_obj_id_t obj_id, int type_id)
 void pddlTypesBuildObjTypeMap(pddl_types_t *ts, int obj_size)
 {
     ts->obj_type_map = BOR_CALLOC_ARR(char, obj_size * ts->type_size);
+    ts->obj_type_map_memsize = obj_size * ts->type_size;
     for (int type_id = 0; type_id < ts->type_size; ++type_id){
         const pddl_objs_by_type_t *type_to_obj = ts->obj_by_type + type_id;
         for (int i = 0; i < type_to_obj->obj_size; ++i){
