@@ -1214,7 +1214,7 @@ static void addRefinedCandidate(refine_t *r,
                 pddlLiftedMGroupFree(&new_cand);
                 return;
             }
-
+            new_cand.param.param[atom_params[i]].is_counted_var = 0;
             new_atom->arg[i].param = atom_params[i];
         }
     }
@@ -1271,8 +1271,7 @@ static void refineCandidateWithEff(refine_t *refine,
             arg = ctx->action_arg[atom_param];
 
         for (int ci = 0; ci < cand->mgroup->param.param_size; ++ci){
-            if (ctx->cand_arg[ci] == arg
-                    && !cand->mgroup->param.param[ci].is_counted_var){
+            if (ctx->cand_arg[ci] == arg){
                 atom_params[atom_argi] = ci;
                 refineCandidateWithEff(refine, ctx, action, cand,
                                        atom, atom_params,
