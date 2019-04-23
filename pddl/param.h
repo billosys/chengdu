@@ -31,11 +31,11 @@ extern "C" {
  * Typed parameter
  */
 struct pddl_param {
-    const char *name; /*!< Name of the parameter */
-    int type;         /*!< Type ID */
-    int is_agent;     /*!< True if this is :agent parameter */
-    int inherit;      /*!< -1 or ID of the parent parameter of which this
-                           is a copy */
+    char *name;   /*!< Name of the parameter */
+    int type;     /*!< Type ID */
+    int is_agent; /*!< True if this is :agent parameter */
+    int inherit;  /*!< -1 or ID of the parent parameter of which this is a
+                       copy */
 
     int is_counted_var; /*!< True if it is counted variable -- this is used
                              for inference of lifted mutex groups */

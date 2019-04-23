@@ -32,6 +32,8 @@ void pddlParamInit(pddl_param_t *param)
 void pddlParamInitCopy(pddl_param_t *dst, const pddl_param_t *src)
 {
     *dst = *src;
+    if (dst->name != NULL)
+        dst->name = BOR_STRDUP(src->name);
 }
 
 void pddlParamsInit(pddl_params_t *params)
@@ -41,6 +43,10 @@ void pddlParamsInit(pddl_params_t *params)
 
 void pddlParamsFree(pddl_params_t *params)
 {
+    for (int i = 0; i < params->param_size; ++i){
+        if (params->param[i].name != NULL)
+            BOR_FREE(params->param[i].name);
+    }
     if (params->param != NULL)
         BOR_FREE(params->param);
 }
@@ -113,7 +119,7 @@ static int setParams(const pddl_lisp_node_t *root,
         }
 
         param = pddlParamsAdd(params);
-        param->name = root->child[i].value;
+        param->name = BOR_STRDUP(root->child[i].value);
         param->type = tid;
         param->is_agent = 0;
     }

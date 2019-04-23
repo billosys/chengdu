@@ -50,6 +50,7 @@ struct pddl_strips_ground {
     pddl_ground_config_t cfg;
     bor_err_t *err;
     pddl_prep_actions_t action;
+    pddl_lifted_mgroups_t goal_mgroup;
 
     pddl_ground_atoms_t static_facts;
     int static_facts_unified;
@@ -90,7 +91,8 @@ int pddlStripsGroundStart(pddl_strips_ground_t *g,
 
 /**
  * Performs one cycle of fixpoint grounding.
- * For each newly generated 
+ * For each newly generated fact, *_unify_new_atom_fn callback specified in
+ * pddlStripsGroundStart() is called.
  */
 int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g);
 

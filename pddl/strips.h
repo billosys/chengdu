@@ -25,18 +25,27 @@
 
 #include <pddl/common.h>
 #include <pddl/strips_op.h>
+#include <pddl/lifted_mgroup.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_ground_config {
-    int dummy;
+    const pddl_lifted_mgroups_t *lifted_mgroups;
+    /** If .lifted_mgroups != NULL, use lifted mutex groups to prune
+     *  operators that has mutex preconditions. */
+    int prune_op_pre_mutex;
+    /** If .lifted_mgroups != NULL, use lifted mutex groups to prune
+     *  dead-end operators. */
+    int prune_op_dead_end;
 };
 typedef struct pddl_ground_config pddl_ground_config_t;
 
 #define PDDL_GROUND_CONFIG_INIT { \
-        0, /* dummy */ \
+        NULL, /* .lifted_mgroups */ \
+        1, /* .prune_op_pre_mutex */ \
+        1, /* .prune_op_dead_end */ \
     }
 
 struct pddl_strips {
@@ -104,6 +113,13 @@ void pddlStripsCrossRefFactsOps(const pddl_strips_t *strips,
 void pddlStripsApplicableOps(const pddl_strips_t *strips,
                              const bor_iset_t *state,
                              bor_iset_t *app_ops);
+
+
+/**
+ * Returns true if the given set of facts form a fact-alternating mutex
+ * group.
+ */
+int pddlStripsIsFAMGroup(const pddl_strips_t *strips, const bor_iset_t *facts);
 
 /**
  * Print STRIPS problem in a format easily usable from python.

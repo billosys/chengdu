@@ -89,6 +89,8 @@ typedef enum {
 
     PDDL_KW_PRIVATE,
     PDDL_KW_AGENT,
+
+    PDDL_KW_DERIVED,
 } pddl_kw_t;
 
 typedef struct pddl_lisp_node pddl_lisp_node_t;
@@ -113,6 +115,11 @@ typedef struct pddl_lisp pddl_lisp_t;
  * Parses the input file and returns the parsed pddl-lisp object.
  */
 pddl_lisp_t *pddlLispParse(const char *fn, bor_err_t *err);
+
+/**
+ * Deep-clones lisp structure.
+ */
+pddl_lisp_t *pddlLispClone(const pddl_lisp_t *src);
 
 /**
  * Deletes pddl-lisp object.

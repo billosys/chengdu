@@ -97,7 +97,7 @@ static int parsePred(pddl_t *pddl,
         BOR_TRACE_PREPEND_RET(err, -1, "%s `%s': ", errname, n->child[0].value);
     }
 
-    p->name = n->child[0].value;
+    p->name = BOR_STRDUP(n->child[0].value);
     return 0;
 }
 
@@ -156,7 +156,7 @@ static void addEqPredicate(pddl_preds_t *ps)
     pddl_pred_t *p;
 
     p = pddlPredsAdd(ps);
-    p->name = eq_name;
+    p->name = BOR_STRDUP(eq_name);
     p->param_size = 2;
     p->param = BOR_CALLOC_ARR(int, 2);
     ps->eq_pred = ps->pred_size - 1;
@@ -216,6 +216,25 @@ int pddlPredsParse(pddl_t *pddl, bor_err_t *err)
     return 0;
 }
 
+void pddlPredsInitCopy(pddl_preds_t *dst, const pddl_preds_t *src)
+{
+    bzero(dst, sizeof(*dst));
+    dst->eq_pred = src->eq_pred;
+    dst->pred_size = dst->pred_alloc = src->pred_size;
+    dst->pred = BOR_CALLOC_ARR(pddl_pred_t, src->pred_size);
+    for (int i = 0; i < src->pred_size; ++i){
+        dst->pred[i] = src->pred[i];
+        if (dst->pred[i].name != NULL)
+            dst->pred[i].name = BOR_STRDUP(src->pred[i].name);
+        if (dst->pred[i].param != NULL){
+            dst->pred[i].param_size = src->pred[i].param_size;
+            dst->pred[i].param = BOR_CALLOC_ARR(int, src->pred[i].param_size);
+            memcpy(dst->pred[i].param, src->pred[i].param,
+                   sizeof(int) * src->pred[i].param_size);
+        }
+    }
+}
+
 int pddlFuncsParse(pddl_t *pddl, bor_err_t *err)
 {
     const pddl_lisp_node_t *n;
@@ -252,8 +271,8 @@ void pddlPredsFree(pddl_preds_t *ps)
     for (int i = 0; i < ps->pred_size; ++i){
         if (ps->pred[i].param != NULL)
             BOR_FREE(ps->pred[i].param);
-        if (ps->pred[i].free_name)
-            BOR_FREE((char *)ps->pred[i].name);
+        if (ps->pred[i].name != NULL)
+            BOR_FREE(ps->pred[i].name);
     }
     if (ps->pred != NULL)
         BOR_FREE(ps->pred);
@@ -304,9 +323,8 @@ pddl_pred_t *pddlPredsAddCopy(pddl_preds_t *ps, int src_id)
         memcpy(dst->param, src->param, sizeof(int) * src->param_size);
     }
 
-    if (src->free_name){
+    if (src->name != NULL)
         dst->name = BOR_STRDUP(src->name);
-    }
 
     return dst;
 }
@@ -318,8 +336,8 @@ void pddlPredsRemoveLast(pddl_preds_t *ps)
     p = ps->pred + --ps->pred_size;
     if (p->param != NULL)
         BOR_FREE(p->param);
-    if (p->free_name)
-        BOR_FREE((char *)p->name);
+    if (p->name != NULL)
+        BOR_FREE(p->name);
 }
 
 void pddlPredsPrint(const pddl_preds_t *ps,

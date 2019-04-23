@@ -48,8 +48,8 @@ struct pddl {
     pddl_config_t cfg;
     pddl_lisp_t *domain_lisp;
     pddl_lisp_t *problem_lisp;
-    const char *domain_name;
-    const char *problem_name;
+    char *domain_name;
+    char *problem_name;
     unsigned require;
     pddl_types_t type;
     pddl_objs_t obj;
@@ -67,6 +67,11 @@ struct pddl {
  */
 int pddlInit(pddl_t *pddl, const char *domain_fn, const char *problem_fn,
              const pddl_config_t *cfg, bor_err_t *err);
+
+/**
+ * Creates a copy of the pddl structure.
+ */
+void pddlInitCopy(pddl_t *dst, const pddl_t *src);
 
 /**
  * Frees allocated memory.

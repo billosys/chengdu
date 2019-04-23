@@ -30,7 +30,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_obj {
-    const char *name; /*!< Name of the object */
+    char *name;       /*!< Name of the object */
     int type;         /*!< Type of the object */
     int is_constant;  /*!< True if it is constant (defined in domain) */
     int is_private;   /*!< True if the object is private to an agent */
@@ -53,6 +53,11 @@ typedef struct pddl_objs pddl_objs_t;
  * Parse :constants and :objects from domain and problem PDDLs.
  */
 int pddlObjsParse(pddl_t *pddl, bor_err_t *err);
+
+/**
+ * Initialize dst as a deep copy of src.
+ */
+void pddlObjsInitCopy(pddl_objs_t *dst, const pddl_objs_t *src);
 
 /**
  * Frees allocated resources.

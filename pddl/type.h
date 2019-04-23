@@ -20,6 +20,7 @@
 #ifndef __PDDL_TYPE_H__
 #define __PDDL_TYPE_H__
 
+#include <boruvka/iset.h>
 #include <pddl/common.h>
 #include <pddl/lisp.h>
 
@@ -28,12 +29,10 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_type {
-    const char *name; /*!< Name of the type */
-    int parent;       /*!< ID of the parent type */
-
-    int *either;      /*!< NULL for normal type, a list type IDs for
-                           special (either ...) type */
-    int either_size;
+    char *name;        /*!< Name of the type */
+    int parent;        /*!< ID of the parent type */
+    bor_iset_t child;  /*!< IDs of children types */
+    bor_iset_t either; /*!< type IDs for special (either ...) type */
 };
 typedef struct pddl_type pddl_type_t;
 
@@ -49,6 +48,8 @@ struct pddl_types {
     int type_size;
 
     pddl_objs_by_type_t *obj_by_type;
+    char *obj_type_map;
+    size_t obj_type_map_memsize;
 };
 typedef struct pddl_types pddl_types_t;
 
@@ -56,6 +57,11 @@ typedef struct pddl_types pddl_types_t;
  * Parses :types into type array.
  */
 int pddlTypesParse(pddl_t *pddl, bor_err_t *err);
+
+/**
+ * Initialize dst as a deep copy of src.
+ */
+void pddlTypesInitCopy(pddl_types_t *dst, const pddl_types_t *src);
 
 /**
  * Frees allocated resources.
@@ -73,15 +79,30 @@ int pddlTypesGet(const pddl_types_t *t, const char *name);
 void pddlTypesPrint(const pddl_types_t *t, FILE *fout);
 
 /**
+ * Returns true if the specified type is (either ...) type.
+ */
+int pddlTypesIsEither(const pddl_types_t *ts, int tid);
+
+/**
  * Record the given object as being of the given type.
  */
 void pddlTypesAddObj(pddl_types_t *ts, pddl_obj_id_t obj_id, int type_id);
+
+/**
+ * Build mapping for fast testing whether an object is of a specified type.
+ */
+void pddlTypesBuildObjTypeMap(pddl_types_t *ts, int obj_size);
 
 /**
  * Returns list of object IDs of the specified type.
  */
 const pddl_obj_id_t *pddlTypesObjsByType(const pddl_types_t *ts, int type_id,
                                          int *size);
+
+/**
+ * Returns number of objects of the specified type.
+ */
+int pddlTypeNumObjs(const pddl_types_t *ts, int type_id);
 
 /**
  * Returns true if the object compatible with the specified type.

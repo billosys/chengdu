@@ -29,7 +29,7 @@
 
 
 #ifdef PDDL_DEBUG
-typedef uint32_t pre_mask_t;
+typedef uint64_t pre_mask_t;
 #endif /* PDDL_DEBUG */
 
 struct tnode_flags {
@@ -220,8 +220,6 @@ static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
     const pddl_cond_atom_t *atom;
     const pddl_pred_t *pred;
 
-    // TODO: Check limits on pddl_obj_id_t, pre_mask_t, ...
-
     bzero(tr, sizeof(*tr));
     tr->g = g;
     tr->action_id = action_id;
@@ -237,7 +235,8 @@ static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
 
     for (int i = 0; i < tr->pre_size; ++i){
 #ifdef PDDL_DEBUG
-        tr->pre_mask = (tr->pre_mask << 1u) | 1u;
+        if (i < sizeof(pre_mask_t) / 8)
+            tr->pre_mask = (tr->pre_mask << 1u) | 1u;
 #endif /* PDDL_DEBUG */
         atom = PDDL_COND_CAST(tr->action->pre.cond[i], atom);
         pred = tr->g->pddl->pred.pred + atom->pred;
@@ -386,6 +385,7 @@ static void propagatePre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
         //       memory removing part of tree. The question is whether is
         //       it useful.
         groundActionAddEff(tr->g, tr->action, arg);
+        tn->flags.blocked = 1;
         return;
     }
 
@@ -407,10 +407,11 @@ static void propagatePre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
 static void unifyPre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
                      pddl_obj_id_t *arg, int pre_i)
 {
-    // TODO: Check action for equality and predicates?
 #ifdef PDDL_DEBUG
-    ASSERT(!(tn->pre_mask & (1u << ((pre_mask_t)pre_i))));
-    tn->pre_mask |= ((pre_mask_t)1u << ((pre_mask_t)pre_i));
+    if (pre_i < sizeof(pre_mask_t) / 8){
+        ASSERT(!(tn->pre_mask & (1lu << ((pre_mask_t)pre_i))));
+        tn->pre_mask |= ((pre_mask_t)1lu << ((pre_mask_t)pre_i));
+    }
 #endif /* PDDL_DEBUG */
     ++tn->pre_unified;
     tn->flags.pre_unified = 1;
@@ -485,7 +486,10 @@ static void unify(pddl_strips_ground_tree_t *tr, tnode_t *tn,
         ASSERT(ch->obj_id != PDDL_OBJ_ID_UNDEF);
         arg[ch->argi] = arg_pre[ch->argi];
         if (ch->obj_id == arg[ch->argi]){
-            ASSERT(!(ch->pre_mask & (1u << pre_i)));
+#ifdef PDDL_DEBUG
+            if (pre_i < sizeof(pre_mask_t) / 8)
+                ASSERT(!(ch->pre_mask & (1u << pre_i)));
+#endif /* PDDL_DEBUG */
             if (static_fact)
                 ch->flags.static_arg = 1;
             // Found exact match on the argument
@@ -493,7 +497,10 @@ static void unify(pddl_strips_ground_tree_t *tr, tnode_t *tn,
             match = 1;
 
         }else if (arg[ch->argi] == PDDL_OBJ_ID_UNDEF){
-            ASSERT(!(ch->pre_mask & (1u << pre_i)));
+#ifdef PDDL_DEBUG
+            if (pre_i < sizeof(pre_mask_t) / 8)
+                ASSERT(!(ch->pre_mask & (1u << pre_i)));
+#endif /* PDDL_DEBUG */
             // Argument is not set therefore we need to unify with all set
             // arguments
             arg[ch->argi] = ch->obj_id;
@@ -523,7 +530,6 @@ static void unifyTree(pddl_strips_ground_tree_t *tr,
     int num_args_set = 0;
     int param;
 
-    // TODO: check fact agains action
     // TODO: Static facts -- after using all of them disallow -1 on
     //       arguments of static facts.
     // TODO: Remove -1 nodes if all possible objects are already present
@@ -607,7 +613,6 @@ static int removeIncompleteStatic(pddl_strips_ground_tree_t *tr, tnode_t *tn)
 
 static void treeFixStatic(pddl_strips_ground_tree_t *tr)
 {
-    // TODO: check the action agains the whole arg assignement at leafs
     _fixStatic(tr, tr->root);
     removeIncompleteStatic(tr, tr->root);
 
@@ -622,6 +627,7 @@ static void treeFixStatic(pddl_strips_ground_tree_t *tr)
 static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
                         int start_idx, int static_fact)
 {
+    int next_batch = ga->atom_size;
     for (int i = start_idx; i < ga->atom_size; ++i){
         const pddl_ground_atom_t *fact = ga->atom[i];
 
@@ -631,6 +637,16 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
                 unifyTree(tr, fact, tr->pred_to_pre[fact->pred].pre[k],
                           static_fact);
             }
+        }
+
+        if (!static_fact && i == next_batch - 1){
+            BOR_INFO(g->err, "  Next batch unified. (unified facts: %d,"
+                             " facts: %d, funcs: %d, add effs: %d)",
+                     i + 1,
+                     g->facts.atom_size,
+                     g->funcs.atom_size,
+                     g->ground_args.size);
+            next_batch = ga->atom_size;
         }
     }
 }
@@ -647,6 +663,13 @@ static int unifyStaticFacts(pddl_strips_ground_t *g)
     for (int i = 0; i < g->action.action_size; ++i)
         treeFixStatic(g->tree + i);
     g->static_facts_unified = 1;
+
+    BOR_INFO(g->err, "  Static facts unified."
+                     " (static facts: %d, facts: %d, funcs: %d, add effs: %d)",
+             g->static_facts.atom_size,
+             g->facts.atom_size,
+             g->funcs.atom_size,
+             g->ground_args.size);
 
     return 0;
 }
@@ -696,6 +719,22 @@ static void _groundActionAddEff(pddl_strips_ground_t *g,
 
     if (!pddlPrepActionCheck(a, &g->static_facts, arg))
         return;
+
+    if (g->cfg.lifted_mgroups != NULL){
+        if (g->cfg.prune_op_pre_mutex
+                && pddlLiftedMGroupsIsGroundedConjTooHeavy(
+                            g->cfg.lifted_mgroups, g->pddl, &a->pre, arg)){
+            return;
+        }
+
+        if (g->cfg.prune_op_dead_end
+                && a->parent_action < 0
+                && pddlLiftedMGroupsAnyIsDeleted(&g->goal_mgroup, g->pddl,
+                                                 &a->pre, &a->add_eff,
+                                                 &a->del_eff, arg)){
+            return;
+        }
+    }
 
     const pddl_cond_atom_t *atom;
     for (int i = 0; i < a->add_eff.size; ++i){
@@ -973,9 +1012,14 @@ static int _groundGoal(pddl_cond_t *c, void *_g)
             // Add the fact to the goal specification
             borISetAdd(&strips->goal, g->ground_atom_to_fact_id[ga->id]);
         }else{
-            // The problem is unsolvable, because a goal fact is not
-            // reachable.
-            strips->goal_is_unreachable = 1;
+            // The goal can be static fact in which case we simply skip
+            // this fact
+            ga = pddlGroundAtomsFindAtom(&g->static_facts, atom, NULL);
+            if (ga == NULL){
+                // The problem is unsolvable, because a goal fact is not
+                // reachable.
+                strips->goal_is_unreachable = 1;
+            }
         }
         return 0;
 
@@ -1049,12 +1093,22 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     bzero(g, sizeof(*g));
     g->pddl = pddl;
     g->cfg = *cfg;
+    if (g->cfg.lifted_mgroups == NULL){
+        g->cfg.prune_op_pre_mutex = 0;
+        g->cfg.prune_op_dead_end = 0;
+    }
+
     g->err = err;
     g->unify_new_atom_fn = new_atom;
     g->unify_new_atom_data = new_atom_data;
 
     if (pddlPrepActionsInit(pddl, &g->action, g->err) != 0)
         BOR_TRACE_RET(g->err, -1);
+
+    if (g->cfg.lifted_mgroups != NULL){
+        pddlLiftedMGroupsExtractGoalAware(&g->goal_mgroup,
+                                          g->cfg.lifted_mgroups, pddl);
+    }
 
     pddlGroundAtomsInit(&g->static_facts);
     g->static_facts_unified = 0;
@@ -1084,6 +1138,7 @@ static void groundFree(pddl_strips_ground_t *g)
         BOR_FREE(g->ground_atom_to_fact_id);
     pddlGroundAtomsFree(&g->funcs);
     pddlPrepActionsFree(&g->action);
+    pddlLiftedMGroupsFree(&g->goal_mgroup);
     groundArgsFree(&g->ground_args);
 }
 
@@ -1094,10 +1149,25 @@ int pddlStripsGroundStart(pddl_strips_ground_t *g,
                           pddl_strips_ground_unify_new_atom_fn new_atom,
                           void *new_atom_data)
 {
+    BOR_INFO(err, "PDDL to STRIPS (domain: %s, problem: %s) ...",
+             pddl->domain_lisp->filename,
+             pddl->problem_lisp->filename);
+
     if (groundInit(g, pddl, cfg, err, new_atom, new_atom_data) != 0){
         groundFree(g);
         BOR_TRACE_RET(err, -1);
     }
+
+    BOR_INFO(err, "  lifted mutex groups: %d",
+             (g->cfg.lifted_mgroups != NULL
+                ?  g->cfg.lifted_mgroups->mgroup_size : -1));
+    BOR_INFO(err, "  goal-aware lifted mutex groups: %d",
+             (g->cfg.lifted_mgroups != NULL
+                ?  g->goal_mgroup.mgroup_size : -1));
+    BOR_INFO(err, "  prune-op-pre-mutex: %d", g->cfg.prune_op_pre_mutex);
+    BOR_INFO(err, "  prune-op-dead-end: %d", g->cfg.prune_op_dead_end);
+    BOR_INFO(err, "  prep-actions: %d", g->action.action_size);
+
     return 0;
 }
 
@@ -1111,6 +1181,12 @@ int pddlStripsGroundUnifyStep(pddl_strips_ground_t *g)
         groundFree(g);
         BOR_TRACE_RET(g->err, -1);
     }
+
+    BOR_INFO(g->err, "  Unification finished."
+                     " (facts: %d, funcs: %d, add effs: %d)",
+             g->facts.atom_size,
+             g->funcs.atom_size,
+             g->ground_args.size);
     return 0;
 }
 
@@ -1152,9 +1228,7 @@ int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips)
     if (strips->goal_is_unreachable)
         pddlStripsMakeUnsolvable(strips);
 
-    BOR_INFO(g->err, "PDDL grounded to STRIPS (domain: %s, problem: %s).",
-             g->pddl->domain_lisp->filename,
-             g->pddl->problem_lisp->filename);
+    BOR_INFO2(g->err, "PDDL grounded to STRIPS.");
 
     return 0;
 }
@@ -1190,7 +1264,7 @@ static void tnodePrint(pddl_strips_ground_tree_t *tr, tnode_t *tn, int offset, F
         off += fprintf(fout, ":%d", tn->obj_id);
     }
 #ifdef PDDL_DEBUG
-    off += fprintf(fout, ":M%x", tn->pre_mask);
+    off += fprintf(fout, ":M%lx", tn->pre_mask);
 #endif /* PDDL_DEBUG */
     off += fprintf(fout, ":P%d", tn->pre_unified);
     if (tn->flags.blocked)

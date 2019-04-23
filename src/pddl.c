@@ -22,6 +22,19 @@
 #include "pddl/pddl_struct.h"
 #include "err.h"
 
+static int checkDerivedPredicates(const pddl_t *pddl, bor_err_t *err)
+{
+    const pddl_lisp_node_t *root = &pddl->domain_lisp->root;
+    for (int i = 0; i < root->child_size; ++i){
+        const pddl_lisp_node_t *n = root->child + i;
+        if (pddlLispNodeHeadKw(n) == PDDL_KW_DERIVED){
+            BOR_ERR_RET(err, -1, "Derived predicates are not supported"
+                                 " (line %d).", n->lineno);
+        }
+    }
+    return 0;
+}
+
 static int checkConfig(const pddl_config_t *cfg)
 {
     return 1;
@@ -47,14 +60,20 @@ static const char *parseName(pddl_lisp_t *lisp, int kw,
     return n->child[1].value;
 }
 
-static const char *parseDomainName(pddl_lisp_t *lisp, bor_err_t *err)
+static char *parseDomainName(pddl_lisp_t *lisp, bor_err_t *err)
 {
-    return parseName(lisp, PDDL_KW_DOMAIN, "domain", err);
+    const char *name = parseName(lisp, PDDL_KW_DOMAIN, "domain", err);
+    if (name != NULL)
+        return BOR_STRDUP(name);
+    return NULL;
 }
 
-static const char *parseProblemName(pddl_lisp_t *lisp, bor_err_t *err)
+static char *parseProblemName(pddl_lisp_t *lisp, bor_err_t *err)
 {
-    return parseName(lisp, PDDL_KW_PROBLEM, "problem", err);
+    const char *name = parseName(lisp, PDDL_KW_PROBLEM, "problem", err);
+    if (name != NULL)
+        return BOR_STRDUP(name);
+    return NULL;
 }
 
 static int checkDomainName(pddl_t *pddl, bor_err_t *err)
@@ -112,6 +131,12 @@ static int parseInit(pddl_t *pddl, bor_err_t *err)
         BOR_TRACE_PREPEND_RET(err, -1, "While parsing :init specification"
                               " in %s: ", pddl->problem_lisp->filename);
     }
+
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *atom;
+    PDDL_COND_FOR_EACH_ATOM(&pddl->init->cls, &it, atom)
+        pddl->pred.pred[atom->pred].in_init = 1;
+
     return 0;
 }
 
@@ -169,8 +194,8 @@ int pddlInit(pddl_t *pddl, const char *domain_fn, const char *problem_fn,
     if (pddl->domain_name == NULL)
         goto pddl_fail;
 
-
-    if (checkDomainName(pddl, err) != 0
+    if (checkDerivedPredicates(pddl, err) != 0
+            || checkDomainName(pddl, err) != 0
             || pddlRequireParse(pddl, err) != 0
             || pddlTypesParse(pddl, err) != 0
             || pddlObjsParse(pddl, err) != 0
@@ -182,6 +207,7 @@ int pddlInit(pddl_t *pddl, const char *domain_fn, const char *problem_fn,
             || parseMetric(pddl, pddl->problem_lisp, err) != 0){
         goto pddl_fail;
     }
+    pddlTypesBuildObjTypeMap(&pddl->type, pddl->obj.obj_size);
     BOR_INFO2(err, "PDDL content parsed.");
 
     return 0;
@@ -190,6 +216,30 @@ pddl_fail:
     if (pddl != NULL)
         pddlFree(pddl);
     BOR_TRACE_RET(err, -1);
+}
+
+void pddlInitCopy(pddl_t *dst, const pddl_t *src)
+{
+    bzero(dst, sizeof(*dst));
+    dst->cfg = src->cfg;
+    dst->domain_lisp = pddlLispClone(src->domain_lisp);
+    dst->problem_lisp = pddlLispClone(src->problem_lisp);
+    if (src->domain_name != NULL)
+        dst->domain_name = BOR_STRDUP(src->domain_name);
+    if (src->problem_name != NULL)
+        dst->problem_name = BOR_STRDUP(src->problem_name);
+    dst->require = src->require;
+    pddlTypesInitCopy(&dst->type, &src->type);
+    pddlObjsInitCopy(&dst->obj, &src->obj);
+    pddlPredsInitCopy(&dst->pred, &src->pred);
+    pddlPredsInitCopy(&dst->func, &src->func);
+    if (src->init != NULL)
+        dst->init = PDDL_COND_CAST(pddlCondClone(&src->init->cls), part);
+    if (src->goal != NULL)
+        dst->goal = pddlCondClone(src->goal);
+    pddlActionsInitCopy(&dst->action, &src->action);
+    dst->metric = src->metric;
+    dst->normalized = src->normalized;
 }
 
 pddl_t *pddlNew(const char *domain_fn, const char *problem_fn,
@@ -217,6 +267,10 @@ void pddlFree(pddl_t *pddl)
         pddlLispDel(pddl->domain_lisp);
     if (pddl->problem_lisp)
         pddlLispDel(pddl->problem_lisp);
+    if (pddl->domain_name != NULL)
+        BOR_FREE(pddl->domain_name);
+    if (pddl->problem_name != NULL)
+        BOR_FREE(pddl->problem_name);
     pddlTypesFree(&pddl->type);
     pddlObjsFree(&pddl->obj);
     pddlPredsFree(&pddl->pred);
@@ -289,10 +343,9 @@ static int createNewNotPred(pddl_t *pddl, int pred_id)
     strcpy(name + 4, pos->name);
 
     neg = pddlPredsAddCopy(&pddl->pred, pred_id);
-    if (neg->free_name)
-        BOR_FREE((char *)neg->name);
+    if (neg->name != NULL)
+        BOR_FREE(neg->name);
     neg->name = name;
-    neg->free_name = 1;
     neg->neg_of = pred_id;
     pddl->pred.pred[pred_id].neg_of = neg->id;
 
@@ -483,6 +536,43 @@ static void removeIrrelevantActions(pddl_t *pddl)
     }
 }
 
+static int isStaticPreUnreachable(const pddl_t *pddl, const pddl_cond_t *c)
+{
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *atom;
+    PDDL_COND_FOR_EACH_ATOM(c, &it, atom){
+        const pddl_pred_t *pred = pddl->pred.pred + atom->pred;
+        if (pred->id != pddl->pred.eq_pred
+                && pddlPredIsStatic(pred)
+                && !pred->in_init){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int removeUnreachableActions(pddl_t *pddl)
+{
+    int ret = 0;
+    for (int ai = 0; ai < pddl->action.action_size;){
+        pddl_action_t *a = pddl->action.action + ai;
+        a->pre = pddlCondDeconflictPre(a->pre, pddl, &a->param);
+        a->eff = pddlCondDeconflictEff(a->eff, pddl, &a->param);
+
+        if (isStaticPreUnreachable(pddl, a->pre)){
+            pddlActionFree(a);
+            if (ai != pddl->action.action_size - 1)
+                *a = pddl->action.action[pddl->action.action_size - 1];
+            --pddl->action.action_size;
+            ret = 1;
+        }else{
+            ++ai;
+        }
+    }
+
+    return ret;
+}
+
 static void pddlResetPredReadWrite(pddl_t *pddl)
 {
     for (int i = 0; i < pddl->pred.pred_size; ++i)
@@ -515,8 +605,10 @@ void pddlNormalize(pddl_t *pddl)
 
     compileOutNonStaticNegPre(pddl);
     removeIrrelevantActions(pddl);
+    do {
+        pddlResetPredReadWrite(pddl);
+    } while (removeUnreachableActions(pddl));
     pddl->normalized = 1;
-    pddlResetPredReadWrite(pddl);
 }
 
 static void compileAwayCondEff(pddl_t *pddl, int only_non_static)

@@ -29,8 +29,8 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_pred {
-    int id; /*!< ID of the predicate */
-    const char *name; /*!< Name of the predicate */
+    int id;           /*!< ID of the predicate */
+    char *name;       /*!< Name of the predicate */
     int *param;       /*!< IDs of types of parameters */
     int param_size;   /*!< Number of parameters */
     int is_private;   /*!< True if the predicate is private */
@@ -38,7 +38,7 @@ struct pddl_pred {
                            owner object */
     int read;         /*!< True if the predicate appears in some precondition */
     int write;        /*!< True if the predicate appreas in some effect */
-    int free_name;    /*!< True if .name should be freed */
+    int in_init;      /*!< True if the predicate appear in the initial state */
     int neg_of;       /*!< ID of the predicate this predicate is negation of */
 };
 typedef struct pddl_pred pddl_pred_t;
@@ -59,6 +59,11 @@ typedef struct pddl_preds pddl_preds_t;
  * Parse :predicates from domain PDDL.
  */
 int pddlPredsParse(pddl_t *pddl, bor_err_t *err);
+
+/**
+ * Initialize dst as a deep copy of src.
+ */
+void pddlPredsInitCopy(pddl_preds_t *dst, const pddl_preds_t *src);
 
 /**
  * Parse :functions from domain PDDL.

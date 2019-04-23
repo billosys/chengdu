@@ -44,6 +44,11 @@ typedef struct pddl_lifted_mgroups pddl_lifted_mgroups_t;
 #define PDDL_LIFTED_MGROUPS_INIT { 0 }
 
 /**
+ * Initialize empty liftd mutex group.
+ */
+void pddlLiftedMGroupInitEmpty(pddl_lifted_mgroup_t *dst);
+
+/**
  * Initialize lifted mgroup as a copy of src.
  */
 void pddlLiftedMGroupInitCopy(pddl_lifted_mgroup_t *dst,
@@ -64,37 +69,15 @@ void pddlLiftedMGroupInitCandFromPred(pddl_lifted_mgroup_t *mgroup,
 void pddlLiftedMGroupFree(pddl_lifted_mgroup_t *mgroup);
 
 /**
+ * Returns true if m1 equals to m2.
+ */
+int pddlLiftedMGroupEq(const pddl_lifted_mgroup_t *m1,
+                       const pddl_lifted_mgroup_t *m2);
+
+/**
  * Sort mutex group's atoms and parameters.
  */
 void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m);
-
-/**
- * Returns true if two or more facts from the initial state are covered by
- * the candidate.
- */
-int pddlLiftedMGroupIsInitTooHeavy(const pddl_lifted_mgroup_t *cand,
-                                   const pddl_t *pddl);
-
-/**
- * Returns true if the action could add two or more facts from the
- * given candidate.
- */
-int pddlLiftedMGroupIsActionTooHeavy(const pddl_lifted_mgroup_t *cand,
-                                     const pddl_t *pddl,
-                                     int action_id);
-
-/**
- * Returns true if the action is balanced with respect to the given mutex
- * group candidate, i.e., every add effect covered by the candidate has at
- * least one delete effect \cap precondition covered by the candidate.
- * If the test fails and refined != NULL, then a new refined candidates are
- * put in refined.
- */
-int pddlLiftedMGroupIsActionBalanced(const pddl_lifted_mgroup_t *cand,
-                                     const pddl_t *pddl,
-                                     int action_id,
-                                     pddl_lifted_mgroups_t *refined);
-
 
 /**
  * Prints a formatted lifted mutex group (or a candidate if there are some
@@ -112,6 +95,12 @@ void pddlLiftedMGroupPrint(const pddl_t *pddl,
 void pddlLiftedMGroupsInit(pddl_lifted_mgroups_t *lm);
 
 /**
+ * Initialize dst as a copy of src.
+ */
+void pddlLiftedMGroupsInitCopy(pddl_lifted_mgroups_t *dst,
+                               const pddl_lifted_mgroups_t *src);
+
+/**
  * Free allocated memory.
  */
 void pddlLiftedMGroupsFree(pddl_lifted_mgroups_t *lm);
@@ -123,14 +112,16 @@ void pddlLiftedMGroupsAdd(pddl_lifted_mgroups_t *lm,
                           const pddl_lifted_mgroup_t *lmg);
 
 /**
+ * Adds (partially) instantiated copy of the given lifted group.
+ */
+void pddlLiftedMGroupsAddInst(pddl_lifted_mgroups_t *lm,
+                              const pddl_lifted_mgroup_t *lmg,
+                              const pddl_obj_id_t *args);
+
+/**
  * Sort mgroups according to size and predicates and removes duplicates.
  */
 void pddlLiftedMGroupsSortAndUniq(pddl_lifted_mgroups_t *lm);
-
-/**
- * Find lifted mgroups using "guess, check, refine" approach.
- */
-void pddlLiftedMGroupsInfer(const pddl_t *pddl, pddl_lifted_mgroups_t *lm);
 
 void pddlLiftedMGroupsPrint(const pddl_t *pddl,
                             const pddl_lifted_mgroups_t *lm,

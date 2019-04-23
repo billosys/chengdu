@@ -25,7 +25,7 @@ else
   CFLAGS += -O3
 endif
 ifeq '$(PROFIL)' 'yes'
-  CFLAGS += -pg
+  CFLAGS += -pg -no-pie
 endif
 CFLAGS += -Wall -pedantic --std=gnu99
 
