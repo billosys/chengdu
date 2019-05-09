@@ -22,6 +22,7 @@ OBJS += cond
 OBJS += cond_arr
 OBJS += strips
 OBJS += strips_op
+OBJS += strips_ground_tree
 OBJS += strips_ground
 OBJS += ground_atom
 OBJS += profile
