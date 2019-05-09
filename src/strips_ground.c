@@ -1224,6 +1224,7 @@ int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips)
 
     groundFree(g);
 
+    // TODO: Parametrize
     pddlStripsOpsDeduplicate(&strips->op);
     if (strips->goal_is_unreachable)
         pddlStripsMakeUnsolvable(strips);
