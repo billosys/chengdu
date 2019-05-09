@@ -24,6 +24,7 @@ OBJS += strips
 OBJS += strips_op
 OBJS += strips_ground_tree
 OBJS += strips_ground
+OBJS += action_args
 OBJS += ground_atom
 OBJS += profile
 OBJS += helper

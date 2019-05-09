@@ -23,15 +23,13 @@
 #include <boruvka/iset.h>
 
 #include <pddl/common.h>
-#include <pddl/strips.h>
 #include <pddl/ground_atom.h>
 #include <pddl/prep_action.h>
+#include <pddl/action_args.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-#define PDDL_STRIPS_GROUND
 
 struct pddl_strips_ground_tnode {
     pddl_action_param_size_t param; /*!< Parameter this node corresponds to */
@@ -57,6 +55,7 @@ struct _pddl_strips_ground_tree {
     bor_iset_t *pred_to_pre; /*!< Mapping from predicate ID to
                                   corresponding preconditions */
     pddl_strips_ground_tnode_t *root; /*!< Root of the tree */
+    pddl_action_args_t args;
 };
 // TODO
 typedef struct _pddl_strips_ground_tree _pddl_strips_ground_tree_t;
@@ -73,6 +72,13 @@ void pddlStripsGroundTreeInit(_pddl_strips_ground_tree_t *tr,
  * Free allocated memory
  */
 void pddlStripsGroundTreeFree(_pddl_strips_ground_tree_t *tr);
+
+/**
+ * TODO
+ */
+void pddlStripsGroundTreeUnifyFact(_pddl_strips_ground_tree_t *tr,
+                                   const pddl_ground_atom_t *fact,
+                                   int static_fact);
 
 #ifdef __cplusplus
 } /* extern "C" */

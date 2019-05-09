@@ -91,7 +91,7 @@ static void propagatePre(_pddl_strips_ground_tree_t *tr,
         // TODO: If grounding is successful, we can probably safe some
         //       memory removing part of tree. The question is whether is
         //       it useful.
-        // TODO groundActionAddEff(tr->g, tr->action, arg);
+        pddlActionArgsAdd(&tr->args, arg);
         tn->flag_blocked = 1;
         return;
     }
@@ -342,6 +342,8 @@ void pddlStripsGroundTreeInit(_pddl_strips_ground_tree_t *tr,
             ++tr->pre_static_size;
     }
 
+    pddlActionArgsInit(&tr->args, a->param_size);
+
     tr->root = tnodeNew(tr, NULL, -1, PDDL_OBJ_ID_UNDEF);
     // TODO: move constans 1 and 3 into either parameter of grounding or
     //       define constants. Consider also instantiation also a small
@@ -356,6 +358,7 @@ void pddlStripsGroundTreeFree(_pddl_strips_ground_tree_t *tr)
     borISetFree(&tr->param);
     if (tr->root != NULL)
         tnodeDel(tr->root);
+    pddlActionArgsFree(&tr->args);
 }
 
 void pddlStripsGroundTreeUnifyFact(_pddl_strips_ground_tree_t *tr,
