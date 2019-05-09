@@ -29,6 +29,11 @@ extern "C" {
 typedef struct pddl pddl_t;
 typedef struct pddl_strips pddl_strips_t;
 
+/** Type for holding number of objects */
+typedef uint16_t pddl_obj_size_t;
+/** Type for holding number of action parameters */
+typedef uint16_t pddl_action_param_size_t;
+
 typedef int pddl_obj_id_t;
 
 /** Constant for undefined object ID.

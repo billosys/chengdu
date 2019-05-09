@@ -684,6 +684,31 @@ int pddlPredFuncMaxParamSize(const pddl_t *pddl)
     return max;
 }
 
+void pddlCheckSizeTypes(const pddl_t *pddl)
+{
+    unsigned long max_size;
+
+    max_size = (1ul << (sizeof(pddl_obj_size_t) * 8)) - 1;
+    if (pddl->obj.obj_size > max_size){
+        BOR_FATAL("The problem has %d objects, but pddl_obj_size_t can"
+                  " hold only %lu.",
+                  pddl->obj.obj_size,
+                  sizeof(pddl_obj_size_t) * 8 - 1);
+    }
+
+    max_size = (1ul << (sizeof(pddl_action_param_size_t) * 8)) - 1;
+    for (int ai = 0; ai < pddl->action.action_size; ++ai){
+        int param_size = pddl->action.action[ai].param.param_size;
+        if (param_size > max_size){
+            BOR_FATAL("The action %s has %d parameters, but"
+                      "pddl_action_param_size_t can hold only %lu.",
+                      pddl->action.action[ai].name,
+                      param_size,
+                      sizeof(pddl_action_param_size_t) * 8 - 1);
+        }
+    }
+}
+
 void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout)
 {
     fprintf(fout, "(define (domain %s)\n", pddl->domain_name);

@@ -115,5 +115,4 @@ int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips);
 } /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* __PDDL_STRIPS_H__ */
-
+#endif /* __PDDL_STRIPS_GROUND_H__ */

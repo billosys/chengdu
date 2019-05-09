@@ -105,6 +105,13 @@ void pddlCompileAwayNonStaticCondEff(pddl_t *pddl);
 int pddlPredFuncMaxParamSize(const pddl_t *pddl);
 
 /**
+ * Checks pddl_*_size_t types agains the parsed pddl.
+ * If any of these types is too small the program exists with error
+ * message.
+ */
+void pddlCheckSizeTypes(const pddl_t *pddl);
+
+/**
  * Prints PDDL domain file.
  */
 void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout);
