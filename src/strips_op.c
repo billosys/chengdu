@@ -238,7 +238,7 @@ struct deduplicate {
 };
 typedef struct deduplicate deduplicate_t;
 
-static int opDeduplicateHashCmp(const void *_a, const void *_b, void *_)
+static int opDeduplicateCmp(const void *_a, const void *_b, void *_)
 {
     const deduplicate_t *a = _a;
     const deduplicate_t *b = _b;
@@ -246,6 +246,8 @@ static int opDeduplicateHashCmp(const void *_a, const void *_b, void *_)
         return -1;
     if (a->hash > b->hash)
         return 1;
+    if (a->cost == b->cost)
+        return a->id - b->id;
     return a->cost - b->cost;
 }
 
@@ -295,7 +297,7 @@ void pddlStripsOpsDeduplicate(pddl_strips_ops_t *ops)
     }
 
     borSort(dedup, ops->op_size, sizeof(deduplicate_t),
-            opDeduplicateHashCmp, NULL);
+            opDeduplicateCmp, NULL);
 
     int start, cur;
     for (start = 0, cur = 1; cur < ops->op_size; ++cur){
