@@ -29,17 +29,37 @@ extern "C" {
 #endif /* __cplusplus */
 
 struct pddl_action_args {
-    int arg_size;
+    int num_args;
     bor_extarr_t *arg_pool;
     bor_htable_t *htable;
     int args_size;
 };
 typedef struct pddl_action_args pddl_action_args_t;
 
-void pddlActionArgsInit(pddl_action_args_t *args, int arg_size);
+/**
+ * Initialize pool of action arguments
+ */
+void pddlActionArgsInit(pddl_action_args_t *args, int num_args);
+
+/**
+ * Free allocated memory.
+ */
 void pddlActionArgsFree(pddl_action_args_t *args);
+
+/**
+ * Adds arguments to the pool and ID is returned, {a} is expected to be
+ * .num_args long.
+ */
 int pddlActionArgsAdd(pddl_action_args_t *args, const pddl_obj_id_t *a);
+
+/**
+ * Returns arguments corresponding to the id.
+ */
 const pddl_obj_id_t *pddlActionArgsGet(const pddl_action_args_t *args, int id);
+
+/**
+ * Returns number of stored unique arguments.
+ */
 int pddlActionArgsSize(const pddl_action_args_t *args);
 
 #ifdef __cplusplus

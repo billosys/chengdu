@@ -16,6 +16,7 @@
  * See the License for more information.
  */
 
+#include <stdio.h>
 #include <boruvka/hfunc.h>
 #include "pddl/action_args.h"
 
@@ -38,28 +39,22 @@ static bor_htable_key_t htableHash(const bor_list_t *key, void *_)
     return el->key;
 }
 
-int htableEq(const bor_list_t *key1, const bor_list_t *key2, void *_args)
+static int htableEq(const bor_list_t *key1, const bor_list_t *key2, void *_args)
 {
-    const pddl_action_args_t *args = args;
+    const pddl_action_args_t *args = _args;
     const el_t *el1 = BOR_LIST_ENTRY(key1, el_t, htable);
     const el_t *el2 = BOR_LIST_ENTRY(key2, el_t, htable);
     return memcmp(el1->args, el2->args,
-                  sizeof(pddl_obj_id_t) * args->arg_size) == 0;
+                  sizeof(pddl_obj_id_t) * args->num_args) == 0;
 }
 
-void pddlActionArgsInit(pddl_action_args_t *args, int arg_size)
+void pddlActionArgsInit(pddl_action_args_t *args, int num_args)
 {
-    size_t size = sizeof(el_t) + sizeof(pddl_obj_id_t) * arg_size;
-    el_t *el = alloca(size);
-
-    el->key = 0;
-    borListInit(&el->htable);
-    for (int i = 0; i < arg_size; ++i)
-        el->args[i] = PDDL_OBJ_ID_UNDEF;
+    size_t size = sizeof(el_t) + sizeof(pddl_obj_id_t) * num_args;
 
     bzero(args, sizeof(*args));
-    args->arg_size = arg_size;
-    args->arg_pool = borExtArrNew(sizeof(pddl_obj_id_t) * arg_size, NULL, el);
+    args->num_args = num_args;
+    args->arg_pool = borExtArrNew(size, NULL, NULL);
     args->htable = borHTableNew(htableHash, htableEq, args);
     args->args_size = 0;
 }
@@ -73,9 +68,9 @@ void pddlActionArgsFree(pddl_action_args_t *args)
 int pddlActionArgsAdd(pddl_action_args_t *args, const pddl_obj_id_t *a)
 {
     el_t *el = borExtArrGet(args->arg_pool, args->args_size);
-    el->id = args->arg_size;
-    el->key = hash(a, args->arg_size);
-    memcpy(el->args, a, sizeof(pddl_obj_id_t) * args->arg_size);
+    el->id = args->args_size;
+    el->key = hash(a, args->num_args);
+    memcpy(el->args, a, sizeof(pddl_obj_id_t) * args->num_args);
     borListInit(&el->htable);
 
     bor_list_t *ins = borHTableInsertUnique(args->htable, &el->htable);
