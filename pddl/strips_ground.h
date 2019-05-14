@@ -19,20 +19,17 @@
 #ifndef __PDDL_STRIPS_GROUND_H__
 #define __PDDL_STRIPS_GROUND_H__
 
-#include <boruvka/htable.h>
-#include <boruvka/iset.h>
-
 #include <pddl/common.h>
 #include <pddl/strips.h>
 #include <pddl/ground_atom.h>
 #include <pddl/prep_action.h>
+#include <pddl/strips_ground_tree.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
 /** Forward declaration */
-typedef struct pddl_strips_ground_tree pddl_strips_ground_tree_t;
 typedef struct pddl_strips_ground_args pddl_strips_ground_args_t;
 
 struct pddl_strips_ground_args_arr {

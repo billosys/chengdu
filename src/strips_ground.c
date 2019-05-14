@@ -19,8 +19,6 @@
 
 #include <limits.h>
 #include <boruvka/alloc.h>
-#include <boruvka/htable.h>
-#include <boruvka/hfunc.h>
 #include <boruvka/sort.h>
 
 #include "pddl/pddl.h"
@@ -28,80 +26,12 @@
 #include "assert.h"
 
 
-#ifdef PDDL_DEBUG
-typedef uint64_t pre_mask_t;
-#endif /* PDDL_DEBUG */
-
-struct tnode_flags {
-    unsigned char blocked:1; /*!< True if no new children are allowed */
-    unsigned char pre_unified:1; /*!< True if the node unified
-                                      a new precondition */
-    unsigned char static_arg:1; /*!< True if the node corresponds to an
-                                     argument of a static fact */
-} bor_packed;
-typedef struct tnode_flags tnode_flags_t;
-
-struct tnode {
-    int argi; /*!< Index of the corresponding argument */
-    pddl_obj_id_t obj_id; /*!< Assigned object ID */
-    int pre_unified; /*!< Number of unified preconditions */
-#ifdef PDDL_DEBUG
-    pre_mask_t pre_mask; /*!< Bits set on positions where precondition is set */
-#endif /* PDDL_DEBUG */
-    tnode_flags_t flags;
-    struct tnode **child;
-    int child_size;
-    int child_alloc;
-} bor_packed;
-typedef struct tnode tnode_t;
-
-#define TNODE_FOR_EACH_CHILD(TN, CH) \
-    for (int __i = 0; __i < (TN)->child_size \
-            && ((CH) = (TN)->child[__i]); ++__i)
-
-
-struct pred_to_pre {
-    int *pre;
-    int size;
-};
-typedef struct pred_to_pre pred_to_pre_t;
-
-struct pddl_strips_ground_tree {
-    pddl_strips_ground_t *g;
-    int action_id;
-    const pddl_prep_action_t *action;
-    int arg_size;
-    int *arg_max_size;
-    int pre_size;
-    int pre_static_size;
-#ifdef PDDL_DEBUG
-    pre_mask_t pre_mask;
-    pre_mask_t pre_static_mask; /*!< Mask only on static preconditions */
-#endif /* PDDL_DEBUG */
-    pred_to_pre_t *pred_to_pre;
-    tnode_t *root;
-};
-
 struct pddl_strips_ground_args {
     pddl_obj_id_t *arg;
     int action_id;
     const pddl_prep_action_t *action;
     int op_id;
 };
-
-#ifdef PDDL_DEBUG
-static void treePrint(pddl_strips_ground_tree_t *tr, FILE *fout);
-#endif /* PDDL_DEBUG */
-
-static tnode_t *tnodeNew(pddl_strips_ground_tree_t *t, tnode_t *parent,
-                         int argi, pddl_obj_id_t obj_id);
-static void tnodeDel(pddl_strips_ground_tree_t *tr, tnode_t *t);
-static tnode_t *tnodeAddChild(pddl_strips_ground_tree_t *t, tnode_t *par,
-                              int argi, pddl_obj_id_t obj_id);
-
-static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
-                     int action_id);
-static void treeFree(pddl_strips_ground_tree_t *tr);
 
 static void groundArgsFree(pddl_strips_ground_args_arr_t *ga);
 static void groundArgsAdd(pddl_strips_ground_args_arr_t *ga, int action_id,
@@ -123,156 +53,6 @@ static char *groundOpName(const pddl_t *pddl,
                           const pddl_action_t *action,
                           const pddl_obj_id_t *args);
 
-
-
-/*** tnode_t ***/
-static tnode_t *tnodeNew(pddl_strips_ground_tree_t *t, tnode_t *parent,
-                         int argi, pddl_obj_id_t obj_id)
-{
-    tnode_t *n;
-
-    n = BOR_ALLOC(tnode_t);
-    bzero(n, sizeof(*n));
-    n->argi = argi;
-    n->obj_id = obj_id;
-    if (parent != NULL){
-#ifdef PDDL_DEBUG
-        n->pre_mask = parent->pre_mask;
-#endif /* PDDL_DEBUG */
-        n->pre_unified = parent->pre_unified;
-    }
-    return n;
-}
-
-static void tnodeDel(pddl_strips_ground_tree_t *tr, tnode_t *t)
-{
-    tnode_t *ch;
-    TNODE_FOR_EACH_CHILD(t, ch)
-        tnodeDel(tr, ch);
-    if (t->child != NULL)
-        BOR_FREE(t->child);
-    BOR_FREE(t);
-}
-
-static void tnodeReserveChild(pddl_strips_ground_tree_t *tr, tnode_t *n)
-{
-    if (n->child_size == n->child_alloc){
-        if (n->child_alloc == 0)
-            n->child_alloc = 1;
-        n->child_alloc *= 2;
-        n->child = BOR_REALLOC_ARR(n->child, tnode_t *, n->child_alloc);
-    }
-}
-
-static tnode_t *tnodeAddChild(pddl_strips_ground_tree_t *t, tnode_t *par,
-                              int argi, pddl_obj_id_t obj_id)
-{
-    tnode_t *n = tnodeNew(t, par, argi, obj_id);
-    tnodeReserveChild(t, par);
-    par->child[par->child_size++] = n;
-    return n;
-}
-/*** tnode_t END ***/
-
-
-/*** pddl_strips_ground_tree_t ***/
-static void predToPreAdd(pred_to_pre_t *p, int pre_id)
-{
-    ++p->size;
-    p->pre = BOR_REALLOC_ARR(p->pre, int, p->size);
-    p->pre[p->size - 1] = pre_id;
-}
-
-static int instantiateArgs(pddl_strips_ground_tree_t *tr, tnode_t *tn,
-                           int arg_start, int arg_size, int arg_size_max)
-{
-    tnode_t *ch;
-    const pddl_obj_id_t *obj;
-    int size;
-
-    for (int argi = arg_start; argi < tr->arg_size; ++argi){
-        if (tr->arg_max_size[argi] != arg_size)
-            continue;
-        obj = pddlTypesObjsByType(tr->action->type,
-                                  tr->action->param_type[argi], &size);
-        for (int i = 0; i < size; ++i){
-            ch = tnodeAddChild(tr, tn, argi, obj[i]);
-            instantiateArgs(tr, ch, argi + 1, arg_size, arg_size_max);
-        }
-        if (size > 0){
-            tn->flags.blocked = 1;
-            return 1;
-        }
-        return 0;
-    }
-
-    if (arg_size < arg_size_max)
-        return instantiateArgs(tr, tn, 0, arg_size + 1, arg_size_max);
-    tn->flags.pre_unified = 1;
-
-    return 0;
-}
-
-static void treeInit(pddl_strips_ground_tree_t *tr, pddl_strips_ground_t *g,
-                     int action_id)
-{
-    pddl_prep_action_t *a = g->action.action + action_id;
-    const pddl_cond_atom_t *atom;
-    const pddl_pred_t *pred;
-
-    bzero(tr, sizeof(*tr));
-    tr->g = g;
-    tr->action_id = action_id;
-    tr->action = a;
-    tr->arg_size = a->param_size;
-    tr->pre_size = a->pre.size;
-    tr->pre_static_size = 0;
-    tr->root = tnodeNew(tr, NULL, -1, PDDL_OBJ_ID_UNDEF);
-
-    tr->arg_max_size = BOR_ALLOC_ARR(int, tr->arg_size);
-    for (int i = 0; i < tr->arg_size; ++i)
-        pddlTypesObjsByType(a->type, a->param_type[i], tr->arg_max_size + i);
-
-    for (int i = 0; i < tr->pre_size; ++i){
-#ifdef PDDL_DEBUG
-        if (i < sizeof(pre_mask_t) / 8)
-            tr->pre_mask = (tr->pre_mask << 1u) | 1u;
-#endif /* PDDL_DEBUG */
-        atom = PDDL_COND_CAST(tr->action->pre.cond[i], atom);
-        pred = tr->g->pddl->pred.pred + atom->pred;
-        if (pddlPredIsStatic(pred)){
-            ++tr->pre_static_size;
-#ifdef PDDL_DEBUG
-            tr->pre_static_mask |= (1u << i);
-#endif /* PDDL_DEBUG */
-        }
-    }
-
-    tr->pred_to_pre = BOR_CALLOC_ARR(pred_to_pre_t, g->pddl->pred.pred_size);
-    for (int i = 0; i < a->pre.size; ++i){
-        atom = PDDL_COND_CAST(a->pre.cond[i], atom);
-        predToPreAdd(tr->pred_to_pre + atom->pred, i);
-    }
-
-    // TODO: move constans 1 and 3 into either parameter of grounding or
-    //       define constants. Consider also instantiation also a small
-    //       number (1 or 2) of bigger arguments.
-    instantiateArgs(tr, tr->root, 0, 1, 3);
-}
-
-static void treeFree(pddl_strips_ground_tree_t *tr)
-{
-    for (int i = 0; i < tr->g->pddl->pred.pred_size; ++i){
-        if (tr->pred_to_pre[i].pre != NULL)
-            BOR_FREE(tr->pred_to_pre[i].pre);
-    }
-    if (tr->pred_to_pre != NULL)
-        BOR_FREE(tr->pred_to_pre);
-    tnodeDel(tr, tr->root);
-    if (tr->arg_max_size != NULL)
-        BOR_FREE(tr->arg_max_size);
-}
-/*** pddl_strips_ground_tree_t END ***/
 
 
 /*** ground_args_t ***/
@@ -365,265 +145,6 @@ static void groundArgsSortAndUniq(pddl_strips_ground_args_arr_t *ga,
 
 
 /*** unify ***/
-static void propagatePre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
-                         pddl_obj_id_t *arg)
-{
-    tnode_t *ch;
-
-    // If all preconditions are unified, we can ground the action using
-    // assigned arguments. Note that we don't actually need to be in a
-    // leaf.
-    if (tn->pre_unified == tr->pre_size){
-        // TODO: If grounding fails then it means that this argument
-        //       assignement cannot be grounded -- can we utilize this
-        //       somehow?
-        //       Also, the reason of the failure cannot be types of
-        //       arguments, or equality of arguments, because these things
-        //       are checked at the beggining. Therefore the only reason
-        //       can be negative preconditions on static predicates.
-        // TODO: If grounding is successful, we can probably safe some
-        //       memory removing part of tree. The question is whether is
-        //       it useful.
-        groundActionAddEff(tr->g, tr->action, arg);
-        tn->flags.blocked = 1;
-        return;
-    }
-
-    TNODE_FOR_EACH_CHILD(tn, ch){
-#ifdef PDDL_DEBUG
-        ch->pre_mask |= tn->pre_mask;
-#endif /* PDDL_DEBUG */
-        ++ch->pre_unified;
-        if (arg[ch->argi] == PDDL_OBJ_ID_UNDEF){
-            arg[ch->argi] = ch->obj_id;
-            propagatePre(tr, ch, arg);
-            arg[ch->argi] = PDDL_OBJ_ID_UNDEF;
-        }else{
-            propagatePre(tr, ch, arg);
-        }
-    }
-}
-
-static void unifyPre(pddl_strips_ground_tree_t *tr, tnode_t *tn,
-                     pddl_obj_id_t *arg, int pre_i)
-{
-#ifdef PDDL_DEBUG
-    if (pre_i < sizeof(pre_mask_t) / 8){
-        ASSERT(!(tn->pre_mask & (1lu << ((pre_mask_t)pre_i))));
-        tn->pre_mask |= ((pre_mask_t)1lu << ((pre_mask_t)pre_i));
-    }
-#endif /* PDDL_DEBUG */
-    ++tn->pre_unified;
-    tn->flags.pre_unified = 1;
-    propagatePre(tr, tn, arg);
-}
-
-static void unifyNew(pddl_strips_ground_tree_t *tr, tnode_t *tn,
-                     pddl_obj_id_t *arg, int remain,
-                     const pddl_obj_id_t *arg_pre, int pre_i,
-                     int static_fact);
-static void unifyNewArg(pddl_strips_ground_tree_t *tr, tnode_t *tn,
-                        pddl_obj_id_t *arg, int argi,
-                        int remain, const pddl_obj_id_t *arg_pre, int pre_i,
-                        int static_fact)
-{
-    tnode_t *new;
-
-    arg[argi] = arg_pre[argi];
-    new = tnodeAddChild(tr, tn, argi, arg[argi]);
-    if (static_fact)
-        new->flags.static_arg = 1;
-    if (remain - 1 > 0){
-        unifyNew(tr, new, arg, remain - 1, arg_pre, pre_i, static_fact);
-    }else{
-        unifyPre(tr, new, arg, pre_i);
-    }
-    arg[argi] = PDDL_OBJ_ID_UNDEF;
-}
-
-static void unifyNew(pddl_strips_ground_tree_t *tr, tnode_t *tn,
-                     pddl_obj_id_t *arg, int remain,
-                     const pddl_obj_id_t *arg_pre, int pre_i,
-                     int static_fact)
-{
-    tnode_t *ch;
-
-    // To reduce branching, first try to create a new
-    // node using an argument that has some assignements on this level.
-    TNODE_FOR_EACH_CHILD(tn, ch){
-        if (arg[ch->argi] == PDDL_OBJ_ID_UNDEF
-                && arg_pre[ch->argi] != PDDL_OBJ_ID_UNDEF){
-            unifyNewArg(tr, tn, arg, ch->argi, remain, arg_pre, pre_i,
-                        static_fact);
-            return;
-        }
-    }
-
-    for (int i = 0; i < tr->arg_size; ++i){
-        if (arg[i] == PDDL_OBJ_ID_UNDEF && arg_pre[i] != PDDL_OBJ_ID_UNDEF){
-            unifyNewArg(tr, tn, arg, i, remain, arg_pre, pre_i, static_fact);
-            return;
-        }
-    }
-}
-
-static void unify(pddl_strips_ground_tree_t *tr, tnode_t *tn,
-                  pddl_obj_id_t *arg, int remain,
-                  const pddl_obj_id_t *arg_pre, int pre_i,
-                  int parent_match, int static_fact)
-{
-    tnode_t *ch;
-    int match = 0;
-
-    if (!pddlPrepActionCheckEqDef(tr->action, arg))
-        return;
-    if (remain == 0){
-        unifyPre(tr, tn, arg, pre_i);
-        return;
-    }
-
-    TNODE_FOR_EACH_CHILD(tn, ch){
-        ASSERT(ch->obj_id != PDDL_OBJ_ID_UNDEF);
-        arg[ch->argi] = arg_pre[ch->argi];
-        if (ch->obj_id == arg[ch->argi]){
-#ifdef PDDL_DEBUG
-            if (pre_i < sizeof(pre_mask_t) / 8)
-                ASSERT(!(ch->pre_mask & (1u << pre_i)));
-#endif /* PDDL_DEBUG */
-            if (static_fact)
-                ch->flags.static_arg = 1;
-            // Found exact match on the argument
-            unify(tr, ch, arg, remain - 1, arg_pre, pre_i, 1, static_fact);
-            match = 1;
-
-        }else if (arg[ch->argi] == PDDL_OBJ_ID_UNDEF){
-#ifdef PDDL_DEBUG
-            if (pre_i < sizeof(pre_mask_t) / 8)
-                ASSERT(!(ch->pre_mask & (1u << pre_i)));
-#endif /* PDDL_DEBUG */
-            // Argument is not set therefore we need to unify with all set
-            // arguments
-            arg[ch->argi] = ch->obj_id;
-            unify(tr, ch, arg, remain, arg_pre, pre_i, 0, static_fact);
-            arg[ch->argi] = PDDL_OBJ_ID_UNDEF;
-        }
-        arg[ch->argi] = PDDL_OBJ_ID_UNDEF;
-    }
-
-    // Create a new branch only if all of the following holds
-    // 1) no argument could be matched in the current node
-    // 2) the current node is allowed to have more children (it could be
-    //    blocked due to static facts)
-    // 3) there was match in the parent node
-    //    or the current node corresponds to the end of some previously
-    //    unified fact
-    if (!match && !tn->flags.blocked && (parent_match || tn->flags.pre_unified))
-        unifyNew(tr, tn, arg, remain, arg_pre, pre_i, static_fact);
-}
-
-static void unifyTree(pddl_strips_ground_tree_t *tr,
-                      const pddl_ground_atom_t *fact, int pre_i,
-                      int static_fact)
-{
-    const pddl_cond_atom_t *atom;
-    pddl_obj_id_t arg[tr->arg_size], arg_pre[tr->arg_size];
-    int num_args_set = 0;
-    int param;
-
-    // TODO: Static facts -- after using all of them disallow -1 on
-    //       arguments of static facts.
-    // TODO: Remove -1 nodes if all possible objects are already present
-    //       and lock the argument
-    // Check whether the fact can be unified -- this test is not enough but
-    // it can filter out some facts.
-    if (!pddlPrepActionCheckFact(tr->action, pre_i, fact->arg))
-        return;
-
-    // Initialize arg[] to undef -- this array will be filled with unified
-    // arguments in unify() recursive call.
-    for (int i = 0; i < tr->arg_size; ++i)
-        arg_pre[i] = arg[i] = PDDL_OBJ_ID_UNDEF;
-
-    // Set arg_pre[] according to the fact's arguments and count the number
-    // of set arguments.
-    atom = PDDL_COND_CAST(tr->action->pre.cond[pre_i], atom);
-    for (int i = 0; i < atom->arg_size; ++i){
-        param = atom->arg[i].param;
-        if (param >= 0 && arg_pre[param] == PDDL_OBJ_ID_UNDEF){
-            arg_pre[param] = fact->arg[i];
-            ++num_args_set;
-        }
-    }
-
-    // Recursivelly unify arguments
-    unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1, static_fact);
-}
-
-static void _fixStatic(pddl_strips_ground_tree_t *tr, tnode_t *tn)
-{
-    tnode_t *ch;
-    int prune[tr->arg_size];
-
-    for (int i = 0; i < tr->arg_size; ++i)
-        prune[i] = 0;
-    TNODE_FOR_EACH_CHILD(tn, ch){
-        if (ch->flags.static_arg)
-            prune[ch->argi] = 1;
-    }
-
-    for (int i = 0; i < tn->child_size; ++i){
-        ch = tn->child[i];
-        ASSERT(ch != NULL);
-        if (!prune[ch->argi])
-            continue;
-        if (!ch->flags.static_arg){
-            tnodeDel(tr, ch);
-            tn->child[i] = tn->child[--tn->child_size];
-            --i;
-        }
-    }
-
-    TNODE_FOR_EACH_CHILD(tn, ch)
-        _fixStatic(tr, ch);
-
-    if (tn->child_size > 0)
-        tn->flags.blocked = 1;
-}
-
-static int removeIncompleteStatic(pddl_strips_ground_tree_t *tr, tnode_t *tn)
-{
-    tnode_t *ch;
-
-    for (int i = 0; i < tn->child_size; ++i){
-        ch = tn->child[i];
-        if (removeIncompleteStatic(tr, ch)){
-            tnodeDel(tr, ch);
-            tn->child[i] = tn->child[--tn->child_size];
-            --i;
-        }
-    }
-
-    if (tn->child_size == 0
-            && tn->pre_unified != tr->pre_static_size
-            && tn->flags.static_arg){
-        return 1;
-    }
-    return 0;
-}
-
-static void treeFixStatic(pddl_strips_ground_tree_t *tr)
-{
-    _fixStatic(tr, tr->root);
-    removeIncompleteStatic(tr, tr->root);
-
-    // If the action has any static preconditions, they must be already in
-    // place therefore we can block the root node. This fixes the problem
-    // with actions that cannot be grounded because there are no
-    // corresponding static facts.
-    if (tr->pre_static_size > 0)
-        tr->root->flags.blocked = 1;
-}
-
 static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
                         int start_idx, int static_fact)
 {
@@ -633,9 +154,13 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
 
         for (int j = 0; j < g->action.action_size; ++j){
             pddl_strips_ground_tree_t *tr = g->tree + j;
-            for (int k = 0; k < tr->pred_to_pre[fact->pred].size; ++k){
-                unifyTree(tr, fact, tr->pred_to_pre[fact->pred].pre[k],
-                          static_fact);
+
+            int start = pddlActionArgsSize(&tr->args);
+            pddlStripsGroundTreeUnifyFact(tr, fact, static_fact);
+            int size = pddlActionArgsSize(&tr->args);
+            for (int ai = start; ai < size; ++ai){
+                const pddl_obj_id_t *args = pddlActionArgsGet(&tr->args, ai);
+                groundActionAddEff(g, tr->action, args);
             }
         }
 
@@ -661,7 +186,7 @@ static int unifyStaticFacts(pddl_strips_ground_t *g)
 
     _unifyFacts(g, &g->static_facts, 0, 1);
     for (int i = 0; i < g->action.action_size; ++i)
-        treeFixStatic(g->tree + i);
+        pddlStripsGroundTreeBlockStatic(g->tree + i);
     g->static_facts_unified = 1;
 
     BOR_INFO(g->err, "  Static facts unified."
@@ -1120,8 +645,14 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     g->unify_start_idx = 0;
 
     g->tree = BOR_ALLOC_ARR(pddl_strips_ground_tree_t, g->action.action_size);
-    for (int i = 0; i < g->action.action_size; ++i)
-        treeInit(g->tree + i, g, i);
+    for (int i = 0; i < g->action.action_size; ++i){
+        const pddl_prep_action_t *a = g->action.action + i;
+        BOR_ISET(params);
+        for (int p = 0; p < a->param_size; ++p)
+            borISetAdd(&params, p);
+        pddlStripsGroundTreeInit(g->tree + i, pddl, a, &params);
+        borISetFree(&params);
+    }
 
     return 0;
 }
@@ -1129,7 +660,7 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
 static void groundFree(pddl_strips_ground_t *g)
 {
     for (int i = 0; i < g->action.action_size; ++i)
-        treeFree(g->tree + i);
+        pddlStripsGroundTreeFree(g->tree + i);
     if (g->tree != NULL)
         BOR_FREE(g->tree);
     pddlGroundAtomsFree(&g->static_facts);
@@ -1249,63 +780,3 @@ int pddlStripsGround(pddl_strips_t *strips,
 
     return 0;
 }
-
-
-
-#ifdef PDDL_DEBUG
-static void tnodePrint(pddl_strips_ground_tree_t *tr, tnode_t *tn, int offset, FILE *fout)
-{
-    tnode_t *ch;
-    int off = 0, p = 0;
-
-    off += fprintf(fout, "%d", tn->argi);
-    if (tn->obj_id == PDDL_OBJ_ID_UNDEF){
-        off += fprintf(fout, ":X");
-    }else{
-        off += fprintf(fout, ":%d", tn->obj_id);
-    }
-#ifdef PDDL_DEBUG
-    off += fprintf(fout, ":M%lx", tn->pre_mask);
-#endif /* PDDL_DEBUG */
-    off += fprintf(fout, ":P%d", tn->pre_unified);
-    if (tn->flags.blocked)
-        off += fprintf(fout, ":B");
-    if (tn->flags.pre_unified)
-        off += fprintf(fout, ":U");
-    if (tn->flags.static_arg)
-        off += fprintf(fout, ":S");
-    if (tn->pre_unified == tr->pre_size)
-        off += fprintf(fout, "*");
-
-    TNODE_FOR_EACH_CHILD(tn, ch){
-        if (p){
-            fprintf(fout, "\n");
-            for (int i = 0; i < offset + off; ++i)
-                fprintf(fout, " ");
-            fprintf(fout, "`");
-        }else{
-            fprintf(fout, " ");
-            p = 1;
-        }
-        tnodePrint(tr, ch, offset + off + 1, fout);
-    }
-
-    if (offset == 0)
-        fprintf(fout, "\n");
-}
-
-static void treePrint(pddl_strips_ground_tree_t *tr, FILE *fout)
-{
-    tnode_t *ch;
-
-    fprintf(fout, "Tree for %s, arg_size: %d, pre_size: %d, "
-                  " pre_static_size: %d, root-blocked: %d, param-size:",
-            tr->action->action->name, tr->arg_size, tr->pre_size,
-            tr->pre_static_size, tr->root->flags.blocked);
-    for (int i = 0; i < tr->arg_size; ++i)
-        fprintf(fout, " %d:%d", i, tr->arg_max_size[i]);
-    fprintf(fout, "\n");
-    TNODE_FOR_EACH_CHILD(tr->root, ch)
-        tnodePrint(tr, ch, 0, fout);
-}
-#endif /* PDDL_DEBUG */

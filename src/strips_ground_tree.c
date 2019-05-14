@@ -24,7 +24,7 @@
     for (int __i = 0; __i < (TN)->child_size \
             && ((CH) = (TN)->child[__i]); ++__i)
 
-static pddl_strips_ground_tnode_t *tnodeNew(_pddl_strips_ground_tree_t *t,
+static pddl_strips_ground_tnode_t *tnodeNew(pddl_strips_ground_tree_t *t,
                                             pddl_strips_ground_tnode_t *parent,
                                             int param,
                                             pddl_obj_id_t obj_id)
@@ -50,7 +50,7 @@ static void tnodeDel(pddl_strips_ground_tnode_t *t)
     BOR_FREE(t);
 }
 
-static void tnodeReserveChild(_pddl_strips_ground_tree_t *tr,
+static void tnodeReserveChild(pddl_strips_ground_tree_t *tr,
                               pddl_strips_ground_tnode_t *n)
 {
     if (n->child_size == n->child_alloc){
@@ -62,7 +62,7 @@ static void tnodeReserveChild(_pddl_strips_ground_tree_t *tr,
     }
 }
 
-static pddl_strips_ground_tnode_t *tnodeAddChild(_pddl_strips_ground_tree_t *t,
+static pddl_strips_ground_tnode_t *tnodeAddChild(pddl_strips_ground_tree_t *t,
                                                  pddl_strips_ground_tnode_t *p,
                                                  int param,
                                                  pddl_obj_id_t obj_id)
@@ -73,7 +73,7 @@ static pddl_strips_ground_tnode_t *tnodeAddChild(_pddl_strips_ground_tree_t *t,
     return n;
 }
 
-static void propagatePre(_pddl_strips_ground_tree_t *tr,
+static void propagatePre(pddl_strips_ground_tree_t *tr,
                          pddl_strips_ground_tnode_t *tn,
                          pddl_obj_id_t *arg)
 {
@@ -108,7 +108,7 @@ static void propagatePre(_pddl_strips_ground_tree_t *tr,
         }
     }
 }
-static void unifyPre(_pddl_strips_ground_tree_t *tr,
+static void unifyPre(pddl_strips_ground_tree_t *tr,
                      pddl_strips_ground_tnode_t *tn,
                      pddl_obj_id_t *arg,
                      int pre_i)
@@ -118,14 +118,14 @@ static void unifyPre(_pddl_strips_ground_tree_t *tr,
     propagatePre(tr, tn, arg);
 }
 
-static void unifyNew(_pddl_strips_ground_tree_t *tr,
+static void unifyNew(pddl_strips_ground_tree_t *tr,
                      pddl_strips_ground_tnode_t *tn,
                      pddl_obj_id_t *arg,
                      int remain,
                      const pddl_obj_id_t *arg_pre,
                      int pre_i,
                      int static_fact);
-static void unifyNewArg(_pddl_strips_ground_tree_t *tr,
+static void unifyNewArg(pddl_strips_ground_tree_t *tr,
                         pddl_strips_ground_tnode_t *tn,
                         pddl_obj_id_t *arg,
                         int param,
@@ -148,7 +148,7 @@ static void unifyNewArg(_pddl_strips_ground_tree_t *tr,
     arg[param] = PDDL_OBJ_ID_UNDEF;
 }
 
-static void unifyNew(_pddl_strips_ground_tree_t *tr,
+static void unifyNew(pddl_strips_ground_tree_t *tr,
                      pddl_strips_ground_tnode_t *tn,
                      pddl_obj_id_t *arg,
                      int remain,
@@ -180,7 +180,7 @@ static void unifyNew(_pddl_strips_ground_tree_t *tr,
     }
 }
 
-static void unify(_pddl_strips_ground_tree_t *tr,
+static void unify(pddl_strips_ground_tree_t *tr,
                   pddl_strips_ground_tnode_t *tn,
                   pddl_obj_id_t *arg,
                   int remain,
@@ -233,7 +233,7 @@ static void unify(_pddl_strips_ground_tree_t *tr,
     }
 }
 
-static void unifyTree(_pddl_strips_ground_tree_t *tr,
+static void unifyTree(pddl_strips_ground_tree_t *tr,
                       const pddl_ground_atom_t *fact,
                       int pre_i,
                       int static_fact)
@@ -271,7 +271,61 @@ static void unifyTree(_pddl_strips_ground_tree_t *tr,
     unify(tr, tr->root, arg, num_args_set, arg_pre, pre_i, 1, static_fact);
 }
 
-static int instantiateArgs(_pddl_strips_ground_tree_t *tr,
+static int removeIncompleteStatic(pddl_strips_ground_tree_t *tr,
+                                  pddl_strips_ground_tnode_t *tn)
+{
+    pddl_strips_ground_tnode_t *ch;
+
+    for (int i = 0; i < tn->child_size; ++i){
+        ch = tn->child[i];
+        if (removeIncompleteStatic(tr, ch)){
+            tnodeDel(ch);
+            tn->child[i] = tn->child[--tn->child_size];
+            --i;
+        }
+    }
+
+    if (tn->child_size == 0
+            && tn->pre_unified != tr->pre_static_size
+            && tn->flag_static_arg){
+        return 1;
+    }
+    return 0;
+}
+
+static void _blockStatic(pddl_strips_ground_tree_t *tr,
+                         pddl_strips_ground_tnode_t *tn)
+{
+    pddl_strips_ground_tnode_t *ch;
+    int prune[tr->action->param_size];
+
+    for (int i = 0; i < tr->action->param_size; ++i)
+        prune[i] = 0;
+    TNODE_FOR_EACH_CHILD(tn, ch){
+        if (ch->flag_static_arg)
+            prune[ch->param] = 1;
+    }
+
+    for (int i = 0; i < tn->child_size; ++i){
+        ch = tn->child[i];
+        ASSERT(ch != NULL);
+        if (!prune[ch->param])
+            continue;
+        if (!ch->flag_static_arg){
+            tnodeDel(ch);
+            tn->child[i] = tn->child[--tn->child_size];
+            --i;
+        }
+    }
+
+    TNODE_FOR_EACH_CHILD(tn, ch)
+        _blockStatic(tr, ch);
+
+    if (tn->child_size > 0)
+        tn->flag_blocked = 1;
+}
+
+static int instantiateArgs(pddl_strips_ground_tree_t *tr,
                            pddl_strips_ground_tnode_t *tn,
                            int param_start,
                            int arg_size,
@@ -317,7 +371,7 @@ static int isPreRelevant(const pddl_cond_atom_t *atom,
     return 1;
 }
 
-void pddlStripsGroundTreeInit(_pddl_strips_ground_tree_t *tr,
+void pddlStripsGroundTreeInit(pddl_strips_ground_tree_t *tr,
                               const pddl_t *pddl,
                               const pddl_prep_action_t *a,
                               const bor_iset_t *params)
@@ -351,7 +405,7 @@ void pddlStripsGroundTreeInit(_pddl_strips_ground_tree_t *tr,
     instantiateArgs(tr, tr->root, 0, 1, 3);
 }
 
-void pddlStripsGroundTreeFree(_pddl_strips_ground_tree_t *tr)
+void pddlStripsGroundTreeFree(pddl_strips_ground_tree_t *tr)
 {
     for (int i = 0; i < tr->pddl->pred.pred_size; ++i)
         borISetFree(tr->pred_to_pre + i);
@@ -361,7 +415,7 @@ void pddlStripsGroundTreeFree(_pddl_strips_ground_tree_t *tr)
     pddlActionArgsFree(&tr->args);
 }
 
-void pddlStripsGroundTreeUnifyFact(_pddl_strips_ground_tree_t *tr,
+void pddlStripsGroundTreeUnifyFact(pddl_strips_ground_tree_t *tr,
                                    const pddl_ground_atom_t *fact,
                                    int static_fact)
 {
@@ -369,4 +423,17 @@ void pddlStripsGroundTreeUnifyFact(_pddl_strips_ground_tree_t *tr,
     BOR_ISET_FOR_EACH(tr->pred_to_pre + fact->pred, pre_i){
         unifyTree(tr, fact, pre_i, static_fact);
     }
+}
+
+void pddlStripsGroundTreeBlockStatic(pddl_strips_ground_tree_t *tr)
+{
+    _blockStatic(tr, tr->root);
+    removeIncompleteStatic(tr, tr->root);
+
+    // If the action has any static preconditions, they must be already in
+    // place therefore we can block the root node. This fixes the problem
+    // with actions that cannot be grounded because there are no
+    // corresponding static facts.
+    if (tr->pre_static_size > 0)
+        tr->root->flag_blocked = 1;
 }

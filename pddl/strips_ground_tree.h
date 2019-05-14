@@ -46,7 +46,7 @@ struct pddl_strips_ground_tnode {
 } bor_packed;
 typedef struct pddl_strips_ground_tnode pddl_strips_ground_tnode_t;
 
-struct _pddl_strips_ground_tree {
+struct pddl_strips_ground_tree {
     const pddl_t *pddl;
     const pddl_prep_action_t *action;
     bor_iset_t param; /*!< Set of parameters that are considered */
@@ -55,15 +55,14 @@ struct _pddl_strips_ground_tree {
     bor_iset_t *pred_to_pre; /*!< Mapping from predicate ID to
                                   corresponding preconditions */
     pddl_strips_ground_tnode_t *root; /*!< Root of the tree */
-    pddl_action_args_t args;
+    pddl_action_args_t args; /*!< Pool of grounded action arguments */
 };
-// TODO
-typedef struct _pddl_strips_ground_tree _pddl_strips_ground_tree_t;
+typedef struct pddl_strips_ground_tree pddl_strips_ground_tree_t;
 
 /**
  * TODO
  */
-void pddlStripsGroundTreeInit(_pddl_strips_ground_tree_t *tr,
+void pddlStripsGroundTreeInit(pddl_strips_ground_tree_t *tr,
                               const pddl_t *pddl,
                               const pddl_prep_action_t *a,
                               const bor_iset_t *params);
@@ -71,14 +70,19 @@ void pddlStripsGroundTreeInit(_pddl_strips_ground_tree_t *tr,
 /**
  * Free allocated memory
  */
-void pddlStripsGroundTreeFree(_pddl_strips_ground_tree_t *tr);
+void pddlStripsGroundTreeFree(pddl_strips_ground_tree_t *tr);
 
 /**
  * TODO
  */
-void pddlStripsGroundTreeUnifyFact(_pddl_strips_ground_tree_t *tr,
+void pddlStripsGroundTreeUnifyFact(pddl_strips_ground_tree_t *tr,
                                    const pddl_ground_atom_t *fact,
                                    int static_fact);
+
+/**
+ * TODO
+ */
+void pddlStripsGroundTreeBlockStatic(pddl_strips_ground_tree_t *tr);
 
 #ifdef __cplusplus
 } /* extern "C" */
