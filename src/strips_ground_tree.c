@@ -413,6 +413,8 @@ void pddlStripsGroundTreeFree(pddl_strips_ground_tree_t *tr)
     if (tr->root != NULL)
         tnodeDel(tr->root);
     pddlActionArgsFree(&tr->args);
+    if (tr->pred_to_pre != NULL)
+        BOR_FREE(tr->pred_to_pre);
 }
 
 void pddlStripsGroundTreeUnifyFact(pddl_strips_ground_tree_t *tr,
