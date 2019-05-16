@@ -25,6 +25,22 @@
 #include "pddl/strips_ground.h"
 #include "assert.h"
 
+struct pddl_strips_ground_atree {
+    const pddl_prep_action_t *action;
+    pddl_strips_ground_tree_t *tree;
+    int tree_size;
+};
+
+static void atreeInit(pddl_strips_ground_atree_t *ga,
+                      const pddl_t *pddl,
+                      const pddl_prep_action_t *a);
+static void atreeFree(pddl_strips_ground_atree_t *ga);
+static void atreeBlockStatic(pddl_strips_ground_atree_t *atr);
+static void atreeUnifyFact(pddl_strips_ground_t *g,
+                           pddl_strips_ground_atree_t *ga,
+                           const pddl_ground_atom_t *fact,
+                           int static_fact);
+
 
 struct pddl_strips_ground_args {
     pddl_obj_id_t *arg;
@@ -54,6 +70,193 @@ static char *groundOpName(const pddl_t *pddl,
                           const pddl_obj_id_t *args);
 
 
+/*** atree_t ***/
+static int atomHasParam(const pddl_cond_atom_t *a, const bor_iset_t *param)
+{
+    for (int i = 0; i < a->arg_size; ++i){
+        if (a->arg[i].param >= 0 && borISetIn(a->arg[i].param, param))
+            return 1;
+    }
+    return 0;
+}
+
+static int preHasParam(const pddl_prep_action_t *a, const bor_iset_t *param)
+{
+    for (int i = 0; i < a->pre.size; ++i){
+        const pddl_cond_atom_t *atom = PDDL_COND_CAST(a->pre.cond[i], atom);
+        if (atomHasParam(atom, param))
+            return 1;
+    }
+    return 0;
+}
+
+static void atomAddParam(const pddl_cond_atom_t *a, bor_iset_t *param)
+{
+    for (int i = 0; i < a->arg_size; ++i){
+        if (a->arg[i].param >= 0)
+           borISetAdd(param, a->arg[i].param);
+    }
+}
+
+static void atreeFindConnectedPreParams(const pddl_prep_action_t *a,
+                                        bor_iset_t *param,
+                                        const bor_iset_t *used_param)
+{
+    borISetEmpty(param);
+    int first_param;
+    for (first_param = 0;
+            first_param < a->param_size && borISetIn(first_param, used_param);
+            ++first_param);
+    if (first_param == a->param_size)
+        return;
+
+    borISetAdd(param, first_param);
+
+    int used_cond[a->pre.size];
+    bzero(used_cond, sizeof(int) * a->pre.size);
+
+    int changed = 1;
+    while (changed){
+        changed = 0;
+        for (int i = 0; i < a->pre.size; ++i){
+            if (used_cond[i])
+                continue;
+
+            const pddl_cond_atom_t *atom = PDDL_COND_CAST(a->pre.cond[i], atom);
+            if (atomHasParam(atom, param)){
+                used_cond[i] = 1;
+                changed = 1;
+                atomAddParam(atom, param);
+            }
+        }
+    }
+}
+
+static void atreeInit(pddl_strips_ground_atree_t *atr,
+                      const pddl_t *pddl,
+                      const pddl_prep_action_t *a)
+{
+    bzero(atr, sizeof(*atr));
+    atr->action = a;
+
+    BOR_ISET(param_used);
+    bor_iset_t params[a->param_size];
+    while (borISetSize(&param_used) < a->param_size){
+        borISetInit(params + atr->tree_size);
+        atreeFindConnectedPreParams(a, params + atr->tree_size, &param_used);
+        borISetUnion(&param_used, params + atr->tree_size);
+
+        if (preHasParam(a, params + atr->tree_size)){
+            ++atr->tree_size;
+        }else{
+            borISetFree(params + atr->tree_size);
+        }
+    }
+    borISetFree(&param_used);
+
+    if (atr->tree_size > 0){
+        atr->tree = BOR_CALLOC_ARR(pddl_strips_ground_tree_t, atr->tree_size);
+        for (int i = 0; i < atr->tree_size; ++i)
+            pddlStripsGroundTreeInit(atr->tree + i, pddl, a, params + i);
+        for (int i = 0; i < atr->tree_size; ++i)
+            borISetFree(params + i);
+
+    }else{
+        atr->tree_size = 1;
+        atr->tree = BOR_ALLOC(pddl_strips_ground_tree_t);
+
+        BOR_ISET(params);
+        pddlStripsGroundTreeInit(atr->tree, pddl, a, &params);
+        borISetFree(&params);
+    }
+}
+
+static void atreeFree(pddl_strips_ground_atree_t *ga)
+{
+    for (int i = 0; i < ga->tree_size; ++i)
+        pddlStripsGroundTreeFree(ga->tree + i);
+    if (ga->tree != NULL)
+        BOR_FREE(ga->tree);
+}
+
+static void atreeBlockStatic(pddl_strips_ground_atree_t *atr)
+{
+    for (int ti = 0; ti < atr->tree_size; ++ti)
+        pddlStripsGroundTreeBlockStatic(atr->tree + ti);
+}
+
+static int atreeAllTreesNonEmpty(const pddl_strips_ground_atree_t *atr)
+{
+    for (int ti = 0; ti < atr->tree_size; ++ti){
+        const pddl_strips_ground_tree_t *tr = atr->tree + ti;
+        if (pddlActionArgsSize(&tr->args) == 0)
+            return 0;
+    }
+    return 1;
+}
+
+static void _atreeActionAddEff(pddl_strips_ground_t *g,
+                               const pddl_strips_ground_atree_t *atr,
+                               int skip_tree_id,
+                               const pddl_obj_id_t *args_in,
+                               int tree_id)
+{
+    if (tree_id == skip_tree_id)
+        ++tree_id;
+    if (tree_id >= atr->tree_size){
+        groundActionAddEff(g, atr->action, args_in);
+        return;
+    }
+
+    const pddl_strips_ground_tree_t *tr = atr->tree + tree_id;
+    int size = pddlActionArgsSize(&tr->args);
+    for (int argi = 0; argi < size; ++argi){
+        const pddl_obj_id_t *tr_args = pddlActionArgsGet(&tr->args, argi);
+
+        pddl_obj_id_t args[atr->action->param_size];
+        memcpy(args, args_in, sizeof(pddl_obj_id_t) * atr->action->param_size);
+
+        for (int i = 0; i < atr->action->param_size; ++i){
+            if (tr_args[i] != PDDL_OBJ_ID_UNDEF){
+                ASSERT(args[i] == PDDL_OBJ_ID_UNDEF);
+                args[i] = tr_args[i];
+            }
+        }
+        _atreeActionAddEff(g, atr, skip_tree_id, args, tree_id + 1);
+    }
+}
+
+static void atreeActionAddEff(pddl_strips_ground_t *g,
+                              const pddl_strips_ground_atree_t *atr,
+                              int tree_id,
+                              int start_arg)
+{
+    const pddl_strips_ground_tree_t *tr = atr->tree + tree_id;
+
+    int size = pddlActionArgsSize(&tr->args);
+    for (int argi = start_arg; argi < size; ++argi){
+        const pddl_obj_id_t *args = pddlActionArgsGet(&tr->args, argi);
+        _atreeActionAddEff(g, atr, tree_id, args, 0);
+    }
+}
+
+static void atreeUnifyFact(pddl_strips_ground_t *g,
+                           pddl_strips_ground_atree_t *atr,
+                           const pddl_ground_atom_t *fact,
+                           int static_fact)
+{
+    for (int ti = 0; ti < atr->tree_size; ++ti){
+        pddl_strips_ground_tree_t *tr = atr->tree + ti;
+
+        int start = pddlActionArgsSize(&tr->args);
+        pddlStripsGroundTreeUnifyFact(tr, fact, static_fact);
+        if (start < pddlActionArgsSize(&tr->args)
+                && atreeAllTreesNonEmpty(atr)){
+            atreeActionAddEff(g, atr, ti, start);
+        }
+    }
+}
+/*** atree_t END ***/
 
 /*** ground_args_t ***/
 static void groundArgsFree(pddl_strips_ground_args_arr_t *ga)
@@ -151,18 +354,8 @@ static void _unifyFacts(pddl_strips_ground_t *g, pddl_ground_atoms_t *ga,
     int next_batch = ga->atom_size;
     for (int i = start_idx; i < ga->atom_size; ++i){
         const pddl_ground_atom_t *fact = ga->atom[i];
-
-        for (int j = 0; j < g->action.action_size; ++j){
-            pddl_strips_ground_tree_t *tr = g->tree + j;
-
-            int start = pddlActionArgsSize(&tr->args);
-            pddlStripsGroundTreeUnifyFact(tr, fact, static_fact);
-            int size = pddlActionArgsSize(&tr->args);
-            for (int ai = start; ai < size; ++ai){
-                const pddl_obj_id_t *args = pddlActionArgsGet(&tr->args, ai);
-                groundActionAddEff(g, tr->action, args);
-            }
-        }
+        for (int j = 0; j < g->action.action_size; ++j)
+            atreeUnifyFact(g, g->atree + j, fact, static_fact);
 
         if (!static_fact && i == next_batch - 1){
             BOR_INFO(g->err, "  Next batch unified. (unified facts: %d,"
@@ -180,13 +373,13 @@ static int unifyStaticFacts(pddl_strips_ground_t *g)
 {
     // First ground actions without preconditions
     for (int i = 0; i < g->action.action_size; ++i){
-        if (g->tree[i].pre_size == 0)
+        if (g->action.action[i].pre.size == 0)
             groundActionAddEffEmptyPre(g, g->action.action + i);
     }
 
     _unifyFacts(g, &g->static_facts, 0, 1);
     for (int i = 0; i < g->action.action_size; ++i)
-        pddlStripsGroundTreeBlockStatic(g->tree + i);
+        atreeBlockStatic(g->atree + i);
     g->static_facts_unified = 1;
 
     BOR_INFO(g->err, "  Static facts unified."
@@ -644,14 +837,11 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
     groundInitFact(g, pddl);
     g->unify_start_idx = 0;
 
-    g->tree = BOR_ALLOC_ARR(pddl_strips_ground_tree_t, g->action.action_size);
+    g->atree = BOR_ALLOC_ARR(pddl_strips_ground_atree_t,
+                             g->action.action_size);
     for (int i = 0; i < g->action.action_size; ++i){
         const pddl_prep_action_t *a = g->action.action + i;
-        BOR_ISET(params);
-        for (int p = 0; p < a->param_size; ++p)
-            borISetAdd(&params, p);
-        pddlStripsGroundTreeInit(g->tree + i, pddl, a, &params);
-        borISetFree(&params);
+        atreeInit(g->atree + i, pddl, a);
     }
 
     return 0;
@@ -660,9 +850,9 @@ static int groundInit(pddl_strips_ground_t *g, const pddl_t *pddl,
 static void groundFree(pddl_strips_ground_t *g)
 {
     for (int i = 0; i < g->action.action_size; ++i)
-        pddlStripsGroundTreeFree(g->tree + i);
-    if (g->tree != NULL)
-        BOR_FREE(g->tree);
+        atreeFree(g->atree + i);
+    if (g->atree != NULL)
+        BOR_FREE(g->atree);
     pddlGroundAtomsFree(&g->static_facts);
     pddlGroundAtomsFree(&g->facts);
     if (g->ground_atom_to_fact_id != NULL)

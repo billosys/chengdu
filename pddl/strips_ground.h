@@ -30,6 +30,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 /** Forward declaration */
+typedef struct pddl_strips_ground_atree pddl_strips_ground_atree_t;
 typedef struct pddl_strips_ground_args pddl_strips_ground_args_t;
 
 struct pddl_strips_ground_args_arr {
@@ -58,7 +59,7 @@ struct pddl_strips_ground {
 
     int *ground_atom_to_fact_id;
     pddl_ground_atoms_t funcs;
-    pddl_strips_ground_tree_t *tree;
+    pddl_strips_ground_atree_t *atree;
     pddl_strips_ground_args_arr_t ground_args;
 };
 typedef struct pddl_strips_ground pddl_strips_ground_t;
