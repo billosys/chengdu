@@ -287,16 +287,39 @@ static int equalAtomIn(const pddl_cond_atom_t *atom,
     return 0;
 }
 
-static int equalAtomInArr(const pddl_cond_atom_t *atom,
-                          const pddl_cond_arr_t *arr,
-                          const int *args)
+static pddl_obj_id_t atomArgObj(const pddl_cond_atom_t *atom, int argi,
+                                const pddl_obj_id_t *args)
+{
+    int param = atom->arg[argi].param;
+    if (param >= 0)
+        return args[param];
+    return atom->arg[argi].obj;
+}
+
+static int atomsEqualObj(const pddl_cond_atom_t *atom1,
+                         const pddl_cond_atom_t *atom2,
+                         const pddl_obj_id_t *args)
+{
+    if (atom1->pred != atom2->pred)
+        return 0;
+
+    for (int ai = 0; ai < atom1->arg_size; ++ai){
+        if (atomArgObj(atom1, ai, args) != atomArgObj(atom2, ai, args))
+            return 0;
+    }
+    return 1;
+}
+
+static int equalAtomInArrObj(const pddl_cond_atom_t *atom,
+                             const pddl_cond_arr_t *arr,
+                             const pddl_obj_id_t *args)
 {
     if (arr == NULL)
         return 0;
 
     for (int i = 0; i < arr->size; ++i){
         const pddl_cond_atom_t *a2 = PDDL_COND_CAST(arr->cond[i], atom);
-        if (!a2->neg && atomsEqual(a2, atom, args))
+        if (!a2->neg && atomsEqualObj(a2, atom, args))
             return 1;
     }
     return 0;
@@ -386,7 +409,7 @@ static int _unifyFact(const pddl_t *pddl,
     for (int i = 0; i < fact->arg_size; ++i){
         pddl_obj_id_t fact_obj = fact->arg[i].obj;
         if (fact_arg != NULL)
-            fact_obj = atomArg(fact, i, fact_arg);
+            fact_obj = atomArgObj(fact, i, fact_arg);
         ASSERT(fact_obj >= 0);
 
         int param = cand_atom->arg[i].param;
@@ -735,7 +758,7 @@ static int isGroundedCondArrTooHeavy(const cand_t *cand,
 
             for (int j = i + 1; j < arr->size; ++j){
                 const pddl_cond_atom_t *a2 = PDDL_COND_CAST(arr->cond[j], atom);
-                if (a2->neg || atomsEqual(a1, a2, arr_args))
+                if (a2->neg || atomsEqualObj(a1, a2, arr_args))
                     continue;
                 FOR_EACH_ATOM(cand->mgroup, cand2){
                     if (cand2->pred != a2->pred)
@@ -1885,7 +1908,7 @@ static int mgroupIsDeleted(const pddl_lifted_mgroup_t *mg,
             if (m->pred != d->pred)
                 continue;
             if (unifyFact(pddl, d, args, &mg->param, m, mg_arg)
-                    && equalAtomInArr(d, pre, args)){
+                    && equalAtomInArrObj(d, pre, args)){
                 return 1;
             }
         }
