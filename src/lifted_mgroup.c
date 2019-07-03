@@ -65,12 +65,15 @@ void pddlLiftedMGroupInitCopy(pddl_lifted_mgroup_t *dst,
     pddlParamsInitCopy(&dst->param, &src->param);
     for (int i = 0; i < src->cond.size; ++i)
         pddlCondArrAdd(&dst->cond, pddlCondClone(src->cond.cond[i]));
+    dst->is_exactly_one = src->is_exactly_one;
+    dst->is_static = src->is_static;
 }
 
 void pddlLiftedMGroupInitCandFromPred(pddl_lifted_mgroup_t *mgroup,
                                       const pddl_pred_t *pred,
                                       int counted_var)
 {
+    bzero(mgroup, sizeof(*mgroup));
     pddlParamsInit(&mgroup->param);
     pddlCondArrInit(&mgroup->cond);
 
@@ -223,7 +226,12 @@ void pddlLiftedMGroupPrint(const pddl_t *pddl,
         }
     }
 
-    fprintf(fout, "}\n");
+    fprintf(fout, "}");
+    if (mgroup->is_exactly_one)
+        fprintf(fout, ":=1");
+    if (mgroup->is_static)
+        fprintf(fout, ":S");
+    fprintf(fout, "\n");
 }
 
 

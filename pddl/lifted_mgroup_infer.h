@@ -116,6 +116,22 @@ void pddlLiftedMGroupsInferMonotonicity(
                             pddl_lifted_mgroups_t *mgroups,
                             bor_err_t *err);
 
+/**
+ * Determine which lifted mgroups are "exactly-one" type and sets the
+ * corresponding .is_exactly_one flag.
+ */
+int pddlLiftedMGroupsSetExactlyOne(const pddl_t *pddl,
+                                   pddl_lifted_mgroups_t *lm,
+                                   bor_err_t *err);
+
+/**
+ * Determine which lifted mgroups are static, i.e., it is either
+ * unreachable or one fact from the mgroup is set in the initial state and
+ * never changed or deleted.
+ */
+int pddlLiftedMGroupsSetStatic(const pddl_t *pddl,
+                               pddl_lifted_mgroups_t *lm,
+                               bor_err_t *err);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

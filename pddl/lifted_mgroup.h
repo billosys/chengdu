@@ -31,6 +31,8 @@ extern "C" {
 struct pddl_lifted_mgroup {
     pddl_params_t param;
     pddl_cond_arr_t cond;
+    int is_exactly_one;
+    int is_static;
 };
 typedef struct pddl_lifted_mgroup pddl_lifted_mgroup_t;
 

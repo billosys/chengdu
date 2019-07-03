@@ -856,15 +856,15 @@ static int unifyActionEff(unify_action_ctx_t *ctx,
                 && inequalitiesHold(ctx->pddl, eff->pre, ctx->action_arg);
 }
 
-/** Returns true if the add effect is balanced by the given delete effect **/
-static int isAddEffBalancedWith(const unify_action_ctx_t *ctx_in,
-                                const pddl_action_t *action,
-                                const ce_atom_t *del_eff,
-                                const pddl_cond_atom_t *cand_atom)
+static int canUnifyEff(const unify_action_ctx_t *ctx_in,
+                       const pddl_action_t *action,
+                       const ce_atom_t *eff,
+                       const pddl_cond_atom_t *cand_atom,
+                       int need_matching_pre)
 {
     if (!atomsAreCompatible(ctx_in->pddl,
                             cand_atom, ctx_in->cand_param,
-                            del_eff->atom, ctx_in->action_param)){
+                            eff->atom, ctx_in->action_param)){
         return 0;
     }
 
@@ -876,11 +876,11 @@ static int isAddEffBalancedWith(const unify_action_ctx_t *ctx_in,
             ctx.cand_arg[i] = -1;
     }
 
-    ASSERT(cand_atom->pred == del_eff->atom->pred);
-    ASSERT(cand_atom->arg_size == del_eff->atom->arg_size);
+    ASSERT(cand_atom->pred == eff->atom->pred);
+    ASSERT(cand_atom->arg_size == eff->atom->arg_size);
     for (int ai = 0; ai < cand_atom->arg_size; ++ai){
         int cparam = cand_atom->arg[ai].param;
-        int dparam = del_eff->atom->arg[ai].param;
+        int dparam = eff->atom->arg[ai].param;
         if (cparam >= 0 && dparam >= 0){
             if (ctx.cand_param->param[cparam].is_counted_var){
                 // check that the type of the candidate's param is not too
@@ -906,7 +906,7 @@ static int isAddEffBalancedWith(const unify_action_ctx_t *ctx_in,
             }
 
         }else if (cparam >= 0){
-            int dobj = del_eff->atom->arg[ai].obj;
+            int dobj = eff->atom->arg[ai].obj;
             if (ctx.cand_param->param[cparam].is_counted_var){
                 int ctype = ctx.cand_param->param[cparam].type;
                 if (!pddlTypesObjHasType(&ctx.pddl->type, ctype, dobj))
@@ -925,25 +925,29 @@ static int isAddEffBalancedWith(const unify_action_ctx_t *ctx_in,
 
         }else{
             int cobj = cand_atom->arg[ai].obj;
-            int dobj = del_eff->atom->arg[ai].obj;
+            int dobj = eff->atom->arg[ai].obj;
             if (cobj != dobj)
                 return 0;
         }
     }
 
-    // Now we have assigned names to action variables and we must check
-    // that there is a precondition exactly matching the delete effect so
-    // we can be sure that the delete effect is present in the state the
-    // action is applied on, i.e., that the delete effect really balances
-    // the add effect.
-    if (equalAtomIn(del_eff->atom, action->pre, ctx.action_arg)
-            || equalAtomIn(del_eff->atom, del_eff->pre, ctx.action_arg)){
+    if (need_matching_pre){
+        // Now we have assigned names to action variables and we must check
+        // that there is a precondition exactly matching the delete effect so
+        // we can be sure that the delete effect is present in the state the
+        // action is applied on, i.e., that the delete effect really balances
+        // the add effect.
+        if (equalAtomIn(eff->atom, action->pre, ctx.action_arg)
+                || equalAtomIn(eff->atom, eff->pre, ctx.action_arg)){
+            return 1;
+        }
+
+        // If we did not find a matching precondition, we report that the
+        // delete effect cannot balance the add effect.
+        return 0;
+    }else{
         return 1;
     }
-
-    // If we did not find a matching precondition, we report that the
-    // delete effect cannot balance the add effect.
-    return 0;
 }
 
 static int isAddEffBalanced(const unify_action_ctx_t *ctx,
@@ -966,7 +970,7 @@ static int isAddEffBalanced(const unify_action_ctx_t *ctx,
         FOR_EACH_ATOM(cand->mgroup, cand_atom){
             if (cand_atom->pred != del_eff_atom->pred)
                 continue;
-            if (isAddEffBalancedWith(ctx, action, &del_eff, cand_atom))
+            if (canUnifyEff(ctx, action, &del_eff, cand_atom, 1))
                 return 1;
         }
     }
@@ -2052,4 +2056,131 @@ void pddlLiftedMGroupsInferMonotonicity(
                   " Found monotonicity invariants: %d, mutex groups: %d",
              (inv != NULL ? inv->mgroup_size : -1),
              (mgroups != NULL ? mgroups->mgroup_size : -1));
+}
+
+
+/** Returns true if the delete effect is always balanced by add effect */
+static int isDelEffBalanced(const unify_action_ctx_t *ctx,
+                            const pddl_action_t *action,
+                            const ce_atom_t *del_eff,
+                            const pddl_lifted_mgroup_t *mgroup)
+{
+    pddl_cond_const_it_eff_t it;
+    const pddl_cond_atom_t *a;
+    const pddl_cond_t *pre;
+    PDDL_COND_FOR_EACH_ADD_EFF(action->eff, &it, a, pre){
+        ASSERT(!a->neg);
+        CE_ATOM(add_eff, pre, a);
+
+        const pddl_cond_atom_t *cand_atom;
+        FOR_EACH_ATOM(mgroup, cand_atom){
+            if (cand_atom->pred != a->pred)
+                continue;
+            if (canUnifyEff(ctx, action, &add_eff, cand_atom, 0))
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
+/** Returns true if the action can delete a fact from the mgroup without
+ *  adding other. */
+static int actionMayDeleteMGroup(const pddl_t *pddl,
+                                 const pddl_action_t *action,
+                                 const pddl_lifted_mgroup_t *mgroup,
+                                 bor_err_t *err)
+{
+    pddl_cond_const_it_eff_t it;
+    const pddl_cond_atom_t *d;
+    const pddl_cond_t *pre;
+    PDDL_COND_FOR_EACH_DEL_EFF(action->eff, &it, d, pre){
+        ASSERT(d->neg);
+        CE_ATOM(del_eff, pre, d);
+
+        const pddl_cond_atom_t *cand_atom;
+        FOR_EACH_ATOM(mgroup, cand_atom){
+            if (cand_atom->pred != d->pred)
+                continue;
+            UNIFY_ACTION_CTX(ctx, pddl, &action->param, &mgroup->param);
+            if (unifyActionEff(&ctx, action, &del_eff, cand_atom)){
+                if (!isDelEffBalanced(&ctx, action, &del_eff, mgroup)){
+                    //fprintf(stderr, "XX %s\n", action->name);
+                    return 1;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+/** Returns true if lmg is exactly-one lifted mgroup. */
+static int isMGroupSetExactlyOne(const pddl_t *pddl,
+                                 const pddl_lifted_mgroup_t *lmg,
+                                 bor_err_t *err)
+{
+    //fprintf(stderr, "is-exactly-one? ");
+    //pddlLiftedMGroupPrint(pddl, lmg, stderr);
+    for (int ai = 0; ai < pddl->action.action_size; ++ai){
+        const pddl_action_t *action = pddl->action.action + ai;
+        if (actionMayDeleteMGroup(pddl, action, lmg, err))
+            return 0;
+    }
+
+    return 1;
+}
+
+int pddlLiftedMGroupsSetExactlyOne(const pddl_t *pddl,
+                                   pddl_lifted_mgroups_t *lm,
+                                   bor_err_t *err)
+{
+    for (int mi = 0; mi < lm->mgroup_size; ++mi){
+        pddl_lifted_mgroup_t *lmg = lm->mgroup + mi;
+        if (isMGroupSetExactlyOne(pddl, lmg, err))
+            lmg->is_exactly_one = 1;
+    }
+    return 0;
+}
+
+/** If there is no unifiable delete effect, then the mutex group is static */
+static int isMGroupStatic(const pddl_t *pddl,
+                          const pddl_lifted_mgroup_t *mgroup,
+                          bor_err_t *err)
+{
+    //fprintf(stderr, "is-static? ");
+    //pddlLiftedMGroupPrint(pddl, mgroup, stderr);
+    for (int ai = 0; ai < pddl->action.action_size; ++ai){
+        const pddl_action_t *action = pddl->action.action + ai;
+
+        pddl_cond_const_it_eff_t it;
+        const pddl_cond_atom_t *d;
+        const pddl_cond_t *pre;
+        PDDL_COND_FOR_EACH_DEL_EFF(action->eff, &it, d, pre){
+            CE_ATOM(del_eff, pre, d);
+
+            const pddl_cond_atom_t *cand_atom;
+            FOR_EACH_ATOM(mgroup, cand_atom){
+                if (cand_atom->pred != d->pred)
+                    continue;
+                UNIFY_ACTION_CTX(ctx, pddl, &action->param, &mgroup->param);
+                if (unifyActionEff(&ctx, action, &del_eff, cand_atom))
+                    return 0;
+            }
+        }
+    }
+
+    return 1;
+}
+
+int pddlLiftedMGroupsSetStatic(const pddl_t *pddl,
+                               pddl_lifted_mgroups_t *lm,
+                               bor_err_t *err)
+{
+    for (int mi = 0; mi < lm->mgroup_size; ++mi){
+        pddl_lifted_mgroup_t *lmg = lm->mgroup + mi;
+        if (isMGroupStatic(pddl, lmg, err))
+            lmg->is_static = 1;
+    }
+    return 0;
 }
