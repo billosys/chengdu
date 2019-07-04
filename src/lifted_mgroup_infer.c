@@ -158,6 +158,42 @@ static void refineUnbalancedAction(refine_t *refine,
 
 
 
+static void replaceSingleObjectTypes(const pddl_t *pddl,
+                                     pddl_lifted_mgroup_t *mg)
+{
+    int ins = 0;
+    int remap[mg->param.param_size];
+    for (int pid = 0; pid < mg->param.param_size; ++pid){
+        int type = mg->param.param[pid].type;
+        if (pddlTypeNumObjs(&pddl->type, type) == 1){
+            int obj = pddlTypeGetObj(&pddl->type, type, 0);
+
+            for (int ati = 0; ati < mg->cond.size; ++ati){
+                pddl_cond_atom_t *a = PDDL_COND_CAST(mg->cond.cond[ati], atom);
+                for (int ai = 0; ai < a->arg_size; ++ai){
+                    if (a->arg[ai].param == pid){
+                        a->arg[ai].param = -1;
+                        a->arg[ai].obj = obj;
+                    }
+                }
+            }
+        }else{
+            remap[pid] = ins;
+            mg->param.param[ins++] = mg->param.param[pid];
+        }
+    }
+
+    if (mg->param.param_size != ins){
+        for (int ati = 0; ati < mg->cond.size; ++ati){
+            pddl_cond_atom_t *a = PDDL_COND_CAST(mg->cond.cond[ati], atom);
+            for (int ai = 0; ai < a->arg_size; ++ai){
+                if (a->arg[ai].param >= 0)
+                    a->arg[ai].param = remap[a->arg[ai].param];
+            }
+        }
+    }
+    mg->param.param_size = ins;
+}
 
 static void mgroupFinalize(const pddl_t *pddl, pddl_lifted_mgroup_t *mg)
 {
@@ -170,10 +206,7 @@ static void addProvedLiftedMGroup(const pddl_t *pddl,
 {
     pddl_lifted_mgroup_t m;
     pddlLiftedMGroupInitCopy(&m, mg);
-    for (int p = 0; p < m.param.param_size; ++p){
-        if (pddlTypeNumObjs(&pddl->type, m.param.param[p].type) <= 1)
-            m.param.param[p].is_counted_var = 0;
-    }
+    replaceSingleObjectTypes(pddl, &m);
     pddlLiftedMGroupSort(&m);
     pddlLiftedMGroupsAdd(mgs, &m);
     pddlLiftedMGroupFree(&m);
