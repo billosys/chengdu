@@ -105,6 +105,11 @@ const pddl_obj_id_t *pddlTypesObjsByType(const pddl_types_t *ts, int type_id,
 int pddlTypeNumObjs(const pddl_types_t *ts, int type_id);
 
 /**
+ * Returns idx's object of the given type.
+ */
+int pddlTypeGetObj(const pddl_types_t *ts, int type_id, int idx);
+
+/**
  * Returns true if the object compatible with the specified type.
  */
 int pddlTypesObjHasType(const pddl_types_t *ts, int type, pddl_obj_id_t obj);

@@ -239,6 +239,11 @@ int pddlTypeNumObjs(const pddl_types_t *ts, int type_id)
     return ts->obj_by_type[type_id].obj_size;
 }
 
+int pddlTypeGetObj(const pddl_types_t *ts, int type_id, int idx)
+{
+    return ts->obj_by_type[type_id].obj[idx];
+}
+
 int pddlTypesObjHasType(const pddl_types_t *ts, int type, pddl_obj_id_t obj)
 {
     if (ts->obj_type_map != NULL){

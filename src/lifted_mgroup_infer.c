@@ -91,13 +91,22 @@ struct unify_action_ctx {
 };
 typedef struct unify_action_ctx unify_action_ctx_t;
 
+static int ctxArgInit(const pddl_t *pddl, const pddl_param_t *param)
+{
+    if (pddlTypeNumObjs(&pddl->type, param->type) == 1)
+        return pddlTypeGetObj(&pddl->type, param->type, 0);
+    return -1;
+}
+
 #define UNIFY_ACTION_CTX(NAME, PDDL, ACTION_PARAMS, CAND_PARAMS) \
     int __action_arg_##NAME[(ACTION_PARAMS)->param_size]; \
     for (int __i = 0; __i < (ACTION_PARAMS)->param_size; ++__i) \
-        __action_arg_##NAME[__i] = -1; \
+        __action_arg_##NAME[__i] \
+            = ctxArgInit((PDDL), (ACTION_PARAMS)->param + __i); \
     int __cand_arg_##NAME[(CAND_PARAMS)->param_size]; \
     for (int __i = 0; __i < (CAND_PARAMS)->param_size; ++__i) \
-        __cand_arg_##NAME[__i] = -1; \
+        __cand_arg_##NAME[__i] \
+            = ctxArgInit((PDDL), (CAND_PARAMS)->param + __i); \
     unify_action_ctx_t NAME = { (PDDL), (ACTION_PARAMS), (CAND_PARAMS), \
         __action_arg_##NAME, __cand_arg_##NAME, (PDDL)->obj.obj_size }
 
