@@ -536,21 +536,6 @@ static void removeIrrelevantActions(pddl_t *pddl)
     }
 }
 
-static int isStaticPreUnreachable(const pddl_t *pddl, const pddl_cond_t *c)
-{
-    pddl_cond_const_it_atom_t it;
-    const pddl_cond_atom_t *atom;
-    PDDL_COND_FOR_EACH_ATOM(c, &it, atom){
-        const pddl_pred_t *pred = pddl->pred.pred + atom->pred;
-        if (pred->id != pddl->pred.eq_pred
-                && pddlPredIsStatic(pred)
-                && !pred->in_init){
-            return 1;
-        }
-    }
-    return 0;
-}
-
 static int removeActionsWithUnsatisfiableArgs(pddl_t *pddl)
 {
     int ret = 0;
@@ -578,6 +563,50 @@ static int removeActionsWithUnsatisfiableArgs(pddl_t *pddl)
     return ret;
 }
 
+static int isStaticPreUnreachable(const pddl_t *pddl, const pddl_cond_t *c)
+{
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *atom;
+    PDDL_COND_FOR_EACH_ATOM(c, &it, atom){
+        const pddl_pred_t *pred = pddl->pred.pred + atom->pred;
+        if (pred->id != pddl->pred.eq_pred
+                && pddlPredIsStatic(pred)
+                && !pred->in_init){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int isInequalityUnsatisfiable(const pddl_t *pddl,
+                                     const pddl_action_t *action)
+{
+    pddl_cond_const_it_atom_t it;
+    const pddl_cond_atom_t *atom;
+    PDDL_COND_FOR_EACH_ATOM(action->pre, &it, atom){
+        if (atom->neg && atom->pred == pddl->pred.eq_pred){
+            int param1 = atom->arg[0].param;
+            int obj1 = atom->arg[0].obj;
+            int param2 = atom->arg[1].param;
+            int obj2 = atom->arg[1].obj;
+            if (param1 >= 0){
+                int type = action->param.param[param1].type;
+                if (pddlTypeNumObjs(&pddl->type, type) == 1)
+                    obj1 = pddlTypeGetObj(&pddl->type, type, 0);
+            }
+            if (param2 >= 0){
+                int type = action->param.param[param2].type;
+                if (pddlTypeNumObjs(&pddl->type, type) == 1)
+                    obj2 = pddlTypeGetObj(&pddl->type, type, 0);
+            }
+
+            if (obj1 >= 0 && obj2 >= 0 && obj1 == obj2)
+                return 1;
+        }
+    }
+    return 0;
+}
+
 static int removeUnreachableActions(pddl_t *pddl)
 {
     int ret = 0;
@@ -586,7 +615,8 @@ static int removeUnreachableActions(pddl_t *pddl)
         a->pre = pddlCondDeconflictPre(a->pre, pddl, &a->param);
         a->eff = pddlCondDeconflictEff(a->eff, pddl, &a->param);
 
-        if (isStaticPreUnreachable(pddl, a->pre)){
+        if (isStaticPreUnreachable(pddl, a->pre)
+                || isInequalityUnsatisfiable(pddl, a)){
             pddlActionFree(a);
             if (ai != pddl->action.action_size - 1)
                 *a = pddl->action.action[pddl->action.action_size - 1];
