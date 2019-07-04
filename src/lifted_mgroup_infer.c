@@ -1783,7 +1783,7 @@ static void _removeHeavinessByInst(const pddl_t *pddl,
 
 
         if (isInitExactlyOne(pddl, &new_cand, NULL)){
-            pddlLiftedMGroupsAdd(lm, &new_mg);
+            addProvedLiftedMGroup(pddl, &new_mg, lm);
         }else{
             for (int next = param; next < new_mg.param.param_size; ++next){
                 if (!new_mg.param.param[next].is_counted_var)
@@ -2061,7 +2061,7 @@ void pddlLiftedMGroupsInferMonotonicity(
                 if (isInitTooHeavy(pddl, cand, NULL)){
                     removeHeavinessByInst(pddl, cand, mgroups);
                 }else if (isInitExactlyOne(pddl, cand, NULL)){
-                    pddlLiftedMGroupsAdd(mgroups, cand->mgroup);
+                    addProvedLiftedMGroup(pddl, cand->mgroup, mgroups);
                 }
             }
         }
