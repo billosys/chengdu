@@ -551,6 +551,33 @@ static int isStaticPreUnreachable(const pddl_t *pddl, const pddl_cond_t *c)
     return 0;
 }
 
+static int removeActionsWithUnsatisfiableArgs(pddl_t *pddl)
+{
+    int ret = 0;
+    for (int ai = 0; ai < pddl->action.action_size;){
+        pddl_action_t *a = pddl->action.action + ai;
+        int remove = 0;
+        for (int pi = 0; pi < a->param.param_size; ++pi){
+            if (pddlTypeNumObjs(&pddl->type, a->param.param[pi].type) == 0){
+                remove = 1;
+                break;
+            }
+        }
+
+        if (remove){
+            pddlActionFree(a);
+            if (ai != pddl->action.action_size - 1)
+                *a = pddl->action.action[pddl->action.action_size - 1];
+            --pddl->action.action_size;
+            ret = 1;
+        }else{
+            ++ai;
+        }
+    }
+
+    return ret;
+}
+
 static int removeUnreachableActions(pddl_t *pddl)
 {
     int ret = 0;
@@ -586,6 +613,8 @@ static void pddlResetPredReadWrite(pddl_t *pddl)
 
 void pddlNormalize(pddl_t *pddl)
 {
+    removeActionsWithUnsatisfiableArgs(pddl);
+
     for (int i = 0; i < pddl->action.action_size; ++i)
         pddlActionNormalize(pddl->action.action + i, pddl);
 
