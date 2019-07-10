@@ -82,6 +82,16 @@ int pddlLiftedMGroupEq(const pddl_lifted_mgroup_t *m1,
 void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m);
 
 /**
+ * Returns the number of counted variables (parameters).
+ */
+int pddlLiftedMGroupNumCountedVars(const pddl_lifted_mgroup_t *mg);
+
+/**
+ * Returns the number of fixed variables (parameters).
+ */
+int pddlLiftedMGroupNumFixedVars(const pddl_lifted_mgroup_t *mg);
+
+/**
  * Prints a formatted lifted mutex group (or a candidate if there are some
  * counted variables).
  */

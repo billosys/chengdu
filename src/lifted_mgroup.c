@@ -194,6 +194,20 @@ void pddlLiftedMGroupSort(pddl_lifted_mgroup_t *m)
     BOR_FREE(remap_param_inv);
 }
 
+int pddlLiftedMGroupNumCountedVars(const pddl_lifted_mgroup_t *mg)
+{
+    int count = 0;
+    for (int i = 0; i < mg->param.param_size; ++i){
+        if (mg->param.param[i].is_counted_var)
+            ++count;
+    }
+    return count;
+}
+
+int pddlLiftedMGroupNumFixedVars(const pddl_lifted_mgroup_t *mg)
+{
+    return mg->param.param_size - pddlLiftedMGroupNumCountedVars(mg);
+}
 
 void pddlLiftedMGroupPrint(const pddl_t *pddl,
                            const pddl_lifted_mgroup_t *mgroup,
