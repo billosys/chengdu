@@ -22,6 +22,7 @@ OBJS += cond
 OBJS += cond_arr
 OBJS += strips
 OBJS += strips_op
+OBJS += strips_fact_cross_ref
 OBJS += strips_ground_tree
 OBJS += strips_ground
 OBJS += action_args
@@ -33,6 +34,7 @@ OBJS += lifted_mgroup_infer
 OBJS += lifted_mgroup_htable
 OBJS += ground_mgroup
 OBJS += pddl_file
+OBJS += irrelevance
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

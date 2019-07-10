@@ -38,10 +38,12 @@
 #include <pddl/prep_action.h>
 #include <pddl/strips.h>
 #include <pddl/strips_op.h>
+#include <pddl/strips_fact_cross_ref.h>
 #include <pddl/strips_ground.h>
 #include <pddl/lifted_mgroup.h>
 #include <pddl/lifted_mgroup_infer.h>
 #include <pddl/lifted_mgroup_htable.h>
 #include <pddl/ground_mgroup.h>
+#include <pddl/irrelevance.h>
 
 #endif /* __PDDL_H__ */
