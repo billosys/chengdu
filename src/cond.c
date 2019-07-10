@@ -1761,6 +1761,11 @@ void pddlCondPartAdd(pddl_cond_part_t *part, pddl_cond_t *c)
     condPartAdd(part, c);
 }
 
+void pddlCondPartRm(pddl_cond_part_t *part, pddl_cond_t *c)
+{
+    borListDel(&c->conn);
+}
+
 
 /*** CHECK ***/
 int pddlCondCheckPre(const pddl_cond_t *cond, int require, bor_err_t *err)

@@ -255,6 +255,11 @@ pddl_cond_atom_t *pddlCondCreateFactAtom(int pred, int arg_size,
 void pddlCondPartAdd(pddl_cond_part_t *part, pddl_cond_t *c);
 
 /**
+ * Removes {c} from the and/or condition
+ */
+void pddlCondPartRm(pddl_cond_part_t *part, pddl_cond_t *c);
+
+/**
  * Returns 0 if cond is a correct precondition, -1 otherwise.
  */
 int pddlCondCheckPre(const pddl_cond_t *cond, int require, bor_err_t *err);
