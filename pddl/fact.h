@@ -119,7 +119,12 @@ void pddlFactsDelFact(pddl_facts_t *fs, int fact_id);
  * that is monotonically increasing, except for the facts that were removed
  * where the new ID is set to -1.
  */
-void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs, const int *m, int *remap);
+void pddlFactsDelFacts(pddl_facts_t *fs, const int *m, int *remap);
+
+/**
+ * Same as pddlFactsDelFacts() but the input is a set of facts.
+ */
+void pddlFactsDelFactsSet(pddl_facts_t *fs, const bor_iset_t *m, int *remap);
 
 /**
  * Copies all facts from src to dst using pddlFactsAdd().

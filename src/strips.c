@@ -85,7 +85,7 @@ void pddlStripsFree(pddl_strips_t *strips)
     bzero(strips, sizeof(*strips));
 }
 
-void pddlStripsCopy(pddl_strips_t *dst, const pddl_strips_t *src)
+void pddlStripsInitCopy(pddl_strips_t *dst, const pddl_strips_t *src)
 {
     pddlStripsInit(dst);
     copyBasicInfo(dst, src);
@@ -502,6 +502,30 @@ int pddlStripsIsFAMGroup(const pddl_strips_t *strips, const bor_iset_t *facts)
     }
 
     return 1;
+}
+
+void pddlStripsReduce(pddl_strips_t *strips,
+                      const bor_iset_t *del_facts,
+                      const bor_iset_t *del_ops)
+{
+    if (borISetSize(del_ops) > 0)
+        pddlStripsOpsDelOpsSet(&strips->op, del_ops);
+
+    if (borISetSize(del_facts) > 0){
+        pddlStripsOpsRemoveFacts(&strips->op, del_facts);
+
+        int *remap_fact = BOR_CALLOC_ARR(int, strips->fact.fact_size);
+        pddlFactsDelFactsSet(&strips->fact, del_facts, remap_fact);
+        pddlStripsOpsRemapFacts(&strips->op, remap_fact);
+
+        borISetMinus(&strips->init, del_facts);
+        borISetRemap(&strips->init, remap_fact);
+        borISetMinus(&strips->goal, del_facts);
+        borISetRemap(&strips->goal, remap_fact);
+
+        if (remap_fact != NULL)
+            BOR_FREE(remap_fact);
+    }
 }
 
 static void printPythonISet(const bor_iset_t *s, FILE *fout)

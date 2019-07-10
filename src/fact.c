@@ -256,14 +256,12 @@ void pddlFactsDelFact(pddl_facts_t *fs, int fact_id)
     fs->fact[fact_id] = NULL;
 }
 
-void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs,
-                                 const int *irrelevant,
-                                 int *remap)
+void pddlFactsDelFacts(pddl_facts_t *fs, const int *m, int *remap)
 {
     int size = 0;
 
     for (int fact_id = 0; fact_id < fs->fact_size; ++fact_id){
-        if (irrelevant[fact_id]){
+        if (m[fact_id]){
             remap[fact_id] = -1;
             pddlFactsDelFact(fs, fact_id);
         }else{
@@ -274,6 +272,27 @@ void pddlFactsDelIrrelevantFacts(pddl_facts_t *fs,
     }
 
     fs->fact_size = size;
+}
+
+void pddlFactsDelFactsSet(pddl_facts_t *fs, const bor_iset_t *m, int *remap)
+{
+    bzero(remap, sizeof(int) * fs->fact_size);
+
+    int fact_id;
+    BOR_ISET_FOR_EACH(m, fact_id){
+        remap[fact_id] = -1;
+        pddlFactsDelFact(fs, fact_id);
+    }
+
+    int ins = 0;
+    for (int fact_id = 0; fact_id < fs->fact_size; ++fact_id){
+        if (remap[fact_id] != -1){
+            remap[fact_id] = ins;
+            fs->fact[fact_id]->id = ins;
+            fs->fact[ins++] = fs->fact[fact_id];
+        }
+    }
+    fs->fact_size = ins;
 }
 
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)

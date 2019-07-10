@@ -76,7 +76,7 @@ void pddlStripsFree(pddl_strips_t *strips);
 /**
  * Copy the strips structure.
  */
-void pddlStripsCopy(pddl_strips_t *dst, const pddl_strips_t *src);
+void pddlStripsInitCopy(pddl_strips_t *dst, const pddl_strips_t *src);
 
 /**
  * Make the STRIPS problem artificially unsolvable.
@@ -120,6 +120,13 @@ void pddlStripsApplicableOps(const pddl_strips_t *strips,
  * group.
  */
 int pddlStripsIsFAMGroup(const pddl_strips_t *strips, const bor_iset_t *facts);
+
+/**
+ * Delete the specified facts and operators.
+ */
+void pddlStripsReduce(pddl_strips_t *strips,
+                      const bor_iset_t *del_facts,
+                      const bor_iset_t *del_ops);
 
 /**
  * Print STRIPS problem in a format easily usable from python.

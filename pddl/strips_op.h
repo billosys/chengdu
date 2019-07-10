@@ -111,6 +111,11 @@ void pddlStripsOpRemapFacts(pddl_strips_op_t *op, const int *remap);
  */
 void pddlStripsOpRemoveFact(pddl_strips_op_t *op, int fact_id);
 
+/**
+ * Remove all facts from the given set.
+ */
+void pddlStripsOpRemoveFacts(pddl_strips_op_t *op, const bor_iset_t *facts);
+
 
 /**
  * Returns true if o enables p, i.e., if add(o) \cap pre(p) \neq \emptyset.
@@ -187,9 +192,19 @@ int pddlStripsOpsAdd(pddl_strips_ops_t *ops, const pddl_strips_op_t *add);
 void pddlStripsOpsDelOps(pddl_strips_ops_t *ops, const int *m);
 
 /**
+ * Deletes all operators from the set del_ops.
+ */
+void pddlStripsOpsDelOpsSet(pddl_strips_ops_t *ops, const bor_iset_t *del_ops);
+
+/**
  * Calls pddlStripsOpRemapFacts for each operator.
  */
 void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap);
+
+/**
+ * Calls pddlStripsOpRemoveFacts for each operator.
+ */
+void pddlStripsOpsRemoveFacts(pddl_strips_ops_t *ops, const bor_iset_t *facts);
 
 /**
  * Removes duplicate operators, keeps the ones with the lowest cost.

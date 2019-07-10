@@ -337,6 +337,21 @@ void pddlStripsOpsSort(pddl_strips_ops_t *ops)
         ops->op[i]->id = i;
 }
 
+static void reorderCondEffs(pddl_strips_op_t *op)
+{
+    int size = 0;
+    for (int cei = 0; cei < op->cond_eff_size; ++cei){
+        pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+        if (borISetSize(&ce->pre) == 0){
+            condEffFree(&op->cond_eff[cei]);
+        }else{
+            op->cond_eff[size++] = op->cond_eff[cei];
+        }
+    }
+    op->cond_eff_size = size;
+    pddlStripsOpNormalize(op);
+}
+
 void pddlStripsOpRemoveFact(pddl_strips_op_t *op, int fact_id)
 {
     int reorder = 0;
@@ -357,19 +372,32 @@ void pddlStripsOpRemoveFact(pddl_strips_op_t *op, int fact_id)
         }
     }
 
-    if (reorder){
-        int size = 0;
-        for (int cei = 0; cei < op->cond_eff_size; ++cei){
-            pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
-            if (borISetSize(&ce->pre) == 0){
-                condEffFree(&op->cond_eff[cei]);
-            }else{
-                op->cond_eff[size++] = op->cond_eff[cei];
-            }
+    if (reorder)
+        reorderCondEffs(op);
+}
+
+void pddlStripsOpRemoveFacts(pddl_strips_op_t *op, const bor_iset_t *facts)
+{
+    int reorder = 0;
+
+    borISetMinus(&op->pre, facts);
+    borISetMinus(&op->add_eff, facts);
+    borISetMinus(&op->del_eff, facts);
+
+    for (int cei = 0; cei < op->cond_eff_size; ++cei){
+        pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+        borISetMinus(&ce->pre, facts);
+        borISetMinus(&ce->add_eff, facts);
+        borISetMinus(&ce->del_eff, facts);
+        if (borISetSize(&ce->pre) == 0){
+            borISetUnion(&op->add_eff, &ce->add_eff);
+            borISetUnion(&op->del_eff, &ce->del_eff);
+            reorder = 1;
         }
-        op->cond_eff_size = size;
-        pddlStripsOpNormalize(op);
     }
+
+    if (reorder)
+        reorderCondEffs(op);
 }
 
 
@@ -435,10 +463,35 @@ void pddlStripsOpsDelOps(pddl_strips_ops_t *ops, const int *m)
     ops->op_size = ins;
 }
 
+void pddlStripsOpsDelOpsSet(pddl_strips_ops_t *ops, const bor_iset_t *del_ops)
+{
+    int op_id;
+    BOR_ISET_FOR_EACH(del_ops, op_id){
+        pddlStripsOpDel(ops->op[op_id]);
+        ops->op[op_id] = NULL;
+    }
+
+    int ins = 0;
+    for (int op_id = 0; op_id < ops->op_size; ++op_id){
+        if (ops->op[op_id] != NULL){
+            ops->op[op_id]->id = ins;
+            ops->op[ins++] = ops->op[op_id];
+        }
+    }
+
+    ops->op_size = ins;
+}
+
 void pddlStripsOpsRemapFacts(pddl_strips_ops_t *ops, const int *remap)
 {
     for (int i = 0; i < ops->op_size; ++i)
         pddlStripsOpRemapFacts(ops->op[i], remap);
+}
+
+void pddlStripsOpsRemoveFacts(pddl_strips_ops_t *ops, const bor_iset_t *facts)
+{
+    for (int i = 0; i < ops->op_size; ++i)
+        pddlStripsOpRemoveFacts(ops->op[i], facts);
 }
 
 void pddlStripsOpPrintDebug(const pddl_strips_op_t *op,
