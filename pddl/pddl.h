@@ -43,7 +43,7 @@
 #include <pddl/lifted_mgroup.h>
 #include <pddl/lifted_mgroup_infer.h>
 #include <pddl/lifted_mgroup_htable.h>
-#include <pddl/ground_mgroup.h>
+#include <pddl/mgroup.h>
 #include <pddl/irrelevance.h>
 
 #endif /* __PDDL_H__ */

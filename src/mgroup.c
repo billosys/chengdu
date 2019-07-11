@@ -21,13 +21,13 @@
 #include <boruvka/sort.h>
 #include "pddl/pddl_struct.h"
 #include "pddl/strips.h"
-#include "pddl/ground_mgroup.h"
+#include "pddl/mgroup.h"
 #include "assert.h"
 
-void pddlGroundMGroupsAdd(pddl_ground_mgroups_t *mg,
+void pddlMGroupsAdd(pddl_mgroups_t *mg,
                           const bor_iset_t *fact,
                           int lifted_mgroup_id);
-void pddlGroundMGroupsSortUniq(pddl_ground_mgroups_t *mg);
+void pddlMGroupsSortUniq(pddl_mgroups_t *mg);
 
 typedef struct pred_tnode pred_tnode_t;
 struct pred_tnode {
@@ -239,7 +239,7 @@ static void _gen(pred_tree_t *tree,
                  int param_i,
                  const bor_iset_t *params,
                  int lifted_mgroup_id,
-                 pddl_ground_mgroups_t *mg)
+                 pddl_mgroups_t *mg)
 {
     if (param_i == borISetSize(params)){
         // We have fixed all variables -- create the mutex group from all
@@ -250,7 +250,7 @@ static void _gen(pred_tree_t *tree,
                 borISetUnion(&mgroup, &tnode[i]->fact);
         }
         if (borISetSize(&mgroup) > 0)
-            pddlGroundMGroupsAdd(mg, &mgroup, lifted_mgroup_id);
+            pddlMGroupsAdd(mg, &mgroup, lifted_mgroup_id);
         borISetFree(&mgroup);
         return;
     }
@@ -297,7 +297,7 @@ static void _gen(pred_tree_t *tree,
 }
 
 static void gen(pred_tree_t *tree, int tree_size,
-                int lifted_mgroup_id, pddl_ground_mgroups_t *mg)
+                int lifted_mgroup_id, pddl_mgroups_t *mg)
 {
     BOR_ISET(param);
     for (int i = 0; i < tree_size; ++i){
@@ -351,7 +351,7 @@ static void predTreePrint(pred_tree_t *tree,
 */
 
 
-static void groundMGroup(pddl_ground_mgroups_t *mg,
+static void groundMGroup(pddl_mgroups_t *mg,
                          const pddl_t *pddl,
                          const pddl_strips_t *strips,
                          const pddl_lifted_mgroup_t *lifted_mg,
@@ -378,24 +378,24 @@ static void groundMGroup(pddl_ground_mgroups_t *mg,
         predTreeFree(tree + i);
 }
 
-void pddlGroundMGroupsGround(pddl_ground_mgroups_t *mg,
-                             const pddl_t *pddl,
-                             const pddl_lifted_mgroups_t *lifted_mg,
-                             const pddl_strips_t *strips)
+void pddlMGroupsGround(pddl_mgroups_t *mg,
+                       const pddl_t *pddl,
+                       const pddl_lifted_mgroups_t *lifted_mg,
+                       const pddl_strips_t *strips)
 {
     bzero(mg, sizeof(*mg));
     pddlLiftedMGroupsInitCopy(&mg->lifted_mgroup, lifted_mg);
 
     for (int mgi = 0; mgi < mg->lifted_mgroup.mgroup_size; ++mgi)
         groundMGroup(mg, pddl, strips, mg->lifted_mgroup.mgroup + mgi, mgi);
-    pddlGroundMGroupsSortUniq(mg);
+    pddlMGroupsSortUniq(mg);
 }
 
-void pddlGroundMGroupsFree(pddl_ground_mgroups_t *mg)
+void pddlMGroupsFree(pddl_mgroups_t *mg)
 {
     pddlLiftedMGroupsFree(&mg->lifted_mgroup);
     for (int i = 0; i < mg->mgroup_size; ++i){
-        pddl_ground_mgroup_t *m = mg->mgroup + i;
+        pddl_mgroup_t *m = mg->mgroup + i;
         borISetFree(&m->mgroup);
     }
     if (mg->mgroup != NULL)
@@ -403,19 +403,19 @@ void pddlGroundMGroupsFree(pddl_ground_mgroups_t *mg)
 }
 
 
-void pddlGroundMGroupsAdd(pddl_ground_mgroups_t *mg,
-                          const bor_iset_t *fact,
-                          int lifted_mgroup_id)
+void pddlMGroupsAdd(pddl_mgroups_t *mg,
+                    const bor_iset_t *fact,
+                    int lifted_mgroup_id)
 {
     if (mg->mgroup_alloc == mg->mgroup_size){
         if (mg->mgroup_alloc == 0)
             mg->mgroup_alloc = 2;
         mg->mgroup_alloc *= 2;
-        mg->mgroup = BOR_REALLOC_ARR(mg->mgroup, pddl_ground_mgroup_t,
+        mg->mgroup = BOR_REALLOC_ARR(mg->mgroup, pddl_mgroup_t,
                                      mg->mgroup_alloc);
     }
 
-    pddl_ground_mgroup_t *m = mg->mgroup + mg->mgroup_size++;
+    pddl_mgroup_t *m = mg->mgroup + mg->mgroup_size++;
     bzero(m, sizeof(*m));
     borISetUnion(&m->mgroup, fact);
     m->lifted_mgroup_id = lifted_mgroup_id;
@@ -423,8 +423,8 @@ void pddlGroundMGroupsAdd(pddl_ground_mgroups_t *mg,
 
 static int cmpMGroup(const void *a, const void *b, void *_)
 {
-    const pddl_ground_mgroup_t *m1 = a;
-    const pddl_ground_mgroup_t *m2 = b;
+    const pddl_mgroup_t *m1 = a;
+    const pddl_mgroup_t *m2 = b;
     int cmp = borISetSize(&m1->mgroup) - borISetSize(&m2->mgroup);
     if (cmp == 0)
         cmp = borISetCmp(&m1->mgroup, &m2->mgroup);
@@ -433,18 +433,18 @@ static int cmpMGroup(const void *a, const void *b, void *_)
     return cmp;
 }
 
-void pddlGroundMGroupsSortUniq(pddl_ground_mgroups_t *mg)
+void pddlMGroupsSortUniq(pddl_mgroups_t *mg)
 {
     if (mg->mgroup_size == 0)
         return;
 
-    borSort(mg->mgroup, mg->mgroup_size, sizeof(pddl_ground_mgroup_t),
+    borSort(mg->mgroup, mg->mgroup_size, sizeof(pddl_mgroup_t),
             cmpMGroup, NULL);
 
     int ins = 1;
-    const pddl_ground_mgroup_t *b = mg->mgroup + 0;
+    const pddl_mgroup_t *b = mg->mgroup + 0;
     for (int i = 1; i < mg->mgroup_size; ++i){
-        pddl_ground_mgroup_t *m = mg->mgroup + i;
+        pddl_mgroup_t *m = mg->mgroup + i;
         if (borISetCmp(&b->mgroup, &m->mgroup) == 0){
             borISetFree(&m->mgroup);
         }else{
@@ -457,14 +457,14 @@ void pddlGroundMGroupsSortUniq(pddl_ground_mgroups_t *mg)
     mg->mgroup_size = ins;
 }
 
-void pddlGroundMGroupsPrint(const pddl_t *pddl,
-                            const pddl_strips_t *strips,
-                            const pddl_ground_mgroups_t *mg,
-                            FILE *fout)
+void pddlMGroupsPrint(const pddl_t *pddl,
+                      const pddl_strips_t *strips,
+                      const pddl_mgroups_t *mg,
+                      FILE *fout)
 {
     BOR_ISET(lmgs);
     for (int i = 0; i < mg->mgroup_size; ++i){
-        const pddl_ground_mgroup_t *m = mg->mgroup + i;
+        const pddl_mgroup_t *m = mg->mgroup + i;
         borISetAdd(&lmgs, m->lifted_mgroup_id);
     }
 
@@ -475,7 +475,7 @@ void pddlGroundMGroupsPrint(const pddl_t *pddl,
         }
 
         for (int i = 0; i < mg->mgroup_size; ++i){
-            const pddl_ground_mgroup_t *m = mg->mgroup + i;
+            const pddl_mgroup_t *m = mg->mgroup + i;
             if (m->lifted_mgroup_id != lmgid)
                 continue;
             int fact;
@@ -490,10 +490,10 @@ void pddlGroundMGroupsPrint(const pddl_t *pddl,
     borISetFree(&lmgs);
 }
 
-void pddlGroundMGroupPrint(const pddl_t *pddl,
-                           const pddl_strips_t *strips,
-                           const pddl_ground_mgroup_t *mg,
-                           FILE *fout)
+void pddlMGroupPrint(const pddl_t *pddl,
+                     const pddl_strips_t *strips,
+                     const pddl_mgroup_t *mg,
+                     FILE *fout)
 {
     int init = 0;
     int fact;

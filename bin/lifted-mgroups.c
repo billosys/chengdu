@@ -200,16 +200,15 @@ int main(int argc, char *argv[])
             fflush(stderr);
         }
 
-        pddl_ground_mgroups_t ground_mgroups;
-        pddlGroundMGroupsGround(&ground_mgroups, &pddl, &lifted_mgroups,
-                                &strips);
-        for (int gi = 0; gi < ground_mgroups.mgroup_size; ++gi){
-            const pddl_ground_mgroup_t *m = ground_mgroups.mgroup + gi;
+        pddl_mgroups_t mgroups;
+        pddlMGroupsGround(&mgroups, &pddl, &lifted_mgroups, &strips);
+        for (int gi = 0; gi < mgroups.mgroup_size; ++gi){
+            const pddl_mgroup_t *m = mgroups.mgroup + gi;
             fprintf(stdout, "G:%d:%d ", gi, m->lifted_mgroup_id);
-            pddlGroundMGroupPrint(&pddl, &strips, m, stdout);
+            pddlMGroupPrint(&pddl, &strips, m, stdout);
         }
 
-        pddlGroundMGroupsFree(&ground_mgroups);
+        pddlMGroupsFree(&mgroups);
         pddlStripsFree(&strips);
     }
 

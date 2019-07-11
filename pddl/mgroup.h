@@ -17,8 +17,8 @@
  * See the License for more information.
  */
 
-#ifndef __PDDL_GROUND_MGROUP_H__
-#define __PDDL_GROUND_MGROUP_H__
+#ifndef __PDDL_MGROUP_H__
+#define __PDDL_MGROUP_H__
 
 #include <boruvka/iset.h>
 #include <pddl/lifted_mgroup.h>
@@ -27,47 +27,50 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct pddl_ground_mgroup {
+struct pddl_mgroup {
     bor_iset_t mgroup; /*!< Set of facts forming the mutex group */
     int lifted_mgroup_id; /*!< ID refering to the corresponding lifted
-                               mutex group in pddl_ground_mgroups_t */
+                               mutex group in pddl_mgroups_t or
+                               -1 if there is none */
+    int is_exactly_one; /*!< True if the mutex groups is "exactly-one" */
+    int is_fam_group; /*!< True if it is fam-group */
 };
-typedef struct pddl_ground_mgroup pddl_ground_mgroup_t;
+typedef struct pddl_mgroup pddl_mgroup_t;
 
-struct pddl_ground_mgroups {
+struct pddl_mgroups {
     pddl_lifted_mgroups_t lifted_mgroup;
-    pddl_ground_mgroup_t *mgroup;
+    pddl_mgroup_t *mgroup;
     int mgroup_size;
     int mgroup_alloc;
 };
-typedef struct pddl_ground_mgroups pddl_ground_mgroups_t;
+typedef struct pddl_mgroups pddl_mgroups_t;
 
 /**
  * Ground lifted mutex groups using reachable facts.
  */
-void pddlGroundMGroupsGround(pddl_ground_mgroups_t *mg,
-                             const pddl_t *pddl,
-                             const pddl_lifted_mgroups_t *lifted_mg,
-                             const pddl_strips_t *strips);
+void pddlMGroupsGround(pddl_mgroups_t *mg,
+                       const pddl_t *pddl,
+                       const pddl_lifted_mgroups_t *lifted_mg,
+                       const pddl_strips_t *strips);
 
 /**
  * Free allocated memory.
  */
-void pddlGroundMGroupsFree(pddl_ground_mgroups_t *mg);
+void pddlMGroupsFree(pddl_mgroups_t *mg);
 
 /**
  * Debug print out
  */
-void pddlGroundMGroupsPrint(const pddl_t *pddl,
-                            const pddl_strips_t *strips,
-                            const pddl_ground_mgroups_t *mg,
-                            FILE *fout);
-void pddlGroundMGroupPrint(const pddl_t *pddl,
-                           const pddl_strips_t *strips,
-                           const pddl_ground_mgroup_t *mg,
-                           FILE *fout);
+void pddlMGroupsPrint(const pddl_t *pddl,
+                      const pddl_strips_t *strips,
+                      const pddl_mgroups_t *mg,
+                      FILE *fout);
+void pddlMGroupPrint(const pddl_t *pddl,
+                     const pddl_strips_t *strips,
+                     const pddl_mgroup_t *mg,
+                     FILE *fout);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* __PDDL_GROUND_MGROUP_H__ */
+#endif /* __PDDL_MGROUP_H__ */
