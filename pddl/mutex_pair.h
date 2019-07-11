@@ -35,7 +35,7 @@ struct pddl_strips;
 struct pddl_mutex_pairs {
     char *map; /*!< 2-D map of facts */
     int fact_size; /*!< Dimension of .map */
-    int num_mutex_pairs; /*!< Number of mutex pairs */
+    size_t num_mutex_pairs; /*!< Number of mutex pairs */
 };
 typedef struct pddl_mutex_pairs pddl_mutex_pairs_t;
 

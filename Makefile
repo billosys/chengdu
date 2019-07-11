@@ -36,6 +36,7 @@ OBJS += mgroup
 OBJS += mutex_pair
 OBJS += pddl_file
 OBJS += irrelevance
+OBJS += h2
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

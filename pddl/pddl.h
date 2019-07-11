@@ -45,5 +45,6 @@
 #include <pddl/lifted_mgroup_htable.h>
 #include <pddl/mgroup.h>
 #include <pddl/irrelevance.h>
+#include <pddl/critical_path.h>
 
 #endif /* __PDDL_H__ */
