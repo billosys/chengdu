@@ -48,6 +48,11 @@ _bor_inline void setMutex(h2_t *h2, int f1, int f2)
     _FACT(h2, f1, f2) = _FACT(h2, f2, f1) = MUTEX;
 }
 
+_bor_inline int isUnreached(const h2_t *h2, int f1, int f2)
+{
+    return _FACT(h2, f1, f2) == 0;
+}
+
 _bor_inline int isReached(const h2_t *h2, int f1, int f2)
 {
     return _FACT(h2, f1, f2) == REACHED;
@@ -189,47 +194,61 @@ static int applyOp(const pddl_strips_op_t *op, h2_t *h2)
     return updated;
 }
 
-static int h2(const pddl_strips_t *strips,
-              int use_excess_mem,
-              pddl_mutex_pairs_t *mutexes,
-              bor_iset_t *unreachable_facts,
-              bor_iset_t *unreachable_ops,
-              bor_err_t *err)
-
+static int h2Run(h2_t *h2, const pddl_strips_ops_t *ops, bor_err_t *err)
 {
-    h2_t h2;
-    int updated, ret = 0;
-
-    h2Init(&h2, strips, mutexes, use_excess_mem, err);
+    int updated;
 
     do {
         updated = 0;
-        for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
-            const pddl_strips_op_t *op = strips->op.op[op_id];
-            updated |= applyOp(op, &h2);
+        for (int op_id = 0; op_id < ops->op_size; ++op_id){
+            const pddl_strips_op_t *op = ops->op[op_id];
+            updated |= applyOp(op, h2);
         }
     } while (updated);
 
-    for (int f1 = 0; f1 < h2.fact_size; ++f1){
-        for (int f2 = f1; f2 < h2.fact_size; ++f2){
-            if (!isReached(&h2, f1, f2) && !isMutex(&h2, f1, f2)){
+    for (int f1 = 0; f1 < h2->fact_size; ++f1){
+        for (int f2 = f1; f2 < h2->fact_size; ++f2){
+            if (isUnreached(h2, f1, f2))
+                setMutex(h2, f1, f2);
+        }
+    }
+
+    return 0;
+}
+
+static void outUnreachableOps(const h2_t *h2, bor_iset_t *unreachable_ops)
+{
+    for (int op_id = 0; op_id < h2->op_size; ++op_id){
+        if (!h2->op_applied[op_id])
+            borISetAdd(unreachable_ops, op_id);
+    }
+}
+
+static void outMutexes(const h2_t *h2,
+                       pddl_mutex_pairs_t *mutexes,
+                       bor_iset_t *unreachable_facts)
+{
+    for (int f1 = 0; f1 < h2->fact_size; ++f1){
+        for (int f2 = f1; f2 < h2->fact_size; ++f2){
+            if (isMutex(h2, f1, f2)){
                 pddlMutexPairsAdd(mutexes, f1, f2);
                 if (f1 == f2 && unreachable_facts != NULL)
                     borISetAdd(unreachable_facts, f1);
             }
         }
     }
-
-    if (unreachable_ops != NULL){
-        for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
-            if (!h2.op_applied[op_id])
-                borISetAdd(unreachable_ops, op_id);
-        }
-    }
-
-    h2Free(&h2);
-    return ret;
 }
+
+static void setOutput(const h2_t *h2,
+                      pddl_mutex_pairs_t *mutexes,
+                      bor_iset_t *unreachable_facts,
+                      bor_iset_t *unreachable_ops)
+{
+    outMutexes(h2, mutexes, unreachable_facts);
+    if (unreachable_ops != NULL)
+        outUnreachableOps(h2, unreachable_ops);
+}
+
 
 int pddlH2(const pddl_strips_t *strips,
            pddl_mutex_pairs_t *m,
@@ -238,16 +257,22 @@ int pddlH2(const pddl_strips_t *strips,
            bor_err_t *err)
 {
     if (strips->has_cond_eff)
-        BOR_ERR_RET2(err, -1, "Conditional effects not supported!");
-
-    int ret = 0;
+        BOR_ERR_RET2(err, -1, "h^2: Conditional effects not supported!");
 
     BOR_INFO(err, "h^2. facts: %d, ops: %d, mutex pairs: %lu",
              strips->fact.fact_size,
              strips->op.op_size,
              (unsigned long)m->num_mutex_pairs);
 
-    ret = h2(strips, 1, m, unreachable_facts, unreachable_ops, err);
+    h2_t h2;
+
+    // TODO: Check return value
+    h2Init(&h2, strips, m, 1, err);
+
+    if (h2Run(&h2, &strips->op, err) != 0)
+        BOR_TRACE_RET(err, -1);
+
+    setOutput(&h2, m, unreachable_facts, unreachable_ops);
 
     BOR_INFO(err, "h^2 DONE. mutex pairs: %lu, unreachable facts: %d,"
                   " unreachable ops: %d",
@@ -255,5 +280,6 @@ int pddlH2(const pddl_strips_t *strips,
              (unreachable_facts != NULL ? borISetSize(unreachable_facts) : -1),
              (unreachable_ops != NULL ? borISetSize(unreachable_ops) : -1));
 
-    return ret;
+    h2Free(&h2);
+    return 0;
 }
