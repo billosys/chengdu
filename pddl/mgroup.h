@@ -46,6 +46,11 @@ struct pddl_mgroups {
 typedef struct pddl_mgroups pddl_mgroups_t;
 
 /**
+ * Initialize an empty set of mutex groups.
+ */
+void pddlMGroupsInitEmpty(pddl_mgroups_t *mg);
+
+/**
  * Ground lifted mutex groups using reachable facts.
  */
 void pddlMGroupsGround(pddl_mgroups_t *mg,
@@ -57,6 +62,10 @@ void pddlMGroupsGround(pddl_mgroups_t *mg,
  * Free allocated memory.
  */
 void pddlMGroupsFree(pddl_mgroups_t *mg);
+
+pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mg, const bor_iset_t *fact);
+
+void pddlMGroupsSortUniq(pddl_mgroups_t *mg);
 
 /**
  * Debug print out

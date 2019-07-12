@@ -24,11 +24,6 @@
 #include "pddl/mgroup.h"
 #include "assert.h"
 
-void pddlMGroupsAdd(pddl_mgroups_t *mg,
-                          const bor_iset_t *fact,
-                          int lifted_mgroup_id);
-void pddlMGroupsSortUniq(pddl_mgroups_t *mg);
-
 typedef struct pred_tnode pred_tnode_t;
 struct pred_tnode {
     int depth;
@@ -249,8 +244,10 @@ static void _gen(pred_tree_t *tree,
             if (tnode[i]->leaf)
                 borISetUnion(&mgroup, &tnode[i]->fact);
         }
-        if (borISetSize(&mgroup) > 0)
-            pddlMGroupsAdd(mg, &mgroup, lifted_mgroup_id);
+        if (borISetSize(&mgroup) > 0){
+            pddl_mgroup_t *m = pddlMGroupsAdd(mg, &mgroup);
+            m->lifted_mgroup_id = lifted_mgroup_id;
+        }
         borISetFree(&mgroup);
         return;
     }
@@ -378,17 +375,33 @@ static void groundMGroup(pddl_mgroups_t *mg,
         predTreeFree(tree + i);
 }
 
+void pddlMGroupsInitEmpty(pddl_mgroups_t *mg)
+{
+    bzero(mg, sizeof(*mg));
+}
+
 void pddlMGroupsGround(pddl_mgroups_t *mg,
                        const pddl_t *pddl,
                        const pddl_lifted_mgroups_t *lifted_mg,
                        const pddl_strips_t *strips)
 {
-    bzero(mg, sizeof(*mg));
+    pddlMGroupsInitEmpty(mg);
     pddlLiftedMGroupsInitCopy(&mg->lifted_mgroup, lifted_mg);
 
     for (int mgi = 0; mgi < mg->lifted_mgroup.mgroup_size; ++mgi)
         groundMGroup(mg, pddl, strips, mg->lifted_mgroup.mgroup + mgi, mgi);
     pddlMGroupsSortUniq(mg);
+
+    for (int mgi = 0; mgi < mg->mgroup_size; ++mgi){
+        pddl_mgroup_t *m = mg->mgroup + mgi;
+        if (m->lifted_mgroup_id >= 0){
+            const pddl_lifted_mgroup_t *lm;
+            lm = mg->lifted_mgroup.mgroup + m->lifted_mgroup_id;
+            if (lm->is_exactly_one)
+                m->is_exactly_one = 1;
+            m->is_fam_group = 1;
+        }
+    }
 }
 
 void pddlMGroupsFree(pddl_mgroups_t *mg)
@@ -403,9 +416,7 @@ void pddlMGroupsFree(pddl_mgroups_t *mg)
 }
 
 
-void pddlMGroupsAdd(pddl_mgroups_t *mg,
-                    const bor_iset_t *fact,
-                    int lifted_mgroup_id)
+pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mg, const bor_iset_t *fact)
 {
     if (mg->mgroup_alloc == mg->mgroup_size){
         if (mg->mgroup_alloc == 0)
@@ -418,7 +429,7 @@ void pddlMGroupsAdd(pddl_mgroups_t *mg,
     pddl_mgroup_t *m = mg->mgroup + mg->mgroup_size++;
     bzero(m, sizeof(*m));
     borISetUnion(&m->mgroup, fact);
-    m->lifted_mgroup_id = lifted_mgroup_id;
+    return m;
 }
 
 static int cmpMGroup(const void *a, const void *b, void *_)
