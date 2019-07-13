@@ -251,6 +251,8 @@ void pddlFactsDelFact(pddl_facts_t *fs, int fact_id)
     if (fs->fact[fact_id] == NULL)
         return;
     f = fs->fact[fact_id];
+    if (f->neg_of >= 0)
+        fs->fact[f->neg_of]->neg_of = -1;
     borHTableErase(fs->htable, &f->htable);
     pddlFactDel(f);
     fs->fact[fact_id] = NULL;
@@ -272,6 +274,11 @@ void pddlFactsDelFacts(pddl_facts_t *fs, const int *m, int *remap)
     }
 
     fs->fact_size = size;
+
+    for (int fact_id = 0; fact_id < fs->fact_size; ++fact_id){
+        if (fs->fact[fact_id]->neg_of >= 0)
+            fs->fact[fact_id]->neg_of = remap[fs->fact[fact_id]->neg_of];
+    }
 }
 
 void pddlFactsDelFactsSet(pddl_facts_t *fs, const bor_iset_t *m, int *remap)
@@ -293,6 +300,11 @@ void pddlFactsDelFactsSet(pddl_facts_t *fs, const bor_iset_t *m, int *remap)
         }
     }
     fs->fact_size = ins;
+
+    for (int fact_id = 0; fact_id < fs->fact_size; ++fact_id){
+        if (fs->fact[fact_id]->neg_of >= 0)
+            fs->fact[fact_id]->neg_of = remap[fs->fact[fact_id]->neg_of];
+    }
 }
 
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)
