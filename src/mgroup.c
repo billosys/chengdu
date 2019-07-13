@@ -468,6 +468,46 @@ void pddlMGroupsSortUniq(pddl_mgroups_t *mg)
     mg->mgroup_size = ins;
 }
 
+int pddlMGroupsSetExactlyOne(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
+{
+    int num = 0;
+
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        pddl_mgroup_t *mg = mgs->mgroup + mi;
+        if (borISetIsDisjunct(&mg->mgroup, &strips->init)){
+            mg->is_exactly_one = 0;
+            continue;
+        }
+
+        mg->is_exactly_one = 1;
+
+        for (int op_id = 0;
+                op_id < strips->op.op_size && mg->is_exactly_one; ++op_id){
+            const pddl_strips_op_t *op = strips->op.op[op_id];
+            if (!borISetIsDisjunct(&op->del_eff, &mg->mgroup)
+                    && borISetIsDisjunct(&op->add_eff, &mg->mgroup)){
+                mg->is_exactly_one = 0;
+                break;
+            }
+
+            for (int ce_id = 0; ce_id < op->cond_eff_size; ++ce_id){
+                const pddl_strips_op_cond_eff_t *ce = op->cond_eff + ce_id;
+                if (!borISetIsDisjunct(&ce->del_eff, &mg->mgroup)
+                        && borISetIsDisjunct(&ce->add_eff, &mg->mgroup)
+                        && borISetIsDisjunct(&op->add_eff, &mg->mgroup)){
+                    mg->is_exactly_one = 0;
+                    break;
+                }
+            }
+        }
+
+        if (mg->is_exactly_one)
+            ++num;
+    }
+
+    return num;
+}
+
 void pddlMGroupsPrint(const pddl_t *pddl,
                       const pddl_strips_t *strips,
                       const pddl_mgroups_t *mg,
@@ -493,6 +533,8 @@ void pddlMGroupsPrint(const pddl_t *pddl,
             BOR_ISET_FOR_EACH(&m->mgroup, fact){
                 fprintf(fout, " (%s)", strips->fact.fact[fact]->name);
             }
+            if (m->is_exactly_one)
+                fprintf(fout, ":=1");
             fprintf(fout, "\n");
         }
         fprintf(fout, "\n");

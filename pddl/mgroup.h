@@ -63,9 +63,21 @@ void pddlMGroupsGround(pddl_mgroups_t *mg,
  */
 void pddlMGroupsFree(pddl_mgroups_t *mg);
 
+/**
+ * Adds a new mutex group consisting of the given set of facts.
+ */
 pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mg, const bor_iset_t *fact);
 
+/**
+ * Sorts mutex groups and removes duplicates.
+ */
 void pddlMGroupsSortUniq(pddl_mgroups_t *mg);
+
+/**
+ * Sets .is_exactly_one flags for "exactly-one" mutex groups.
+ * Returns the number of exactly-one mutex groups found.
+ */
+int pddlMGroupsSetExactlyOne(pddl_mgroups_t *mgs, const pddl_strips_t *strips);
 
 /**
  * Debug print out
