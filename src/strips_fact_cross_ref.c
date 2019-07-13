@@ -27,6 +27,11 @@ void pddlStripsFactCrossRefInit(pddl_strips_fact_cross_ref_t *cref,
                                 int op_add,
                                 int op_del)
 {
+    if (strips->has_cond_eff){
+        BOR_FATAL2("pddlStripsFactCrossRefInit() does not support"
+                   " conditional effects!");
+    }
+
     int fact;
 
     bzero(cref, sizeof(*cref));
