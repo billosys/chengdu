@@ -37,6 +37,8 @@ OBJS += mutex_pair
 OBJS += pddl_file
 OBJS += irrelevance
 OBJS += h2
+OBJS += disambiguation
+OBJS += bitset
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
