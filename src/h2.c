@@ -90,8 +90,6 @@ static void h2Init(h2_t *h2,
                 BOR_ISET_FOR_EACH(&op->del_eff, fact_id)
                     fact[fact_id] = -1;
             }
-        }else{
-            fprintf(stderr, "op-fact failed\n");
         }
     }
 
