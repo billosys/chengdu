@@ -39,6 +39,8 @@ struct pddl_ground_config {
     /** If .lifted_mgroups != NULL, use lifted mutex groups to prune
      *  dead-end operators. */
     int prune_op_dead_end;
+    /** If true static facts are found and removed */
+    int remove_static_facts;
 };
 typedef struct pddl_ground_config pddl_ground_config_t;
 
@@ -46,6 +48,7 @@ typedef struct pddl_ground_config pddl_ground_config_t;
         NULL, /* .lifted_mgroups */ \
         1, /* .prune_op_pre_mutex */ \
         1, /* .prune_op_dead_end */ \
+        1, /* .remove_static_facts */ \
     }
 
 struct pddl_strips {
@@ -127,6 +130,12 @@ int pddlStripsIsFAMGroup(const pddl_strips_t *strips, const bor_iset_t *facts);
 void pddlStripsReduce(pddl_strips_t *strips,
                       const bor_iset_t *del_facts,
                       const bor_iset_t *del_ops);
+
+/**
+ * Remove static facts, i.e., facts that are true in all reachable states.
+ * Returns 0 number of removed facts.
+ */
+int pddlStripsRemoveStaticFacts(pddl_strips_t *strips);
 
 /**
  * Print STRIPS problem in a format easily usable from python.
