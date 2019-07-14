@@ -375,6 +375,11 @@ static void groundMGroup(pddl_mgroups_t *mg,
         predTreeFree(tree + i);
 }
 
+void pddlMGroupFree(pddl_mgroup_t *m)
+{
+    borISetFree(&m->mgroup);
+}
+
 void pddlMGroupsInitEmpty(pddl_mgroups_t *mg)
 {
     bzero(mg, sizeof(*mg));
@@ -409,7 +414,7 @@ void pddlMGroupsFree(pddl_mgroups_t *mg)
     pddlLiftedMGroupsFree(&mg->lifted_mgroup);
     for (int i = 0; i < mg->mgroup_size; ++i){
         pddl_mgroup_t *m = mg->mgroup + i;
-        borISetFree(&m->mgroup);
+        pddlMGroupFree(m);
     }
     if (mg->mgroup != NULL)
         BOR_FREE(mg->mgroup);
@@ -457,7 +462,7 @@ void pddlMGroupsSortUniq(pddl_mgroups_t *mg)
     for (int i = 1; i < mg->mgroup_size; ++i){
         pddl_mgroup_t *m = mg->mgroup + i;
         if (borISetCmp(&b->mgroup, &m->mgroup) == 0){
-            borISetFree(&m->mgroup);
+            pddlMGroupFree(m);
         }else{
             if (ins != i)
                 mg->mgroup[ins] = mg->mgroup[i];
@@ -506,6 +511,52 @@ int pddlMGroupsSetExactlyOne(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
     }
 
     return num;
+}
+
+void pddlMGroupsGatherExactlyOneFacts(const pddl_mgroups_t *mgs,
+                                      bor_iset_t *set)
+{
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        if (mgs->mgroup[mi].is_exactly_one)
+            borISetUnion(set, &mgs->mgroup[mi].mgroup);
+    }
+}
+
+void pddlMGroupsReduce(pddl_mgroups_t *mgs, const bor_iset_t *rm_facts)
+{
+    int max_fact_id = 0;
+
+    if (borISetSize(rm_facts) == 0)
+        return;
+
+    max_fact_id = borISetGet(rm_facts, borISetSize(rm_facts) - 1);
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        pddl_mgroup_t *mg = mgs->mgroup + mi;
+        borISetMinus(&mg->mgroup, rm_facts);
+        if (borISetSize(&mg->mgroup) > 0){
+            int fid = borISetGet(&mg->mgroup, borISetSize(&mg->mgroup) - 1);
+            max_fact_id = BOR_MAX(max_fact_id, fid);
+        }
+    }
+
+    int *remap = BOR_CALLOC_ARR(int, max_fact_id + 1);
+    pddlFactsDelFactsGenRemap(max_fact_id + 1, rm_facts, remap);
+
+    int ins = 0;
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        pddl_mgroup_t *mg = mgs->mgroup + mi;
+        if (borISetSize(&mg->mgroup) == 0){
+            pddlMGroupFree(mg);
+        }else{
+            borISetRemap(&mg->mgroup, remap);
+            mgs->mgroup[ins++] = mgs->mgroup[mi];
+        }
+    }
+    mgs->mgroup_size = ins;
+    pddlMGroupsSortUniq(mgs);
+
+    if (remap != NULL)
+        BOR_FREE(remap);
 }
 
 void pddlMGroupsPrint(const pddl_t *pddl,

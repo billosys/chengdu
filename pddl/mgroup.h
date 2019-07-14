@@ -80,6 +80,18 @@ void pddlMGroupsSortUniq(pddl_mgroups_t *mg);
 int pddlMGroupsSetExactlyOne(pddl_mgroups_t *mgs, const pddl_strips_t *strips);
 
 /**
+ * Adds to {set} all facts from all exactly-one mutex groups.
+ */
+void pddlMGroupsGatherExactlyOneFacts(const pddl_mgroups_t *mgs,
+                                      bor_iset_t *set);
+
+/**
+ * Remove the specified facts and remap the rest to the new IDs.
+ * Note that the flags are not reset to 0.
+ */
+void pddlMGroupsReduce(pddl_mgroups_t *mgs, const bor_iset_t *rm_facts);
+
+/**
  * Debug print out
  */
 void pddlMGroupsPrint(const pddl_t *pddl,
