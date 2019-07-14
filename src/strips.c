@@ -515,7 +515,7 @@ void pddlStripsReduce(pddl_strips_t *strips,
         pddlStripsOpsRemoveFacts(&strips->op, del_facts);
 
         int *remap_fact = BOR_CALLOC_ARR(int, strips->fact.fact_size);
-        pddlFactsDelFactsSet(&strips->fact, del_facts, remap_fact);
+        pddlFactsDelFacts(&strips->fact, del_facts, remap_fact);
         pddlStripsOpsRemapFacts(&strips->op, remap_fact);
 
         borISetMinus(&strips->init, del_facts);

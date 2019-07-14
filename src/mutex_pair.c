@@ -149,26 +149,8 @@ void pddlMutexPairsReduce(pddl_mutex_pairs_t *m, const bor_iset_t *rm_facts)
         return;
 
     int *remap = BOR_CALLOC_ARR(int, m->fact_size);
-    int rmi = 0;
-    int rm_size = borISetSize(rm_facts);
-    int new_id = 0;
-    for (int fact_id = 0; fact_id < m->fact_size; ++fact_id){
-        if (rmi < rm_size && borISetGet(rm_facts, rmi) == fact_id){
-            remap[fact_id] = -1;
-            ++rmi;
-        }else{
-            remap[fact_id] = new_id++;
-        }
-    }
-
-    pddl_mutex_pairs_t b = *m;
-    pddlMutexPairsInit(m, new_id);
-    PDDL_MUTEX_PAIRS_FOR_EACH(&b, f1, f2){
-        if (remap[f1] >= 0 && remap[f2] >= 0)
-            pddlMutexPairsAdd(m, remap[f1], remap[f2]);
-    }
-
-    pddlMutexPairsFree(&b);
+    int new_size = pddlFactsDelFactsGenRemap(m->fact_size, rm_facts, remap);
+    pddlMutexPairsRemapFacts(m, new_size, remap);
     if (remap != NULL)
         BOR_FREE(remap);
 }
