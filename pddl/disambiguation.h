@@ -66,11 +66,13 @@ typedef struct pddl_disambiguate pddl_disambiguate_t;
 
 /**
  * Initialize disambiguation object.
+ * Returns 0 on success, -1 if there are no exactly-one mutex groups in
+ * which case dis is not properly intitialized.
  */
-void pddlDisambiguateInit(pddl_disambiguate_t *dis,
-                          int fact_size,
-                          const pddl_mutex_pairs_t *mutex,
-                          const pddl_mgroups_t *mgroup);
+int pddlDisambiguateInit(pddl_disambiguate_t *dis,
+                         int fact_size,
+                         const pddl_mutex_pairs_t *mutex,
+                         const pddl_mgroups_t *mgroup);
 
 /**
  * Free allocated memory.
@@ -86,11 +88,9 @@ void pddlDisambiguateFree(pddl_disambiguate_t *dis);
 int pddlDisambiguateSet(pddl_disambiguate_t *dis, bor_iset_t *set);
 
 /**
- * TODO
+ * Update structure with additional mutex {f1, f2}.
  */
-void pddlDisambiguateUpdateMutex(pddl_disambiguate_t *dis,
-                                 const pddl_mutex_pairs_t *mutex);
-
+void pddlDisambiguateAddMutex(pddl_disambiguate_t *dis, int f1, int f2);
 
 #ifdef __cplusplus
 } /* extern "C" */

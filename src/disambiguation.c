@@ -32,10 +32,10 @@ static void selectExactlyOneMGroups(pddl_mgroups_t *mg,
     }
 }
 
-void pddlDisambiguateInit(pddl_disambiguate_t *dis,
-                          int fact_size,
-                          const pddl_mutex_pairs_t *mutex,
-                          const pddl_mgroups_t *mgroup_in)
+int pddlDisambiguateInit(pddl_disambiguate_t *dis,
+                         int fact_size,
+                         const pddl_mutex_pairs_t *mutex,
+                         const pddl_mgroups_t *mgroup_in)
 {
     pddl_mgroups_t mgroup;
 
@@ -45,7 +45,7 @@ void pddlDisambiguateInit(pddl_disambiguate_t *dis,
     selectExactlyOneMGroups(&mgroup, mgroup_in);
     if (mgroup.mgroup_size == 0){
         pddlMGroupsFree(&mgroup);
-        return;
+        return -1;
     }
 
     dis->fact_size = fact_size;
@@ -68,15 +68,29 @@ void pddlDisambiguateInit(pddl_disambiguate_t *dis,
 
         int fact_id;
         BOR_ISET_FOR_EACH(&mg->mgroup, fact_id){
-            pddlBitsetSet(&dm->fact, fact_id);
-            pddlBitsetSet(&dis->fact[fact_id].mgroup, mi);
+            pddlBitsetSetBit(&dm->fact, fact_id);
+            pddlBitsetSetBit(&dis->fact[fact_id].mgroup, mi);
         }
     }
 
-    // Set .fact to facts that are mutex with that fact.
+    // Add mutexes from mutex groups
+    for (int mi = 0; mi < mgroup_in->mgroup_size; ++mi){
+        const pddl_mgroup_t *mg = mgroup_in->mgroup + mi;
+        int mgroup_size = borISetSize(&mg->mgroup);
+        for (int i = 0; i < mgroup_size; ++i){
+            int fact1 = borISetGet(&mg->mgroup, i);
+            for (int j = i + 1; j < mgroup_size; ++j){
+                int fact2 = borISetGet(&mg->mgroup, j);
+                pddlBitsetSetBit(&dis->fact[fact1].fact, fact2);
+                pddlBitsetSetBit(&dis->fact[fact2].fact, fact1);
+            }
+        }
+    }
+
+    // Add mutexes from mutex structure
     PDDL_MUTEX_PAIRS_FOR_EACH(mutex, fact1, fact2){
-        pddlBitsetSet(&dis->fact[fact1].fact, fact2);
-        pddlBitsetSet(&dis->fact[fact2].fact, fact1);
+        pddlBitsetSetBit(&dis->fact[fact1].fact, fact2);
+        pddlBitsetSetBit(&dis->fact[fact2].fact, fact1);
     }
 
     // Negate .mgroup and .fact bitsets to get what we really want.
@@ -91,6 +105,7 @@ void pddlDisambiguateInit(pddl_disambiguate_t *dis,
     pddlBitsetInit(&dis->cur_allowed_facts_from_mgroup, dis->fact_size);
 
     pddlMGroupsFree(&mgroup);
+    return 0;
 }
 
 void pddlDisambiguateFree(pddl_disambiguate_t *dis)
@@ -178,4 +193,12 @@ int pddlDisambiguateSet(pddl_disambiguate_t *dis, bor_iset_t *set)
     } while (local_change);
 
     return change;
+}
+
+void pddlDisambiguateAddMutex(pddl_disambiguate_t *dis, int f1, int f2)
+{
+    // TODO
+    //fprintf(stderr, "Here %d %d\n", f1, f2);
+    pddlBitsetClearBit(&dis->fact[f1].fact, f2);
+    pddlBitsetClearBit(&dis->fact[f2].fact, f1);
 }

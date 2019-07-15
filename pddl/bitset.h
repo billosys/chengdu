@@ -59,11 +59,18 @@ void pddlBitsetFree(pddl_bitset_t *b);
 /**
  * Sets the specified bit to 1.
  */
-_bor_inline void pddlBitsetSet(pddl_bitset_t *b, int bit)
+_bor_inline void pddlBitsetSetBit(pddl_bitset_t *b, int bit)
 {
     int word = bit / PDDL_BITSET_WORD_BITSIZE;
     pddl_bitset_word_t shift = bit % PDDL_BITSET_WORD_BITSIZE;
     b->bitset[word] |= ((pddl_bitset_word_t)1) << shift;
+}
+
+_bor_inline void pddlBitsetClearBit(pddl_bitset_t *b, int bit)
+{
+    int word = bit / PDDL_BITSET_WORD_BITSIZE;
+    pddl_bitset_word_t shift = bit % PDDL_BITSET_WORD_BITSIZE;
+    b->bitset[word] &= ~(((pddl_bitset_word_t)1) << shift);
 }
 
 /**

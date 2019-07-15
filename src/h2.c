@@ -20,6 +20,7 @@
 #include <boruvka/timer.h>
 #include "pddl/strips.h"
 #include "pddl/critical_path.h"
+#include "pddl/disambiguation.h"
 #include "assert.h"
 
 #define REACHED 1
@@ -33,6 +34,7 @@ struct h2 {
     int op_size;
     char *op; /*!< 0/REACHED/PRUNED for each operator */
     char *op_fact;
+    pddl_disambiguate_t *disambiguate;
 };
 typedef struct h2 h2_t;
 
@@ -287,6 +289,8 @@ static int h2Run(h2_t *h2, const pddl_strips_ops_t *ops, bor_err_t *err)
             if (isNotReached(h2, f1, f2)){
                 if (!isMutex(h2, f1, f2)){
                     setMutex(h2, f1, f2);
+                    if (h2->disambiguate != NULL)
+                        pddlDisambiguateAddMutex(h2->disambiguate, f1, f2);
                     ret = 1;
                 }
             }else if (isReached(h2, f1, f2)){
@@ -359,14 +363,11 @@ int pddlH2(const pddl_strips_t *strips,
 
     h2_t h2;
 
-    // TODO: Check return value
     h2Init(&h2, strips, m, err);
     h2InitOpFact(&h2, &strips->op, err);
 
     setFwInit(&h2, &strips->init);
     h2Run(&h2, &strips->op, err);
-
-    // TODO: Check the goal was not reached
 
     setOutput(&h2, m, unreachable_facts, unreachable_ops);
 
@@ -380,10 +381,16 @@ int pddlH2(const pddl_strips_t *strips,
     return 0;
 }
 
-static void setBwInit(h2_t *h2, const bor_iset_t *goal)
+static void setBwInit(h2_t *h2, const bor_iset_t *goal_in)
 {
+    BOR_ISET(goal);
+    borISetUnion(&goal, goal_in);
+
+    if (h2->disambiguate != NULL)
+        pddlDisambiguateSet(h2->disambiguate, &goal);
+
     for (int fact_id = 0; fact_id < h2->fact_size; ++fact_id){
-        if (isMutex(h2, fact_id, fact_id) || isMutexWith(h2, fact_id, goal))
+        if (isMutex(h2, fact_id, fact_id) || isMutexWith(h2, fact_id, &goal))
             continue;
 
         setReached(h2, fact_id, fact_id);
@@ -402,6 +409,8 @@ static void setBwInit(h2_t *h2, const bor_iset_t *goal)
             setReached(h2, fact_id, fact_id2);
         }
     }
+
+    borISetFree(&goal);
 }
 
 static void opSetEDeletes(pddl_strips_op_t *bw_op,
@@ -457,22 +466,26 @@ static void opsUpdateBw(pddl_strips_ops_t *bw_ops,
         if (isOpPruned(h2, op_id))
             continue;
         opSetEDeletes(bw_ops->op[op_id], fw_ops->op[op_id], h2);
-        // TODO: Disambiguate
+        if (h2->disambiguate != NULL)
+            pddlDisambiguateSet(h2->disambiguate, &bw_ops->op[op_id]->pre);
     }
 }
 
 static void opsUpdateFw(pddl_strips_ops_t *fw_ops, const h2_t *h2)
 {
+    if (h2->disambiguate == NULL)
+        return;
+
     for (int op_id = 0; op_id < h2->op_size; ++op_id){
         if (isOpPruned(h2, op_id))
             continue;
-        // TODO: Disambiguate
+        pddlDisambiguateSet(h2->disambiguate, &fw_ops->op[op_id]->pre);
     }
 }
 
 int pddlH2FwBw(const pddl_strips_t *strips,
                const pddl_mgroups_t *mgroup,
-               pddl_mutex_pairs_t *m,
+               pddl_mutex_pairs_t *mutex,
                bor_iset_t *unreachable_facts,
                bor_iset_t *unreachable_ops,
                bor_err_t *err)
@@ -483,18 +496,22 @@ int pddlH2FwBw(const pddl_strips_t *strips,
     BOR_INFO(err, "h^2 fw/bw. facts: %d, ops: %d, mutex pairs: %lu",
              strips->fact.fact_size,
              strips->op.op_size,
-             (unsigned long)m->num_mutex_pairs);
+             (unsigned long)mutex->num_mutex_pairs);
 
     h2_t h2;
     int update_fw = 1;
     int update_bw = 1;
     pddl_strips_ops_t ops_fw, ops_bw;
+    pddl_disambiguate_t disamb;
 
-    h2Init(&h2, strips, m, err);
+    h2Init(&h2, strips, mutex, err);
 
     pddlStripsOpsInit(&ops_fw);
     pddlStripsOpsCopy(&ops_fw, &strips->op);
     opsInitBw(&ops_bw, &ops_fw, &h2);
+
+    if (pddlDisambiguateInit(&disamb, h2.fact_size, mutex, mgroup) == 0)
+        h2.disambiguate = &disamb;
 
     h2AllocOpFact(&h2, err);
 
@@ -505,7 +522,6 @@ int pddlH2FwBw(const pddl_strips_t *strips,
             h2ResetOpFact(&h2, &ops_fw);
             opsUpdateFw(&ops_fw, &h2);
             update_bw |= h2Run(&h2, &ops_fw, err);
-            // TODO: Check the goal was not reached
         }
 
         if (update_bw){
@@ -514,20 +530,19 @@ int pddlH2FwBw(const pddl_strips_t *strips,
             h2ResetOpFact(&h2, &ops_bw);
             opsUpdateBw(&ops_bw, &ops_fw, &h2);
             update_fw |= h2Run(&h2, &ops_bw, err);
-            // TODO: Check the init was not reached
         }
     }
 
     pddlStripsOpsFree(&ops_fw);
     pddlStripsOpsFree(&ops_bw);
+    if (h2.disambiguate != NULL)
+        pddlDisambiguateFree(&disamb);
 
-    // TODO: Check the goal was not reached
-
-    setOutput(&h2, m, unreachable_facts, unreachable_ops);
+    setOutput(&h2, mutex, unreachable_facts, unreachable_ops);
 
     BOR_INFO(err, "h^2 fw/bw DONE. mutex pairs: %lu, unreachable facts: %d,"
                   " unreachable ops: %d",
-             (unsigned long)m->num_mutex_pairs,
+             (unsigned long)mutex->num_mutex_pairs,
              (unreachable_facts != NULL ? borISetSize(unreachable_facts) : -1),
              (unreachable_ops != NULL ? borISetSize(unreachable_ops) : -1));
 
