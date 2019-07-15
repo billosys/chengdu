@@ -222,8 +222,11 @@ static int isApplicable2(const pddl_strips_op_t *op, int fact_id, h2_t *h2)
         return 0;
     if (!isReached(h2, fact_id, fact_id))
         return 0;
-    if (borISetHas(&op->add_eff, fact_id) || borISetHas(&op->del_eff, fact_id))
+    if (h2->op_fact == NULL
+            && (borISetHas(&op->add_eff, fact_id)
+                    || borISetHas(&op->del_eff, fact_id))){
         return 0;
+    }
 
     BOR_ISET_FOR_EACH(&op->pre, f1){
         if (!isReached(h2, f1, fact_id))
@@ -519,16 +522,16 @@ int pddlH2FwBw(const pddl_strips_t *strips,
         if (update_fw){
             update_fw = 0;
             setFwInit(&h2, &strips->init);
-            h2ResetOpFact(&h2, &ops_fw);
             opsUpdateFw(&ops_fw, &h2);
+            h2ResetOpFact(&h2, &ops_fw);
             update_bw |= h2Run(&h2, &ops_fw, err);
         }
 
         if (update_bw){
             update_bw = 0;
             setBwInit(&h2, &strips->goal);
-            h2ResetOpFact(&h2, &ops_bw);
             opsUpdateBw(&ops_bw, &ops_fw, &h2);
+            h2ResetOpFact(&h2, &ops_bw);
             update_fw |= h2Run(&h2, &ops_bw, err);
         }
     }
