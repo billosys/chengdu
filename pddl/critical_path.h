@@ -38,6 +38,16 @@ int pddlH2(const pddl_strips_t *strips,
            bor_iset_t *unreachable_ops,
            bor_err_t *err);
 
+/**
+ * TODO
+ */
+int pddlH2FwBw(const pddl_strips_t *strips,
+               const pddl_mgroups_t *mgroup,
+               pddl_mutex_pairs_t *m,
+               bor_iset_t *unreachable_facts,
+               bor_iset_t *unreachable_ops,
+               bor_err_t *err);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
