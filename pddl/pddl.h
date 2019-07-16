@@ -46,5 +46,7 @@
 #include <pddl/mgroup.h>
 #include <pddl/irrelevance.h>
 #include <pddl/critical_path.h>
+#include <pddl/bitset.h>
+#include <pddl/disambiguation.h>
 
 #endif /* __PDDL_H__ */

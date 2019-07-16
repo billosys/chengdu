@@ -947,6 +947,10 @@ int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips)
 
     // TODO: Parametrize
     pddlStripsOpsDeduplicate(&strips->op);
+
+    if (g->cfg.remove_static_facts)
+        pddlStripsRemoveStaticFacts(strips);
+
     if (strips->goal_is_unreachable)
         pddlStripsMakeUnsolvable(strips);
 

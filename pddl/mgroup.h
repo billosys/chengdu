@@ -46,6 +46,11 @@ struct pddl_mgroups {
 typedef struct pddl_mgroups pddl_mgroups_t;
 
 /**
+ * Initialize an empty set of mutex groups.
+ */
+void pddlMGroupsInitEmpty(pddl_mgroups_t *mg);
+
+/**
  * Ground lifted mutex groups using reachable facts.
  */
 void pddlMGroupsGround(pddl_mgroups_t *mg,
@@ -57,6 +62,34 @@ void pddlMGroupsGround(pddl_mgroups_t *mg,
  * Free allocated memory.
  */
 void pddlMGroupsFree(pddl_mgroups_t *mg);
+
+/**
+ * Adds a new mutex group consisting of the given set of facts.
+ */
+pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mg, const bor_iset_t *fact);
+
+/**
+ * Sorts mutex groups and removes duplicates.
+ */
+void pddlMGroupsSortUniq(pddl_mgroups_t *mg);
+
+/**
+ * Sets .is_exactly_one flags for "exactly-one" mutex groups.
+ * Returns the number of exactly-one mutex groups found.
+ */
+int pddlMGroupsSetExactlyOne(pddl_mgroups_t *mgs, const pddl_strips_t *strips);
+
+/**
+ * Adds to {set} all facts from all exactly-one mutex groups.
+ */
+void pddlMGroupsGatherExactlyOneFacts(const pddl_mgroups_t *mgs,
+                                      bor_iset_t *set);
+
+/**
+ * Remove the specified facts and remap the rest to the new IDs.
+ * Note that the flags are not reset to 0.
+ */
+void pddlMGroupsReduce(pddl_mgroups_t *mgs, const bor_iset_t *rm_facts);
 
 /**
  * Debug print out

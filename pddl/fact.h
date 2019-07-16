@@ -109,22 +109,24 @@ int pddlFactsAddGroundAtom(pddl_facts_t *fs, const pddl_ground_atom_t *ga,
                            const pddl_t *pddl);
 
 /**
+ * Allocates and generates the remaping array for all facts assuming
+ * facts from {del_facts} are deleted.
+ * Returns the new number of facts after deletion, remap must have at least
+ * fs->fact_size elements.
+ */
+int pddlFactsDelFactsGenRemap(int fact_size,
+                              const bor_iset_t *del_facts,
+                              int *remap);
+
+/**
  * Deletes fact (and frees all its memory).
  */
 void pddlFactsDelFact(pddl_facts_t *fs, int fact_id);
 
 /**
- * Deletes the facts marked in the m array.
- * Returns remap array containing remapping of fact IDs (old ID -> new ID)
- * that is monotonically increasing, except for the facts that were removed
- * where the new ID is set to -1.
- */
-void pddlFactsDelFacts(pddl_facts_t *fs, const int *m, int *remap);
-
-/**
  * Same as pddlFactsDelFacts() but the input is a set of facts.
  */
-void pddlFactsDelFactsSet(pddl_facts_t *fs, const bor_iset_t *m, int *remap);
+void pddlFactsDelFacts(pddl_facts_t *fs, const bor_iset_t *m, int *remap);
 
 /**
  * Copies all facts from src to dst using pddlFactsAdd().

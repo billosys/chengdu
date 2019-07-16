@@ -244,6 +244,29 @@ int pddlFactsAddGroundAtom(pddl_facts_t *fs, const pddl_ground_atom_t *ga,
     return fact_id;
 }
 
+int pddlFactsDelFactsGenRemap(int fact_size,
+                              const bor_iset_t *del_facts,
+                              int *remap)
+{
+    int size = 0;
+
+    bzero(remap, sizeof(int) * fact_size);
+
+    int fact_id;
+    BOR_ISET_FOR_EACH(del_facts, fact_id){
+        if (fact_id >= fact_size)
+            break;
+        remap[fact_id] = -1;
+    }
+
+    for (int fact_id = 0; fact_id < fact_size; ++fact_id){
+        if (remap[fact_id] != -1)
+            remap[fact_id] = size++;
+    }
+
+    return size;
+}
+
 void pddlFactsDelFact(pddl_facts_t *fs, int fact_id)
 {
     pddl_fact_t *f;
@@ -251,48 +274,28 @@ void pddlFactsDelFact(pddl_facts_t *fs, int fact_id)
     if (fs->fact[fact_id] == NULL)
         return;
     f = fs->fact[fact_id];
+    if (f->neg_of >= 0)
+        fs->fact[f->neg_of]->neg_of = -1;
     borHTableErase(fs->htable, &f->htable);
     pddlFactDel(f);
     fs->fact[fact_id] = NULL;
 }
 
-void pddlFactsDelFacts(pddl_facts_t *fs, const int *m, int *remap)
+void pddlFactsDelFacts(pddl_facts_t *fs, const bor_iset_t *m, int *remap)
 {
-    int size = 0;
+    int new_size = pddlFactsDelFactsGenRemap(fs->fact_size, m, remap);
 
     for (int fact_id = 0; fact_id < fs->fact_size; ++fact_id){
-        if (m[fact_id]){
-            remap[fact_id] = -1;
+        if (remap[fact_id] == -1){
             pddlFactsDelFact(fs, fact_id);
         }else{
-            remap[fact_id] = size;
-            fs->fact[fact_id]->id = size;
-            fs->fact[size++] = fs->fact[fact_id];
+            fs->fact[fact_id]->id = remap[fact_id];
+            if (fs->fact[fact_id]->neg_of >= 0)
+                fs->fact[fact_id]->neg_of = remap[fs->fact[fact_id]->neg_of];
+            fs->fact[remap[fact_id]] = fs->fact[fact_id];
         }
     }
-
-    fs->fact_size = size;
-}
-
-void pddlFactsDelFactsSet(pddl_facts_t *fs, const bor_iset_t *m, int *remap)
-{
-    bzero(remap, sizeof(int) * fs->fact_size);
-
-    int fact_id;
-    BOR_ISET_FOR_EACH(m, fact_id){
-        remap[fact_id] = -1;
-        pddlFactsDelFact(fs, fact_id);
-    }
-
-    int ins = 0;
-    for (int fact_id = 0; fact_id < fs->fact_size; ++fact_id){
-        if (remap[fact_id] != -1){
-            remap[fact_id] = ins;
-            fs->fact[fact_id]->id = ins;
-            fs->fact[ins++] = fs->fact[fact_id];
-        }
-    }
-    fs->fact_size = ins;
+    fs->fact_size = new_size;
 }
 
 void pddlFactsCopy(pddl_facts_t *dst, const pddl_facts_t *src)
