@@ -385,6 +385,19 @@ void pddlMGroupsInitEmpty(pddl_mgroups_t *mg)
     bzero(mg, sizeof(*mg));
 }
 
+void pddlMGroupsInitCopy(pddl_mgroups_t *dst, const pddl_mgroups_t *src)
+{
+    pddlMGroupsInitEmpty(dst);
+    pddlLiftedMGroupsInitCopy(&dst->lifted_mgroup, &src->lifted_mgroup);
+    for (int mi = 0; mi < src->mgroup_size; ++mi){
+        const pddl_mgroup_t *mg = src->mgroup + mi;
+        pddl_mgroup_t *add = pddlMGroupsAdd(dst, &mg->mgroup);
+        add->lifted_mgroup_id = mg->lifted_mgroup_id;
+        add->is_exactly_one = mg->is_exactly_one;
+        add->is_fam_group = mg->is_fam_group;
+    }
+}
+
 void pddlMGroupsGround(pddl_mgroups_t *mg,
                        const pddl_t *pddl,
                        const pddl_lifted_mgroups_t *lifted_mg,
@@ -473,6 +486,27 @@ void pddlMGroupsSortUniq(pddl_mgroups_t *mg)
     mg->mgroup_size = ins;
 }
 
+static int cmpMGroupSizeDesc(const void *a, const void *b, void *_)
+{
+    const pddl_mgroup_t *m1 = a;
+    const pddl_mgroup_t *m2 = b;
+    int cmp = borISetSize(&m2->mgroup) - borISetSize(&m1->mgroup);
+    if (cmp == 0)
+        cmp = borISetCmp(&m1->mgroup, &m2->mgroup);
+    if (cmp == 0)
+        cmp = m1->lifted_mgroup_id - m2->lifted_mgroup_id;
+    return cmp;
+}
+
+void pddlMGroupsSortBySizeDesc(pddl_mgroups_t *mg)
+{
+    if (mg->mgroup_size == 0)
+        return;
+
+    borSort(mg->mgroup, mg->mgroup_size, sizeof(pddl_mgroup_t),
+            cmpMGroupSizeDesc, NULL);
+}
+
 int pddlMGroupsSetExactlyOne(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
 {
     int num = 0;
@@ -557,6 +591,25 @@ void pddlMGroupsReduce(pddl_mgroups_t *mgs, const bor_iset_t *rm_facts)
 
     if (remap != NULL)
         BOR_FREE(remap);
+}
+
+void pddlMGroupsRemoveSmall(pddl_mgroups_t *mgs, int size)
+{
+    int ins = 0;
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        pddl_mgroup_t *mg = mgs->mgroup + mi;
+        if (borISetSize(&mg->mgroup) <= size){
+            pddlMGroupFree(mg);
+        }else{
+            mgs->mgroup[ins++] = mgs->mgroup[mi];
+        }
+    }
+    mgs->mgroup_size = ins;
+}
+
+void pddlMGroupsRemoveEmpty(pddl_mgroups_t *mgs)
+{
+    pddlMGroupsRemoveSmall(mgs, 0);
 }
 
 void pddlMGroupsPrint(const pddl_t *pddl,

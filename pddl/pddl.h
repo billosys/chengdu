@@ -48,5 +48,6 @@
 #include <pddl/critical_path.h>
 #include <pddl/bitset.h>
 #include <pddl/disambiguation.h>
+#include <pddl/fdr_var.h>
 
 #endif /* __PDDL_H__ */

@@ -39,6 +39,7 @@ OBJS += irrelevance
 OBJS += h2
 OBJS += disambiguation
 OBJS += bitset
+OBJS += fdr_var
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

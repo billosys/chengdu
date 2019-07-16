@@ -51,6 +51,11 @@ typedef struct pddl_mgroups pddl_mgroups_t;
 void pddlMGroupsInitEmpty(pddl_mgroups_t *mg);
 
 /**
+ * Initialize dst as a copy of src.
+ */
+void pddlMGroupsInitCopy(pddl_mgroups_t *dst, const pddl_mgroups_t *src);
+
+/**
  * Ground lifted mutex groups using reachable facts.
  */
 void pddlMGroupsGround(pddl_mgroups_t *mg,
@@ -74,6 +79,11 @@ pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mg, const bor_iset_t *fact);
 void pddlMGroupsSortUniq(pddl_mgroups_t *mg);
 
 /**
+ * Sort mutex groups by their size in descending order.
+ */
+void pddlMGroupsSortBySizeDesc(pddl_mgroups_t *mg);
+
+/**
  * Sets .is_exactly_one flags for "exactly-one" mutex groups.
  * Returns the number of exactly-one mutex groups found.
  */
@@ -90,6 +100,16 @@ void pddlMGroupsGatherExactlyOneFacts(const pddl_mgroups_t *mgs,
  * Note that the flags are not reset to 0.
  */
 void pddlMGroupsReduce(pddl_mgroups_t *mgs, const bor_iset_t *rm_facts);
+
+/**
+ * Removes all mutex groups containing at most size facts.
+ */
+void pddlMGroupsRemoveSmall(pddl_mgroups_t *mgs, int size);
+
+/**
+ * Removes empty mutex groups
+ */
+void pddlMGroupsRemoveEmpty(pddl_mgroups_t *mgs);
 
 /**
  * Debug print out
