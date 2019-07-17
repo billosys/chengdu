@@ -49,5 +49,6 @@
 #include <pddl/bitset.h>
 #include <pddl/disambiguation.h>
 #include <pddl/fdr_var.h>
+#include <pddl/fdr.h>
 
 #endif /* __PDDL_H__ */

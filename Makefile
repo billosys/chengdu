@@ -40,6 +40,7 @@ OBJS += h2
 OBJS += disambiguation
 OBJS += bitset
 OBJS += fdr_var
+OBJS += fdr
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
