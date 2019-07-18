@@ -29,7 +29,8 @@ void pddlFDRPrintAsFD(const pddl_strips_t *strips,
                       const pddl_mgroups_t *mg,
                       const pddl_mutex_pairs_t *mutex,
                       unsigned fdr_var_flags,
-                      FILE *fout);
+                      FILE *fout,
+                      bor_err_t *err);
 
 #ifdef __cplusplus
 } /* extern "C" */

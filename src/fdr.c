@@ -159,7 +159,8 @@ void pddlFDRPrintAsFD(const pddl_strips_t *strips,
                       const pddl_mgroups_t *mg,
                       const pddl_mutex_pairs_t *mutex,
                       unsigned fdr_var_flags,
-                      FILE *fout)
+                      FILE *fout,
+                      bor_err_t *err)
 {
     pddl_fdr_vars_t fdr_var;
 
@@ -167,6 +168,14 @@ void pddlFDRPrintAsFD(const pddl_strips_t *strips,
                                   fdr_var_flags) != 0){
         return;
     }
+
+    BOR_INFO(err, "Created %d variables.", fdr_var.var_size);
+    int num_none_of_those = 0;
+    for (int vi = 0; vi < fdr_var.var_size; ++vi){
+        if (fdr_var.var[vi].val_none_of_those != -1)
+            ++num_none_of_those;
+    }
+    BOR_INFO(err, "Created %d none-of-those values.", num_none_of_those);
 
     fprintf(fout, "begin_version\n3\nend_version\n");
     fprintf(fout, "begin_metric\n1\nend_metric\n");
