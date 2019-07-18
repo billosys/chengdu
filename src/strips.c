@@ -539,7 +539,7 @@ void pddlStripsReduce(pddl_strips_t *strips,
     }
 }
 
-int pddlStripsRemoveStaticFacts(pddl_strips_t *strips)
+int pddlStripsRemoveStaticFacts(pddl_strips_t *strips, bor_err_t *err)
 {
     int num = 0;
     int *nonstatic_facts = BOR_CALLOC_ARR(int, strips->fact.fact_size);
@@ -568,8 +568,11 @@ int pddlStripsRemoveStaticFacts(pddl_strips_t *strips)
         }
     }
 
-    if (borISetSize(&del_facts) > 0)
+    BOR_INFO(err, "Found %d static facts", borISetSize(&del_facts));
+    if (borISetSize(&del_facts) > 0){
         pddlStripsReduce(strips, &del_facts, NULL);
+        BOR_INFO(err, "Removed %d static facts", borISetSize(&del_facts));
+    }
 
     borISetFree(&del_facts);
     if (nonstatic_facts != NULL)

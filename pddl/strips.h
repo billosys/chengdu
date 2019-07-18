@@ -135,7 +135,7 @@ void pddlStripsReduce(pddl_strips_t *strips,
  * Remove static facts, i.e., facts that are true in all reachable states.
  * Returns 0 number of removed facts.
  */
-int pddlStripsRemoveStaticFacts(pddl_strips_t *strips);
+int pddlStripsRemoveStaticFacts(pddl_strips_t *strips, bor_err_t *err);
 
 /**
  * Print STRIPS problem in a format easily usable from python.
