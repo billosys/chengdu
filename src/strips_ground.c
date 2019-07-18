@@ -949,7 +949,7 @@ int pddlStripsGroundFinalize(pddl_strips_ground_t *g, pddl_strips_t *strips)
     pddlStripsOpsDeduplicate(&strips->op);
 
     if (g->cfg.remove_static_facts)
-        pddlStripsRemoveStaticFacts(strips);
+        pddlStripsRemoveStaticFacts(strips, g->err);
 
     if (strips->goal_is_unreachable)
         pddlStripsMakeUnsolvable(strips);
