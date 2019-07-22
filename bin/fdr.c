@@ -319,20 +319,33 @@ static int pruneStrips(void)
 
     pddlMutexPairsInitStrips(&mutex, &strips);
     pddlMutexPairsAddMGroups(&mutex, &mgroups);
-    if (opt.h2fw){
-        if (pddlH2(&strips, &mutex, &rm_fact, &rm_op, &err) != 0){
-            BOR_INFO2(&err, "h^2 fw failed.");
-            BOR_TRACE_RET(&err, -1);
-        }
-    }else if (!opt.no_h2){
-        if (pddlH2FwBw(&strips, &mgroups, &mutex,
-                    &rm_fact, &rm_op, &err) != 0){
-            BOR_INFO2(&err, "h^2 fw/bw failed.");
-            BOR_TRACE_RET(&err, -1);
+    if (!opt.no_h2){
+        BOR_INFO2(&err, "h^2 disabled");
+
+    }else if (strips.has_cond_eff){
+        BOR_INFO2(&err, "h^2 disabled because the problem has conditional"
+                        " effects.");
+
+    }else{
+        if (opt.h2fw){
+            if (pddlH2(&strips, &mutex, &rm_fact, &rm_op, &err) != 0){
+                BOR_INFO2(&err, "h^2 fw failed.");
+                BOR_TRACE_RET(&err, -1);
+            }
+        }else if (!opt.no_h2){
+            if (pddlH2FwBw(&strips, &mgroups, &mutex,
+                        &rm_fact, &rm_op, &err) != 0){
+                BOR_INFO2(&err, "h^2 fw/bw failed.");
+                BOR_TRACE_RET(&err, -1);
+            }
         }
     }
 
-    if (!opt.no_irr){
+    if (strips.has_cond_eff){
+        BOR_INFO2(&err, "irrelevance analysis disabled because the problem"
+                        " has conditional effects.");
+
+    }else if (!opt.no_irr){
         BOR_ISET(irr_fact);
         BOR_ISET(irr_op);
         BOR_ISET(static_fact);
@@ -371,7 +384,7 @@ static int pruneStrips(void)
     }
     BOR_INFO(&err, "Number of Strips Operators with Conditional Effects: %d",
              count);
-    BOR_INFO(&err, "Goal is rmable: %d", strips.goal_is_unreachable);
+    BOR_INFO(&err, "Goal is unreachable: %d", strips.goal_is_unreachable);
     BOR_INFO(&err, "Has Conditional Effects: %d", strips.has_cond_eff);
     BOR_INFO(&err, "Mutex pairs after reduction: %d", mutex.num_mutex_pairs);
     BOR_INFO(&err, "Mutex groups after reduction: %d", mgroups.mgroup_size);
