@@ -319,7 +319,7 @@ static int pruneStrips(void)
 
     pddlMutexPairsInitStrips(&mutex, &strips);
     pddlMutexPairsAddMGroups(&mutex, &mgroups);
-    if (!opt.no_h2){
+    if (opt.no_h2){
         BOR_INFO2(&err, "h^2 disabled");
 
     }else if (strips.has_cond_eff){
