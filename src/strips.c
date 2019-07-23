@@ -504,6 +504,18 @@ int pddlStripsIsFAMGroup(const pddl_strips_t *strips, const bor_iset_t *facts)
     return 1;
 }
 
+static void resetHasCondEffFlag(pddl_strips_t *strips)
+{
+    int has_cond_eff = 0;
+    for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
+        if (strips->op.op[op_id]->cond_eff_size > 0){
+            has_cond_eff = 1;
+            break;
+        }
+    }
+    strips->has_cond_eff = has_cond_eff;
+}
+
 void pddlStripsReduce(pddl_strips_t *strips,
                       const bor_iset_t *del_facts,
                       const bor_iset_t *del_ops)
@@ -526,16 +538,21 @@ void pddlStripsReduce(pddl_strips_t *strips,
         if (remap_fact != NULL)
             BOR_FREE(remap_fact);
 
-        if (strips->has_cond_eff){
-            int has_cond_eff = 0;
-            for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
-                if (strips->op.op[op_id]->cond_eff_size > 0){
-                    has_cond_eff = 1;
-                    break;
-                }
+        BOR_ISET(useless_ops);
+        for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
+            const pddl_strips_op_t *op = strips->op.op[op_id];
+            if (borISetSize(&op->add_eff) == 0
+                    && borISetSize(&op->del_eff) == 0
+                    && op->cond_eff_size == 0){
+                borISetAdd(&useless_ops, op_id);
             }
-            strips->has_cond_eff = has_cond_eff;
         }
+        if (borISetSize(&useless_ops) > 0)
+            pddlStripsOpsDelOpsSet(&strips->op, &useless_ops);
+        borISetFree(&useless_ops);
+
+        if (strips->has_cond_eff)
+            resetHasCondEffFlag(strips);
     }
 }
 
@@ -544,17 +561,25 @@ int pddlStripsRemoveStaticFacts(pddl_strips_t *strips, bor_err_t *err)
     int num = 0;
     int *nonstatic_facts = BOR_CALLOC_ARR(int, strips->fact.fact_size);
 
+    int fact;
+    BOR_ISET_FOR_EACH(&strips->init, fact)
+        nonstatic_facts[fact] = -1;
+
     for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
         const pddl_strips_op_t *op = strips->op.op[op_id];
         int fact;
-        BOR_ISET_FOR_EACH(&op->add_eff, fact)
-            nonstatic_facts[fact] = 1;
+        BOR_ISET_FOR_EACH(&op->add_eff, fact){
+            if (nonstatic_facts[fact] == 0)
+                nonstatic_facts[fact] = 1;
+        }
         BOR_ISET_FOR_EACH(&op->del_eff, fact)
             nonstatic_facts[fact] = 1;
         for (int ce_id = 0; ce_id < op->cond_eff_size; ++ce_id){
             const pddl_strips_op_cond_eff_t *ce = op->cond_eff + ce_id;
-            BOR_ISET_FOR_EACH(&ce->add_eff, fact)
-                nonstatic_facts[fact] = 1;
+            BOR_ISET_FOR_EACH(&ce->add_eff, fact){
+                if (nonstatic_facts[fact] == 0)
+                    nonstatic_facts[fact] = 1;
+            }
             BOR_ISET_FOR_EACH(&ce->del_eff, fact)
                 nonstatic_facts[fact] = 1;
         }
@@ -562,7 +587,7 @@ int pddlStripsRemoveStaticFacts(pddl_strips_t *strips, bor_err_t *err)
 
     BOR_ISET(del_facts);
     for (int fact_id = 0; fact_id < strips->fact.fact_size; ++fact_id){
-        if (!nonstatic_facts[fact_id]){
+        if (nonstatic_facts[fact_id] <= 0){
             borISetAdd(&del_facts, fact_id);
             ++num;
         }

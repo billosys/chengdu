@@ -145,7 +145,7 @@ static void disambInitCur(pddl_disambiguate_t *dis, const bor_iset_t *facts)
 
 int pddlDisambiguateSet(pddl_disambiguate_t *dis, bor_iset_t *set)
 {
-    if (dis->mgroup_size == 0)
+    if (dis->mgroup_size == 0 || borISetSize(set) == 0)
         return 0;
 
     int count, ext;
