@@ -61,6 +61,7 @@ pddl_strips_op_t *pddlStripsOpNew(void);
  */
 void pddlStripsOpFree(pddl_strips_op_t *op);
 void pddlStripsOpDel(pddl_strips_op_t *op);
+void pddlStripsOpFreeAllCondEffs(pddl_strips_op_t *op);
 
 pddl_strips_op_cond_eff_t *pddlStripsOpAddCondEff(pddl_strips_op_t *op,
                                                   const pddl_strips_op_t *f);

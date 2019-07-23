@@ -51,6 +51,13 @@ void pddlStripsOpFree(pddl_strips_op_t *op)
         BOR_FREE(op->cond_eff);
 }
 
+void pddlStripsOpFreeAllCondEffs(pddl_strips_op_t *op)
+{
+    for (int i = 0; i < op->cond_eff_size; ++i)
+        condEffFree(&op->cond_eff[i]);
+    op->cond_eff_size = 0;
+}
+
 pddl_strips_op_t *pddlStripsOpNew(void)
 {
     pddl_strips_op_t *op;

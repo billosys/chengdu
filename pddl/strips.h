@@ -125,6 +125,12 @@ void pddlStripsApplicableOps(const pddl_strips_t *strips,
 int pddlStripsIsFAMGroup(const pddl_strips_t *strips, const bor_iset_t *facts);
 
 /**
+ * Remove conditional effects by merging them into the operator if
+ * possible.
+ */
+int pddlStripsMergeCondEffIfPossible(pddl_strips_t *strips);
+
+/**
  * Delete the specified facts and operators.
  */
 void pddlStripsReduce(pddl_strips_t *strips,

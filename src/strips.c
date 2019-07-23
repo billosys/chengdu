@@ -516,6 +516,47 @@ static void resetHasCondEffFlag(pddl_strips_t *strips)
     strips->has_cond_eff = has_cond_eff;
 }
 
+int pddlStripsMergeCondEffIfPossible(pddl_strips_t *strips)
+{
+    if (!strips->has_cond_eff)
+        return 0;
+
+    int change = 0;
+    for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
+        pddl_strips_op_t *op = strips->op.op[op_id];
+        if (op->cond_eff_size == 0)
+            continue;
+        if (borISetSize(&op->add_eff) > 0 || borISetSize(&op->del_eff) > 0)
+            continue;
+
+        int can_flatten = 1;
+        for (int cei = 1; cei < op->cond_eff_size; ++cei){
+            if (!borISetEq(&op->cond_eff[cei - 1].pre, &op->cond_eff[cei].pre)){
+                can_flatten = 0;
+                break;
+            }
+        }
+
+        if (can_flatten){
+            borISetUnion(&op->pre, &op->cond_eff[0].pre);
+            for (int cei = 0; cei < op->cond_eff_size; ++cei){
+                borISetUnion(&op->del_eff, &op->cond_eff[cei].del_eff);
+                borISetUnion(&op->add_eff, &op->cond_eff[cei].add_eff);
+            }
+
+            pddlStripsOpFreeAllCondEffs(op);
+            pddlStripsOpNormalize(op);
+            change = 1;
+        }
+    }
+
+    if (change){
+        resetHasCondEffFlag(strips);
+        return 1;
+    }
+    return 0;
+}
+
 void pddlStripsReduce(pddl_strips_t *strips,
                       const bor_iset_t *del_facts,
                       const bor_iset_t *del_ops)
