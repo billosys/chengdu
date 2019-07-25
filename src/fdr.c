@@ -118,7 +118,6 @@ static void fdOp(const pddl_strips_t *strips,
                            eff[i].eff_pre, eff[i].eff_eff);
         }
 
-        num_effs = 0;
         for (int vi = 0; vi < fdr_var->var_size; ++vi){
             if (eff[i].eff_eff[vi] >= 0)
                 ++num_effs;
