@@ -19,6 +19,7 @@
 
 #include <boruvka/alloc.h>
 #include <boruvka/sort.h>
+#include <boruvka/lp.h>
 #include "pddl/pddl_struct.h"
 #include "pddl/strips.h"
 #include "pddl/mgroup.h"
@@ -611,6 +612,80 @@ void pddlMGroupsRemoveSmall(pddl_mgroups_t *mgs, int size)
 void pddlMGroupsRemoveEmpty(pddl_mgroups_t *mgs)
 {
     pddlMGroupsRemoveSmall(mgs, 0);
+}
+
+int pddlMGroupsCoverNumber(const pddl_mgroups_t *mgs, int fact_size)
+{
+    if (mgs->mgroup_size == 0)
+        return fact_size;
+    if (!borLPSolverAvailable(BOR_LP_DEFAULT)){
+        BOR_FATAL2("Can't computed mutex group cover number:"
+                   " Missing LP solver!");
+    }
+
+    unsigned lp_flags;
+    bor_lp_t *lp;
+    int cover_number = 0;
+
+    int cols = fact_size + mgs->mgroup_size;
+    int rows = fact_size + 1;
+
+    lp_flags  = BOR_LP_DEFAULT;
+    lp_flags |= BOR_LP_NUM_THREADS(1);
+    lp_flags |= BOR_LP_MIN;
+    lp = borLPNew(rows, cols, lp_flags);
+
+    for (int i = 0; i < cols; ++i){
+        borLPSetVarBinary(lp, i);
+        if (i < fact_size){
+            borLPSetObj(lp, i, 0.);
+        }else{
+            borLPSetObj(lp, i, 1.);
+        }
+    }
+
+    for (int fact_id = 0; fact_id < fact_size; ++fact_id){
+        char sense = 'L';
+        double rhs = 0.;
+        borLPSetRHS(lp, fact_id, rhs, sense);
+        borLPSetCoef(lp, fact_id, fact_id, 1.);
+    }
+
+    BOR_ISET(covered_facts);
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        const pddl_mgroup_t *mg = mgs->mgroup + mi;
+        int fact_id;
+        BOR_ISET_FOR_EACH(&mg->mgroup, fact_id)
+            borLPSetCoef(lp, fact_id, fact_size + mi, -1.);
+        borISetUnion(&covered_facts, &mg->mgroup);
+    }
+
+    int fact_id;
+    BOR_ISET_FOR_EACH(&covered_facts, fact_id)
+        borLPSetCoef(lp, fact_size, fact_id, 1.);
+    char sense = 'E';
+    double rhs = borISetSize(&covered_facts);
+    borLPSetRHS(lp, fact_size, rhs, sense);
+
+    cover_number = fact_size - borISetSize(&covered_facts);
+    borISetFree(&covered_facts);
+
+    double val, *obj;
+    obj = BOR_ALLOC_ARR(double, cols);
+    if (borLPSolve(lp, &val, obj) == 0){
+        for (int i = fact_size; i < cols; ++i){
+            if (obj[i] > 0.5)
+                ++cover_number;
+        }
+
+    }else{
+        return -1;
+    }
+
+    BOR_FREE(obj);
+    borLPDel(lp);
+
+    return cover_number;
 }
 
 void pddlMGroupsPrint(const pddl_t *pddl,
