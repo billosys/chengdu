@@ -43,6 +43,7 @@ OBJS += bitset
 OBJS += fdr_var
 OBJS += fdr
 OBJS += sym
+OBJS += famgroup
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 

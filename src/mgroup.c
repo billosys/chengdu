@@ -446,6 +446,7 @@ pddl_mgroup_t *pddlMGroupsAdd(pddl_mgroups_t *mg, const bor_iset_t *fact)
 
     pddl_mgroup_t *m = mg->mgroup + mg->mgroup_size++;
     bzero(m, sizeof(*m));
+    m->lifted_mgroup_id = -1;
     borISetUnion(&m->mgroup, fact);
     return m;
 }

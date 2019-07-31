@@ -44,6 +44,7 @@
 #include <pddl/lifted_mgroup_infer.h>
 #include <pddl/lifted_mgroup_htable.h>
 #include <pddl/mgroup.h>
+#include <pddl/famgroup.h>
 #include <pddl/irrelevance.h>
 #include <pddl/critical_path.h>
 #include <pddl/bitset.h>
