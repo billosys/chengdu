@@ -73,6 +73,8 @@ void pddlStripsSymFree(pddl_strips_sym_t *sym);
  */
 void pddlStripsSymAllFactSetSymmetries(const pddl_strips_sym_t *sym,
                                        bor_hashset_t *sym_set);
+void pddlStripsSymAllOpSetSymmetries(const pddl_strips_sym_t *sym,
+                                     bor_hashset_t *sym_set);
 
 /**
  * Add to outset symmetric operators to operators in inset according to
