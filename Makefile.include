@@ -64,6 +64,12 @@ ifeq '$(BOR_GUROBI_CFLAGS)' ''
   endif
 endif
 
+USE_LOCAL_LPSOLVE ?= $(shell if test -f $(BASEPATH_)/third-party/lpsolve/liblpsolve.a; then echo "yes"; else echo "no"; fi;)
+ifeq '$(USE_LOCAL_LPSOLVE)' 'yes'
+  LPSOLVE_CFLAGS := -I$(BASEPATH_)/third-party/lpsolve
+  LPSOLVE_LDFLAGS := -L$(BASEPATH_)/third-party/lpsolve -llpsolve -ldl
+endif
+
 ifeq '$(BOR_LPSOLVE_CFLAGS)' ''
   ifneq '$(LPSOLVE_CFLAGS)' ''
     BOR_LPSOLVE_CFLAGS := $(LPSOLVE_CFLAGS)

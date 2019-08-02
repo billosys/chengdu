@@ -80,7 +80,7 @@ clean:
 	if [ -d test ]; then $(MAKE) -C test clean; fi;
 	if [ -d doc ]; then $(MAKE) -C doc clean; fi;
 
-mrproper: clean boruvka-clean opts-clean bliss-clean
+mrproper: clean boruvka-clean opts-clean bliss-clean lpsolve-clean
 
 check:
 	$(MAKE) -C test check
@@ -128,9 +128,16 @@ third-party/bliss/libbliss.a:
 	cd third-party/bliss && patch -p1 <../bliss-0.73-memleak.patch
 	$(MAKE) -C third-party/bliss
 
+lpsolve: third-party/lpsolve/liblpsolve.a
+lpsolve-clean:
+	$(MAKE) -C third-party/lpsolve clean
+third-party/lpsolve/liblpsolve.a:
+	$(MAKE) -C third-party/lpsolve
+
 .PHONY: all clean check check-ci check-valgrind help doc install analyze \
   examples mrproper \
   third-party third-party-clean \
   boruvka boruvka-clean \
   opts opts-clean \
-  bliss bliss-clean
+  bliss bliss-clean \
+  lpsolve lpsolve-clean
