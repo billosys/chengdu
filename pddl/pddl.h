@@ -44,11 +44,13 @@
 #include <pddl/lifted_mgroup_infer.h>
 #include <pddl/lifted_mgroup_htable.h>
 #include <pddl/mgroup.h>
+#include <pddl/famgroup.h>
 #include <pddl/irrelevance.h>
 #include <pddl/critical_path.h>
 #include <pddl/bitset.h>
 #include <pddl/disambiguation.h>
 #include <pddl/fdr_var.h>
 #include <pddl/fdr.h>
+#include <pddl/sym.h>
 
 #endif /* __PDDL_H__ */

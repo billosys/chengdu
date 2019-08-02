@@ -3,6 +3,7 @@
 
 CFLAGS += -I.
 CFLAGS += $(BORUVKA_CFLAGS)
+CFLAGS += $(BLISS_CFLAGS)
 
 CPPCHECK_FLAGS += --platform=unix64 --enable=all -I. -Ithird-party/boruvka
 
@@ -41,6 +42,8 @@ OBJS += disambiguation
 OBJS += bitset
 OBJS += fdr_var
 OBJS += fdr
+OBJS += sym
+OBJS += famgroup
 
 OBJS := $(foreach obj,$(OBJS),.objs/$(obj).o)
 
@@ -77,7 +80,7 @@ clean:
 	if [ -d test ]; then $(MAKE) -C test clean; fi;
 	if [ -d doc ]; then $(MAKE) -C doc clean; fi;
 
-mrproper: clean boruvka-clean opts-clean
+mrproper: clean boruvka-clean opts-clean bliss-clean lpsolve-clean
 
 check:
 	$(MAKE) -C test check
@@ -96,8 +99,8 @@ doc:
 analyze: clean
 	$(SCAN_BUILD) $(MAKE)
 
-third-party: boruvka opts
-third-party-clean: boruvka-clean opts-clean
+third-party: boruvka opts bliss
+third-party-clean: boruvka-clean opts-clean bliss-clean
 
 boruvka: third-party/boruvka/Makefile
 	$(MAKE) $(_BOR_MAKE_DEF) -C third-party/boruvka all
@@ -115,4 +118,26 @@ third-party/opts/Makefile:
 	git submodule init -- third-party/opts
 	git submodule update -- third-party/opts
 
-.PHONY: all clean check check-ci check-valgrind help doc install analyze examples third-party third-party-clean boruvka boruvka-clean opts opts-clean mrproper
+bliss: third-party/bliss/libbliss.a
+bliss-clean:
+	rm -rf third-party/bliss
+third-party/bliss/libbliss.a:
+	rm -rf third-party/bliss
+	cd third-party && unzip bliss-$(BLISS_VERSION).zip
+	mv third-party/bliss-$(BLISS_VERSION) third-party/bliss
+	cd third-party/bliss && patch -p1 <../bliss-0.73-memleak.patch
+	$(MAKE) -C third-party/bliss
+
+lpsolve: third-party/lpsolve/liblpsolve.a
+lpsolve-clean:
+	$(MAKE) -C third-party/lpsolve clean
+third-party/lpsolve/liblpsolve.a:
+	$(MAKE) -C third-party/lpsolve
+
+.PHONY: all clean check check-ci check-valgrind help doc install analyze \
+  examples mrproper \
+  third-party third-party-clean \
+  boruvka boruvka-clean \
+  opts opts-clean \
+  bliss bliss-clean \
+  lpsolve lpsolve-clean

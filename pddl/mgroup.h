@@ -112,6 +112,12 @@ void pddlMGroupsRemoveSmall(pddl_mgroups_t *mgs, int size);
 void pddlMGroupsRemoveEmpty(pddl_mgroups_t *mgs);
 
 /**
+ * Returns mutex group cover number, i.e., minimal number of mutex groups
+ * needed to cover all facts.
+ */
+int pddlMGroupsCoverNumber(const pddl_mgroups_t *mgs, int fact_size);
+
+/**
  * Debug print out
  */
 void pddlMGroupsPrint(const pddl_t *pddl,

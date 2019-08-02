@@ -14,5 +14,6 @@ __pycache__
 *.pyc
 *.pyo
 third-party/preprocess/preprocess
+third-party/bliss
 pddl/iset.h
 src/iset.c

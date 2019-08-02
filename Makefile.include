@@ -52,9 +52,46 @@ ifeq '$(USE_LOCAL_BORUVKA)' 'yes'
   BORUVKA_LDFLAGS := -L$(BASEPATH_)/third-party/boruvka -lboruvka
 endif
 
+ifeq '$(BOR_CPLEX_CFLAGS)' ''
+  ifneq '$(CPLEX_CFLAGS)' ''
+    BOR_CPLEX_CFLAGS := $(CPLEX_CFLAGS)
+  endif
+endif
+
+ifeq '$(BOR_GUROBI_CFLAGS)' ''
+  ifneq '$(GUROBI_CFLAGS)' ''
+    BOR_GUROBI_CFLAGS := $(GUROBI_CFLAGS)
+  endif
+endif
+
+USE_LOCAL_LPSOLVE ?= $(shell if test -f $(BASEPATH_)/third-party/lpsolve/liblpsolve.a; then echo "yes"; else echo "no"; fi;)
+ifeq '$(USE_LOCAL_LPSOLVE)' 'yes'
+  LPSOLVE_CFLAGS := -I$(BASEPATH_)/third-party/lpsolve
+  LPSOLVE_LDFLAGS := -L$(BASEPATH_)/third-party/lpsolve -llpsolve -ldl
+endif
+
+ifeq '$(BOR_LPSOLVE_CFLAGS)' ''
+  ifneq '$(LPSOLVE_CFLAGS)' ''
+    BOR_LPSOLVE_CFLAGS := $(LPSOLVE_CFLAGS)
+  endif
+endif
+
 
 _BOR_MAKE_VARS := $(filter BOR_%, $(.VARIABLES))
 _BOR_MAKE_DEF := $(foreach V,$(_BOR_MAKE_VARS),$(V:BOR_%=%)="$($(V))") DEBUG=no
+
+
+BLISS_VERSION = 0.73
+BLISS_CFLAGS ?=
+BLISS_LDFLAGS ?=
+USE_LOCAL_BLISS ?= $(shell if test -f $(BASEPATH_)/third-party/bliss/libbliss.a; then echo "yes"; else echo "no"; fi;)
+ifeq '$(USE_LOCAL_BLISS)' 'yes'
+  BLISS_CFLAGS := -I$(BASEPATH_)/third-party
+  BLISS_LDFLAGS := -L$(BASEPATH_)/third-party/bliss -lbliss -lstdc++
+endif
+
+
+LP_LDFLAGS := $(CPLEX_LDFLAGS) $(GUROBI_LDFLAGS) $(LPSOLVE_LDFLAGS)
 
 .DEFAULT_GOAL := all
 
@@ -90,6 +127,16 @@ help:
 	@echo "    USE_LOCAL_BORUVKA = $(USE_LOCAL_BORUVKA)"
 	@echo "    BORUVKA_CFLAGS    = $(BORUVKA_CFLAGS)"
 	@echo "    BORUVKA_LDFLAGS   = $(BORUVKA_LDFLAGS)"
+	@echo "    BLISS_CFLAGS      = $(BLISS_CFLAGS)"
+	@echo "    BLISS_LDFLAGS     = $(BLISS_LDFLAGS)"
+	@echo ""
+	@echo "    CPLEX_CFLAGS    = $(CPLEX_CFLAGS)"
+	@echo "    CPLEX_LDFLAGS   = $(CPLEX_LDFLAGS)"
+	@echo "    GUROBI_CFLAGS   = $(GUROBI_CFLAGS)"
+	@echo "    GUROBI_LDFLAGS  = $(GUROBI_LDFLAGS)"
+	@echo "    LPSOLVE_CFLAGS  = $(LPSOLVE_CFLAGS)"
+	@echo "    LPSOLVE_LDFLAGS = $(LPSOLVE_LDFLAGS)"
+	@echo "    LP_LDFLAGS      = $(LP_LDFLAGS)"
 	@echo
 	@echo "Boruvka make variables: $(_BOR_MAKE_DEF)"
 
