@@ -199,14 +199,14 @@ int __WINAPI getMDO(lprec *lp, MYBOOL *usedpos, int *colorder, int *size, MYBOOL
   knobs [COLAMD_DENSE_ROW] = 0.2+0.2 ;    /* default changed for UMFPACK */
   knobs [COLAMD_DENSE_COL] = knobs [COLAMD_DENSE_ROW];    
   if(symmetric && (nrows == ncols)) {
-    MEMCOPY(colorder, Brows, ncols + 1);
+    memcpy(colorder, Brows, ncols + 1);
     error = !symamd(nrows, colorder, col_end, Brows, knobs, stats, mdo_calloc, mdo_free);
   }
   else
     error = !colamd(nrows, ncols, Blen, Brows, col_end, knobs, stats);
 #else
   if(symmetric && (nrows == ncols)) {
-    MEMCOPY(colorder, Brows, ncols + 1);
+    memcpy(colorder, Brows, ncols + 1);
     error = !symamd(nrows, colorder, col_end, Brows, knobs, stats, mdo_calloc, mdo_free);
   }
   else
@@ -218,7 +218,7 @@ Transfer:
   if(error) 
     error = stats[COLAMD_STATUS];
   else {
-    MEMCOPY(Brows, colorder, ncols + 1);
+    memcpy(Brows, colorder, ncols + 1);
     for(j = 0; j < ncols; j++) {
       kk = col_end[j];
       n = Brows[kk+1];
@@ -227,11 +227,11 @@ Transfer:
   }
 
   /* Free temporary vectors */
-  FREE(col_end);
+  free(col_end);
   if(row_map != NULL)
-    FREE(row_map);
+    free(row_map);
   if(Brows != NULL)
-    FREE(Brows);
+    free(Brows);
 
   if(size != NULL)
     *size = ncols;
