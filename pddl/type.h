@@ -28,26 +28,27 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl_objset {
+    pddl_obj_id_t *obj;
+    int obj_size;
+    int obj_alloc;
+};
+typedef struct pddl_objset pddl_objset_t;
+
 struct pddl_type {
     char *name;        /*!< Name of the type */
     int parent;        /*!< ID of the parent type */
     bor_iset_t child;  /*!< IDs of children types */
     bor_iset_t either; /*!< type IDs for special (either ...) type */
+    pddl_objset_t obj; /*!< Objs of this type */
 };
 typedef struct pddl_type pddl_type_t;
-
-struct pddl_objs_by_type {
-    pddl_obj_id_t *obj;
-    int obj_size;
-    int obj_alloc;
-};
-typedef struct pddl_objs_by_type pddl_objs_by_type_t;
 
 struct pddl_types {
     pddl_type_t *type;
     int type_size;
+    int type_alloc;
 
-    pddl_objs_by_type_t *obj_by_type;
     char *obj_type_map;
     size_t obj_type_map_memsize;
 };
@@ -72,6 +73,13 @@ void pddlTypesFree(pddl_types_t *types);
  * Returns ID of the type corresponding to the name.
  */
 int pddlTypesGet(const pddl_types_t *t, const char *name);
+
+/**
+ * Adds a new type with the given name and the specified parent.
+ * If a type with the same name already exists, nothing is added and its ID
+ * is returned, otherwise the new type's ID is returned.
+ */
+int pddlTypesAdd(pddl_types_t *t, const char *name, int parent);
 
 /**
  * Prints list of types to the specified output.
