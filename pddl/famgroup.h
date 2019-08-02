@@ -59,17 +59,6 @@ typedef struct pddl_famgroup_config pddl_famgroup_config_t;
         -1., /* .time_limit */ \
     }
 
-/** Maximal fam-groups are inferred and also all subsets of those
- *  mutex groups stored in pddl_mgroups_t structure are skipped. */
-#define PDDL_FAMGROUP_MAXIMAL 0x1u
-/** fam-groups with non-empty intersection with the goal are found */
-#define PDDL_FAMGROUP_GOAL 0x2u
-/** In the case symmetries are used, only the asymetric fam-groups are
- *  stored in the output set. */
-#define PDDL_FAMGROUP_KEEP_ONLY_ASYMETRIC 0x10u
-/** Prioritize fam-groups containing new facts */
-#define PDDL_FAMGROUP_PRIORITIZE_UNCOVERED 0x20u
-
 /**
  * Find fact-alternating mutex groups while skipping those that are already
  * in mgs.
