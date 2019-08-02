@@ -21,6 +21,7 @@
 #include <boruvka/alloc.h>
 #include "pddl/pddl_struct.h"
 #include "err.h"
+#include "assert.h"
 
 static int checkDerivedPredicates(const pddl_t *pddl, bor_err_t *err)
 {
@@ -766,6 +767,25 @@ void pddlCheckSizeTypes(const pddl_t *pddl)
                       sizeof(pddl_action_param_size_t) * 8 - 1);
         }
     }
+}
+
+void pddlAddObjectTypes(pddl_t *pddl)
+{
+    for (pddl_obj_id_t obj_id = 0; obj_id < pddl->obj.obj_size; ++obj_id){
+        pddl_obj_t *obj = pddl->obj.obj + obj_id;
+        ASSERT(obj->type >= 0);
+        if (pddlTypeNumObjs(&pddl->type, obj->type) <= 1)
+            continue;
+
+        char *name = BOR_ALLOC_ARR(char, strlen(obj->name) + 8 + 1);
+        sprintf(name, "%s-OBJTYPE", obj->name);
+        int type_id = pddlTypesAdd(&pddl->type, name, obj->type);
+        ASSERT(type_id == pddl->type.type_size - 1);
+        pddlTypesAddObj(&pddl->type, obj_id, type_id);
+        obj->type = type_id;
+        BOR_FREE(name);
+    }
+    pddlTypesBuildObjTypeMap(&pddl->type, pddl->obj.obj_size);
 }
 
 void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout)
