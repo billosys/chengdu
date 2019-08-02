@@ -27,6 +27,38 @@
 extern "C" {
 #endif /* __cplusplus */
 
+struct pddl_famgroup_config {
+    /** If true (default), only maximal fam-groups are inferred */
+    int maximal;
+    /** If true, only fam-groups with non-empty intersection with the goal
+     * are inferred. */
+    int goal;
+    /** If set, the symmetries will be used for generation of all symmetric
+     * fam-groups (instead of inferring them using LP) */
+    const pddl_strips_sym_t *sym;
+    /** In the case symmetries are used, only the asymetric fam-groups are
+     *  stored in the output set. */
+    int keep_only_asymetric;
+    /** Prioritize fam-groups containing new facts */
+    int prioritize_uncovered;
+
+    /** If set to >0, limit on the number of inferred fam-groups */
+    int limit;
+    /** If set to >0., the time limit for the inference algorithm */
+    float time_limit;
+};
+typedef struct pddl_famgroup_config pddl_famgroup_config_t;
+
+#define PDDL_FAMGROUP_CONFIG_INIT { \
+        1, /* .maximal */ \
+        0, /* .goal */ \
+        NULL, /* .sym */ \
+        0, /* .keep_only_asymetric */ \
+        0, /* .prioritize_uncovered */ \
+        -1, /* .limit */ \
+        -1., /* .time_limit */ \
+    }
+
 /** Maximal fam-groups are inferred and also all subsets of those
  *  mutex groups stored in pddl_mgroups_t structure are skipped. */
 #define PDDL_FAMGROUP_MAXIMAL 0x1u
@@ -40,32 +72,29 @@ extern "C" {
 
 /**
  * Find fact-alternating mutex groups while skipping those that are already
- * in mgs. If limit is set to <=0, then no limit on the number of
- * fam-groups is set.
+ * in mgs.
  */
 int pddlFAMGroupsInfer(pddl_mgroups_t *mgs,
                        const pddl_strips_t *strips,
-                       unsigned int flags,
-                       int limit,
-                       float time_limit);
-
-int pddlFAMGroupsInferSym(pddl_mgroups_t *mgs,
-                          const pddl_strips_t *strips,
-                          unsigned int flags,
-                          const pddl_strips_sym_t *sym,
-                          int limit,
-                          float time_limit);
+                       const pddl_famgroup_config_t *cfg,
+                       bor_err_t *err);
 
 _bor_inline int pddlFAMGroupsInferMaximal(pddl_mgroups_t *mgs,
-                                          const pddl_strips_t *strips)
+                                          const pddl_strips_t *strips,
+                                          bor_err_t *err)
 {
-    return pddlFAMGroupsInfer(mgs, strips, PDDL_FAMGROUP_MAXIMAL, 0, -1.);
+    pddl_famgroup_config_t cfg = PDDL_FAMGROUP_CONFIG_INIT;
+    cfg.maximal = 1;
+    return pddlFAMGroupsInfer(mgs, strips, &cfg, err);
 }
 
 _bor_inline int pddlFAMGroupsInferAll(pddl_mgroups_t *mgs,
-                                      const pddl_strips_t *strips)
+                                      const pddl_strips_t *strips,
+                                      bor_err_t *err)
 {
-    return pddlFAMGroupsInfer(mgs, strips, 0, 0, -1.);
+    pddl_famgroup_config_t cfg = PDDL_FAMGROUP_CONFIG_INIT;
+    cfg.maximal = 0;
+    return pddlFAMGroupsInfer(mgs, strips, &cfg, err);
 }
 
 /**

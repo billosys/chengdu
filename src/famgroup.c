@@ -21,17 +21,11 @@
 #include <boruvka/lp.h>
 #include "pddl/famgroup.h"
 
-#define MAXIMAL_MASK 0x1u
-#define GOAL_MASK 0x2u
-#define KEEP_ONLY_ASYMETRIC_MASK 0x10u
-
 struct fam {
+    pddl_famgroup_config_t cfg;
     const pddl_strips_t *strips;
-    const pddl_strips_sym_t *sym;
     pddl_mgroups_t *mgroups;
-    unsigned flags;
-    int limit;
-    float time_limit;
+    bor_err_t *err;
 
     bor_lp_t *lp;
     int lp_var_size;
@@ -124,7 +118,7 @@ static void skipMGroupExactlyConstr(fam_t *fam, const bor_iset_t *facts)
 
 static void skipMGroup(fam_t *fam, const bor_iset_t *facts)
 {
-    if (fam->flags & MAXIMAL_MASK){
+    if (fam->cfg.maximal){
         skipMGroupAndSubsetsConstr(fam, facts);
     }else{
         skipMGroupExactlyConstr(fam, facts);
@@ -164,10 +158,10 @@ static void genSymmetricFAMGroups(fam_t *fam, const bor_iset_t *mgfacts)
 
     borHashSetInitISet(&set_of_mgroups);
     borHashSetAdd(&set_of_mgroups, mgfacts);
-    pddlStripsSymAllFactSetSymmetries(fam->sym, &set_of_mgroups);
+    pddlStripsSymAllFactSetSymmetries(fam->cfg.sym, &set_of_mgroups);
     for (int i = 1; i < set_of_mgroups.size; ++i){
         const bor_iset_t *fset = borHashSetGet(&set_of_mgroups, i);
-        if (!(fam->flags & PDDL_FAMGROUP_KEEP_ONLY_ASYMETRIC))
+        if (!fam->cfg.keep_only_asymetric)
             addFAMGroup(fam->mgroups, fset, fam->strips);
         skipMGroup(fam, fset);
     }
@@ -193,27 +187,23 @@ static void prioritizeUncovered(fam_t *fam)
 }
 
 static void famInit(fam_t *fam,
-                    const pddl_strips_t *strips,
-                    const pddl_strips_sym_t *sym,
                     pddl_mgroups_t *mgroups,
-                    unsigned flags,
-                    int limit,
-                    float time_limit)
+                    const pddl_strips_t *strips,
+                    const pddl_famgroup_config_t *cfg,
+                    bor_err_t *err)
 {
     unsigned lp_flags;
     int rows;
 
     bzero(fam, sizeof(*fam));
+    fam->cfg = *cfg;
     fam->strips = strips;
-    fam->sym = sym;
     fam->mgroups = mgroups;
-    fam->flags = flags;
-    fam->limit = limit;
-    fam->time_limit = time_limit;
+    fam->err = err;
     fam->row = 0;
 
-    if (limit <= 0)
-        fam->limit = INT_MAX;
+    if (fam->cfg.limit <= 0)
+        fam->cfg.limit = INT_MAX;
 
     if (!borLPSolverAvailable(BOR_LP_DEFAULT)){
         fprintf(stderr, "Missing LP solver! Exiting...\n");
@@ -240,7 +230,7 @@ static void famInit(fam_t *fam,
     // Operator constraints
     opConstrs(fam);
 
-    if (flags & GOAL_MASK)
+    if (fam->cfg.goal)
         goalConstr(fam);
 
     // Skip mutex groups already stored in mgroups
@@ -259,68 +249,68 @@ static void famInfer(fam_t *fam)
     double val, *obj;
     pddl_mgroup_t *mg;
     bor_timer_t timer;
+    int last_info = 0;
 
     borTimerStart(&timer);
 
     obj = BOR_ALLOC_ARR(double, borLPNumCols(fam->lp));
     for (int i = 0;
             borLPSolve(fam->lp, &val, obj) == 0
-                && val > 0.5 && i < fam->limit;
+                && val > 0.5 && i < fam->cfg.limit;
             ++i){
         objToFAMGroup(obj, fam->strips, &famgroup);
         mg = addFAMGroup(fam->mgroups, &famgroup, fam->strips);
         skipMGroup(fam, &mg->mgroup);
-        if (fam->sym != NULL)
+        if (fam->cfg.sym != NULL)
             genSymmetricFAMGroups(fam, &mg->mgroup);
 
-        if (fam->flags & PDDL_FAMGROUP_PRIORITIZE_UNCOVERED)
+        if (fam->cfg.prioritize_uncovered)
             prioritizeUncovered(fam);
 
-        if (fam->time_limit > 0.){
-            borTimerStop(&timer);
-            if (borTimerElapsedInSF(&timer) > fam->time_limit)
-                break;
+        borTimerStop(&timer);
+        float elapsed = borTimerElapsedInSF(&timer);
+        if ((int)elapsed > last_info){
+            BOR_INFO(fam->err, "  Inference of fam-groups: fam-groups: %d",
+                     i + 1);
+            last_info = elapsed;
         }
+
+        if (fam->cfg.time_limit > 0. && elapsed > fam->cfg.time_limit)
+            break;
     }
     BOR_FREE(obj);
     borISetFree(&famgroup);
 }
 
-static int infer(pddl_mgroups_t *mgroups,
-                 const pddl_strips_t *strips,
-                 unsigned flags,
-                 const pddl_strips_sym_t *sym,
-                 int limit,
-                 float time_limit)
+int pddlFAMGroupsInfer(pddl_mgroups_t *mgs,
+                       const pddl_strips_t *strips,
+                       const pddl_famgroup_config_t *cfg,
+                       bor_err_t *err)
 {
     if (strips->has_cond_eff)
         BOR_FATAL2("fam-groups does not support conditional effects");
 
     fam_t fam;
+    int start_num = mgs->mgroup_size;
+    BOR_INFO(err, "Inference of fam-groups ["
+                  "maximal: %d, goal: %d, sym: %d, keep-only-asymetric: %d,"
+                  " prioritize-uncovered: %d,"
+                  " limit: %d, time-limit: %.2fs] ...",
+                  cfg->maximal,
+                  cfg->goal,
+                  (cfg->sym == NULL ? 0 : 1),
+                  cfg->keep_only_asymetric,
+                  cfg->prioritize_uncovered,
+                  cfg->limit,
+                  cfg->time_limit);
 
-    famInit(&fam, strips, sym, mgroups, flags, limit, time_limit);
+    famInit(&fam, mgs, strips, cfg, err);
     famInfer(&fam);
     famFree(&fam);
+
+    BOR_INFO(err, "Inference of fam-groups DONE: %d fam-groups found.",
+             mgs->mgroup_size - start_num);
     return 0;
-}
-
-int pddlFAMGroupsInfer(pddl_mgroups_t *mgs,
-                       const pddl_strips_t *strips,
-                       unsigned int flags,
-                       int limit,
-                       float time_limit)
-{
-    return infer(mgs, strips, flags, NULL, limit, time_limit);
-}
-
-int pddlFAMGroupsInferSym(pddl_mgroups_t *mgs,
-                          const pddl_strips_t *strips,
-                          unsigned int flags,
-                          const pddl_strips_sym_t *sym,
-                          int limit,
-                          float time_limit)
-{
-    return infer(mgs, strips, flags, sym, limit, time_limit);
 }
 
 
