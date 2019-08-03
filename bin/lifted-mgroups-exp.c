@@ -150,6 +150,28 @@ int main(int argc, char *argv[])
         fprintf(stdout, " (%s)", strips.fact.fact[fact_id]->name);
     fprintf(stdout, "\n");
 
+    if (!strips.has_cond_eff){
+        pddl_famgroup_config_t fam_cfg = PDDL_FAMGROUP_CONFIG_INIT;
+        pddl_mgroups_t fam_groups;
+        pddlMGroupsInitEmpty(&fam_groups);
+        pddlFAMGroupsInfer(&fam_groups, &strips, &fam_cfg, &err);
+        fprintf(stdout, "Maximal FAM Groups:\n");
+        pddlMGroupsPrint(&pddl, &strips, &fam_groups, stdout);
+        pddlMGroupsFree(&fam_groups);
+
+        pddlMGroupsInitCopy(&fam_groups, &mgroups);
+        pddlFAMGroupsInfer(&fam_groups, &strips, &fam_cfg, &err);
+        fprintf(stdout, "Maximal FAM Groups Incremental:\n");
+        pddlMGroupsPrint(&pddl, &strips, &fam_groups, stdout);
+        pddlMGroupsFree(&fam_groups);
+
+        pddlMGroupsInitCopy(&fam_groups, &fd_mgroups);
+        pddlFAMGroupsInfer(&fam_groups, &strips, &fam_cfg, &err);
+        fprintf(stdout, "Maximal FAM Groups Incremental FD:\n");
+        pddlMGroupsPrint(&pddl, &strips, &fam_groups, stdout);
+        pddlMGroupsFree(&fam_groups);
+    }
+
 
     pddlAddObjectTypes(&pddl);
     pddl_lifted_mgroups_t ot_lifted_mgroups;
