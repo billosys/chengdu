@@ -150,6 +150,11 @@ int main(int argc, char *argv[])
         fprintf(stdout, " (%s)", strips.fact.fact[fact_id]->name);
     fprintf(stdout, "\n");
 
+    fprintf(stdout, "MGroups Cover Number: %d\n",
+            pddlMGroupsCoverNumber(&mgroups, strips.fact.fact_size));
+    fprintf(stdout, "FD MGroups Cover Number: %d\n",
+            pddlMGroupsCoverNumber(&fd_mgroups, strips.fact.fact_size));
+
     if (!strips.has_cond_eff){
         pddl_famgroup_config_t fam_cfg = PDDL_FAMGROUP_CONFIG_INIT;
         pddl_mgroups_t fam_groups;
@@ -169,6 +174,10 @@ int main(int argc, char *argv[])
         pddlFAMGroupsInfer(&fam_groups, &strips, &fam_cfg, &err);
         fprintf(stdout, "Maximal FAM Groups Incremental FD:\n");
         pddlMGroupsPrint(&pddl, &strips, &fam_groups, stdout);
+
+        fprintf(stdout, "FAMGroups Cover Number: %d\n",
+                pddlMGroupsCoverNumber(&fam_groups, strips.fact.fact_size));
+
         pddlMGroupsFree(&fam_groups);
     }
 
