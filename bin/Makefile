@@ -21,6 +21,7 @@ TARGETS += pddl-strips-as-py
 TARGETS += pddl-pddl
 TARGETS += pddl-lifted-mgroups
 TARGETS += pddl-fdr
+TARGETS += pddl-lifted-mgroups-exp
 
 all: $(TARGETS)
 
