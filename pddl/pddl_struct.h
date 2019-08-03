@@ -112,6 +112,11 @@ int pddlPredFuncMaxParamSize(const pddl_t *pddl);
 void pddlCheckSizeTypes(const pddl_t *pddl);
 
 /**
+ * Adds one new type per object if necessary.
+ */
+void pddlAddObjectTypes(pddl_t *pddl);
+
+/**
  * Prints PDDL domain file.
  */
 void pddlPrintPDDLDomain(const pddl_t *pddl, FILE *fout);
