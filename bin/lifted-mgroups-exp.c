@@ -99,14 +99,17 @@ int main(int argc, char *argv[])
     pddlLiftedMGroupsInferFAMGroups(&pddl, &limits, &lifted_mgroups, &err);
     fprintf(stdout, "Lifted MGroups:\n");
     pddlLiftedMGroupsPrint(&pddl, &lifted_mgroups, stdout);
+    fflush(stdout);
 
     pddlLiftedMGroupsInferMonotonicity(&pddl, &limits,
                                        &fd_monotonicity_invariants,
                                        &fd_lifted_mgroups, &err);
     fprintf(stdout, "FD Lifted MGroups:\n");
     pddlLiftedMGroupsPrint(&pddl, &fd_lifted_mgroups, stdout);
+    fflush(stdout);
     fprintf(stdout, "FD Monotonicity Invariants:\n");
     pddlLiftedMGroupsPrint(&pddl, &fd_monotonicity_invariants, stdout);
+    fflush(stdout);
 
     pddl_ground_config_t ground_cfg = PDDL_GROUND_CONFIG_INIT;
     if (pddlStripsGround(&strips, &pddl, &ground_cfg, &err) != 0){
@@ -140,20 +143,25 @@ int main(int argc, char *argv[])
     pddlMGroupsGround(&mgroups, &pddl, &lifted_mgroups, &strips);
     fprintf(stdout, "Ground MGroups:\n");
     pddlMGroupsPrint(&pddl, &strips, &mgroups, stdout);
+    fflush(stdout);
 
     pddlMGroupsGround(&fd_mgroups, &pddl, &fd_lifted_mgroups, &strips);
     fprintf(stdout, "Ground FD MGroups:\n");
     pddlMGroupsPrint(&pddl, &strips, &fd_mgroups, stdout);
+    fflush(stdout);
 
     fprintf(stdout, "Facts:");
     for (int fact_id = 0; fact_id < strips.fact.fact_size; ++fact_id)
         fprintf(stdout, " (%s)", strips.fact.fact[fact_id]->name);
     fprintf(stdout, "\n");
+    fflush(stdout);
 
     fprintf(stdout, "MGroups Cover Number: %d\n",
             pddlMGroupsCoverNumber(&mgroups, strips.fact.fact_size));
+    fflush(stdout);
     fprintf(stdout, "FD MGroups Cover Number: %d\n",
             pddlMGroupsCoverNumber(&fd_mgroups, strips.fact.fact_size));
+    fflush(stdout);
 
     if (!strips.has_cond_eff){
         pddl_famgroup_config_t fam_cfg = PDDL_FAMGROUP_CONFIG_INIT;
@@ -162,18 +170,21 @@ int main(int argc, char *argv[])
         pddlFAMGroupsInfer(&fam_groups, &strips, &fam_cfg, &err);
         fprintf(stdout, "Maximal FAM Groups:\n");
         pddlMGroupsPrint(&pddl, &strips, &fam_groups, stdout);
+        fflush(stdout);
         pddlMGroupsFree(&fam_groups);
 
         pddlMGroupsInitCopy(&fam_groups, &mgroups);
         pddlFAMGroupsInfer(&fam_groups, &strips, &fam_cfg, &err);
         fprintf(stdout, "Maximal FAM Groups Incremental:\n");
         pddlMGroupsPrint(&pddl, &strips, &fam_groups, stdout);
+        fflush(stdout);
         pddlMGroupsFree(&fam_groups);
 
         pddlMGroupsInitCopy(&fam_groups, &fd_mgroups);
         pddlFAMGroupsInfer(&fam_groups, &strips, &fam_cfg, &err);
         fprintf(stdout, "Maximal FAM Groups Incremental FD:\n");
         pddlMGroupsPrint(&pddl, &strips, &fam_groups, stdout);
+        fflush(stdout);
 
         fprintf(stdout, "FAMGroups Cover Number: %d\n",
                 pddlMGroupsCoverNumber(&fam_groups, strips.fact.fact_size));
@@ -188,11 +199,13 @@ int main(int argc, char *argv[])
     pddlLiftedMGroupsInferFAMGroups(&pddl, &limits, &ot_lifted_mgroups, &err);
     fprintf(stdout, "Obj-Type Lifted MGroups:\n");
     pddlLiftedMGroupsPrint(&pddl, &ot_lifted_mgroups, stdout);
+    fflush(stdout);
 
     pddl_mgroups_t ot_mgroups;
     pddlMGroupsGround(&ot_mgroups, &pddl, &ot_lifted_mgroups, &strips);
     fprintf(stdout, "Ground Obj-Type MGroups:\n");
     pddlMGroupsPrint(&pddl, &strips, &ot_mgroups, stdout);
+    fflush(stdout);
 
 
     pddlMGroupsFree(&ot_mgroups);
