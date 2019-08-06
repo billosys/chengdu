@@ -31,6 +31,8 @@ extern "C" {
  * Performs irrelevance analysis and finds irrelevant fact, irrelevant
  * operators and also finds static facts (of course, static implies
  * irrelevant).
+ * Facts in irrelevant_facts, and operators in irrelenvat_ops, are ignored
+ * during the analysis.
  */
 int pddlIrrelevanceAnalysis(const pddl_strips_t *strips,
                             bor_iset_t *irrelevant_facts,

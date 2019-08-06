@@ -108,6 +108,18 @@ int pddlIrrelevanceAnalysis(const pddl_strips_t *strips,
     fact_irr = BOR_CALLOC_ARR(int, strips->fact.fact_size);
     op_irr = BOR_CALLOC_ARR(int, strips->op.op_size);
 
+    if (irrelevant_ops != NULL && borISetSize(irrelevant_ops) > 0){
+        int op_id;
+        BOR_ISET_FOR_EACH(irrelevant_ops, op_id)
+            op_irr[op_id] = 1;
+    }
+
+    if (irrelevant_facts != NULL && borISetSize(irrelevant_facts) > 0){
+        int fact_id;
+        BOR_ISET_FOR_EACH(irrelevant_facts, fact_id)
+            fact_irr[fact_id] = 1;
+    }
+
     /* Detect static facts:
      * Although during grounding the facts created from the static
      * predicates were already removed, there still can be facts that are

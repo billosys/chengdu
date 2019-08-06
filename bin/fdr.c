@@ -17,6 +17,7 @@ struct options {
     int no_ground_prune_dead_end;
 
     int h2fw;
+    int no_dead_end_op;
     int no_h2;
     int no_irr;
 
@@ -111,6 +112,8 @@ static int readOpts(int *argc, char *argv[])
     optsAddDesc("h2fw", 0x0, OPTS_NONE, &opt.h2fw, NULL,
                 "Use only forward h^2 for pruning (instead of"
                 " forward/backward).");
+    optsAddDesc("no-dead-end-op", 0x0, OPTS_NONE, &opt.no_dead_end_op, NULL,
+                "Do NOT use fam-groups for detecting dead-end operators.");
     optsAddDesc("no-h2", 0x0, OPTS_NONE, &opt.no_h2, NULL,
                 "Do NOT use h^2 for pruning.");
     optsAddDesc("no-irrelevance", 0x0, OPTS_NONE, &opt.no_irr, NULL,
@@ -293,6 +296,7 @@ static int groundMGroups(void)
 
     pddlMGroupsGround(&mgroups, &pddl, &lifted_mgroups, &strips);
     pddlMGroupsSetExactlyOne(&mgroups, &strips);
+    pddlMGroupsSetGoal(&mgroups, &strips);
     BOR_INFO(&err, "Found %d mutex groups", mgroups.mgroup_size);
 
     if (opt.mgroup_pre_out != NULL){
@@ -319,6 +323,16 @@ static int pruneStrips(void)
 
     pddlMutexPairsInitStrips(&mutex, &strips);
     pddlMutexPairsAddMGroups(&mutex, &mgroups);
+    if (opt.no_dead_end_op){
+        BOR_INFO2(&err, "Pruning dead-end operators disabled");
+
+    }else{
+        BOR_INFO2(&err, "Pruning dead-end operators ...");
+        pddlFAMGroupsDeadEndOps(&mgroups, &strips, &rm_op);
+        BOR_INFO(&err, "Pruning dead-end operators done. Dead end ops: %d",
+                 borISetSize(&rm_op));
+    }
+
     if (opt.no_h2){
         BOR_INFO2(&err, "h^2 disabled");
 
@@ -368,6 +382,7 @@ static int pruneStrips(void)
 
             pddlMGroupsReduce(&mgroups, &rm_fact);
             pddlMGroupsSetExactlyOne(&mgroups, &strips);
+            pddlMGroupsSetGoal(&mgroups, &strips);
         }
     }
 
