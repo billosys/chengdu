@@ -18,10 +18,14 @@ NCPUS=8
 
 cat >Makefile.local <<EOF
 CFLAGS = -march=native
+CPLEX_CFLAGS = -I/mnt/appl/software/CPLEX/12.9-foss-2018b/cplex/include
+CPLEX_LDFLAGS = -L/mnt/appl/software/CPLEX/12.9-foss-2018b/cplex/bin/x86-64_linux -Wl,-rpath=/mnt/appl/software/CPLEX/12.9-foss-2018b/cplex/bin/x86-64_linux -lcplex1290
 EOF
+
 
 make mrproper
 make -j$NCPUS boruvka
 make -j$NCPUS opts
+make -j$NCPUS bliss
 make -j$NCPUS
 make -j$NCPUS -C bin
