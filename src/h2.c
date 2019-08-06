@@ -127,6 +127,8 @@ static int isMutexWith(const h2_t *h2, int fact_id, const bor_iset_t *set)
 static void h2Init(h2_t *h2,
                    const pddl_strips_t *strips,
                    const pddl_mutex_pairs_t *mutexes,
+                   const bor_iset_t *unreachable_facts,
+                   const bor_iset_t *unreachable_ops,
                    bor_err_t *err)
 {
     bzero(h2, sizeof(*h2));
@@ -138,6 +140,22 @@ static void h2Init(h2_t *h2,
     // Copy mutexes into the table
     PDDL_MUTEX_PAIRS_FOR_EACH(mutexes, f1, f2)
         setMutex(h2, f1, f2);
+
+    if (unreachable_facts != NULL){
+        int fact_id;
+        BOR_ISET_FOR_EACH(unreachable_facts, fact_id){
+            if (!isMutex(h2, fact_id, fact_id))
+                setMutex(h2, fact_id, fact_id);
+        }
+    }
+
+    if (unreachable_ops != NULL){
+        int op_id;
+        BOR_ISET_FOR_EACH(unreachable_ops, op_id){
+            if (!isOpPruned(h2, op_id))
+                setOpPruned(h2, op_id);
+        }
+    }
 }
 
 static void h2AllocOpFact(h2_t *h2, bor_err_t *err)
@@ -366,7 +384,7 @@ int pddlH2(const pddl_strips_t *strips,
 
     h2_t h2;
 
-    h2Init(&h2, strips, m, err);
+    h2Init(&h2, strips, m, unreachable_facts, unreachable_ops, err);
     h2InitOpFact(&h2, &strips->op, err);
 
     setFwInit(&h2, &strips->init);
@@ -529,7 +547,7 @@ int pddlH2FwBw(const pddl_strips_t *strips,
     pddl_strips_ops_t ops_fw, ops_bw;
     pddl_disambiguate_t disamb;
 
-    h2Init(&h2, strips, mutex, err);
+    h2Init(&h2, strips, mutex, unreachable_facts, unreachable_ops, err);
 
     pddlStripsOpsInit(&ops_fw);
     pddlStripsOpsCopy(&ops_fw, &strips->op);

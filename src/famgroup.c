@@ -339,6 +339,10 @@ static void deadEndOps(const bor_iset_t *mgroup,
 {
     for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
         const pddl_strips_op_t *op = strips->op.op[op_id];
+        // Skip operators with conditional effects
+        if (op->cond_eff_size > 0)
+            continue;
+
         if (isDeadEndOp(mgroup, op, madd, mpredel))
             borISetAdd(dead_end, op->id);
     }
