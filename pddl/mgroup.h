@@ -34,6 +34,7 @@ struct pddl_mgroup {
                                -1 if there is none */
     int is_exactly_one; /*!< True if the mutex groups is "exactly-one" */
     int is_fam_group; /*!< True if it is fam-group */
+    int is_goal; /*!< Has non-empty intersection with the goal */
 };
 typedef struct pddl_mgroup pddl_mgroup_t;
 
@@ -88,6 +89,12 @@ void pddlMGroupsSortBySizeDesc(pddl_mgroups_t *mg);
  * Returns the number of exactly-one mutex groups found.
  */
 int pddlMGroupsSetExactlyOne(pddl_mgroups_t *mgs, const pddl_strips_t *strips);
+
+/**
+ * Sets .is_goal flags for mutex groups having non-empty intersection with
+ * the goal. Returns the number of "goal" mutex groups found.
+ */
+int pddlMGroupsSetGoal(pddl_mgroups_t *mgs, const pddl_strips_t *strips);
 
 /**
  * Adds to {set} all facts from all exactly-one mutex groups.

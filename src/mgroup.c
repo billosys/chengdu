@@ -549,6 +549,19 @@ int pddlMGroupsSetExactlyOne(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
     return num;
 }
 
+int pddlMGroupsSetGoal(pddl_mgroups_t *mgs, const pddl_strips_t *strips)
+{
+    int num = 0;
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        pddl_mgroup_t *mg = mgs->mgroup + mi;
+        if (!borISetIsDisjunct(&mg->mgroup, &strips->goal)){
+            ++num;
+            mg->is_goal = 1;
+        }
+    }
+    return num;
+}
+
 void pddlMGroupsGatherExactlyOneFacts(const pddl_mgroups_t *mgs,
                                       bor_iset_t *set)
 {
@@ -715,6 +728,10 @@ void pddlMGroupsPrint(const pddl_t *pddl,
             }
             if (m->is_exactly_one)
                 fprintf(fout, ":=1");
+            if (m->is_fam_group)
+                fprintf(fout, ":fam");
+            if (m->is_goal)
+                fprintf(fout, ":G");
             fprintf(fout, "\n");
         }
         fprintf(fout, "\n");

@@ -27,8 +27,11 @@ static void selectExactlyOneMGroups(pddl_mgroups_t *mg,
         const pddl_mgroup_t *m = mgroup->mgroup + mi;
         // exactly-one mutex groups of size one is a simply a static fact
         // that is true in all states, so we can skip this one
-        if (borISetSize(&m->mgroup) > 1 && m->is_exactly_one)
+        if (borISetSize(&m->mgroup) > 1
+                && (m->is_exactly_one
+                        || (m->is_fam_group && m->is_goal))){
             pddlMGroupsAdd(mg, &m->mgroup);
+        }
     }
 }
 

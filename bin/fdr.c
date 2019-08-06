@@ -293,6 +293,7 @@ static int groundMGroups(void)
 
     pddlMGroupsGround(&mgroups, &pddl, &lifted_mgroups, &strips);
     pddlMGroupsSetExactlyOne(&mgroups, &strips);
+    pddlMGroupsSetGoal(&mgroups, &strips);
     BOR_INFO(&err, "Found %d mutex groups", mgroups.mgroup_size);
 
     if (opt.mgroup_pre_out != NULL){
@@ -368,6 +369,7 @@ static int pruneStrips(void)
 
             pddlMGroupsReduce(&mgroups, &rm_fact);
             pddlMGroupsSetExactlyOne(&mgroups, &strips);
+            pddlMGroupsSetGoal(&mgroups, &strips);
         }
     }
 
