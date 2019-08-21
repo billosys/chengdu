@@ -360,7 +360,10 @@ void pddlFDRPrintAsFD(const pddl_strips_t *strips,
 
     // goal
     fprintf(fout, "begin_goal\n");
-    fprintf(fout, "%d\n", borISetSize(&strips->goal));
+    int goal_size = 0;
+    BOR_ISET_FOR_EACH(&strips->goal, fact_id)
+        goal_size += borISetSize(&fdr_var.strips_id_to_val[fact_id]);
+    fprintf(fout, "%d\n", goal_size);
     int fact_id;
     BOR_ISET_FOR_EACH(&strips->goal, fact_id){
         int val_id;
