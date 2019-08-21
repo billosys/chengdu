@@ -117,7 +117,6 @@ static void varsMGroupsSortUncoveredDesc(vars_mgroups_t *vmgs)
 void pddlFDRValInit(pddl_fdr_val_t *val)
 {
     bzero(val, sizeof(*val));
-    borListInit(&val->same_val);
 }
 
 void pddlFDRValFree(pddl_fdr_val_t *val)
@@ -323,6 +322,19 @@ static void allocateLargest(vars_t *vars,
     }
 }
 
+static void allocateLargestMulti(vars_t *vars,
+                                 const pddl_strips_t *strips,
+                                 const pddl_mgroups_t *mg,
+                                 const pddl_mutex_pairs_t *mutex)
+{
+    while (vars->mgroups.has_uncovered){
+        varsMGroupsSortUncoveredDesc(&vars->mgroups);
+        ASSERT(borISetSize(&vars->mgroups.mgroup[0].uncovered) > 0);
+        const vars_mgroup_t *m = vars->mgroups.mgroup + 0;
+        varsAdd(vars, strips, &m->mgroup->mgroup);
+    }
+}
+
 static void allocateUncoveredSingleFacts(vars_t *vars,
                                          const pddl_strips_t *strips)
 {
@@ -367,6 +379,8 @@ static int allocateVars(vars_t *vars,
         allocateEssential(vars, strips, mg, mutex);
     }else if (flags == PDDL_FDR_VARS_LARGEST_FIRST){
         allocateLargest(vars, strips, mg, mutex);
+    }else if (flags == PDDL_FDR_VARS_LARGEST_FIRST_MULTI){
+        allocateLargestMulti(vars, strips, mg, mutex);
     }else{
         // TODO
         fprintf(stderr, "Error: Unspecified method for variable allocation.\n");
@@ -385,7 +399,7 @@ static void createVars(pddl_fdr_vars_t *fdr_vars,
                        const pddl_strips_t *strips)
 {
     fdr_vars->strips_id_size = strips->fact.fact_size;
-    fdr_vars->strips_id_to_val = BOR_CALLOC_ARR(pddl_fdr_val_t *,
+    fdr_vars->strips_id_to_val = BOR_CALLOC_ARR(bor_iset_t,
                                                 strips->fact.fact_size);
     fdr_vars->var_size = vars->var_size;
     fdr_vars->var = BOR_CALLOC_ARR(pddl_fdr_var_t, vars->var_size);
@@ -413,6 +427,7 @@ static void createVars(pddl_fdr_vars_t *fdr_vars,
         // mapping from global ID to the variable value.
         for (int val_id = 0; val_id < var->val_size; ++val_id){
             pddl_fdr_val_t *val = var->val + val_id;
+            pddlFDRValInit(val);
             val->var_id = var->var_id;
             val->val_id = val_id;
             val->global_id = global_id++;
@@ -427,7 +442,7 @@ static void createVars(pddl_fdr_vars_t *fdr_vars,
             if (strips->fact.fact[fact]->name != NULL)
                 val->name = BOR_STRDUP(strips->fact.fact[fact]->name);
             val->strips_id = fact;
-            fdr_vars->strips_id_to_val[fact] = val;
+            borISetAdd(&fdr_vars->strips_id_to_val[fact], val->global_id);
         }
 
         // Set up "none-of-those" value
@@ -467,6 +482,8 @@ void pddlFDRVarsFree(pddl_fdr_vars_t *vars)
 {
     if (vars->global_id_to_val != NULL)
         BOR_FREE(vars->global_id_to_val);
+    for (int i = 0; i < vars->strips_id_size; ++i)
+        borISetFree(vars->strips_id_to_val + i);
     if (vars->strips_id_to_val != NULL)
         BOR_FREE(vars->strips_id_to_val);
     for (int i = 0; i < vars->var_size; ++i)
@@ -518,13 +535,9 @@ void pddlFDRVarsInitCopy(pddl_fdr_vars_t *dst, const pddl_fdr_vars_t *src)
 
     dst->strips_id_size = src->strips_id_size;
     if (dst->strips_id_size > 0){
-        dst->strips_id_to_val = BOR_ALLOC_ARR(pddl_fdr_val_t *,
-                                              dst->strips_id_size);
-        for (int i = 0; i < src->strips_id_size; ++i){
-            const pddl_fdr_val_t *sval = src->strips_id_to_val[i];
-            pddl_fdr_val_t *val = dst->var[sval->var_id].val + sval->val_id;
-            dst->strips_id_to_val[i] = val;
-        }
+        dst->strips_id_to_val = BOR_ALLOC_ARR(bor_iset_t, dst->strips_id_size);
+        for (int i = 0; i < src->strips_id_size; ++i)
+            borISetUnion(&dst->strips_id_to_val[i], &src->strips_id_to_val[i]);
     }
 }
 

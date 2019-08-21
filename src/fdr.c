@@ -29,8 +29,11 @@ static void stripsToFDRState(const pddl_fdr_vars_t *fdr_var,
 
     int fact_id;
     BOR_ISET_FOR_EACH(state, fact_id){
-        const pddl_fdr_val_t *v = fdr_var->strips_id_to_val[fact_id];
-        fdr_state[v->var_id] = v->val_id;
+        int val_id;
+        BOR_ISET_FOR_EACH(&fdr_var->strips_id_to_val[fact_id], val_id){
+            const pddl_fdr_val_t *v = fdr_var->global_id_to_val[val_id];
+            fdr_state[v->var_id] = v->val_id;
+        }
     }
 
     for (int vi = 0; vi < fdr_var->var_size; ++vi){
@@ -51,14 +54,34 @@ static int setPre(const pddl_fdr_vars_t *fdr_var,
 
     int fact_id;
     BOR_ISET_FOR_EACH(strips_pre, fact_id){
-        const pddl_fdr_val_t *v = fdr_var->strips_id_to_val[fact_id];
-        ASSERT(v != NULL);
-        if (pre[v->var_id] != -1)
-            return -1;
-        pre[v->var_id] = v->val_id;
+        int val_id;
+        BOR_ISET_FOR_EACH(&fdr_var->strips_id_to_val[fact_id], val_id){
+            const pddl_fdr_val_t *v = fdr_var->global_id_to_val[val_id];
+            ASSERT(v != NULL);
+            if (pre[v->var_id] != -1)
+                return -1;
+            pre[v->var_id] = v->val_id;
+        }
     }
 
     return 0;
+}
+
+static void setDelEff(const pddl_mutex_pairs_t *mutex,
+                      const pddl_fdr_vars_t *fdr_var,
+                      const bor_iset_t *pre,
+                      const bor_iset_t *ce_pre,
+                      int *eff,
+                      int fact_id,
+                      const pddl_fdr_val_t *v)
+{
+    const pddl_fdr_var_t *var = fdr_var->var + v->var_id;
+    if (!pddlMutexPairsIsMutexFactSet(mutex, fact_id, pre)
+            && (ce_pre == NULL
+                    || !pddlMutexPairsIsMutexFactSet(mutex, fact_id, ce_pre))
+            && var->val_none_of_those >= 0){
+        eff[var->var_id] = var->val_none_of_those;
+    }
 }
 
 static void setEff(const pddl_mutex_pairs_t *mutex,
@@ -75,19 +98,19 @@ static void setEff(const pddl_mutex_pairs_t *mutex,
         eff[vi] = -1;
 
     BOR_ISET_FOR_EACH(del_eff, fact_id){
-        const pddl_fdr_val_t *v = fdr_var->strips_id_to_val[fact_id];
-        const pddl_fdr_var_t *var = fdr_var->var + v->var_id;
-        if (!pddlMutexPairsIsMutexFactSet(mutex, fact_id, pre)
-                && (ce_pre == NULL
-                      || !pddlMutexPairsIsMutexFactSet(mutex, fact_id, ce_pre))
-                && var->val_none_of_those >= 0){
-            eff[var->var_id] = var->val_none_of_those;
+        int val_id;
+        BOR_ISET_FOR_EACH(&fdr_var->strips_id_to_val[fact_id], val_id){
+            const pddl_fdr_val_t *v = fdr_var->global_id_to_val[val_id];
+            setDelEff(mutex, fdr_var, pre, ce_pre, eff, fact_id, v);
         }
     }
 
     BOR_ISET_FOR_EACH(add_eff, fact_id){
-        const pddl_fdr_val_t *v = fdr_var->strips_id_to_val[fact_id];
-        eff[v->var_id] = v->val_id;
+        int val_id;
+        BOR_ISET_FOR_EACH(&fdr_var->strips_id_to_val[fact_id], val_id){
+            const pddl_fdr_val_t *v = fdr_var->global_id_to_val[val_id];
+            eff[v->var_id] = v->val_id;
+        }
     }
 }
 
@@ -241,11 +264,17 @@ static void opToFDR(const pddl_strips_t *strips,
     fprintf(fout, "%d\n", effs.eff_size);
     for (int effi = 0; effi < effs.eff_size; ++effi){
         eff_t *e = effs.eff + effi;
-        fprintf(fout, "%d", borISetSize(&e->ce_pre));
+        int ce_size = 0;
         int fact_id;
+        BOR_ISET_FOR_EACH(&e->ce_pre, fact_id)
+            ce_size += borISetSize(&fdr_var->strips_id_to_val[fact_id]);
+        fprintf(fout, "%d", ce_size);
         BOR_ISET_FOR_EACH(&e->ce_pre, fact_id){
-            const pddl_fdr_val_t *v = fdr_var->strips_id_to_val[fact_id];
-            fprintf(fout, " %d %d", v->var_id, v->val_id);
+            int val_id;
+            BOR_ISET_FOR_EACH(&fdr_var->strips_id_to_val[fact_id], val_id){
+                const pddl_fdr_val_t *v = fdr_var->global_id_to_val[val_id];
+                fprintf(fout, " %d %d", v->var_id, v->val_id);
+            }
         }
         fprintf(fout, " %d %d %d\n", e->var, e->pre, e->eff);
     }
@@ -311,7 +340,9 @@ void pddlFDRPrintAsFD(const pddl_strips_t *strips,
         fprintf(fout, "%d\n", borISetSize(&m->mgroup));
         int fact_id;
         BOR_ISET_FOR_EACH(&m->mgroup, fact_id){
-            const pddl_fdr_val_t *v = fdr_var.strips_id_to_val[fact_id];
+            // TODO
+            int val_id = borISetGet(&fdr_var.strips_id_to_val[fact_id], 0);
+            const pddl_fdr_val_t *v = fdr_var.global_id_to_val[val_id];
             fprintf(fout, "%d %d\n", v->var_id, v->val_id);
         }
         fprintf(fout, "end_mutex_group\n");
@@ -332,8 +363,11 @@ void pddlFDRPrintAsFD(const pddl_strips_t *strips,
     fprintf(fout, "%d\n", borISetSize(&strips->goal));
     int fact_id;
     BOR_ISET_FOR_EACH(&strips->goal, fact_id){
-        const pddl_fdr_val_t *v = fdr_var.strips_id_to_val[fact_id];
-        fprintf(fout, "%d %d\n", v->var_id, v->val_id);
+        int val_id;
+        BOR_ISET_FOR_EACH(&fdr_var.strips_id_to_val[fact_id], val_id){
+            const pddl_fdr_val_t *v = fdr_var.global_id_to_val[val_id];
+            fprintf(fout, "%d %d\n", v->var_id, v->val_id);
+        }
     }
     fprintf(fout, "end_goal\n");
 

@@ -33,12 +33,12 @@ struct pddl_fdr_val {
     int val_id; /*!< Value ID within the variable */
     int global_id; /*!< Global unique ID of this value */
     int strips_id; /*!< ID of the STRIPS fact this value was created from */
-    bor_list_t same_val; /*!< Circular list of identical values */
 };
 typedef struct pddl_fdr_val pddl_fdr_val_t;
 
 void pddlFDRValInit(pddl_fdr_val_t *val);
 void pddlFDRValFree(pddl_fdr_val_t *val);
+
 
 struct pddl_fdr_var {
     int var_id; /*!< ID of the variable */
@@ -61,9 +61,9 @@ struct pddl_fdr_vars {
     pddl_fdr_val_t **global_id_to_val; /*!< Mapping from global ID to FDR
                                             value */
     int strips_id_size;
-    pddl_fdr_val_t **strips_id_to_val; /*!< If the variables were created
-                                            from STRIPS, this maps STRIPS
-                                            IDs to variable values */
+    bor_iset_t *strips_id_to_val; /*!< If the variables were created from
+                                       STRIPS, this maps STRIPS IDs to
+                                       global IDs of variable values */
 };
 typedef struct pddl_fdr_vars pddl_fdr_vars_t;
 
