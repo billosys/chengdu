@@ -33,6 +33,7 @@ struct pddl_fdr_val {
     int val_id; /*!< Value ID within the variable */
     int global_id; /*!< Global unique ID of this value */
     int strips_id; /*!< ID of the STRIPS fact this value was created from */
+    bor_list_t same_val; /*!< Circular list of identical values */
 };
 typedef struct pddl_fdr_val pddl_fdr_val_t;
 
@@ -68,6 +69,7 @@ typedef struct pddl_fdr_vars pddl_fdr_vars_t;
 
 #define PDDL_FDR_VARS_ESSENTIAL_FIRST 0u
 #define PDDL_FDR_VARS_LARGEST_FIRST 1u
+#define PDDL_FDR_VARS_LARGEST_FIRST_MULTI 2u
 // TODO: Minimazion of bits required for storing the whole state
 #define PDDL_FDR_VARS_MIN_BITS
 
