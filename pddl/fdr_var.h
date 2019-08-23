@@ -39,6 +39,7 @@ typedef struct pddl_fdr_val pddl_fdr_val_t;
 void pddlFDRValInit(pddl_fdr_val_t *val);
 void pddlFDRValFree(pddl_fdr_val_t *val);
 
+
 struct pddl_fdr_var {
     int var_id; /*!< ID of the variable */
     pddl_fdr_val_t *val; /*!< List of values */
@@ -60,14 +61,15 @@ struct pddl_fdr_vars {
     pddl_fdr_val_t **global_id_to_val; /*!< Mapping from global ID to FDR
                                             value */
     int strips_id_size;
-    pddl_fdr_val_t **strips_id_to_val; /*!< If the variables were created
-                                            from STRIPS, this maps STRIPS
-                                            IDs to variable values */
+    bor_iset_t *strips_id_to_val; /*!< If the variables were created from
+                                       STRIPS, this maps STRIPS IDs to
+                                       global IDs of variable values */
 };
 typedef struct pddl_fdr_vars pddl_fdr_vars_t;
 
 #define PDDL_FDR_VARS_ESSENTIAL_FIRST 0u
 #define PDDL_FDR_VARS_LARGEST_FIRST 1u
+#define PDDL_FDR_VARS_LARGEST_FIRST_MULTI 2u
 // TODO: Minimazion of bits required for storing the whole state
 #define PDDL_FDR_VARS_MIN_BITS
 
