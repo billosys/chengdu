@@ -160,8 +160,18 @@ static void factsRequiringBinaryEncoding(const pddl_strips_t *strips,
     const pddl_strips_op_t *op;
     int fact_id;
 
+    int *mg_facts = BOR_CALLOC_ARR(int, strips->fact.fact_size);
+    for (int mi = 0; mi < mgs->mgroup_size; ++mi){
+        int fact_id;
+        BOR_ISET_FOR_EACH(&mgs->mgroup[mi].mgroup, fact_id)
+            mg_facts[fact_id] = 1;
+    }
+
     PDDL_STRIPS_OPS_FOR_EACH(&strips->op, op){
         BOR_ISET_FOR_EACH(&op->del_eff, fact_id){
+            if (!mg_facts[fact_id])
+                continue;
+
             // This is the most common case -- the delete effect is
             // required by the precondition.
             if (borISetIn(fact_id, &op->pre))
@@ -177,6 +187,9 @@ static void factsRequiringBinaryEncoding(const pddl_strips_t *strips,
             borISetAdd(binfs, fact_id);
         }
     }
+
+    if (mg_facts != NULL)
+        BOR_FREE(mg_facts);
 }
 
 static int needNoneOfThoseOp(const bor_iset_t *group,
@@ -382,6 +395,12 @@ static int allocateVars(vars_t *vars,
     BOR_ISET_FOR_EACH(&binary_facts, fact){
         borISetEmpty(&var_facts);
         borISetAdd(&var_facts, fact);
+        /*
+        int neg = strips->fact.fact[fact]->neg_of;
+        if (neg >= 0 && !borISetIn(neg, &vars->covered))
+            borISetAdd(&var_facts, neg);
+        */
+
         varsAdd(vars, strips, &var_facts);
     }
 
