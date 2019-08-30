@@ -339,20 +339,30 @@ static void allocateUncoveredSingleFacts(vars_t *vars,
                                          const pddl_strips_t *strips)
 {
     BOR_ISET(var_facts);
-    BOR_ISET(remain);
 
-    for (int fact_id = 0; fact_id < strips->fact.fact_size; ++fact_id)
-        borISetAdd(&remain, fact_id);
-    borISetMinus(&remain, &vars->covered);
-
+    int *covered = BOR_CALLOC_ARR(int, strips->fact.fact_size);
     int fact_id;
-    BOR_ISET_FOR_EACH(&remain, fact_id){
+    BOR_ISET_FOR_EACH(&vars->covered, fact_id)
+        covered[fact_id] = 1;
+
+    for (int fact_id = 0; fact_id < strips->fact.fact_size; ++fact_id){
+        if (covered[fact_id])
+            continue;
+
         borISetEmpty(&var_facts);
         borISetAdd(&var_facts, fact_id);
+        covered[fact_id] = 1;
+
+        int neg_of = strips->fact.fact[fact_id]->neg_of;
+        if (neg_of >= 0 && !covered[neg_of]){
+            borISetAdd(&var_facts, neg_of);
+            covered[neg_of] = 1;
+        }
         varsAdd(vars, strips, &var_facts);
     }
 
-    borISetFree(&remain);
+    if (covered != NULL)
+        BOR_FREE(covered);
     borISetFree(&var_facts);
 }
 
