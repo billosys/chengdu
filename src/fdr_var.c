@@ -395,12 +395,6 @@ static int allocateVars(vars_t *vars,
     BOR_ISET_FOR_EACH(&binary_facts, fact){
         borISetEmpty(&var_facts);
         borISetAdd(&var_facts, fact);
-        /*
-        int neg = strips->fact.fact[fact]->neg_of;
-        if (neg >= 0 && !borISetIn(neg, &vars->covered))
-            borISetAdd(&var_facts, neg);
-        */
-
         varsAdd(vars, strips, &var_facts);
     }
 
