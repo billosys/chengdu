@@ -1,5 +1,5 @@
-#BASEPATH_ := $(dir $(realpath $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
-BASEPATH_ := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
+BASEPATH_ := $(dir $(realpath $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
+#BASEPATH_ := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
 CC ?= gcc
 CXX ?= g++
@@ -67,7 +67,7 @@ endif
 
 USE_LOCAL_LPSOLVE ?= $(shell if test -f $(BASEPATH_)/third-party/lpsolve/liblpsolve.a; then echo "yes"; else echo "no"; fi;)
 ifeq '$(USE_LOCAL_LPSOLVE)' 'yes'
-  LPSOLVE_CFLAGS := -I$(BASEPATH_)/third-party/lpsolve
+  LPSOLVE_CFLAGS := -I$(BASEPATH_)/third-party
   LPSOLVE_LDFLAGS := -L$(BASEPATH_)/third-party/lpsolve -llpsolve -ldl
 endif
 
