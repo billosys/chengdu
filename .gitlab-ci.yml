@@ -68,13 +68,13 @@ stages:
 build-debian-gcc:
   extends: .build-debian
   variables:
-    DEBIAN_PKGS: gcc unzip
+    DEBIAN_PKGS: gcc unzip patch
     CC: gcc
 
 build-debian-clang:
   extends: .build-debian
   variables:
-    DEBIAN_PKGS: clang unzip
+    DEBIAN_PKGS: clang unzip patch
     CC: clang
 
 
@@ -82,13 +82,13 @@ build-debian-clang:
 check-debian-gcc:
   extends: .check-debian
   variables:
-    DEBIAN_PKGS: gcc unzip
+    DEBIAN_PKGS: gcc unzip patch
     CC: gcc
 
 check-debian-clang:
   extends: .check-debian
   variables:
-    DEBIAN_PKGS: clang unzip
+    DEBIAN_PKGS: clang unzip patch
     CC: clang
 
 
@@ -96,11 +96,11 @@ check-debian-clang:
 check-valgrind-debian-gcc:
   extends: .check-valgrind-debian
   variables:
-    DEBIAN_PKGS: gcc unzip
+    DEBIAN_PKGS: gcc unzip patch
     CC: gcc
 
 check-valgrind-debian-clang:
   extends: .check-valgrind-debian
   variables:
-    DEBIAN_PKGS: clang unzip
+    DEBIAN_PKGS: clang unzip patch
     CC: clang
