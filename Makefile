@@ -126,7 +126,7 @@ third-party/bliss/libbliss.a:
 	cd third-party && unzip bliss-$(BLISS_VERSION).zip
 	mv third-party/bliss-$(BLISS_VERSION) third-party/bliss
 	cd third-party/bliss && patch -p1 <../bliss-0.73-memleak.patch
-	$(MAKE) -C third-party/bliss
+	$(MAKE) CC=$(CXX) -C third-party/bliss
 
 lpsolve: third-party/lpsolve/liblpsolve.a
 lpsolve-clean:

@@ -2,6 +2,7 @@
 BASEPATH_ := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
 CC ?= gcc
+CXX ?= g++
 SCAN_BUILD ?= scan-build
 PYTHON2 ?= python2
 CPPCHECK ?= cppcheck
@@ -110,6 +111,7 @@ help:
 	@echo ""
 	@echo "Options:"
 	@echo "    CC         - Path to C compiler          (=$(CC))"
+	@echo "    CXX        - Path to C++ compiler        (=$(CXX))"
 	@echo "    SCAN_BUILD - Path to scan-build          (=$(SCAN_BUILD))"
 	@echo "    PYTHON2    - Path to python v2 interpret (=$(PYTHON2))"
 	@echo ""
