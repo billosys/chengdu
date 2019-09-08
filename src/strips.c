@@ -647,6 +647,98 @@ int pddlStripsRemoveStaticFacts(pddl_strips_t *strips, bor_err_t *err)
     return num;
 }
 
+static int isDelEffMutex(const pddl_mutex_pairs_t *mutex,
+                         const bor_iset_t *pre,
+                         const bor_iset_t *pre2,
+                         int fact_id)
+{
+    if (pddlMutexPairsIsMutexFactSet(mutex, fact_id, pre))
+        return 1;
+    if (pre2 != NULL && pddlMutexPairsIsMutexFactSet(mutex, fact_id, pre2))
+        return 1;
+    return 0;
+}
+
+static void findUselessDelEffs(const pddl_strips_t *strips,
+                               const pddl_mutex_pairs_t *mutex,
+                               const bor_iset_t *pre,
+                               const bor_iset_t *pre2,
+                               const bor_iset_t *del_eff,
+                               bor_iset_t *useless)
+{
+    int del_fact;
+    BOR_ISET_FOR_EACH(del_eff, del_fact){
+        if (mutex != NULL && isDelEffMutex(mutex, pre, pre2, del_fact)){
+            borISetAdd(useless, del_fact);
+
+        }else if (strips->fact.fact[del_fact]->neg_of >= 0){
+            int neg = strips->fact.fact[del_fact]->neg_of;
+            int pre_fact;
+            BOR_ISET_FOR_EACH(pre, pre_fact){
+                if (pre_fact == neg){
+                    borISetAdd(useless, del_fact);
+                    break;
+                }
+            }
+            if (pre2 != NULL){
+                BOR_ISET_FOR_EACH(pre2, pre_fact){
+                    if (pre_fact == neg){
+                        borISetAdd(useless, del_fact);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+int pddlStripsRemoveUselessDelEffs(pddl_strips_t *strips,
+                                   const pddl_mutex_pairs_t *mutex,
+                                   bor_iset_t *changed_ops,
+                                   bor_err_t *err)
+{
+    int ret = 0;
+    BOR_INFO(err, "Removing useless delete effects. num mutex pairs: %d",
+             (mutex != NULL ? mutex->num_mutex_pairs : -1 ));
+
+    BOR_ISET(useless);
+    for (int op_id = 0; op_id < strips->op.op_size; ++op_id){
+        pddl_strips_op_t *op = strips->op.op[op_id];
+
+        int changed = 0;
+        borISetEmpty(&useless);
+        findUselessDelEffs(strips, mutex, &op->pre, NULL,
+                           &op->del_eff, &useless);
+        if (borISetSize(&useless) > 0){
+            borISetMinus(&op->del_eff, &useless);
+            changed = 1;
+            if (changed_ops != NULL)
+                borISetAdd(changed_ops, op_id);
+        }
+
+        for (int cei = 0; cei < op->cond_eff_size; ++cei){
+            pddl_strips_op_cond_eff_t *ce = op->cond_eff + cei;
+            borISetEmpty(&useless);
+            findUselessDelEffs(strips, mutex, &op->pre, &ce->pre,
+                               &ce->del_eff, &useless);
+            if (borISetSize(&useless) > 0){
+                borISetMinus(&ce->del_eff, &useless);
+                changed = 1;
+                if (changed_ops != NULL)
+                    borISetAdd(changed_ops, op_id);
+            }
+        }
+
+        if (changed)
+            ++ret;
+    }
+    borISetFree(&useless);
+
+    BOR_INFO(err, "Removing useless delete effects DONE."
+                  " (modified ops: %d)", ret);
+    return ret;
+}
+
 static void printPythonISet(const bor_iset_t *s, FILE *fout)
 {
     int i;

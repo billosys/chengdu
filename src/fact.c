@@ -125,6 +125,7 @@ static void pddlFactCopy(pddl_fact_t *dst, const pddl_fact_t *src)
         dst->ground_atom = pddlGroundAtomClone(src->ground_atom);
     dst->hash = pddlFactHash(dst);
     dst->is_private = src->is_private;
+    dst->neg_of = src->neg_of;
 }
 
 int pddlFactCmp(const pddl_fact_t *f1, const pddl_fact_t *f2)
