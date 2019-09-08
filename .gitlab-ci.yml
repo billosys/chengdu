@@ -30,7 +30,6 @@ stages:
   script:
     - env
     - make help
-    - make lpsolve
     - make third-party
     - make help
     - make
@@ -46,7 +45,6 @@ stages:
   script:
     - env
     - make help
-    - make lpsolve
     - make third-party
     - make help
     - make
@@ -62,7 +60,6 @@ stages:
   script:
     - env
     - make help
-    - make lpsolve
     - make third-party
     - make help
     - make

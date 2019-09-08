@@ -58,6 +58,11 @@ pddl/config.h:
 	echo "#define __PDDL_CONFIG_H__" >>$@
 	echo "" >>$@
 	if [ "$(DEBUG)" = "yes" ]; then echo "#define PDDL_DEBUG" >>$@; fi
+	echo '#include <boruvka/lp.h>' >__lp.c
+	echo 'int main(int argc, char *arvg[]) { return borLPSolverAvailable(BOR_LP_DEFAULT); }' >>__lp.c
+	$(CC) $(CFLAGS) -o __lp __lp.c $(BORUVKA_LDFLAGS) $(LP_LDFLAGS) -pthread -lrt -lm
+	if ! ./__lp; then echo "#define PDDL_LP" >>$@; fi
+	rm -f __lp.c __lp
 	echo "" >>$@
 	echo "#endif /* __PDDL_CONFIG_H__ */" >>$@
 
