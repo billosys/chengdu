@@ -30,8 +30,8 @@ stages:
   script:
     - env
     - make help
-    - make third-party
     - make lpsolve
+    - make third-party
     - make help
     - make
     - make -C bin
@@ -46,8 +46,8 @@ stages:
   script:
     - env
     - make help
-    - make third-party
     - make lpsolve
+    - make third-party
     - make help
     - make
     - make check-ci
@@ -62,8 +62,8 @@ stages:
   script:
     - env
     - make help
-    - make third-party
     - make lpsolve
+    - make third-party
     - make help
     - make
     - make check-valgrind
