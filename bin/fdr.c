@@ -22,6 +22,7 @@ struct options {
     int no_irr;
 
     int fdr_var_largest;
+    int fdr_var_largest_multi;
 
     const char *fdr_out;
     const char *lifted_mgroup_out;
@@ -129,6 +130,11 @@ static int readOpts(int *argc, char *argv[])
     optsAddDesc("fdr-var-largest", 0x0, OPTS_NONE, &opt.fdr_var_largest, NULL,
                 "Allocate FDR variables with largest-first algorithm"
                 " (instead of essential-first).");
+    optsAddDesc("fdr-var-largest-multi", 0x0, OPTS_NONE,
+                &opt.fdr_var_largest_multi, NULL,
+                "Allocate FDR variables with largest-first algorithm and"
+                " encode one strips fact as multiple fdr values if in more"
+                " mutex groups.");
 
     if (opts(argc, argv) != 0 || opt.help || (*argc != 3 && *argc != 2)){
         if (*argc <= 1)
@@ -429,6 +435,8 @@ static int toFDR(void)
     fdr_var_flag = PDDL_FDR_VARS_ESSENTIAL_FIRST;
     if (opt.fdr_var_largest)
         fdr_var_flag = PDDL_FDR_VARS_LARGEST_FIRST;
+    if (opt.fdr_var_largest_multi)
+        fdr_var_flag = PDDL_FDR_VARS_LARGEST_FIRST_MULTI;
     FILE *fout = openFile(opt.fdr_out);
     if (fout == NULL){
         fprintf(stderr, "Error: Could not open file '%s'\n", opt.fdr_out);

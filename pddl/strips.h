@@ -26,6 +26,7 @@
 #include <pddl/common.h>
 #include <pddl/strips_op.h>
 #include <pddl/lifted_mgroup.h>
+#include <pddl/mutex_pair.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -139,9 +140,24 @@ void pddlStripsReduce(pddl_strips_t *strips,
 
 /**
  * Remove static facts, i.e., facts that are true in all reachable states.
- * Returns 0 number of removed facts.
+ * Returns the number of removed facts.
  */
 int pddlStripsRemoveStaticFacts(pddl_strips_t *strips, bor_err_t *err);
+
+/**
+ * Remove delete effects that cannot be part of the state where the
+ * operator is applied by:
+ * 1) If the precondition contains a fact that is negation of the delete
+ *    effect, then such a delete effect can be safely removed.
+ * 2) If mutex is non-NULL and the delete effect is mutex with the
+ *    precondition, then the delete effect can be safely removed.
+ * Returns the number of modified operators and if changed_ops is non-NULL
+ * also a list of changed operators.
+ */
+int pddlStripsRemoveUselessDelEffs(pddl_strips_t *strips,
+                                   const pddl_mutex_pairs_t *mutex,
+                                   bor_iset_t *changed_ops,
+                                   bor_err_t *err);
 
 /**
  * Print STRIPS problem in a format easily usable from python.
