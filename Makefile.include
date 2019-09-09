@@ -1,7 +1,8 @@
-#BASEPATH_ := $(dir $(realpath $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
-BASEPATH_ := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
+BASEPATH_ := $(dir $(realpath $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
+#BASEPATH_ := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
 CC ?= gcc
+CXX ?= g++
 SCAN_BUILD ?= scan-build
 PYTHON2 ?= python2
 CPPCHECK ?= cppcheck
@@ -66,7 +67,7 @@ endif
 
 USE_LOCAL_LPSOLVE ?= $(shell if test -f $(BASEPATH_)/third-party/lpsolve/liblpsolve.a; then echo "yes"; else echo "no"; fi;)
 ifeq '$(USE_LOCAL_LPSOLVE)' 'yes'
-  LPSOLVE_CFLAGS := -I$(BASEPATH_)/third-party/lpsolve
+  LPSOLVE_CFLAGS := -I$(BASEPATH_)/third-party
   LPSOLVE_LDFLAGS := -L$(BASEPATH_)/third-party/lpsolve -llpsolve -ldl
 endif
 
@@ -110,6 +111,7 @@ help:
 	@echo ""
 	@echo "Options:"
 	@echo "    CC         - Path to C compiler          (=$(CC))"
+	@echo "    CXX        - Path to C++ compiler        (=$(CXX))"
 	@echo "    SCAN_BUILD - Path to scan-build          (=$(SCAN_BUILD))"
 	@echo "    PYTHON2    - Path to python v2 interpret (=$(PYTHON2))"
 	@echo ""

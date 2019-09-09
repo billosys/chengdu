@@ -58,6 +58,11 @@ pddl/config.h:
 	echo "#define __PDDL_CONFIG_H__" >>$@
 	echo "" >>$@
 	if [ "$(DEBUG)" = "yes" ]; then echo "#define PDDL_DEBUG" >>$@; fi
+	echo '#include <boruvka/lp.h>' >__lp.c
+	echo 'int main(int argc, char *arvg[]) { return borLPSolverAvailable(BOR_LP_DEFAULT); }' >>__lp.c
+	$(CC) $(CFLAGS) -o __lp __lp.c $(BORUVKA_LDFLAGS) $(LP_LDFLAGS) -pthread -lrt -lm
+	if ! ./__lp; then echo "#define PDDL_LP" >>$@; fi
+	rm -f __lp.c __lp
 	echo "" >>$@
 	echo "#endif /* __PDDL_CONFIG_H__ */" >>$@
 
@@ -126,7 +131,7 @@ third-party/bliss/libbliss.a:
 	cd third-party && unzip bliss-$(BLISS_VERSION).zip
 	mv third-party/bliss-$(BLISS_VERSION) third-party/bliss
 	cd third-party/bliss && patch -p1 <../bliss-0.73-memleak.patch
-	$(MAKE) -C third-party/bliss
+	$(MAKE) CC=$(CXX) -C third-party/bliss
 
 lpsolve: third-party/lpsolve/liblpsolve.a
 lpsolve-clean:
