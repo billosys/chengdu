@@ -29,6 +29,7 @@ ifeq '$(PROFIL)' 'yes'
   CFLAGS += -pg -no-pie
 endif
 CFLAGS += -Wall -pedantic --std=gnu99
+CFLAGS += -Wno-missing-braces
 
 ifeq '$(WERROR)' 'yes'
   CFLAGS += -Werror
@@ -77,6 +78,8 @@ ifeq '$(BOR_LPSOLVE_CFLAGS)' ''
   endif
 endif
 
+
+BOR_CC := $(CC)
 
 _BOR_MAKE_VARS := $(filter BOR_%, $(.VARIABLES))
 _BOR_MAKE_DEF := $(foreach V,$(_BOR_MAKE_VARS),$(V:BOR_%=%)="$($(V))") DEBUG=no
