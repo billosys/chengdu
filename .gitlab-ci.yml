@@ -5,7 +5,7 @@ variables:
 stages:
   - build
   - test
-  - test-valgrind
+#  - test-valgrind
 
 .restrict: &restrict
   only:
@@ -50,57 +50,63 @@ stages:
     - make
     - make check-ci
 
-.check-valgrind-debian:
-  extends: .job-debian
-  stage: test-valgrind
-  before_script:
-    - env
-    - apt-get update
-    - apt-get install -y make python valgrind $DEBIAN_PKGS
-  script:
-    - env
-    - make help
-    - make third-party
-    - make help
-    - make
-    - make check-valgrind
+#.check-valgrind-debian:
+#  extends: .job-debian
+#  stage: test-valgrind
+#  before_script:
+#    - env
+#    - apt-get update
+#    - apt-get install -y make python valgrind $DEBIAN_PKGS
+#  script:
+#    - env
+#    - make help
+#    - make third-party
+#    - make help
+#    - make
+#    - make check-valgrind
 
 build-debian-gcc:
   extends: .build-debian
   variables:
-    DEBIAN_PKGS: gcc
+    DEBIAN_PKGS: gcc g++ unzip patch
     CC: gcc
+    CXX: g++
 
 build-debian-clang:
   extends: .build-debian
   variables:
-    DEBIAN_PKGS: clang
+    DEBIAN_PKGS: clang unzip patch
     CC: clang
+    CXX: clang++
 
 
 
 check-debian-gcc:
   extends: .check-debian
   variables:
-    DEBIAN_PKGS: gcc
+    DEBIAN_PKGS: gcc g++ unzip patch
     CC: gcc
+    CXX: g++
 
 check-debian-clang:
   extends: .check-debian
   variables:
-    DEBIAN_PKGS: clang
+    DEBIAN_PKGS: clang unzip patch
     CC: clang
+    CXX: clang++
 
 
 
-check-valgrind-debian-gcc:
-  extends: .check-valgrind-debian
-  variables:
-    DEBIAN_PKGS: gcc
-    CC: gcc
-
-check-valgrind-debian-clang:
-  extends: .check-valgrind-debian
-  variables:
-    DEBIAN_PKGS: clang
-    CC: clang
+#check-valgrind-debian-gcc:
+#  extends: .check-valgrind-debian
+#  variables:
+#    DEBIAN_PKGS: gcc g++ unzip patch
+#    CC: gcc
+#    CXX: g++
+#
+#check-valgrind-debian-clang:
+#  extends: .check-valgrind-debian
+#  variables:
+#    DEBIAN_PKGS: clang unzip patch
+#    CC: clang
+#    CXX: clang++
