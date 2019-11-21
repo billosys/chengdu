@@ -15,7 +15,7 @@ licensed under 3-clause BSD License.
 Easiest way to compile the library and the binaries that come with the
 library:
 ```
-  $ make boruvka opts
+  $ make boruvka opts bliss
   $ make
   $ make -C bin
 ```
