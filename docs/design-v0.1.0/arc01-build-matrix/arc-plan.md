@@ -48,11 +48,19 @@ emitted as a build byproduct so arc02 can package it into the manifest.
 
 ## 4. Open questions (named, owned by slices)
 
-- **OQ1 (slice01):** upstream source strategy — canonical three repos at
-  pinned SHAs (requires gitlab.com reachability for cpddl; GH runners can
-  reach it, *asserted*) vs. the `ipc2023-htn/PandaDealer` vendored snapshot.
-  Default: canonical + pinned SHAs, PandaDealer documented as fallback;
-  slice01 verifies gitlab reachability from a runner and records the result.
+- **OQ1 (slice01 → slice02):** upstream source strategy — canonical three
+  repos at pinned SHAs (requires gitlab.com reachability for cpddl; GH
+  runners can reach it, *asserted*) vs. the `ipc2023-htn/PandaDealer`
+  vendored snapshot. Default: canonical + pinned SHAs, PandaDealer
+  documented as fallback; **slice02** verifies gitlab reachability from a
+  runner and records the result (deferred from slice01, where no runner
+  existed). **Amended at v1.2 (CDC-1):** the fallback is fetch-verified but
+  NOT build-viable on Linux/GCC-13 — the vendored snapshot ships no patch
+  files, its grounder src uses pre-final concepts-TS syntax GCC-13 rejects,
+  and its engine lacks `<cstdint>`. Decision owed at slice02 planning:
+  (a) declare the fallback fetch-only and document the limit, (b) carry
+  compat patches for the snapshot in `patches/`, or (c) retire the fallback
+  once chengdu's own releases exist (self-solving after arc02).
 - **OQ2 (slice03) — RESOLVED 2026-08-05:** grounder compiler on macOS is
   **clang** (`make -j CXX=c++ CC=cc`), confirmed by the operator's successful
   field build on Apple Silicon. The build script still takes the compiler as
@@ -78,6 +86,12 @@ in this arc's `closing-report.md`.
 
 ## 6. Version history
 
+- **v1.2 — 2026-08-05.** OQ1 amended with finding CDC-1 from slice01's CDC
+  verification: the PandaDealer fallback is not build-viable on
+  Linux/GCC-13 (three isolated blockers); disposition decision assigned to
+  slice02 planning. Surfaced by: slice01 (CDC pass). Why: the fallback's
+  implicit build promise was untested until the verifier ran it; slice02
+  must not plan against the old assumption.
 - **v1.1 — 2026-08-05.** OQ2 resolved: macOS grounder compiler is clang
   (`CXX=c++ CC=cc`), per the operator's successful field build. Surfaced by:
   operator report during plan review (pre-slice; no slice number). Why:
