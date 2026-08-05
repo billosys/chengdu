@@ -1,0 +1,7 @@
+;; problem.hddl — unchanged from fixtures/minimal; the syntax error lives
+;; in this fixture's domain.hddl.
+(define (problem ship-the-spec)
+  (:domain project-work)
+  (:objects ccdp-v03 - artifact)
+  (:htn :ordered-subtasks (produce ccdp-v03))
+  (:init))

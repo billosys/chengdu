@@ -1,0 +1,6 @@
+;; problem.hddl — the per-dispatch instance (LLM-generated, disposable)
+(define (problem ship-the-spec)
+  (:domain project-work)
+  (:objects ccdp-v03 - artifact)
+  (:htn :ordered-subtasks (produce ccdp-v03))
+  (:init))

@@ -1,0 +1,9 @@
+# Fetched upstream checkouts and build output — reproducible from
+# pins.env + scripts/, never committed.
+/upstream/
+/dist/
+
+# Scratch
+*.o
+*.log
+.DS_Store

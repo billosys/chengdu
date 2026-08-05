@@ -1,0 +1,26 @@
+Fix K&R-style string-literal pasting in bliss 0.73's version banner.
+
+`"compiled "__DATE__` relies on pre-C++11 adjacent-token pasting between a
+string literal and a macro expansion. clang >= C++11 parses this as a
+user-defined literal and rejects it:
+  no matching literal operator for call to 'operator""__DATE__'
+GCC only warns, which is why the Linux build sails through unpatched.
+Adding spaces around __DATE__ is valid C++ on every compiler and every
+platform — this patch applies identically on Linux and macOS.
+
+Apply from the extracted bliss source tree (third-party/bliss/ after
+cpddl's rm-rf/unzip recipe has run once, per the build script — never
+via `make bliss`, whose recipe would wipe this edit on the next run):
+  patch -p1 < .../patches/bliss-0.73-cxx11-string-literal.patch
+
+--- a/bliss.cc
++++ b/bliss.cc
+@@ -59,7 +59,7 @@
+   else program_name = argv0;
+   if(!program_name or *program_name == 0) program_name = "bliss";
+
+-  fprintf(fp, "bliss version %s (compiled "__DATE__")\n", bliss::version);
++  fprintf(fp, "bliss version %s (compiled " __DATE__ ")\n", bliss::version);
+   fprintf(fp, "Copyright 2003-2015 Tommi Junttila\n");
+   fprintf(fp,
+ "\n"
