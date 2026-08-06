@@ -60,9 +60,15 @@ what arc01 already proved, adding no new build logic.
 
 ## 3. Current status
 
-- **arc01 — active.** `arc01-build-matrix/arc-plan.md` written 2026-08-05.
-- **arc02 — named only**, per *plan late, plan deep*. To be planned in detail
-  when arc01 nears close.
+- **arc01 — closed** (pending operator gate on
+  `arc01-build-matrix/closing-report.md`, assembled 2026-08-06): all three
+  slices delivered and CDC-verified; 4/4 arc-ledger composition rows
+  reproduced; capability demonstrated by run `31065314655` (8-job
+  two-platform matrix, one push, green). *(Was: active.)*
+- **arc02 — next: detailed planning now due**, per *plan late, plan deep*.
+  Inputs waiting from arc01's bubble-up: macOS `min_os=15.0` for the
+  compat-floor decision; `macos-x86_64` decision (decline-shaped);
+  CDC-5 action bumps; fallback re-evaluation (retire-into-releases).
 - **arc03 — a slot, not a plan.**
 
 ## 4. Project ledger
@@ -80,6 +86,11 @@ in this project's `closing-report.md`. Strength vocabulary per
 
 ## 5. Version history
 
+- **v1.1 — 2026-08-06.** Status update: arc01 closed (see its
+  closing-report; operator gate pending at write time), arc02 promoted to
+  next-for-detailed-planning with its bubble-up inputs listed. Surfaced
+  by: arc01 (arc close). Why: the roadmap's status must reflect the close
+  before arc02 plans against it. No scope, DoD, or sequence change.
 - **v1.0 — 2026-08-05.** Initial roadmap. Source: the PANDA toolchain working
   session of 2026-08-05 — Linux build + full gate sequence reproduced in a
   clean sandbox; three macOS build failures found and fixed live (boruvka
