@@ -1,6 +1,12 @@
 # chengdu
 
-[![build](https://github.com/oubiwann/chengdu/actions/workflows/build.yml/badge.svg)](https://github.com/oubiwann/chengdu/actions/workflows/build.yml)
+[![build](https://github.com/billosys/chengdu/actions/workflows/build.yml/badge.svg)](https://github.com/billosys/chengdu/actions/workflows/build.yml)
+
+[![][logo]][logo-large]
+
+*We `make` PANDAs*
+
+## Overview
 
 CI build matrix and binary releases for the PANDA (pandaPI) HTN planning
 toolchain — Linux + macOS. Primary consumer: `wolong`.
@@ -78,3 +84,8 @@ that job goes red. `actionlint` gates the workflow file itself.
   checkout at `DIR`. Optional — not part of the required gate.
 - Upstream is consumed at pinned SHAs (`pins.env`), never forked silently:
   every delta is a named patch in `patches/`, applied by script.
+
+[//]: ---Named-Links---
+
+[logo]: assets/images/anshun-bridge-y250.png
+[logo-large]: assets/images/anshun-bridge.png
