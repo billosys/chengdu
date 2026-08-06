@@ -1,0 +1,77 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: actionlint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install actionlint 1.7.12
+        run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+
+      - name: Run actionlint
+        run: ./actionlint -color
+
+  build:
+    name: build (${{ matrix.os }})
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Install prerequisites
+        run: sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
+
+      - name: Fetch upstream
+        run: ./scripts/fetch-upstream.sh
+
+      - name: Build parser
+        run: ./scripts/build-parser.sh
+
+      - name: Build grounder
+        run: ./scripts/build-grounder.sh
+
+      - name: Build engine
+        run: ./scripts/build-engine.sh
+
+      - name: Smoke test (positive)
+        run: ./scripts/smoke-test.sh
+
+      - name: Smoke test (negative)
+        run: ./scripts/smoke-test.sh --negative
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux-x86_64-${{ matrix.os }}-${{ steps.vars.outputs.sha_short }}
+          path: dist/linux-x86_64/
+          if-no-files-found: error
+
+  readme-verbatim:
+    name: readme-verbatim (ubuntu-22.04)
+    needs: lint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run README verbatim
+        run: |
+          sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
+          ./scripts/fetch-upstream.sh
+          ./scripts/build-parser.sh
+          ./scripts/build-grounder.sh
+          ./scripts/build-engine.sh
+          ./scripts/smoke-test.sh

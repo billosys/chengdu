@@ -1,5 +1,7 @@
 # chengdu
 
+[![build](https://github.com/oubiwann/chengdu/actions/workflows/build.yml/badge.svg)](https://github.com/oubiwann/chengdu/actions/workflows/build.yml)
+
 CI build matrix and binary releases for the PANDA (pandaPI) HTN planning
 toolchain — Linux + macOS. Primary consumer: `wolong`.
 
@@ -45,11 +47,30 @@ generic failure):
 ./scripts/smoke-test.sh --negative
 ```
 
+## Continuous integration
+
+`.github/workflows/build.yml` runs on every push, PR, and manual dispatch:
+a `build` job matrixed over `ubuntu-22.04` (canonical — this is what arc02
+will package) and `ubuntu-24.04` (forward-compat check only), each running
+the same fetch → three builds → smoke (positive + negative) sequence as
+the local commands above, with the resulting `dist/linux-x86_64/` uploaded
+as a workflow artifact per runner. A separate `readme-verbatim` job runs
+this file's own prerequisite line and five build commands, unmodified, on
+a clean `ubuntu-22.04` runner — if this README and the workflow drift,
+that job goes red. `actionlint` gates the workflow file itself.
+
 ## Notes
 
 - `fetch-upstream.sh --source pandadealer` clones the vendored IPC 2023
   competition snapshot instead of the canonical repos + submodules, for
   environments that cannot reach gitlab.com (the cpddl submodule's host).
+  **This fallback is fetch-only**: the vendored snapshot ships no patch
+  files, and its grounder/engine sources don't build cleanly on a modern
+  Linux/GCC toolchain (pre-final concepts-TS syntax, a missing
+  `<cstdint>` include) — `build-grounder.sh` refuses to run against it
+  with a pointer back to this note. Use it to inspect or diff the
+  competition snapshot, not to produce binaries; canonical mode is the
+  only buildable source today.
 - The macOS grounder compiler defaults to clang (`GROUNDER_CC=cc
   GROUNDER_CXX=c++`); override via those two env vars if you need brew gcc.
 - `smoke-test.sh --corpus DIR` additionally runs the IPC 2023 Transport

@@ -36,6 +36,18 @@ if [ ! -d "$SRC_ROOT" ]; then
   exit 1
 fi
 
+# The PandaDealer fallback (fetch-upstream.sh --source pandadealer) is
+# fetch-only: fetch-upstream.sh symlinks upstream/pandaPIgrounder into
+# the vendored snapshot, which ships no patch files at the paths this
+# script expects and whose sources don't build cleanly on a modern
+# Linux/GCC toolchain (see README.md's fallback note). Fail fast with a
+# clear pointer here, rather than the confusing "patch does not apply /
+# file not found" error this produced before the guard existed.
+if [ -L "$SRC_ROOT" ]; then
+  echo "build-grounder.sh: FAIL: $SRC_ROOT is the PandaDealer fallback (fetch-only) — it does not build. See README.md's 'Continuous integration' fallback note, or run scripts/fetch-upstream.sh without --source pandadealer for the canonical, buildable source." >&2
+  exit 1
+fi
+
 if [ "$PLATFORM" = "macos-arm64" ]; then
   : "${GROUNDER_CC:=cc}"
   : "${GROUNDER_CXX:=c++}"

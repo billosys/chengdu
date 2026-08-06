@@ -16,6 +16,20 @@
 # either mode. --corpus DIR runs the Transport pfile01 loop when an
 # ipc2023-domains checkout is present at DIR; optional, not part of the
 # required gate.
+#
+# Crash-simulation test (CDC-3 regression check): every pandaPI
+# invocation runs inside an explicit `set +e` / `set -e` bracket (via
+# run_and_capture/require_step or inline), so a binary that crashes
+# produces a labeled FAIL + nonzero overall exit rather than a silent
+# `set -e` abort with no summary. To reproduce manually, after a normal
+# build:
+#   real="dist/<platform>/pandaPIengine"
+#   cp "$real" "$real.orig"
+#   printf '#!/bin/sh\nexit 3\n' > "$real"; chmod +x "$real"
+#   scripts/smoke-test.sh; echo "exit=$?"   # expect a "solve: expected
+#     exit 0 ... got exit 3" FAIL line and overall exit 1, not a bare
+#     bash abort
+#   mv "$real.orig" "$real"                 # restore the real binary
 set -euo pipefail
 
 usage() {
@@ -115,6 +129,22 @@ run_and_capture() {
   OUT="$(strip_ansi "$OUT")"
 }
 
+# require_step <label> <cmd...> — a setup call with no dedicated gate of
+# its own (e.g. the parse/ground steps ahead of a solve gate). Routes
+# through run_and_capture so an unexpected crash reports as a labeled
+# FAIL instead of aborting the script silently under set -e; returns 1
+# so the caller can skip whatever depended on it.
+require_step() {
+  local label="$1"
+  shift
+  run_and_capture "$@"
+  if [ "$RC" -ne 0 ]; then
+    gate_fail "$label: expected exit 0, got $RC: $OUT"
+    return 1
+  fi
+  return 0
+}
+
 run_positive() {
   local fdir="$FIXTURES_DIR/minimal"
   local htn="$WORK/dp.htn" sas="$WORK/dp.sas" raw="$WORK/plan.raw" plan="$WORK/plan.txt"
@@ -133,8 +163,10 @@ run_positive() {
     gate_fail "ground: expected exit 0, got $RC: $OUT"
   fi
 
+  set +e
   "$E" "$sas" > "$raw" 2>&1
   RC=$?
+  set -e
   if [ "$RC" -eq 0 ] && grep -q '^- Status: Solved$' "$raw"; then
     gate_pass "solve (exit 0, Status: Solved)"
   else
@@ -185,14 +217,17 @@ run_negative() {
   # d. unsolvable -> engine exit 0 but Status: Proven unsolvable —
   # classified UNSOLVABLE, never success, never a generic failure.
   local htn="$WORK/uns.htn" sas="$WORK/uns.sas" raw="$WORK/uns.raw"
-  "$P" -C "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn" >/dev/null 2>&1
-  "$G" "$htn" "$sas" >/dev/null 2>&1
-  "$E" "$sas" > "$raw" 2>&1
-  RC=$?
-  if [ "$RC" -eq 0 ] && grep -q '^- Status: Proven unsolvable$' "$raw"; then
-    gate_pass "negative: unsolvable -> engine exit 0, Status: Proven unsolvable (UNSOLVABLE, not success, not failure)"
-  else
-    gate_fail "negative: unsolvable: expected exit 0 + 'Status: Proven unsolvable', got exit $RC: $(grep 'Status:' "$raw" || echo 'no Status line')"
+  if require_step "negative: unsolvable setup (parse)" "$P" -C "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn" \
+    && require_step "negative: unsolvable setup (ground)" "$G" "$htn" "$sas"; then
+    set +e
+    "$E" "$sas" > "$raw" 2>&1
+    RC=$?
+    set -e
+    if [ "$RC" -eq 0 ] && grep -q '^- Status: Proven unsolvable$' "$raw"; then
+      gate_pass "negative: unsolvable -> engine exit 0, Status: Proven unsolvable (UNSOLVABLE, not success, not failure)"
+    else
+      gate_fail "negative: unsolvable: expected exit 0 + 'Status: Proven unsolvable', got exit $RC: $(grep 'Status:' "$raw" || echo 'no Status line')"
+    fi
   fi
 }
 
@@ -207,9 +242,16 @@ run_corpus() {
   fi
 
   local t="$WORK/t.htn" tsas="$WORK/t.sas" tout="$WORK/t.out" tplan="$WORK/t.plan"
-  "$P" -C "$dom" "$prob" "$t" >/dev/null 2>&1
-  "$G" "$t" "$tsas" >/dev/null 2>&1
+  if ! require_step "corpus: Transport pfile01 setup (parse)" "$P" -C "$dom" "$prob" "$t"; then
+    return 0
+  fi
+  if ! require_step "corpus: Transport pfile01 setup (ground)" "$G" "$t" "$tsas"; then
+    return 0
+  fi
+
+  set +e
   "$E" "$tsas" > "$tout" 2>&1
+  set -e
 
   if grep -q '^- Status: Solved$' "$tout"; then
     gate_pass "corpus: Transport pfile01 solved"
