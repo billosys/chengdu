@@ -72,10 +72,18 @@ what arc01 already proved, adding no new build logic.
   capability demonstrated by the real, public `v0.1.0` release, consumed
   independently end-to-end. *(Was: next for detailed planning; arc01's
   gate was subsequently recorded GO 2026-08-06.)*
-- **arc03 — a slot, not a plan.**
-- **PROJECT CLOSE IS RIPE:** all roadmap arcs closed; ledger rows P1–P4
-  each have standing evidence (arc02 closing-report §6). Awaiting the
-  operator convening the project close.
+- **arc03 — a slot, not a plan.** *(Unexercised at close; the idea
+  carries forward as conceivable-unplanned, now against 0.2.0+.)*
+- **PROJECT CLOSED — 2026-08-06.** Convened by the operator; P1–P4
+  walked per-row with P1/P3/P4 re-reproduced at project scale and P2
+  spot-checked against the live releases list; gate decision **GO**.
+  See `closing-report.md` (this directory). *(Was: close ripe,
+  awaiting convening.)* Successor design version:
+  `docs/design-v0.2.0/` — pandaPI vendored in-tree with full history,
+  which formally supersedes §1's "not a development fork" non-goal.
+  That non-goal stands as written *for 0.1.0* (historically accurate at
+  this version); the supersession decision, evidence basis, and new
+  policy live in the 0.2.0 plan.
 
 ## 4. Project ledger
 
@@ -92,6 +100,14 @@ in this project's `closing-report.md`. Strength vocabulary per
 
 ## 5. Version history
 
+- **v1.4 — 2026-08-06.** Project close recorded: §3 status updated to
+  CLOSED with gate GO; per-row walk in the new `closing-report.md`.
+  Successor pointer added (`docs/design-v0.2.0/`, which supersedes the
+  §1 fork non-goal — tracked there, not silently edited here). Surfaced
+  by: the project close itself (operator-convened). Why: the plan's
+  status must record the close and route readers to the successor
+  version; no scope or DoD change — this version's scope is complete
+  and frozen.
 - **v1.3 — 2026-08-06.** Status: arc02 closed (gate pending at write
   time); project close declared ripe with P1–P4 evidence standing.
   Surfaced by: arc02 (arc close). Why: the project's own close is now
