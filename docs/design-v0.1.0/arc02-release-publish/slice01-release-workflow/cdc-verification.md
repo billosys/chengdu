@@ -123,3 +123,5 @@ fallback re-evaluation, and the real `v0.1.0` cut.
 
 Closed rows: 8/8 dispositioned (8 reproduced). Verified by: CDC (Cowork
 sandbox session), 2026-08-06.
+
+**Operator gate: close ACCEPTED by operator, 2026-08-06.**
