@@ -8,8 +8,8 @@
 
 ## Overview
 
-CI build matrix and binary releases for the PANDA (pandaPI) HTN planning
-toolchain — Linux + macOS. Primary consumer: `wolong`.
+CI build matrix and binary releases for the [PANDA (pandaPI) HTN planning
+toolchain][panda] — Linux + macOS. Primary consumer: `wolong`.
 
 This repo mechanizes the PANDA Runbook: it fetches pandaPIparser,
 pandaPIgrounder, and pandaPIengine from pinned upstream commits, applies a
@@ -183,4 +183,5 @@ licensing is backed by an evidence-based linkage audit:
 
 [logo]: assets/images/anshun-bridge-y250.png
 [logo-large]: assets/images/anshun-bridge.png
+[panda]: https://panda-planner-dev.github.io/
 
