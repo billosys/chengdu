@@ -15,3 +15,12 @@ planning toolchain (HDDL). Linux + macOS. Primary consumer: `wolong`.
 - Upstream pandaPI is consumed at pinned SHAs, never forked silently; all
   deltas are named patch files in `patches/`. Upstreamable fixes get
   contribution tickets (`CONTRIBUTION-STYLE.md` + template).
+- **Repo home: `billosys/chengdu`, public** (operator decision 2026-08-06;
+  an early slice02 session created `oubiwann/chengdu` private by mistake —
+  corrected by transfer). Badge/release URLs must use the billosys path.
+- **Workflow convention (operator override, 2026-08-06): push directly to
+  `main` — no PR ceremony while the project has no external consumers.**
+  The quality gate is unchanged: a slice is not closed until its ledger
+  closes and CDC's independent verification (`cdc-verification.md`) lands.
+  Merge timing and verification are separate concerns; only the second is
+  load-bearing.
