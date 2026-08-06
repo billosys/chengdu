@@ -26,6 +26,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}
     steps:
       - uses: actions/checkout@v4
 
@@ -59,6 +61,23 @@ jobs:
           name: dist-linux-x86_64-${{ matrix.os }}-${{ steps.vars.outputs.sha_short }}
           path: dist/linux-x86_64/
           if-no-files-found: error
+
+  cross-compat:
+    name: cross-compat (22.04 artifact on 24.04)
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-linux-x86_64-ubuntu-22.04-${{ needs.build.outputs.sha_short }}
+          path: dist-22.04
+
+      - name: Run --help on the 22.04-built binaries under 24.04 (glibc forward-compat)
+        run: |
+          chmod +x dist-22.04/pandaPIparser dist-22.04/pandaPIgrounder dist-22.04/pandaPIengine
+          dist-22.04/pandaPIparser --help
+          dist-22.04/pandaPIgrounder --help
+          dist-22.04/pandaPIengine --help
 
   readme-verbatim:
     name: readme-verbatim (ubuntu-22.04)
