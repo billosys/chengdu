@@ -177,3 +177,7 @@ recorded, non-blocking.
 
 Closed rows: 11/11 dispositioned (9 reproduced, 2 conditional with
 re-entry). Verified by: CDC (Cowork sandbox session), 2026-08-05.
+
+**Operator gate: conditional close ACCEPTED by operator, 2026-08-05.**
+Re-entry rows (slice01 F-4/F-9/F-11 Linux halves) carry into slice02's
+ledger as explicit discharge rows.
