@@ -167,3 +167,7 @@ before arc close.**
 Closed rows: 9/9 dispositioned (8 reproduced, 1 reproduced-at-job-level
 with named attested residue). Verified by: CDC (Cowork sandbox
 session), 2026-08-06.
+
+**Operator gate: close ACCEPTED by operator, 2026-08-06.** The
+provenance-content residue routes to slice03 (mechanical
+`check-provenance.sh` CI gate) rather than waiting for arc02.
