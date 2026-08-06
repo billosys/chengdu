@@ -55,15 +55,37 @@ generic failure):
 
 ## Continuous integration
 
-`.github/workflows/build.yml` runs on every push, PR, and manual dispatch:
-a `build` job matrixed over `ubuntu-22.04` (canonical — this is what arc02
-will package) and `ubuntu-24.04` (forward-compat check only), each running
-the same fetch → three builds → smoke (positive + negative) sequence as
-the local commands above, with the resulting `dist/linux-x86_64/` uploaded
-as a workflow artifact per runner. A separate `readme-verbatim` job runs
-this file's own prerequisite line and five build commands, unmodified, on
-a clean `ubuntu-22.04` runner — if this README and the workflow drift,
-that job goes red. `actionlint` gates the workflow file itself.
+`.github/workflows/build.yml` runs on every push, PR, and manual dispatch,
+across the full support matrix:
+
+- **`build` (Linux)** — matrixed over `ubuntu-22.04` (canonical — what
+  arc02 will package) and `ubuntu-24.04` (forward-compat check only).
+- **`build (macos-15)`** — the macOS arm64 leg, pinned to `macos-15`
+  (the oldest currently-maintained GA arm64 GitHub-hosted image;
+  `macos-14` is deprecated, `macos-latest`/`macos-26` is the newest —
+  `macos-15` is this project's macOS build/compat floor, chosen the same
+  way `ubuntu-22.04` was for Linux).
+- **`cross-compat` / `cross-compat-macos`** — the canonical-runner
+  artifact (`ubuntu-22.04` / `macos-15`) proven to also run `--help`
+  cleanly on the newest maintained runner of its platform
+  (`ubuntu-24.04` / `macos-26`), on a real GitHub-hosted runner rather
+  than an emulated one.
+
+Every build leg runs the same fetch → three builds → `check-provenance.sh`
+→ smoke (positive + negative) sequence as the local commands above, with
+the resulting `dist/<platform>/` (including `provenance.txt`) uploaded as
+a workflow artifact per runner. `check-provenance.sh` fails the run if any
+component's SHA, patch list, or compiler field doesn't match what
+`pins.env` and the platform actually require — the provenance file is no
+longer just attested, it's CI-enforced. Two `readme-verbatim*` jobs
+(`ubuntu-22.04` and `macos-15`) run this file's own prerequisite line and
+five build commands, unmodified, on a clean runner per platform — if this
+README and the workflow drift, those jobs go red. `actionlint` gates the
+workflow file itself.
+
+Brew-installed dependency versions (bison, flex, etc.) float with the
+Homebrew formulae rather than being pinned — an accepted risk at 0.1.0;
+the smoke gate is what catches any resulting breakage.
 
 ## Notes
 

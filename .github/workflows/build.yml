@@ -50,6 +50,9 @@ jobs:
       - name: Build engine
         run: ./scripts/build-engine.sh
 
+      - name: Check provenance
+        run: ./scripts/check-provenance.sh
+
       - name: Smoke test (positive)
         run: ./scripts/smoke-test.sh
 
@@ -78,6 +81,85 @@ jobs:
           dist-22.04/pandaPIparser --help
           dist-22.04/pandaPIgrounder --help
           dist-22.04/pandaPIengine --help
+
+  build-macos:
+    name: build (macos-15)
+    needs: lint
+    runs-on: macos-15
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Install prerequisites
+        run: brew install gcc make cmake flex bison gengetopt zip
+
+      - name: Fetch upstream
+        run: ./scripts/fetch-upstream.sh
+
+      - name: Build parser
+        run: ./scripts/build-parser.sh
+
+      - name: Build grounder
+        run: ./scripts/build-grounder.sh
+
+      - name: Build engine
+        run: ./scripts/build-engine.sh
+
+      - name: Record min-OS observation
+        run: ./scripts/record-min-os.sh
+
+      - name: Check provenance
+        run: ./scripts/check-provenance.sh
+
+      - name: Smoke test (positive)
+        run: ./scripts/smoke-test.sh
+
+      - name: Smoke test (negative)
+        run: ./scripts/smoke-test.sh --negative
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos-arm64-macos-15-${{ steps.vars.outputs.sha_short }}
+          path: dist/macos-arm64/
+          if-no-files-found: error
+
+  cross-compat-macos:
+    name: cross-compat-macos (macos-15 artifact on macos-26)
+    needs: build-macos
+    runs-on: macos-26
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-macos-arm64-macos-15-${{ needs.build-macos.outputs.sha_short }}
+          path: dist-macos-15
+
+      - name: Run --help on the macos-15-built binaries under macos-26 (forward-compat)
+        run: |
+          chmod +x dist-macos-15/pandaPIparser dist-macos-15/pandaPIgrounder dist-macos-15/pandaPIengine
+          dist-macos-15/pandaPIparser --help
+          dist-macos-15/pandaPIgrounder --help
+          dist-macos-15/pandaPIengine --help
+
+  readme-verbatim-macos:
+    name: readme-verbatim-macos (macos-15)
+    needs: lint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run README verbatim
+        run: |
+          brew install gcc make cmake flex bison gengetopt zip
+          ./scripts/fetch-upstream.sh
+          ./scripts/build-parser.sh
+          ./scripts/build-grounder.sh
+          ./scripts/build-engine.sh
+          ./scripts/smoke-test.sh
 
   readme-verbatim:
     name: readme-verbatim (ubuntu-22.04)
