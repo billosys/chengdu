@@ -101,3 +101,5 @@ operator, per Section B's the-composer-does-not-sign-off rule).
 
 Closed rows: 8/8 dispositioned (8 reproduced). Verified by: CDC (Cowork
 sandbox session), 2026-08-06.
+
+**Operator gate: close ACCEPTED by operator, 2026-08-06.**

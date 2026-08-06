@@ -150,11 +150,9 @@ change, not a scope change.
 Per Section B, the gate reviewer must be independent of the composer.
 CDC assembled this close; the **operator** gates it.
 
-**Gate decision: PENDING — awaiting operator review of this document.**
-The recommendation from the composer's seat is *go*: capability
-delivered, 4/4 composition rows closed with reproduced evidence, all
+**Gate decision: GO — accepted by operator, 2026-08-06.** *(Was:
+pending at assembly; the composer's recommendation was go.)* Arc01 is
+closed: capability delivered, 4/4 composition rows reproduced, all
 three slices closed and verified, change log complete, nothing
-structural bubbling up. On operator acceptance, arc01 closes and arc02
-(`release-publish`) detailed planning begins — *plan late, plan deep*
-now makes it "near." On adjust/kill, the operator's direction is
-recorded here and remediation is planned per Section B.
+structural bubbling up. Arc02 (`release-publish`) detailed planning
+begins.
