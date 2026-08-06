@@ -145,6 +145,34 @@ require_step() {
   return 0
 }
 
+# run_engine <sas-file> <out-file> — invoke the engine with a bounded
+# wall-clock timeout, portably (no dependency on GNU coreutils'
+# timeout/gtimeout — stock macOS ships neither). Sets RC: the engine's
+# own exit code, or 124 (matching GNU timeout's convention) if it had
+# to be killed. Found live during a refuse-to-publish rehearsal: a
+# deliberately-broken upstream fixture fed the engine a malformed .sas
+# file, and it spun indefinitely (12+ GB RSS, climbing) instead of
+# failing fast — every prior gate reported a clean labeled FAIL, but
+# this one would have hung a CI job for hours with no FAIL at all.
+ENGINE_TIMEOUT_SECS=60
+run_engine() {
+  local sas="$1" out="$2" pid watcher
+  "$E" "$sas" > "$out" 2>&1 &
+  pid=$!
+  ( sleep "$ENGINE_TIMEOUT_SECS"; kill -9 "$pid" 2>/dev/null ) &
+  watcher=$!
+  set +e
+  wait "$pid"
+  RC=$?
+  kill "$watcher" 2>/dev/null
+  wait "$watcher" 2>/dev/null
+  set -e
+  if [ "$RC" -eq 137 ]; then
+    RC=124
+    echo "smoke-test.sh: engine killed after ${ENGINE_TIMEOUT_SECS}s timeout" >> "$out"
+  fi
+}
+
 run_positive() {
   local fdir="$FIXTURES_DIR/minimal"
   local htn="$WORK/dp.htn" sas="$WORK/dp.sas" raw="$WORK/plan.raw" plan="$WORK/plan.txt"
@@ -163,10 +191,7 @@ run_positive() {
     gate_fail "ground: expected exit 0, got $RC: $OUT"
   fi
 
-  set +e
-  "$E" "$sas" > "$raw" 2>&1
-  RC=$?
-  set -e
+  run_engine "$sas" "$raw"
   if [ "$RC" -eq 0 ] && grep -q '^- Status: Solved$' "$raw"; then
     gate_pass "solve (exit 0, Status: Solved)"
   else
@@ -219,10 +244,7 @@ run_negative() {
   local htn="$WORK/uns.htn" sas="$WORK/uns.sas" raw="$WORK/uns.raw"
   if require_step "negative: unsolvable setup (parse)" "$P" -C "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn" \
     && require_step "negative: unsolvable setup (ground)" "$G" "$htn" "$sas"; then
-    set +e
-    "$E" "$sas" > "$raw" 2>&1
-    RC=$?
-    set -e
+    run_engine "$sas" "$raw"
     if [ "$RC" -eq 0 ] && grep -q '^- Status: Proven unsolvable$' "$raw"; then
       gate_pass "negative: unsolvable -> engine exit 0, Status: Proven unsolvable (UNSOLVABLE, not success, not failure)"
     else
@@ -249,9 +271,7 @@ run_corpus() {
     return 0
   fi
 
-  set +e
-  "$E" "$tsas" > "$tout" 2>&1
-  set -e
+  run_engine "$tsas" "$tout"
 
   if grep -q '^- Status: Solved$' "$tout"; then
     gate_pass "corpus: Transport pfile01 solved"
