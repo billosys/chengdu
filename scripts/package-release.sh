@@ -53,7 +53,17 @@ for p in $PLATFORMS; do
   "$SCRIPT_DIR/check-provenance.sh" --platform "$p" "$DIST_ROOT/$p/provenance.txt"
 done
 
-# --- tarballs: pandapi-<tag>-<platform>.tar.gz, 3 binaries + provenance.txt ---
+# --- tarballs: pandapi-<tag>-<platform>.tar.gz, 3 binaries + provenance.txt
+# + fixtures/ (the byte-verified minimal pair, so an installed consumer
+# can run a real --verify offline, per project ledger P4) ---
+FIXTURES_DIR="$REPO_ROOT/fixtures/minimal"
+for f in domain.hddl problem.hddl; do
+  if [ ! -f "$FIXTURES_DIR/$f" ]; then
+    echo "package-release.sh: FAIL: $FIXTURES_DIR/$f missing" >&2
+    exit 1
+  fi
+done
+
 for p in $PLATFORMS; do
   for bin in pandaPIparser pandaPIgrounder pandaPIengine; do
     if [ ! -x "$DIST_ROOT/$p/$bin" ]; then
@@ -62,9 +72,50 @@ for p in $PLATFORMS; do
     fi
   done
   tarball="pandapi-$TAG-$p.tar.gz"
-  tar czf "$OUT_DIR/$tarball" -C "$DIST_ROOT/$p" pandaPIparser pandaPIgrounder pandaPIengine provenance.txt
-  echo "package-release.sh: built $tarball"
+  stage="$OUT_DIR/.stage-$p"
+  rm -rf "$stage"
+  mkdir -p "$stage/fixtures"
+  cp "$DIST_ROOT/$p/pandaPIparser" "$DIST_ROOT/$p/pandaPIgrounder" "$DIST_ROOT/$p/pandaPIengine" "$DIST_ROOT/$p/provenance.txt" "$stage/"
+  cp "$FIXTURES_DIR/domain.hddl" "$FIXTURES_DIR/problem.hddl" "$stage/fixtures/"
+  tar czf "$OUT_DIR/$tarball" -C "$stage" pandaPIparser pandaPIgrounder pandaPIengine provenance.txt fixtures
+  rm -rf "$stage"
+  echo "package-release.sh: built $tarball (incl. fixtures/)"
 done
+
+# --- THIRD-PARTY-LICENSES: assembled from the committed licenses/
+# directory, per docs/license-audit-v0.1.0.md. Fails loudly if any
+# audited component's license text is missing — the release must never
+# ship silently short of what the audit found. ---
+LICENSES_DIR="$REPO_ROOT/licenses"
+THIRD_PARTY="$OUT_DIR/THIRD-PARTY-LICENSES"
+: > "$THIRD_PARTY"
+for entry in \
+  "pandaPIparser:BSD 3-Clause:pandaPIparser-BSD-3-Clause.txt" \
+  "pandaPIgrounder:BSD 3-Clause:pandaPIgrounder-BSD-3-Clause.txt" \
+  "pandaPIengine:BSD 3-Clause:pandaPIengine-BSD-3-Clause.txt" \
+  "cpddl:BSD 3-Clause:cpddl-BSD-3-Clause.txt" \
+  "boruvka:BSD 3-Clause:boruvka-BSD-3-Clause.txt" \
+  "h2-fd-preprocessor (linked into pandaPIgrounder):GPL-3.0:h2-fd-preprocessor-GPL-3.0.txt"
+do
+  name="${entry%%:*}"
+  rest="${entry#*:}"
+  license="${rest%%:*}"
+  file="${rest#*:}"
+  path="$LICENSES_DIR/$file"
+  if [ ! -f "$path" ]; then
+    echo "package-release.sh: FAIL: $path missing — licenses/ is out of sync with docs/license-audit-v0.1.0.md" >&2
+    exit 1
+  fi
+  {
+    echo "================================================================"
+    echo "$name — $license"
+    echo "================================================================"
+    echo
+    cat "$path"
+    echo
+  } >> "$THIRD_PARTY"
+done
+echo "package-release.sh: built THIRD-PARTY-LICENSES (6 components)"
 
 # --- aggregated manifest: tag + chengdu commit + every platform's full provenance ---
 MANIFEST="$OUT_DIR/release-manifest.txt"
@@ -82,7 +133,7 @@ echo "package-release.sh: built release-manifest.txt"
 # --- checksums: every asset except the checksum file itself ---
 (
   cd "$OUT_DIR"
-  sha256sum -- *.tar.gz release-manifest.txt > SHA256SUMS
+  sha256sum -- *.tar.gz release-manifest.txt THIRD-PARTY-LICENSES > SHA256SUMS
 )
 echo "package-release.sh: built SHA256SUMS"
 

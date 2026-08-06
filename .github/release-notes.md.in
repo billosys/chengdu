@@ -22,12 +22,38 @@ Full per-component detail (exact patch lists, compilers): see
 `release-manifest.txt`, attached below. Verify downloads against
 `SHA256SUMS`.
 
+## Licensing and source availability
+
+`pandaPIparser` and `pandaPIengine` are BSD 3-Clause throughout.
+`pandaPIgrounder` links `h2-fd-preprocessor` (GPL-3.0, derived from
+Fast Downward) alongside BSD-licensed `cpddl`/`boruvka` — see
+`THIRD-PARTY-LICENSES`, attached below, for full license texts, and
+[`docs/license-audit-v0.1.0.md`](https://github.com/billosys/chengdu/blob/main/docs/license-audit-v0.1.0.md)
+for the evidence-based linkage audit backing this release.
+
+**Source availability** (GPL-3.0 §6, satisfied by already-public,
+unmodified sources — nothing here is re-hosted, only pointed to):
+
+- `pandaPIgrounder`: https://github.com/panda-planner-dev/pandaPIgrounder
+  — exact SHA in the provenance table above (this release's `pandaPIgrounder`
+  row; `h2-fd-preprocessor`, `cpddl`, and `boruvka` are pinned
+  transitively by that same commit, since they are its own submodules —
+  their exact SHAs are recorded in
+  [`docs/license-audit-v0.1.0.md`](https://github.com/billosys/chengdu/blob/@@COMMIT@@/docs/license-audit-v0.1.0.md)
+  at this release's chengdu commit).
+- chengdu's own patches: `patches/` in this repository, at commit
+  `@@COMMIT@@` — unchanged from upstream except the three named,
+  disclosed fixes documented there.
+
 ## Assets
 
 - `pandapi-@@TAG@@-linux-x86_64.tar.gz` — pandaPIparser, pandaPIgrounder,
-  pandaPIengine, provenance.txt
-- `pandapi-@@TAG@@-macos-arm64.tar.gz` — the same three binaries, for
-  macOS arm64
-- `SHA256SUMS` — checksums for both tarballs and `release-manifest.txt`
+  pandaPIengine, provenance.txt, fixtures/ (a minimal HDDL pair for an
+  offline `--verify` smoke)
+- `pandapi-@@TAG@@-macos-arm64.tar.gz` — the same, for macOS arm64
+- `SHA256SUMS` — checksums for both tarballs, `release-manifest.txt`,
+  and `THIRD-PARTY-LICENSES`
 - `release-manifest.txt` — aggregated provenance for every platform in
   this release
+- `THIRD-PARTY-LICENSES` — full license texts for every component
+  compiled into a shipped binary

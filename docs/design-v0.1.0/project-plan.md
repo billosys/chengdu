@@ -24,9 +24,10 @@ provenance manifest (upstream commit SHAs + the applied patch list) attached
 to the release.
 
 **Support matrix at 0.1.0:** `linux-x86_64`, `macos-arm64`.
-Candidates recorded, not committed: `linux-arm64` (GH ARM runners exist;
-build unverified), `macos-x86_64` (GH Intel runners deprecated — decide in
-arc02, may be declined).
+Candidates, per arc02 D4 (2026-08-06): `linux-arm64` **deferred** — GH
+ARM runners exist, remains a candidate, add when a consumer wants it.
+`macos-x86_64` **declined** for 0.1.0 — GH Intel runners deprecated, no
+consumer demand; revisitable if that changes.
 
 **Explicit non-goals (0.1.0):**
 
@@ -86,6 +87,13 @@ in this project's `closing-report.md`. Strength vocabulary per
 
 ## 5. Version history
 
+- **v1.2 — 2026-08-06.** §1's candidate list enacted per arc02 D4:
+  `macos-x86_64` declined for 0.1.0 (GH Intel runners deprecated, no
+  consumer demand); `linux-arm64` deferred (stays a candidate). Surfaced
+  by: arc02 slice02 (`release-readiness`), per arc-plan D4. Why: D4 was
+  proposed at arc02 planning and enacted here once slice02 reached the
+  point in its dependency order where the plan-change discipline calls
+  for it — no scope or DoD change, a candidate-list update only.
 - **v1.1 — 2026-08-06.** Status update: arc01 closed (see its
   closing-report; operator gate pending at write time), arc02 promoted to
   next-for-detailed-planning with its bubble-up inputs listed. Surfaced

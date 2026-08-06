@@ -46,6 +46,16 @@ proves.
   lpsolve — that arc01 evidence suggests is *not linked* into the
   shipped binaries; that suggestion must be verified, not assumed). A
   `THIRD-PARTY-LICENSES` asset ships with every release.
+- **D6 — RESOLVED 2026-08-06 — fallback re-evaluation (arc01
+  bubble-up):** disposition adopted at the default the slice-doc
+  proposed — `fetch-upstream.sh --source pandadealer`'s code stays
+  (cheap, harmless, already fetch-only per slice03's guard), but the
+  docs (README, `fetch-upstream.sh --help`) now point restricted-network
+  users at **release binaries first** — a `v0.1.0`+ release needs no
+  gitlab.com reachability at all, which is strictly better than the
+  vendored snapshot for that use case. The snapshot itself is repointed
+  to historical/source-inspection use only. No operator override
+  received at open-set review; the default stands.
 
 ## 3. Slice breakdown
 
@@ -75,13 +85,27 @@ these; the formats are frozen at v0.1.0 and versioned thereafter.
 
 ## 5. Open questions
 
-- **RQ1 (slice01):** release event model — publish on tag push directly,
-  or tag → draft → operator promotes? Default: direct publish (the gates
-  are the approval); draft mode documented as a one-line workflow toggle.
-- **RQ2 (slice02):** the license/linkage audit's outcome decides whether
-  any LGPL component is actually shipped; if one is, the remediation
-  (dynamic-link exception documentation, source-offer note, or build
-  change) is planned as an amendment to this arc — not improvised.
+- **RQ1 — RESOLVED (slice01):** release event model — publish on tag push
+  directly, or tag → draft → operator promotes? Default: direct publish
+  (the gates are the approval); draft mode documented as a one-line
+  workflow toggle. Implemented and proven (`v0.0.1-rc1`).
+- **RQ2 — RESOLVED 2026-08-06 (v1.1):** the license/linkage audit
+  (`docs/license-audit-v0.1.0.md`) found a **GPL-3.0** component, not the
+  anticipated LGPL: `h2-fd-preprocessor` (derived from Fast Downward per
+  its own README; carries no LICENSE file of its own in the vendored
+  copy) is statically linked into `pandaPIgrounder` on both platforms —
+  confirmed via link-command evidence on macOS (this session's build)
+  and fresh Linux CI (run `31072336131`), plus `nm` symbol confirmation
+  on the macOS binary. `bliss` (LGPL-3.0) and `lpsolve` (LGPL) are built
+  but confirmed **not** linked into any shipped binary (0 matching
+  symbols) — arc01's suggestion, now verified rather than assumed.
+  **Adopted remediation: documentation-based compliance** — the GPL-3.0
+  text ships in `THIRD-PARTY-LICENSES`; the `v0.1.0` release notes carry
+  a Source-availability section naming `h2-fd-preprocessor`'s exact
+  repo+SHA (already public, unmodified) alongside `pandaPIgrounder`'s,
+  `cpddl`'s, and `boruvka`'s. No build change — `pandaPIparser` and
+  `pandaPIengine` link no GPL code and remain BSD-only (mere
+  aggregation, not a derivative work, per GPL-3.0 §5).
 
 ## 6. Arc ledger
 
@@ -99,6 +123,21 @@ Composition rows open here; close (per-row walk) in this arc's
 
 ## 7. Version history
 
+- **v1.2 — 2026-08-06.** D6 resolved: the PandaDealer fallback
+  (`fetch-upstream.sh --source pandadealer`) stays in place, fetch-only,
+  but README and the script's `--help` now point restricted-network
+  users at release binaries first, since a release needs no gitlab.com
+  reachability. Surfaced by: slice02, per the arc01 closing-report
+  bubble-up item this arc inherited. Why: the disposition was proposed
+  at arc02 planning and adopted here per the default, once slice02
+  reached it in dependency order.
+- **v1.1 — 2026-08-06.** RQ2 resolved: the license/linkage audit found
+  `h2-fd-preprocessor` (GPL-3.0, not the anticipated LGPL) linked into
+  `pandaPIgrounder`; `bliss`/`lpsolve` (LGPL) confirmed not linked.
+  Documentation-based compliance adopted (`THIRD-PARTY-LICENSES` +
+  release-notes Source-availability section); no build change. Surfaced
+  by: slice02 (`docs/license-audit-v0.1.0.md`). Why: RQ2 named this
+  decision as owed once real evidence existed, not before.
 - **v1.0 — 2026-08-06.** Initial detailed plan, written at arc01 close.
   Sources: project-plan v1.1 roadmap line; arc01 closing-report bubble-up
   (min_os datum → D2; candidates → D4; CDC-5 + fallback re-evaluation →
