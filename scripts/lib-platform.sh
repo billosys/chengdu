@@ -44,3 +44,19 @@ append_provenance() {
     echo "---"
   } >> "$dist_dir/provenance.txt"
 }
+
+# provenance_get_block <file> <component> — the provenance block for one
+# component, from "component=<name>" through its trailing "---" line,
+# inclusive. Shared by check-provenance.sh and package-release.sh so
+# provenance parsing has one implementation.
+provenance_get_block() {
+  local file="$1" name="$2"
+  awk -v c="component=$name" 'BEGIN{f=0} $0==c{f=1} f{print} f && /^---$/{exit}' "$file"
+}
+
+# provenance_get_field <block> <key> — extract key=value from a
+# provenance block (as returned by provenance_get_block).
+provenance_get_field() {
+  local block="$1" key="$2"
+  printf '%s\n' "$block" | sed -n "s/^$key=//p"
+}

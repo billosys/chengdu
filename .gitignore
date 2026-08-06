@@ -2,6 +2,7 @@
 # pins.env + scripts/, never committed.
 /upstream/
 /dist/
+/release/
 
 # Scratch
 *.o

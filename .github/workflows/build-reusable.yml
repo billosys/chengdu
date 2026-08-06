@@ -1,0 +1,180 @@
+name: build-reusable
+
+on:
+  workflow_call:
+    outputs:
+      sha_short:
+        description: "Short SHA resolved during the build matrix, for callers that need to name/download the same artifacts (e.g. release.yml)."
+        value: ${{ jobs.build.outputs.sha_short }}
+
+jobs:
+  lint:
+    name: actionlint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install actionlint 1.7.12
+        run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+
+      - name: Run actionlint
+        run: ./actionlint -color
+
+  build:
+    name: build (${{ matrix.os }})
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Install prerequisites
+        run: sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
+
+      - name: Fetch upstream
+        run: ./scripts/fetch-upstream.sh
+
+      - name: Build parser
+        run: ./scripts/build-parser.sh
+
+      - name: Build grounder
+        run: ./scripts/build-grounder.sh
+
+      - name: Build engine
+        run: ./scripts/build-engine.sh
+
+      - name: Check provenance
+        run: ./scripts/check-provenance.sh
+
+      - name: Smoke test (positive)
+        run: ./scripts/smoke-test.sh
+
+      - name: Smoke test (negative)
+        run: ./scripts/smoke-test.sh --negative
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-linux-x86_64-${{ matrix.os }}-${{ steps.vars.outputs.sha_short }}
+          path: dist/linux-x86_64/
+          if-no-files-found: error
+
+  cross-compat:
+    name: cross-compat (22.04 artifact on 24.04)
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-linux-x86_64-ubuntu-22.04-${{ needs.build.outputs.sha_short }}
+          path: dist-22.04
+
+      - name: Run --help on the 22.04-built binaries under 24.04 (glibc forward-compat)
+        run: |
+          chmod +x dist-22.04/pandaPIparser dist-22.04/pandaPIgrounder dist-22.04/pandaPIengine
+          dist-22.04/pandaPIparser --help
+          dist-22.04/pandaPIgrounder --help
+          dist-22.04/pandaPIengine --help
+
+  build-macos:
+    name: build (macos-15)
+    needs: lint
+    runs-on: macos-15
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Install prerequisites
+        run: brew install gcc make cmake flex bison gengetopt zip
+
+      - name: Fetch upstream
+        run: ./scripts/fetch-upstream.sh
+
+      - name: Build parser
+        run: ./scripts/build-parser.sh
+
+      - name: Build grounder
+        run: ./scripts/build-grounder.sh
+
+      - name: Build engine
+        run: ./scripts/build-engine.sh
+
+      - name: Record min-OS observation
+        run: ./scripts/record-min-os.sh
+
+      - name: Check provenance
+        run: ./scripts/check-provenance.sh
+
+      - name: Smoke test (positive)
+        run: ./scripts/smoke-test.sh
+
+      - name: Smoke test (negative)
+        run: ./scripts/smoke-test.sh --negative
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-macos-arm64-macos-15-${{ steps.vars.outputs.sha_short }}
+          path: dist/macos-arm64/
+          if-no-files-found: error
+
+  cross-compat-macos:
+    name: cross-compat-macos (macos-15 artifact on macos-26)
+    needs: build-macos
+    runs-on: macos-26
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-macos-arm64-macos-15-${{ needs.build-macos.outputs.sha_short }}
+          path: dist-macos-15
+
+      - name: Run --help on the macos-15-built binaries under macos-26 (forward-compat)
+        run: |
+          chmod +x dist-macos-15/pandaPIparser dist-macos-15/pandaPIgrounder dist-macos-15/pandaPIengine
+          dist-macos-15/pandaPIparser --help
+          dist-macos-15/pandaPIgrounder --help
+          dist-macos-15/pandaPIengine --help
+
+  readme-verbatim-macos:
+    name: readme-verbatim-macos (macos-15)
+    needs: lint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run README verbatim
+        run: |
+          brew install gcc make cmake flex bison gengetopt zip
+          ./scripts/fetch-upstream.sh
+          ./scripts/build-parser.sh
+          ./scripts/build-grounder.sh
+          ./scripts/build-engine.sh
+          ./scripts/smoke-test.sh
+
+  readme-verbatim:
+    name: readme-verbatim (ubuntu-22.04)
+    needs: lint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run README verbatim
+        run: |
+          sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
+          ./scripts/fetch-upstream.sh
+          ./scripts/build-parser.sh
+          ./scripts/build-grounder.sh
+          ./scripts/build-engine.sh
+          ./scripts/smoke-test.sh

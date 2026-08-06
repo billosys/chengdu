@@ -1,0 +1,33 @@
+# chengdu @@TAG@@
+
+Prebuilt pandaPI planner binaries for Linux (x86_64) and macOS (Apple
+Silicon), built and gate-verified by chengdu's CI from pinned upstream
+sources. See https://github.com/billosys/chengdu for the build scripts
+and design docs.
+
+## Compatibility
+
+- **Linux:** glibc 2.35+ (x86_64) — built and verified on `ubuntu-22.04`.
+- **macOS:** macOS 15+ (arm64, Apple Silicon).
+
+## Provenance
+
+Built from chengdu commit `@@COMMIT_SHORT@@` (`@@COMMIT@@`).
+
+| Platform | Component | Upstream SHA | Patches applied |
+|---|---|---|---|
+@@PROVENANCE_TABLE@@
+
+Full per-component detail (exact patch lists, compilers): see
+`release-manifest.txt`, attached below. Verify downloads against
+`SHA256SUMS`.
+
+## Assets
+
+- `pandapi-@@TAG@@-linux-x86_64.tar.gz` — pandaPIparser, pandaPIgrounder,
+  pandaPIengine, provenance.txt
+- `pandapi-@@TAG@@-macos-arm64.tar.gz` — the same three binaries, for
+  macOS arm64
+- `SHA256SUMS` — checksums for both tarballs and `release-manifest.txt`
+- `release-manifest.txt` — aggregated provenance for every platform in
+  this release

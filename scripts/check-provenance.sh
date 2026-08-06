@@ -6,10 +6,14 @@
 # residue — "CC attested the provenance file" — mechanically: no CI run
 # is green unless the provenance is actually right.
 #
-# Usage: check-provenance.sh [PROVENANCE_FILE]
-#   Defaults to dist/<platform>/provenance.txt. An explicit path is
-#   accepted so a tamper test can point this at a hand-edited copy
-#   without disturbing a real build's output.
+# Usage: check-provenance.sh [--platform linux-x86_64|macos-arm64] [PROVENANCE_FILE]
+#   Defaults to dist/<platform>/provenance.txt, PLATFORM auto-detected
+#   from the running machine. --platform overrides detection — needed
+#   by package-release.sh, which validates both platforms' provenance
+#   files from a single packaging runner (auto-detection would check
+#   the other platform's file against the wrong expected patch set).
+#   An explicit FILE path is accepted so a tamper test can point this at
+#   a hand-edited copy without disturbing a real build's output.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,7 +21,37 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck source=scripts/lib-platform.sh
 . "$SCRIPT_DIR/lib-platform.sh"
 
-PLATFORM="$(detect_platform)"
+PLATFORM_OVERRIDE=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --platform)
+      PLATFORM_OVERRIDE="${2:-}"
+      shift 2
+      ;;
+    --platform=*)
+      PLATFORM_OVERRIDE="${1#*=}"
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ -n "$PLATFORM_OVERRIDE" ]; then
+  case "$PLATFORM_OVERRIDE" in
+    linux-x86_64|macos-arm64)
+      PLATFORM="$PLATFORM_OVERRIDE"
+      ;;
+    *)
+      echo "check-provenance.sh: FAIL: invalid --platform '$PLATFORM_OVERRIDE' (want linux-x86_64 or macos-arm64)" >&2
+      exit 1
+      ;;
+  esac
+else
+  PLATFORM="$(detect_platform)"
+fi
+
 FILE="${1:-$REPO_ROOT/dist/$PLATFORM/provenance.txt}"
 
 # shellcheck source=/dev/null
@@ -50,30 +84,19 @@ sorted_csv() {
   printf '%s' "$1" | tr ',' '\n' | sort | tr '\n' ',' | sed 's/,$//'
 }
 
-# get_field <block> <key> — extract key=value from a provenance block.
-get_field() {
-  printf '%s\n' "$1" | sed -n "s/^$2=//p"
-}
-
-# get_block <name> — the provenance block for one component, from
-# "component=<name>" through its trailing "---" line, inclusive.
-get_block() {
-  awk -v c="component=$1" 'BEGIN{f=0} $0==c{f=1} f{print} f && /^---$/{exit}' "$FILE"
-}
-
 check_component() {
   local name="$1" expected_sha="$2" expected_patches="$3"
   local block sha patches compiler
 
-  block="$(get_block "$name")"
+  block="$(provenance_get_block "$FILE" "$name")"
   if [ -z "$block" ]; then
     fail "$name: no provenance block found in $FILE"
     return
   fi
 
-  sha="$(get_field "$block" sha)"
-  patches="$(get_field "$block" patches)"
-  compiler="$(get_field "$block" compiler)"
+  sha="$(provenance_get_field "$block" sha)"
+  patches="$(provenance_get_field "$block" patches)"
+  compiler="$(provenance_get_field "$block" compiler)"
 
   if [ "$sha" != "$expected_sha" ]; then
     fail "$name: sha mismatch — provenance has '$sha', pins.env has '$expected_sha'"

@@ -87,6 +87,24 @@ Brew-installed dependency versions (bison, flex, etc.) float with the
 Homebrew formulae rather than being pinned — an accepted risk at 0.1.0;
 the smoke gate is what catches any resulting breakage.
 
+Both `build.yml` and `.github/workflows/release.yml` call the same
+reusable workflow (`build-reusable.yml`) for this matrix — no build
+logic is duplicated between "every push" and "on a release tag."
+
+## Releases
+
+`.github/workflows/release.yml` triggers on pushing a tag matching
+`v*`. It runs the identical build+gate matrix described above; only if
+every leg is green does it package per-platform tarballs, a
+`SHA256SUMS`, and an aggregated provenance manifest, and publish a
+GitHub Release — a red build has no path to a published release, by
+construction (the publish job depends on the whole matrix succeeding).
+Publishing is direct (the gates are the approval); switching to a
+draft-then-promote model is a one-line change in
+`scripts/publish-release.sh`. Re-running a tag's workflow after its
+release already exists fails loudly rather than overwriting anything —
+see the workflow file's header for the exact contract.
+
 ## Notes
 
 - `fetch-upstream.sh --source pandadealer` clones the vendored IPC 2023
