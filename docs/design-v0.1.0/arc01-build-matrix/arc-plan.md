@@ -48,29 +48,34 @@ emitted as a build byproduct so arc02 can package it into the manifest.
 
 ## 4. Open questions (named, owned by slices)
 
-- **OQ1 (slice01 → slice02):** upstream source strategy — canonical three
-  repos at pinned SHAs (requires gitlab.com reachability for cpddl; GH
-  runners can reach it, *asserted*) vs. the `ipc2023-htn/PandaDealer`
-  vendored snapshot. Default: canonical + pinned SHAs, PandaDealer
-  documented as fallback; **slice02** verifies gitlab reachability from a
-  runner and records the result (deferred from slice01, where no runner
-  existed). **Amended at v1.2 (CDC-1):** the fallback is fetch-verified but
-  NOT build-viable on Linux/GCC-13 — the vendored snapshot ships no patch
-  files, its grounder src uses pre-final concepts-TS syntax GCC-13 rejects,
-  and its engine lacks `<cstdint>`. Decision owed at slice02 planning:
-  (a) declare the fallback fetch-only and document the limit, (b) carry
-  compat patches for the snapshot in `patches/`, or (c) retire the fallback
-  once chengdu's own releases exist (self-solving after arc02).
+- **OQ1 — RESOLVED 2026-08-05 (v1.3):** upstream source strategy — canonical
+  three repos at pinned SHAs vs. the `ipc2023-htn/PandaDealer` vendored
+  snapshot. **Reachability half:** slice02's CI fetch step cloned
+  `cpddl` from `gitlab.com/danfis/cpddl` cleanly on both `ubuntu-22.04`
+  and `ubuntu-24.04` GH-hosted runners (linked run:
+  https://github.com/oubiwann/chengdu/actions/runs/31060179607) — GH
+  runners reach gitlab.com; no longer merely *asserted*. **Fallback
+  disposition (CDC-1, held open at v1.2):** resolved as **(a) fetch-only**
+  — `fetch-upstream.sh --help` and README document the limit;
+  `build-grounder.sh` detects the PandaDealer symlink layout and fails
+  fast with a pointer to that documentation (slice02 W-8). Compat patches
+  for the snapshot (disposition b) are explicitly not built (low value:
+  canonical works everywhere a runner runs); retiring the fallback into
+  chengdu's own releases (disposition c) stays open for re-evaluation at
+  arc02 close.
 - **OQ2 (slice03) — RESOLVED 2026-08-05:** grounder compiler on macOS is
   **clang** (`make -j CXX=c++ CC=cc`), confirmed by the operator's successful
   field build on Apple Silicon. The build script still takes the compiler as
   a parameter (brew gcc remains a documented fallback), but clang is the
   default and the CI configuration. *(Was: open pending the operator's
   macOS build result.)*
-- **OQ3 (slice02):** glibc baseline for released Linux binaries — build on
-  `ubuntu-latest` (newest) vs. oldest-supported LTS for compatibility.
-  Parser/grounder link `-static` already; the engine does not. Decide in
-  slice02; leans oldest-LTS.
+- **OQ3 — RESOLVED 2026-08-05 (v1.3):** glibc baseline for released Linux
+  binaries is **`ubuntu-22.04`** (glibc 2.35), confirmed forward-compatible:
+  the 22.04-built artifact set's three binaries answer `--help` cleanly
+  when run under an `ubuntu-24.04` job too (linked run, `cross-compat`
+  job: https://github.com/oubiwann/chengdu/actions/runs/31060179607).
+  `ubuntu-24.04` stays in the matrix as the forward-compat check; arc02
+  packages only the 22.04 artifact set.
 
 ## 5. Arc ledger
 
@@ -86,6 +91,17 @@ in this arc's `closing-report.md`.
 
 ## 6. Version history
 
+- **v1.3 — 2026-08-05.** OQ1 and OQ3 resolved by slice02's implementation
+  and CI evidence. OQ1: GH runners empirically reach gitlab.com
+  (reachability half); the PandaDealer fallback's disposition is (a)
+  fetch-only, implemented in `fetch-upstream.sh`/`build-grounder.sh`/
+  README. OQ3: `ubuntu-22.04` is the glibc baseline for released
+  binaries, confirmed forward-compatible with `ubuntu-24.04` via a
+  dedicated `cross-compat` CI job. Surfaced by: slice02 (CC
+  implementation + linked CI run). Why: both were named open questions
+  this slice was assigned to close; closing them here (rather than
+  leaving them implicit in slice02's ledger alone) keeps the arc-plan the
+  single source of truth for the arc's open-question state.
 - **v1.2 — 2026-08-05.** OQ1 amended with finding CDC-1 from slice01's CDC
   verification: the PandaDealer fallback is not build-viable on
   Linux/GCC-13 (three isolated blockers); disposition decision assigned to
