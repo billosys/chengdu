@@ -66,11 +66,16 @@ what arc01 already proved, adding no new build logic.
   slices delivered and CDC-verified; 4/4 arc-ledger composition rows
   reproduced; capability demonstrated by run `31065314655` (8-job
   two-platform matrix, one push, green). *(Was: active.)*
-- **arc02 — next: detailed planning now due**, per *plan late, plan deep*.
-  Inputs waiting from arc01's bubble-up: macOS `min_os=15.0` for the
-  compat-floor decision; `macos-x86_64` decision (decline-shaped);
-  CDC-5 action bumps; fallback re-evaluation (retire-into-releases).
+- **arc02 — closed** (pending operator gate on
+  `arc02-release-publish/closing-report.md`, assembled 2026-08-06): both
+  slices delivered and CDC-verified; 6/6 arc-ledger rows closed; the
+  capability demonstrated by the real, public `v0.1.0` release, consumed
+  independently end-to-end. *(Was: next for detailed planning; arc01's
+  gate was subsequently recorded GO 2026-08-06.)*
 - **arc03 — a slot, not a plan.**
+- **PROJECT CLOSE IS RIPE:** all roadmap arcs closed; ledger rows P1–P4
+  each have standing evidence (arc02 closing-report §6). Awaiting the
+  operator convening the project close.
 
 ## 4. Project ledger
 
@@ -87,6 +92,10 @@ in this project's `closing-report.md`. Strength vocabulary per
 
 ## 5. Version history
 
+- **v1.3 — 2026-08-06.** Status: arc02 closed (gate pending at write
+  time); project close declared ripe with P1–P4 evidence standing.
+  Surfaced by: arc02 (arc close). Why: the project's own close is now
+  the remaining work; the plan should say so.
 - **v1.2 — 2026-08-06.** §1's candidate list enacted per arc02 D4:
   `macos-x86_64` declined for 0.1.0 (GH Intel runners deprecated, no
   consumer demand); `linux-arm64` deferred (stays a candidate). Surfaced
