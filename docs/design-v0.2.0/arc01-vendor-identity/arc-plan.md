@@ -109,11 +109,13 @@ wolong-compatible assets.
   copies under an ignored `build/` tree. The active source of truth is
   `pandaPI/`, but patch application and object files happen only in the build
   copy until slice03 dissolves the patches into ordinary in-tree commits.
-- **OQ3 (slice03): bliss patch representation.** The 0.1.0 bliss fix applies
-  to a zip-extracted third-party source during build. Slice03 must decide the
-  durable fork representation before retiring `patches/`: extracted vendored
-  source, an in-tree replacement archive, or another explicitly documented
-  build-normalization commit. Re-entry: slice03 plan.
+- **OQ3 - RESOLVED 2026-08-07 (v1.3): bliss patch representation.** Slice03
+  uses durable extracted bliss source under
+  `pandaPI/pandaPIgrounder/cpddl/third-party/bliss/`. The source is derived
+  from the already-vendored `bliss-0.73.zip`; cpddl's own memleak patch and
+  chengdu's C++11 string-literal fix become ordinary source changes there.
+  The build compiles that in-tree source and must not unzip or patch bliss at
+  build time.
 - **OQ4 (slice04): license-audit revision boundary.** `license-audit-v0.2.0.md`
   must distinguish identity-import licensing from later arc02 source changes.
   Include the slice01-surfaced `boruvka` and `opts` nested subtrees in NOTICE
@@ -135,6 +137,12 @@ in this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.3 - 2026-08-07.** Resolved OQ3 for slice03: bliss will be represented
+  as durable extracted source under cpddl's `third-party/bliss/`, derived
+  from the vendored `bliss-0.73.zip`, with the existing memleak and C++11
+  fixes applied as ordinary in-tree source changes. Surfaced by: slice03
+  planning. Why: retiring build-time patches requires a source representation
+  that survives clean builds without unzip-and-patch recipes.
 - **v1.2 - 2026-08-07.** Resolved OQ2 for slice02: builds will consume
   in-tree `pandaPI/` by copying sources into an ignored disposable `build/`
   tree, keeping patch-bridge mutations and object files out of the vendored
