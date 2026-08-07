@@ -116,10 +116,17 @@ wolong-compatible assets.
   chengdu's C++11 string-literal fix become ordinary source changes there.
   The build compiles that in-tree source and must not unzip or patch bliss at
   build time.
-- **OQ4 (slice04): license-audit revision boundary.** `license-audit-v0.2.0.md`
-  must distinguish identity-import licensing from later arc02 source changes.
-  Include the slice01-surfaced `boruvka` and `opts` nested subtrees in NOTICE
-  and license-delineation planning. Re-entry: slice04 plan.
+- **OQ4 - RESOLVED 2026-08-07 (v1.4): license-audit revision boundary.**
+  `license-audit-v0.2.0.md` is an evidence-based revision of the 0.1.0 audit
+  for the in-tree fork baseline, not an arc02 change audit. It must distinguish
+  (a) identity imports, (b) slice03 fork deltas that replaced the patch bridge,
+  and (c) future arc02 source changes. NOTICE/license delineation covers the
+  three pandaPI component roots, `cpddl`, `h2-fd-preprocessor`, and cpddl's
+  third-party source surfaces (`bliss`, `boruvka`, `lpsolve`, `opts`), with
+  `boruvka`, `opts`, and durable `bliss` named explicitly because earlier
+  slices surfaced them as silent-drop risks. Source-availability wording now
+  points at chengdu's public repository at the release commit rather than
+  upstream-plus-`patches/`.
 
 ## 6. Arc ledger
 
@@ -137,6 +144,13 @@ in this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.4 - 2026-08-07.** Resolved OQ4 for slice04: the license audit revision
+  is scoped to the in-tree arc01 fork baseline, NOTICE/license delineation
+  includes nested third-party source surfaces discovered or changed by earlier
+  slices, and source-availability wording is re-anchored on chengdu's public
+  source at the release commit instead of upstream repos plus `patches/`.
+  Surfaced by: slice04 planning. Why: slice04 needs a precise boundary between
+  arc01 provenance/licensing closure and arc02 upstream PR/issue absorption.
 - **v1.3 - 2026-08-07.** Resolved OQ3 for slice03: bliss will be represented
   as durable extracted source under cpddl's `third-party/bliss/`, derived
   from the vendored `bliss-0.73.zip`, with the existing memleak and C++11
