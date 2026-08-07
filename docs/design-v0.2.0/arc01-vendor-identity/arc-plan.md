@@ -52,6 +52,9 @@ pandaPI/
   pandaPIparser/
   pandaPIgrounder/
     cpddl/
+      third-party/
+        boruvka/
+        opts/
     h2-fd-preprocessor/
   pandaPIengine/
 ```
@@ -70,6 +73,8 @@ Expected import identities at slice01 open:
 | pandaPIgrounder | `pandaPI/pandaPIgrounder` | `https://github.com/panda-planner-dev/pandaPIgrounder.git` | `b04ff7bcca710ae80a1ce73b8c027f0224565afc` |
 | pandaPIengine | `pandaPI/pandaPIengine` | `https://github.com/panda-planner-dev/pandaPIengine.git` | `810f04388667db5e3e4f114e960a4efbb43b1ac0` |
 | cpddl | `pandaPI/pandaPIgrounder/cpddl` | `https://gitlab.com/danfis/cpddl.git` | `8c142bab211200213746c75be71810526e834d4a` |
+| boruvka | `pandaPI/pandaPIgrounder/cpddl/third-party/boruvka` | `https://gitlab.com/danfis/boruvka.git` | `e320cc7b02714e4096a686965fab343735d82bec` |
+| opts | `pandaPI/pandaPIgrounder/cpddl/third-party/opts` | `https://github.com/danfis/opts.git` | `819d90e8664f9deda56f0dd8e7b62ea3ab9b2f6d` |
 | h2-fd-preprocessor | `pandaPI/pandaPIgrounder/h2-fd-preprocessor` | `https://github.com/galvusdamor/h2-fd-preprocessor.git` | `e335433bfc53171a1c215bd49ba39cc5fb1d485b` |
 
 Note on h2 provenance: the 0.2.0 project plan describes the former
@@ -92,11 +97,13 @@ wolong-compatible assets.
 
 ## 5. Open questions and risks
 
-- **OQ1 (slice01): import mechanics for nested former submodules.** The
-  grounder import initially contains gitlinks at `cpddl` and
-  `h2-fd-preprocessor`; slice01 must verify those gitlinks match the planned
-  submodule SHAs, then replace them with subtree imports at the same paths.
-  Re-entry: slice01 ledger F-4/F-5.
+- **OQ1 - RESOLVED 2026-08-07 (v1.1): import mechanics for nested former
+  submodules.** The grounder import initially contained gitlinks at `cpddl`
+  and `h2-fd-preprocessor`; slice01 verified those gitlinks and replaced them
+  with subtree imports at the same paths. Slice01 also found cpddl's own
+  gitlinks at `third-party/boruvka` and `third-party/opts`; those are now
+  imported as nested subtrees and explicitly tracked for slice04
+  provenance/licensing work.
 - **OQ2 (slice02): scratch build versus direct in-tree mutation during the
   compatibility bridge.** Until patch dissolution lands, scripts may need to
   build from scratch copies of `pandaPI/` so patch application does not dirty
@@ -108,7 +115,8 @@ wolong-compatible assets.
   build-normalization commit. Re-entry: slice03 plan.
 - **OQ4 (slice04): license-audit revision boundary.** `license-audit-v0.2.0.md`
   must distinguish identity-import licensing from later arc02 source changes.
-  Re-entry: slice04 plan.
+  Include the slice01-surfaced `boruvka` and `opts` nested subtrees in NOTICE
+  and license-delineation planning. Re-entry: slice04 plan.
 
 ## 6. Arc ledger
 
@@ -126,5 +134,13 @@ in this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.1 - 2026-08-07.** Updated the vendoring layout and import identity
+  table to include cpddl's slice01-surfaced nested gitlinks:
+  `third-party/boruvka` and `third-party/opts`. Marked OQ1 resolved and
+  amended OQ4 so slice04 explicitly carries the two nested subtrees into
+  NOTICE/license planning. Surfaced by: slice01 subtree-import close. Why:
+  CDC verification confirmed the no-gitlinks invariant required these extra
+  imports; leaving them implicit would risk a slice04 licensing/provenance
+  silent drop.
 - **v1.0 - 2026-08-07.** Initial arc breakdown. Source: 0.2.0 project plan
   v1.0 and the operator's instruction to open arc01. No slice bubble-ups yet.
