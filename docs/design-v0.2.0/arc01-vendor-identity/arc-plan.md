@@ -104,10 +104,11 @@ wolong-compatible assets.
   gitlinks at `third-party/boruvka` and `third-party/opts`; those are now
   imported as nested subtrees and explicitly tracked for slice04
   provenance/licensing work.
-- **OQ2 (slice02): scratch build versus direct in-tree mutation during the
-  compatibility bridge.** Until patch dissolution lands, scripts may need to
-  build from scratch copies of `pandaPI/` so patch application does not dirty
-  the working tree. Re-entry: slice02 plan.
+- **OQ2 - RESOLVED 2026-08-07 (v1.2): scratch build versus direct in-tree
+  mutation during the compatibility bridge.** Slice02 builds from disposable
+  copies under an ignored `build/` tree. The active source of truth is
+  `pandaPI/`, but patch application and object files happen only in the build
+  copy until slice03 dissolves the patches into ordinary in-tree commits.
 - **OQ3 (slice03): bliss patch representation.** The 0.1.0 bliss fix applies
   to a zip-extracted third-party source during build. Slice03 must decide the
   durable fork representation before retiring `patches/`: extracted vendored
@@ -134,6 +135,12 @@ in this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.2 - 2026-08-07.** Resolved OQ2 for slice02: builds will consume
+  in-tree `pandaPI/` by copying sources into an ignored disposable `build/`
+  tree, keeping patch-bridge mutations and object files out of the vendored
+  source tree. Surfaced by: slice02 planning. Why: direct patch application in
+  `pandaPI/` would dirty imported source before slice03's patch-dissolution
+  commits.
 - **v1.1 - 2026-08-07.** Updated the vendoring layout and import identity
   table to include cpddl's slice01-surfaced nested gitlinks:
   `third-party/boruvka` and `third-party/opts`. Marked OQ1 resolved and

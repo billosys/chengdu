@@ -153,8 +153,8 @@ no-ops or 0.3.0 material.
 
 - **arc01 — active.** Detailed plan opened at
   [`arc01-vendor-identity/arc-plan.md`](arc01-vendor-identity/arc-plan.md);
-  slice01 open set created at
-  [`arc01-vendor-identity/slice01-subtree-import/`](arc01-vendor-identity/slice01-subtree-import/).
+  slice01 closed, and slice02 open set created at
+  [`arc01-vendor-identity/slice02-in-tree-build/`](arc01-vendor-identity/slice02-in-tree-build/).
 - **arc02 — planned at roadmap level only.**
 
 ## 6. Project ledger
@@ -173,6 +173,10 @@ walk) in this project's `closing-report.md`. Strength vocabulary per
 
 ## 7. Version history
 
+- **v1.2 — 2026-08-07.** Updated current status after slice01 closed and
+  slice02 opened. No roadmap scope change. Surfaced by: slice02 planning.
+  Why: status-only plan maintenance so the project plan points to the active
+  slice artifacts.
 - **v1.1 — 2026-08-07.** Opened arc01 detailed planning and slice01's
   open set. No roadmap scope change: this is the planned transition from
   "arc01 next" to "arc01 active" recorded so the project plan points to
