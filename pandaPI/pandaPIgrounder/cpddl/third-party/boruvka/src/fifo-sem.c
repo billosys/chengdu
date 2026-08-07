@@ -161,7 +161,5 @@ int borFifoSemPopBlockTimeout(bor_fifo_sem_t *fifo, int time_in_ms, void *dst)
         tm.tv_sec += 1;
     }
 
-    if (sem_timedwait(&fifo->full, &tm) != 0)
-        return -1;
     return popPost(fifo, dst);
 }

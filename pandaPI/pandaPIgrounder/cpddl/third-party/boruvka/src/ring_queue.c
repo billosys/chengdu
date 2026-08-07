@@ -143,7 +143,5 @@ void *borRingQueuePopBlockTimeout(bor_ring_queue_t *q, int time_in_ms)
         tm.tv_sec += 1;
     }
 
-    if (sem_timedwait(&q->full, &tm) != 0)
-        return NULL;
     return queuePost(q);
 }

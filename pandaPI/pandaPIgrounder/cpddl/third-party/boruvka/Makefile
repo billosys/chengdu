@@ -21,7 +21,7 @@ SO_VERSION = 0
 
 CFLAGS += -I.
 CXXFLAGS += -I.
-LDFLAGS += -L. -lboruvka -lm -lrt
+LDFLAGS += -L. -lboruvka -lm
 
 TARGETS  = libboruvka.a
 

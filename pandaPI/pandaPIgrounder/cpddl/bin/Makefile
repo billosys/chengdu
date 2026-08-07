@@ -9,7 +9,7 @@ LDFLAGS += $(BORUVKA_LDFLAGS)
 LDFLAGS += $(OPTS_LDFLAGS)
 LDFLAGS += $(LP_LDFLAGS)
 LDFLAGS += $(BLISS_LDFLAGS)
-LDFLAGS += -pthread -lrt -lm
+LDFLAGS += -pthread -lm
 
 ifeq '$(BIN_STATIC)' 'yes'
   LDFLAGS += -static

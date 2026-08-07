@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Validates dist/<platform>/provenance.txt against pins.env: every
-# component's SHA matches its pin, the grounder's patch list matches the
-# exact per-platform expected set (order-independent), and every
-# component's compiler field is non-empty. Retires slice02's W-4/W-5
-# residue — "CC attested the provenance file" — mechanically: no CI run
-# is green unless the provenance is actually right.
+# component's SHA matches its pin, each component reports no build-time
+# source patches, and every component's compiler field is non-empty.
+# Retires slice02's W-4/W-5 residue — "CC attested the provenance file" —
+# mechanically: no CI run is green unless the provenance is actually right.
 #
 # Usage: check-provenance.sh [--platform linux-x86_64|macos-arm64] [PROVENANCE_FILE]
 #   Defaults to dist/<platform>/provenance.txt, PLATFORM auto-detected
@@ -62,14 +61,7 @@ if [ ! -f "$FILE" ]; then
   exit 1
 fi
 
-case "$PLATFORM" in
-  linux-x86_64)
-    GROUNDER_PATCHES_EXPECTED="0002-makefile.patch,bliss-0.73-cxx11-string-literal.patch"
-    ;;
-  macos-arm64)
-    GROUNDER_PATCHES_EXPECTED="0002-makefile.patch,0001-Removed-non-macos-call-in-unused-function.patch,0001-boruvka-endian.patch,bliss-0.73-cxx11-string-literal.patch"
-    ;;
-esac
+GROUNDER_PATCHES_EXPECTED="none"
 
 FAIL_COUNT=0
 

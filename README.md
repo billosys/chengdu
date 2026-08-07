@@ -11,12 +11,11 @@
 CI build matrix and binary releases for the [PANDA (pandaPI) HTN planning
 toolchain][panda] — Linux + macOS. Primary consumer: `wolong`.
 
-This repo mechanizes the PANDA Runbook: it fetches pandaPIparser,
-pandaPIgrounder, and pandaPIengine from pinned upstream commits, applies a
-small set of named patches, builds all three, and smoke-verifies the full
-`parse → ground → solve → convert → verify` gate sequence against in-repo
-fixtures. See `docs/design-v0.1.0/` for the design substrate and `CLAUDE.md`
-for the patches-not-fork policy.
+This repo mechanizes the PANDA Runbook: it vendors pandaPIparser,
+pandaPIgrounder, and pandaPIengine in-tree, builds all three from that source,
+and smoke-verifies the full `parse → ground → solve → convert → verify` gate
+sequence against in-repo fixtures. See `docs/design-v0.2.0/` for the current
+fork plan and `docs/design-v0.1.0/` for the original design substrate.
 
 ## Install from the `chengdu` Release:
 
@@ -110,9 +109,9 @@ generic failure):
 - `smoke-test.sh --corpus DIR` additionally runs the IPC 2023 Transport
   `pfile01` domain through the full chain, given an `ipc2023-domains`
   checkout at `DIR`. Optional — not part of the required gate.
-- Vendored source is consumed at the historical pins recorded in `pins.env`.
-  Until slice03 dissolves them, compatibility patches remain named files
-  applied by script inside disposable build copies only.
+- Vendored source is consumed at the historical pins recorded in `pins.env`;
+  the former build-time compatibility deltas are now normal in-tree source
+  history.
 
 ## Maintaining `chengdu`
 
@@ -138,7 +137,7 @@ Every build leg runs the same three builds → `check-provenance.sh` →
 smoke (positive + negative) sequence as the local commands above, with
 the resulting `dist/<platform>/` (including `provenance.txt`) uploaded as
 a workflow artifact per runner. `check-provenance.sh` fails the run if any
-component's SHA, patch list, or compiler field doesn't match what
+component's SHA, no-build-time-patches field, or compiler field doesn't match what
 `pins.env` and the platform actually require — the provenance file is no
 longer just attested, it's CI-enforced. Two `readme-verbatim*` jobs
 (`ubuntu-22.04` and `macos-15`) run this file's own prerequisite line and

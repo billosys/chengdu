@@ -14,7 +14,6 @@
  *  See the License for more information.
  */
 
-#include <endian.h>
 #include <stdio.h>
 
 #include "boruvka/msg-schema.h"

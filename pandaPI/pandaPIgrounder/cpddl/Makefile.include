@@ -1,8 +1,14 @@
 BASEPATH_ := $(dir $(realpath $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
 #BASEPATH_ := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
-CC ?= gcc
-CXX ?= g++
+UNAME_S := $(shell uname -s)
+ifeq '$(UNAME_S)' 'Darwin'
+  CC ?= cc
+  CXX ?= c++
+else
+  CC ?= gcc
+  CXX ?= g++
+endif
 SCAN_BUILD ?= scan-build
 PYTHON2 ?= python2
 CPPCHECK ?= cppcheck

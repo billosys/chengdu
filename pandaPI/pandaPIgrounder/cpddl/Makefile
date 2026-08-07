@@ -60,7 +60,7 @@ pddl/config.h:
 	if [ "$(DEBUG)" = "yes" ]; then echo "#define PDDL_DEBUG" >>$@; fi
 	echo '#include <boruvka/lp.h>' >__lp.c
 	echo 'int main(int argc, char *arvg[]) { return borLPSolverAvailable(BOR_LP_DEFAULT); }' >>__lp.c
-	$(CC) $(CFLAGS) -o __lp __lp.c $(BORUVKA_LDFLAGS) $(LP_LDFLAGS) -pthread -lrt -lm
+	$(CC) $(CFLAGS) -o __lp __lp.c $(BORUVKA_LDFLAGS) $(LP_LDFLAGS) -pthread -lm
 	if ! ./__lp; then echo "#define PDDL_LP" >>$@; fi
 	rm -f __lp.c __lp
 	echo "" >>$@
@@ -112,25 +112,19 @@ boruvka: third-party/boruvka/Makefile
 boruvka-clean:
 	$(MAKE) -C third-party/boruvka clean
 third-party/boruvka/Makefile:
-	git submodule init -- third-party/boruvka
-	git submodule update -- third-party/boruvka
+	test -f $@
 
 opts: third-party/opts/Makefile
 	$(MAKE) -C third-party/opts all
 opts-clean:
 	$(MAKE) -C third-party/opts clean
 third-party/opts/Makefile:
-	git submodule init -- third-party/opts
-	git submodule update -- third-party/opts
+	test -f $@
 
 bliss: third-party/bliss/libbliss.a
 bliss-clean:
-	rm -rf third-party/bliss
+	$(MAKE) -C third-party/bliss clean
 third-party/bliss/libbliss.a:
-	rm -rf third-party/bliss
-	cd third-party && unzip bliss-$(BLISS_VERSION).zip
-	mv third-party/bliss-$(BLISS_VERSION) third-party/bliss
-	cd third-party/bliss && patch -p1 <../bliss-0.73-memleak.patch
 	$(MAKE) CC=$(CXX) -C third-party/bliss
 
 lpsolve: third-party/lpsolve/liblpsolve.a
