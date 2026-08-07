@@ -6,7 +6,7 @@ anything.
 
 ## Read order (before any code)
 
-1. `/CLAUDE.md` — standing contracts.
+1. `/AGENTS.md` — standing contracts.
 2. `docs/design-v0.1.0/arc01-build-matrix/arc-plan.md` — **v1.2**; note
    OQ1's amendment (finding CDC-1) and OQ3.
 3. `…/slice02-linux-workflow/slice-doc.md` — goal, scope, constraints.

@@ -72,7 +72,7 @@ the 2026-08-05 sandbox session (Linux) or field-run by the operator (macOS).
   on **stock macOS bash 3.2** (no associative arrays, no `mapfile`) as well
   as modern Linux bash — the operator's machine and the runners both count.
 - `shellcheck` clean (any suppression carries an inline justification).
-- The patches-not-fork policy (project CLAUDE.md): no modification of
+- The patches-not-fork policy (project AGENTS.md): no modification of
   upstream sources except via named patch files applied by script.
 - No gate softening: the smoke test's failure modes must stay distinct — a
   collapsed "something failed" message is a spec violation, not a style

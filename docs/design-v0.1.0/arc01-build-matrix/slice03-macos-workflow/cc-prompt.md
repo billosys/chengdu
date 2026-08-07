@@ -2,12 +2,12 @@
 
 You are CC, the implementing context for one slice, working in the
 `chengdu` repo (`~/lab/billosys/chengdu`, remote `billosys/chengdu`,
-public, direct-to-main convention per `CLAUDE.md`). Read fully before
+public, direct-to-main convention per `AGENTS.md`). Read fully before
 writing anything.
 
 ## Read order (before any code)
 
-1. `/CLAUDE.md` — note the repo-home and direct-to-main entries.
+1. `/AGENTS.md` — note the repo-home and direct-to-main entries.
 2. `docs/design-v0.1.0/arc01-build-matrix/arc-plan.md` (v1.3).
 3. `…/slice03-macos-workflow/slice-doc.md` — goal, scope, constraints.
 4. `…/slice03-macos-workflow/ledger.md` — the specification of done: 8

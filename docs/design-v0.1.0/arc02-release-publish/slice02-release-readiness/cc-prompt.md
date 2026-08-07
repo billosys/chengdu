@@ -7,7 +7,7 @@ anything.
 
 ## Read order (before any code)
 
-1. `/CLAUDE.md`.
+1. `/AGENTS.md`.
 2. `docs/design-v0.1.0/arc02-release-publish/arc-plan.md` (v1.0) — D4,
    D5, RQ2, and §4's format-freeze language.
 3. `…/slice02-release-readiness/slice-doc.md` — especially §2 (the

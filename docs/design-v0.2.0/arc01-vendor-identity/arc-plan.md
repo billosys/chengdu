@@ -85,7 +85,7 @@ submodules collectively as danfis-origin dependencies. The grounder's pinned
 
 ## 4. Dependencies
 
-**Consumes:** `docs/design-v0.2.0/project-plan.md`; `CLAUDE.md` fork policy;
+**Consumes:** `docs/design-v0.2.0/project-plan.md`; `AGENTS.md` fork policy;
 `pins.env` as the historical import-point record; the existing 0.1.0 scripts,
 workflows, fixtures, release packaging, and license audit as the behavioral
 oracle.

@@ -126,7 +126,7 @@ next majors during arc02's workflow touch. Non-blocking.
    process deviation of the slice — the repo initially created at
    `oubiwann/` private rather than `billosys/` per plan — was caught at
    review, adjudicated by the operator, corrected by transfer, and
-   recorded in `CLAUDE.md`; it is a process finding already disposed,
+   recorded in `AGENTS.md`; it is a process finding already disposed,
    not a scope drop.
 3. **Arc-plan change required?** Already made and verified: CC's v1.3
    correctly records OQ1 and OQ3 resolutions with evidence, per the

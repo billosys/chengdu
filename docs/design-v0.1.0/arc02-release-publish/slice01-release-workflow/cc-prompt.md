@@ -6,7 +6,7 @@ direct-to-main). Read fully before writing anything.
 
 ## Read order (before any code)
 
-1. `/CLAUDE.md`.
+1. `/AGENTS.md`.
 2. `docs/design-v0.1.0/arc02-release-publish/arc-plan.md` (v1.0) —
    especially decisions D1–D3 (versioning, compat floors) and RQ1
    (publish model: direct, with the draft toggle documented).

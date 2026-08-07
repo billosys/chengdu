@@ -6,7 +6,7 @@ read it fully before writing anything.
 
 ## Read order (before any code)
 
-1. `/CLAUDE.md` — standing project contracts.
+1. `/AGENTS.md` — standing project contracts.
 2. `docs/design-v0.1.0/arc01-build-matrix/arc-plan.md` — what this slice is
    load-bearing for.
 3. `docs/design-v0.1.0/arc01-build-matrix/slice01-substrate/slice-doc.md` —

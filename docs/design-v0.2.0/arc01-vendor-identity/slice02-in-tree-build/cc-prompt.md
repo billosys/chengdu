@@ -6,7 +6,7 @@ your assignment; read it fully before writing anything.
 
 ## Read order (before any code)
 
-1. `/CLAUDE.md` - standing project contracts.
+1. `/AGENTS.md` - standing project contracts.
 2. `docs/design-v0.2.0/project-plan.md` - project DoD and fork policy.
 3. `docs/design-v0.2.0/arc01-vendor-identity/arc-plan.md` - arc capability,
    current layout, and OQ2's slice02 build-copy decision.
