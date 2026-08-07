@@ -9,13 +9,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 . "$SCRIPT_DIR/lib-platform.sh"
 
 PLATFORM="$(detect_platform)"
-SRC_DIR="$REPO_ROOT/upstream/pandaPIparser"
+SRC_DIR="$(prepare_build_source_copy "pandaPIparser")"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 
-if [ ! -d "$SRC_DIR" ]; then
-  echo "build-parser.sh: $SRC_DIR missing — run scripts/fetch-upstream.sh first" >&2
-  exit 1
-fi
+# shellcheck source=/dev/null
+. "$REPO_ROOT/pins.env"
 
 echo "build-parser.sh: building pandaPIparser for $PLATFORM"
 ( cd "$SRC_DIR" && make -j )
@@ -28,8 +26,7 @@ fi
 mkdir -p "$DIST_DIR"
 cp "$SRC_DIR/pandaPIparser" "$DIST_DIR/pandaPIparser"
 
-SHA="$(git -C "$SRC_DIR" rev-parse HEAD)"
 COMPILER="$(resolve_compiler_id g++)"
-append_provenance "$DIST_DIR" "pandaPIparser" "$SHA" "none" "$COMPILER"
+append_provenance "$DIST_DIR" "pandaPIparser" "$PARSER_SHA" "none" "$COMPILER"
 
 echo "build-parser.sh: OK: $DIST_DIR/pandaPIparser"

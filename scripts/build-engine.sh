@@ -9,14 +9,12 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 . "$SCRIPT_DIR/lib-platform.sh"
 
 PLATFORM="$(detect_platform)"
-SRC_DIR="$REPO_ROOT/upstream/pandaPIengine"
+SRC_DIR="$(prepare_build_source_copy "pandaPIengine")"
 BUILD_DIR="$SRC_DIR/build"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 
-if [ ! -d "$SRC_DIR" ]; then
-  echo "build-engine.sh: $SRC_DIR missing — run scripts/fetch-upstream.sh first" >&2
-  exit 1
-fi
+# shellcheck source=/dev/null
+. "$REPO_ROOT/pins.env"
 
 echo "build-engine.sh: building pandaPIengine for $PLATFORM"
 mkdir -p "$BUILD_DIR"
@@ -31,8 +29,7 @@ fi
 mkdir -p "$DIST_DIR"
 cp "$BUILD_DIR/pandaPIengine" "$DIST_DIR/pandaPIengine"
 
-SHA="$(git -C "$SRC_DIR" rev-parse HEAD)"
 COMPILER="$(resolve_compiler_id c++)"
-append_provenance "$DIST_DIR" "pandaPIengine" "$SHA" "none" "$COMPILER"
+append_provenance "$DIST_DIR" "pandaPIengine" "$ENGINE_SHA" "none" "$COMPILER"
 
 echo "build-engine.sh: OK: $DIST_DIR/pandaPIengine"

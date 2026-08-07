@@ -10,10 +10,8 @@
 #   - boruvka macOS patches: ship inside the pandaPIgrounder checkout
 #     itself (not vendored under patches/) and only apply on macOS,
 #     matching upstream intent. They are applied here explicitly because
-#     fetch-upstream.sh pre-populates the boruvka submodule, which means
-#     cpddl's own Makefile-driven auto-apply (added by 0002-makefile.patch)
-#     never fires — its recipe is keyed to a file target that already
-#     exists once the submodule is checked out.
+#     the in-tree boruvka source is already present before cpddl's
+#     Makefile-driven auto-apply (added by 0002-makefile.patch) can fire.
 #   - grounder src/ hardcodes g++-11 on Darwin via a plain '=' assignment,
 #     which environment variables cannot override — only command-line
 #     make variables can, so the compiler override happens there, not
@@ -26,27 +24,13 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 . "$SCRIPT_DIR/lib-platform.sh"
 
 PLATFORM="$(detect_platform)"
-SRC_ROOT="$REPO_ROOT/upstream/pandaPIgrounder"
+SRC_ROOT="$(prepare_build_source_copy "pandaPIgrounder")"
 CPDDL_DIR="$SRC_ROOT/cpddl"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 PATCHES_DIR="$REPO_ROOT/patches"
 
-if [ ! -d "$SRC_ROOT" ]; then
-  echo "build-grounder.sh: $SRC_ROOT missing — run scripts/fetch-upstream.sh first" >&2
-  exit 1
-fi
-
-# The PandaDealer fallback (fetch-upstream.sh --source pandadealer) is
-# fetch-only: fetch-upstream.sh symlinks upstream/pandaPIgrounder into
-# the vendored snapshot, which ships no patch files at the paths this
-# script expects and whose sources don't build cleanly on a modern
-# Linux/GCC toolchain (see README.md's fallback note). Fail fast with a
-# clear pointer here, rather than the confusing "patch does not apply /
-# file not found" error this produced before the guard existed.
-if [ -L "$SRC_ROOT" ]; then
-  echo "build-grounder.sh: FAIL: $SRC_ROOT is the PandaDealer fallback (fetch-only) — it does not build. See README.md's 'Continuous integration' fallback note, or run scripts/fetch-upstream.sh without --source pandadealer for the canonical, buildable source." >&2
-  exit 1
-fi
+# shellcheck source=/dev/null
+. "$REPO_ROOT/pins.env"
 
 if [ "$PLATFORM" = "macos-arm64" ]; then
   : "${GROUNDER_CC:=cc}"
@@ -61,10 +45,10 @@ echo "build-grounder.sh: building pandaPIgrounder for $PLATFORM (CC=$GROUNDER_CC
 APPLIED_PATCHES="0002-makefile.patch"
 
 # --- apply the upstream cpddl makefile patch (both platforms) ---
-if git -C "$CPDDL_DIR" apply --check ../0002-makefile.patch 2>/dev/null; then
+if ( cd "$CPDDL_DIR" && patch -p1 --dry-run --silent < ../0002-makefile.patch ) >/dev/null 2>&1; then
   echo "build-grounder.sh: applying patch: 0002-makefile.patch"
-  ( cd "$CPDDL_DIR" && git apply ../0002-makefile.patch )
-elif git -C "$CPDDL_DIR" apply --check --reverse ../0002-makefile.patch 2>/dev/null; then
+  ( cd "$CPDDL_DIR" && patch -p1 --silent < ../0002-makefile.patch )
+elif ( cd "$CPDDL_DIR" && patch -p1 --reverse --dry-run --silent < ../0002-makefile.patch ) >/dev/null 2>&1; then
   echo "build-grounder.sh: patch already applied, skipping: 0002-makefile.patch"
 else
   echo "build-grounder.sh: FAIL: 0002-makefile.patch neither applies nor is already applied" >&2
@@ -112,8 +96,7 @@ fi
 mkdir -p "$DIST_DIR"
 cp "$SRC_ROOT/pandaPIgrounder" "$DIST_DIR/pandaPIgrounder"
 
-SHA="$(git -C "$SRC_ROOT" rev-parse HEAD)"
 COMPILER="$(resolve_compiler_id "$GROUNDER_CXX")"
-append_provenance "$DIST_DIR" "pandaPIgrounder" "$SHA" "$APPLIED_PATCHES" "$COMPILER"
+append_provenance "$DIST_DIR" "pandaPIgrounder" "$GROUNDER_SHA" "$APPLIED_PATCHES" "$COMPILER"
 
 echo "build-grounder.sh: OK: $DIST_DIR/pandaPIgrounder"

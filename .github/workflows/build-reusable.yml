@@ -40,9 +40,6 @@ jobs:
       - name: Install prerequisites
         run: sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
 
-      - name: Fetch upstream
-        run: ./scripts/fetch-upstream.sh
-
       - name: Build parser
         run: ./scripts/build-parser.sh
 
@@ -100,9 +97,6 @@ jobs:
       - name: Install prerequisites
         run: brew install gcc make cmake flex bison gengetopt zip
 
-      - name: Fetch upstream
-        run: ./scripts/fetch-upstream.sh
-
       - name: Build parser
         run: ./scripts/build-parser.sh
 
@@ -157,7 +151,6 @@ jobs:
       - name: Run README verbatim
         run: |
           brew install gcc make cmake flex bison gengetopt zip
-          ./scripts/fetch-upstream.sh
           ./scripts/build-parser.sh
           ./scripts/build-grounder.sh
           ./scripts/build-engine.sh
@@ -173,7 +166,6 @@ jobs:
       - name: Run README verbatim
         run: |
           sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
-          ./scripts/fetch-upstream.sh
           ./scripts/build-parser.sh
           ./scripts/build-grounder.sh
           ./scripts/build-engine.sh
