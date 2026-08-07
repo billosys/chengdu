@@ -37,6 +37,9 @@ live in-tree under `pandaPI/` with full upstream history.
   closes and CDC's independent verification (`cdc-verification.md`) lands.
   Merge timing and verification are separate concerns; only the second is
   load-bearing.
+- **Commit footer convention (operator override, 2026-08-07):** every future
+  assistant-authored commit message includes these trailers:
+  `Co-Authored-By: @codex` and `Co-Authored-By: @billo-ai`.
 - **Standing constraint for every release:** wolong's fetch spec is
   frozen (asset naming, `SHA256SUMS`, `release-manifest.txt` shape,
   4-command install path). Releases that change the shape are breaking
