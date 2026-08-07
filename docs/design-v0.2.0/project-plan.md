@@ -151,8 +151,10 @@ no-ops or 0.3.0 material.
 
 ## 5. Current status
 
-- **arc01 — next for detailed planning.** Open its `arc-plan.md` +
-  slice breakdown when work begins.
+- **arc01 — active.** Detailed plan opened at
+  [`arc01-vendor-identity/arc-plan.md`](arc01-vendor-identity/arc-plan.md);
+  slice01 open set created at
+  [`arc01-vendor-identity/slice01-subtree-import/`](arc01-vendor-identity/slice01-subtree-import/).
 - **arc02 — planned at roadmap level only.**
 
 ## 6. Project ledger
@@ -171,6 +173,12 @@ walk) in this project's `closing-report.md`. Strength vocabulary per
 
 ## 7. Version history
 
+- **v1.1 — 2026-08-07.** Opened arc01 detailed planning and slice01's
+  open set. No roadmap scope change: this is the planned transition from
+  "arc01 next" to "arc01 active" recorded so the project plan points to
+  the active arc/slice artifacts. Surfaced by: operator instruction to
+  begin arc01 planning. Why: status-only plan maintenance before slice01
+  implementation starts.
 - **v1.0 — 2026-08-06.** Initial roadmap. Source: the fork-decision
   working session of 2026-08-06 (evidence basis in §2; operator
   decisions: fork confirmed; 0.2.0 = two arcs, one release; vendor at
