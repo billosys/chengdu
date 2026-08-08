@@ -1,0 +1,33 @@
+# Slice 02: engine-exit-status
+
+> Ledger per `LEDGER-DISCIPLINE.md` (v2.0), Section A. All rows open at
+> slice start, 2026-08-08. Closer: CC. Verifier: CDC. This slice absorbs
+> upstream pandaPIengine PR #14 / issue #12 as the first source-changing
+> Arc02 slice.
+
+## Ledger
+
+| ID | Criterion | Verify | Significance | Origin | Status | Evidence | Notes |
+|----|-----------|--------|--------------|--------|--------|----------|-------|
+| F-1 | Slice starts from `release/0.2.x` with Slice01 closed, CDC-verified, and the worktree clean. | `git branch --show-current`; `git status --short --branch`; `test -f docs/design-v0.2.0/arc02-upstream-absorption/slice01-upstream-triage/closing-report.md`; `test -f docs/design-v0.2.0/arc02-upstream-absorption/slice01-upstream-triage/cdc-verification.md` | serious | slice-doc section 1 | open | | |
+| F-2 | Upstream PR #14 and issue #12 are refreshed at implementation time, with state, head SHA, author identity, merge/conflict status, and issue return-code intent recorded. | `gh api repos/panda-planner-dev/pandaPIengine/pulls/14`; `gh api repos/panda-planner-dev/pandaPIengine/pulls/14/commits`; `gh api repos/panda-planner-dev/pandaPIengine/issues/12`; `gh api repos/panda-planner-dev/pandaPIengine/issues/12/comments` | serious | arc-plan section 2 | open | | Slice open snapshot: PR #14 open/non-draft, head `304048392e2b3ee53aca7f93d88b5a35230f638b`, author Robert P. Goldman; issue #12 asks for exit `2` on search failure. Refresh anyway. |
+| F-3 | The PR #14 absorption method is disclosed: clean cherry-pick where possible, bounded manual port where conflicts require it, with no generated `.gitignore` or formatting-only churn. | `git apply --check --directory=pandaPI/pandaPIengine <pr14.diff>` or `git cherry-pick -Xsubtree=... --no-commit` in reversible state; `git diff --stat`; `git diff --check` | correctness | project-plan section 3 absorption with credit | open | | Slice-open check conflicts in `SearchEngine.cpp`, `sat_planner.cpp`, `sat_planner.h`, so a bounded port is expected. |
+| F-4 | Engine process exit status now propagates search outcome: solved/success exits `0`; search failure / proven-unsolvable exits `2`; errors remain nonzero and are not reported as success. | source inspection of `SearchEngine.cpp` and SAT planner return plumbing; direct positive and unsolvable engine invocations via smoke tests; grep for final `return` paths | serious | upstream issue #12; PR #14 | open | | PR #14's convention maps nonzero search result to `2`. |
+| F-5 | SAT planner return plumbing is made explicit enough to compile and preserve issue #12's maintainer guidance around SAT solver return states. | inspect `pandaPI/pandaPIengine/src/sat/sat_planner.cpp` and `.h`; build engine; targeted grep for `solve_with_sat_planner` return type and return statements | correctness | issue #12 comments; PR #14 files | open | | SAT is not enabled by the normal release smoke, but the source must compile and not silently drop return values. |
+| F-6 | Negative smoke updates the unsolvable gate to expect engine exit `2` plus `Status: Proven unsolvable`, classified as `UNSOLVABLE`, not success and not generic failure. | `./scripts/smoke-test.sh --negative`; inspect relevant script lines and PASS text | serious | slice-doc section 3 | open | | Existing pre-slice behavior expects exit `0`; that expectation must change in this slice. |
+| F-7 | Positive smoke still proves the minimal fixture end-to-end: parse, ground, solve exit `0` with `Status: Solved`, convert, verify true. | `./scripts/smoke-test.sh`; inspect summary and solve gate output | serious | project DoD; regression guard | open | | This row guards against treating all search outcomes as nonzero. |
+| F-8 | Full local no-fetch source gate passes after the source change. | from clean generated output where practical: `./scripts/build-parser.sh`; `./scripts/build-grounder.sh`; `./scripts/build-engine.sh`; `./scripts/check-provenance.sh`; positive smoke; negative smoke | serious | arc-plan A4/A5 | open | | Provenance should stay anchored on chengdu source plus import identities; no `vendor.env` identity change is expected. |
+| F-9 | Package dry-run preserves wolong's frozen release shape and validates checksums/manifests after the source change. | `./scripts/package-release.sh v0.2.0-slice02-smoke`; inspect `release/`; checksum verification used by the package script | serious | project ledger P5 precursor | open | | Do not publish a release in this slice. |
+| F-10 | Maintained shell/workflow/static checks pass and docs are diff-clean. | `bash -n scripts/*.sh`; `/bin/bash -n scripts/*.sh` where available; `shellcheck scripts/*.sh`; `actionlint .github/workflows/*.yml`; `git diff --check` | polish | local quality gate | open | | If a tool is unavailable locally, record that precisely and leave CDC/CI re-entry. |
+| F-11 | The committed source/doc diff stays inside slice scope: expected engine files, smoke/docs updates, ledger/closing report; no parser PR #21 or 0.3.0 redesign changes. | `git diff --name-only <slice-start>..HEAD`; `git diff --stat <slice-start>..HEAD`; targeted grep for unrelated touched paths/features | serious | slice-doc scope/out | open | | Parser PR #21 is slice03. |
+| F-12 | Upstream credit is present in implementation commits: original author identity preserved where cherry-picked, or Robert P. Goldman explicitly credited for a manual port; upstream PR and issue URLs are in commit trailers/body. | `git log --format=fuller <slice-start>..HEAD -- pandaPI/pandaPIengine`; inspect commit trailers/body | serious | project ledger P3; arc ledger A2 | open | | Assistant co-author trailers also required by `AGENTS.md`. |
+| F-13 | Repo hygiene holds at close: worktree clean, no generated outputs under `pandaPI/`, no temporary PR worktree/branch/remotes left behind. | `git status --short --branch`; `find pandaPI -name .git -print`; `git ls-files -s pandaPI | awk '$1 == "160000"'`; `git worktree list`; `git remote -v` | correctness | arc01 no-gitlink/no-generated baseline | open | | Keep downloaded PR diffs in `/tmp` only. |
+| F-14 | Slice close report walks all 14 rows and includes Bubble-up to the arc/project: delivered-as-assigned, any semantic surprise, whether arc/project docs changed, and silent-drop diff. | `test -f docs/design-v0.2.0/arc02-upstream-absorption/slice02-engine-exit-status/closing-report.md`; inspect row count and Bubble-up section | serious | PROJECT-MANAGEMENT Part IV | open | | Do not write `cdc-verification.md`; CDC writes it after independent verification. |
+
+## What Worked
+
+_Fill during close._
+
+## Follow-ups / Deferrals
+
+_Fill during close._

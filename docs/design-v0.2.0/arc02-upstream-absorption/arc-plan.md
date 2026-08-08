@@ -137,6 +137,11 @@ this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.2 - 2026-08-08.** Opened slice02's engine-exit-status implementation
+  plan from the slice01 absorption queue. No queue change. Surfaced by:
+  operator instruction to dive into slice02. Why: engine PR #14 / issue #12 is
+  the first selected source absorption and needs a bounded port plan because
+  the upstream PR is still dirty against the in-tree subtree.
 - **v1.1 - 2026-08-08.** Slice01 refreshed live upstream PR/issue state and
   replaced the provisional queue with explicit dispositions. Source absorption
   narrowed to engine #14/#12 and parser #21; engine #9, parser #15/#29, and

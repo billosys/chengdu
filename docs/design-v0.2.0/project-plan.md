@@ -155,8 +155,8 @@ no-ops or 0.3.0 material.
   [`arc01-vendor-identity/closing-report.md`](arc01-vendor-identity/closing-report.md).
 - **arc02 — active.** Detailed plan opened at
   [`arc02-upstream-absorption/arc-plan.md`](arc02-upstream-absorption/arc-plan.md);
-  slice01 open set created at
-  [`arc02-upstream-absorption/slice01-upstream-triage/`](arc02-upstream-absorption/slice01-upstream-triage/).
+  slice01 closed and CDC-verified; slice02 open set created at
+  [`arc02-upstream-absorption/slice02-engine-exit-status/`](arc02-upstream-absorption/slice02-engine-exit-status/).
 
 ## 6. Project ledger
 
@@ -174,6 +174,11 @@ walk) in this project's `closing-report.md`. Strength vocabulary per
 
 ## 7. Version history
 
+- **v1.7 — 2026-08-08.** Opened arc02 slice02's engine-exit-status open set
+  after slice01 closed and CDC verification accepted the upstream triage
+  queue. No roadmap scope change. Surfaced by: operator instruction to dive
+  into slice02. Why: engine PR #14 / issue #12 is the first selected source
+  absorption before parser PR #21 and release publication.
 - **v1.6 — 2026-08-08.** Opened arc02 detailed planning and slice01's
   upstream-triage open set. No roadmap scope change. Surfaced by: operator
   instruction to kick off arc02. Why: arc02 needs a current, evidence-backed
