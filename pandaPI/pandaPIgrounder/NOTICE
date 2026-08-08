@@ -1,0 +1,8 @@
+chengdu NOTICE - pandaPIgrounder
+
+Origin: https://github.com/panda-planner-dev/pandaPIgrounder.git
+License: BSD 3-Clause for pandaPIgrounder own code; see LICENSE in this directory and licenses/pandaPIgrounder-BSD-3-Clause.txt.
+Import: upstream commit b04ff7bcca710ae80a1ce73b8c027f0224565afc imported at chengdu commit 2b0a6093.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIgrounder.
+Divergence: chengdu treats this subtree as in-tree fork source after import; nested third-party source surfaces carry their own NOTICE files.
+Arc01: source-build and patch-dissolution changes made build-time compatibility deltas normal in-tree source history.

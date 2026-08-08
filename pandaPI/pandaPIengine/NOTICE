@@ -1,0 +1,8 @@
+chengdu NOTICE - pandaPIengine
+
+Origin: https://github.com/panda-planner-dev/pandaPIengine.git
+License: BSD 3-Clause; see LICENSE in this directory and licenses/pandaPIengine-BSD-3-Clause.txt.
+Import: upstream commit 810f04388667db5e3e4f114e960a4efbb43b1ac0 imported at chengdu commit f734b692.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIengine.
+Divergence: chengdu treats this subtree as in-tree fork source after import; optional third-party engine features remain outside the shipped build configuration unless enabled later.
+Arc01: identity import only; no arc01 source modifications to this engine subtree.

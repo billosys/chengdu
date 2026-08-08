@@ -1,0 +1,8 @@
+chengdu NOTICE - pandaPIparser
+
+Origin: https://github.com/panda-planner-dev/pandaPIparser.git
+License: BSD 3-Clause; see LICENSE in this directory and licenses/pandaPIparser-BSD-3-Clause.txt.
+Import: upstream commit 88c0995c72c5ce2685e9546ec153a3545977ed81 imported at chengdu commit ac8e385d.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIparser.
+Divergence: chengdu treats this subtree as in-tree fork source after import; upstream identity is provenance, not the build-source commit.
+Arc01: identity import only; no arc01 source modifications to this parser subtree.

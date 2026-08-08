@@ -1,0 +1,8 @@
+chengdu NOTICE - cpddl
+
+Origin: https://gitlab.com/danfis/cpddl.git
+License: BSD 3-Clause; see BSD-LICENSE in this directory and licenses/cpddl-BSD-3-Clause.txt.
+Import: upstream commit 8c142bab211200213746c75be71810526e834d4a imported at chengdu commit 25a278a5.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIgrounder/cpddl.
+Divergence: chengdu keeps cpddl in-tree as part of the grounder build; nested third-party sources carry their own NOTICE files.
+Arc01: patch-dissolution converted former build-time cpddl compatibility changes into normal in-tree source history.

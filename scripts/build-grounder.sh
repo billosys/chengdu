@@ -20,7 +20,7 @@ CPDDL_DIR="$SRC_ROOT/cpddl"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 
 # shellcheck source=/dev/null
-. "$REPO_ROOT/pins.env"
+. "$REPO_ROOT/vendor.env"
 
 if [ "$PLATFORM" = "macos-arm64" ]; then
   : "${GROUNDER_CC:=cc}"
@@ -50,6 +50,6 @@ mkdir -p "$DIST_DIR"
 cp "$SRC_ROOT/pandaPIgrounder" "$DIST_DIR/pandaPIgrounder"
 
 COMPILER="$(resolve_compiler_id "$GROUNDER_CXX")"
-append_provenance "$DIST_DIR" "pandaPIgrounder" "$GROUNDER_SHA" "none" "$COMPILER"
+append_provenance "$DIST_DIR" "pandaPIgrounder" "GROUNDER" "$COMPILER"
 
 echo "build-grounder.sh: OK: $DIST_DIR/pandaPIgrounder"

@@ -30,7 +30,7 @@ copies, is already contained by slice03's planned patch-dissolution scope.
 | F-7 | reproduced | From a cleared `build/ dist/ release/` state: parser build, grounder build, engine build, `./scripts/check-provenance.sh`, `./scripts/smoke-test.sh`, and `./scripts/smoke-test.sh --negative` all passed. Positive smoke reported `5 passed, 0 failed`; negative smoke reported `4 passed, 0 failed`. No fetch command was run. |
 | F-8 | reproduced | `rg 'fetch-upstream\.sh|git clone|git submodule' .github/workflows` returned no matches. Inspection of `.github/workflows/build-reusable.yml` confirms build and README-verbatim jobs run checkout, prerequisites, three builds, provenance/smoke gates, and artifact steps without planner-source clone/fetch steps. |
 | F-9 | reproduced | README source-build section is now "Build + smoke test (4 commands)" with parser, grounder, engine, smoke. README notes say source builds use in-tree `pandaPI/` and do not clone planner source. Release install URLs and asset names remain the `v0.1.0` Linux/macOS tarballs and `SHA256SUMS` shape. |
-| F-10 | reproduced | `rg -n 'fetch-upstream\.sh' README.md .github/workflows scripts/*.sh docs/design-v0.2.0/arc01-vendor-identity/slice02-in-tree-build` showed hits only in README's historical/source-inspection note, the retained `scripts/fetch-upstream.sh`, and slice02 planning/close docs. No workflow or active build-script hits remain. |
+| F-10 | reproduced | `rg -n 'fetch-upstream\.sh' README.md .github/workflows scripts/*.sh docs/design-v0.2.0/arc01-vendor-identity/slice02-in-tree-build` showed hits only in README's historical/source-inspection note, the retained `retired upstream-fetch helper`, and slice02 planning/close docs. No workflow or active build-script hits remain. |
 | F-11 | reproduced | `./scripts/package-release.sh v0.2.0-slice02-smoke` passed for `macos-arm64`; `release/` contains `pandapi-v0.2.0-slice02-smoke-macos-arm64.tar.gz`, `SHA256SUMS`, `release-manifest.txt`, `THIRD-PARTY-LICENSES`, `notes.md`, and `PRERELEASE`. Nothing was published; `release/` remains ignored. |
 | F-12 | reproduced | `bash -n scripts/*.sh`, `shellcheck scripts/*.sh`, `actionlint .github/workflows/*.yml`, and `git diff --check` all passed. |
 
@@ -59,7 +59,7 @@ into normal in-tree commits.
 
 **Silent-drop diff:** complete. Scope-as-specified matches
 scope-as-delivered: active build scripts use `pandaPI/`, no active build path
-runs `fetch-upstream.sh`, README/workflow source-build paths are updated,
+runs `retired upstream-fetch helper`, README/workflow source-build paths are updated,
 release install shape is unchanged, provenance/smoke/package gates pass, and
 vendored source remains clean after builds. The out-of-scope items remain
 assigned to slice03, slice04, or arc02 as documented in the slice plan.

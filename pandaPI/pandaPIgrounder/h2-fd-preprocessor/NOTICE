@@ -1,0 +1,8 @@
+chengdu NOTICE - h2-fd-preprocessor
+
+Origin: https://github.com/galvusdamor/h2-fd-preprocessor.git; its README states the code came from Fast Downward and h^2 mutex pruning work.
+License: treated conservatively as GPL-3.0-derived from Fast Downward for chengdu distribution; see licenses/h2-fd-preprocessor-GPL-3.0.txt and docs/license-audit-v0.2.0.md.
+Import: upstream commit e335433bfc53171a1c215bd49ba39cc5fb1d485b imported at chengdu commit b27e102c.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIgrounder/h2-fd-preprocessor.
+Divergence: chengdu ships this code linked into pandaPIgrounder and satisfies source availability through the chengdu release commit.
+Arc01: identity import only; no arc01 source modifications to this h2-fd-preprocessor subtree.

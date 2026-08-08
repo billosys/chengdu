@@ -29,11 +29,11 @@ fork commits.
   still match `pins.env`, and grounder patch lists still match the 0.1.0
   expectations checked by `scripts/check-provenance.sh`.
 - Update `.github/workflows/build-reusable.yml` so build and README-verbatim
-  jobs no longer run `scripts/fetch-upstream.sh` and do not clone planner
+  jobs no longer run `retired upstream-fetch helper` and do not clone planner
   source.
 - Update README source-build docs to the new in-tree build path. The release
   install/fetch spec is not changed.
-- Keep `scripts/fetch-upstream.sh` only as historical/source-inspection
+- Keep `retired upstream-fetch helper` only as historical/source-inspection
   tooling if retained; it must not be part of source build, CI build, release
   build, or README verbatim paths.
 - Extend `.gitignore` for the disposable build tree.
@@ -83,7 +83,7 @@ gate possible and locally checkable.
 The ledger's 12 rows at final status. Summary shape: build scripts consume
 `pandaPI/` through disposable copies, `pandaPI/` stays clean after builds,
 workflows and README remove active source fetch, provenance/smoke/package
-gates still pass, shellcheck is clean, and `fetch-upstream.sh` is no longer an
+gates still pass, shellcheck is clean, and `retired upstream-fetch helper` is no longer an
 active build dependency.
 
 ## 6. Implementation notes

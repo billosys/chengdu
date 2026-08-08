@@ -35,7 +35,7 @@ no-fetch build/release gate has evidence.
   `.github/release-notes.md.in` around the new provenance model:
   chengdu commit + per-component current source prefix + import identity +
   `patches=none`.
-- Retire `scripts/fetch-upstream.sh` from active tooling. If CC keeps a
+- Retire `retired upstream-fetch helper` from active tooling. If CC keeps a
   historical source-inspection path, it must not live under `scripts/` as an
   active build/release helper and must not be referenced by README or workflow
   source-build paths.

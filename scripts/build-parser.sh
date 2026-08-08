@@ -13,7 +13,7 @@ SRC_DIR="$(prepare_build_source_copy "pandaPIparser")"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 
 # shellcheck source=/dev/null
-. "$REPO_ROOT/pins.env"
+. "$REPO_ROOT/vendor.env"
 
 echo "build-parser.sh: building pandaPIparser for $PLATFORM"
 ( cd "$SRC_DIR" && make -j )
@@ -27,6 +27,6 @@ mkdir -p "$DIST_DIR"
 cp "$SRC_DIR/pandaPIparser" "$DIST_DIR/pandaPIparser"
 
 COMPILER="$(resolve_compiler_id g++)"
-append_provenance "$DIST_DIR" "pandaPIparser" "$PARSER_SHA" "none" "$COMPILER"
+append_provenance "$DIST_DIR" "pandaPIparser" "PARSER" "$COMPILER"
 
 echo "build-parser.sh: OK: $DIST_DIR/pandaPIparser"

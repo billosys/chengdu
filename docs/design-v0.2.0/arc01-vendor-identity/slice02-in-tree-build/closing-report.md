@@ -74,7 +74,7 @@ passed: `./scripts/build-parser.sh`, `./scripts/build-grounder.sh`,
 `./scripts/build-engine.sh`, `./scripts/check-provenance.sh`,
 `./scripts/smoke-test.sh`, and `./scripts/smoke-test.sh --negative`. Positive
 smoke reported `5 passed, 0 failed`; negative smoke reported `4 passed, 0
-failed`. No `fetch-upstream.sh` command was run.
+failed`. No `retired upstream-fetch helper` command was run.
 
 ### F-8 - workflow no-fetch state
 
@@ -82,7 +82,7 @@ Status: done.
 
 Evidence: `.github/workflows/build-reusable.yml` no longer has `Fetch
 upstream` steps in Linux/macOS build jobs and no longer runs
-`./scripts/fetch-upstream.sh` in README-verbatim jobs. Final `rg
+`./retired upstream-fetch helper` in README-verbatim jobs. Final `rg
 'fetch-upstream\.sh|git clone|git submodule' .github/workflows` returned no
 matches.
 
@@ -103,7 +103,7 @@ Status: done.
 Evidence: final `rg 'fetch-upstream\.sh' README.md .github/workflows
 scripts/*.sh docs/design-v0.2.0/arc01-vendor-identity/slice02-in-tree-build`
 showed hits only in the README historical/source-inspection note, the retained
-`scripts/fetch-upstream.sh` file itself, and slice02 planning/ledger files.
+`retired upstream-fetch helper` file itself, and slice02 planning/ledger files.
 There were no workflow hits and no active build-script hits.
 
 ### F-11 - local packaging dry-run

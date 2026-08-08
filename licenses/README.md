@@ -2,12 +2,12 @@
 
 Exact upstream license texts for every third-party component whose
 object code is compiled into a shipped chengdu binary, per
-[`docs/license-audit-v0.1.0.md`](../docs/license-audit-v0.1.0.md).
+[`docs/license-audit-v0.2.0.md`](../docs/license-audit-v0.2.0.md).
 `scripts/package-release.sh` assembles these into each release's
 `THIRD-PARTY-LICENSES` asset; it fails loudly if any file listed below
 is missing.
 
-| File | Component | License | Source path @ SHA |
+| File | Component | License | Source path @ import identity |
 |---|---|---|---|
 | `pandaPIparser-BSD-3-Clause.txt` | pandaPIparser | BSD 3-Clause | `LICENSE` @ `88c0995` |
 | `pandaPIgrounder-BSD-3-Clause.txt` | pandaPIgrounder | BSD 3-Clause | `LICENSE` @ `b04ff7b` |
@@ -20,6 +20,6 @@ is missing.
 linked into any shipped binary (audit §2.2.2) and are intentionally
 absent here — no distribution obligation, no license text shipped.
 
-Update this directory (and re-run the audit) whenever `pins.env`
+Update this directory (and re-run the audit) whenever `vendor.env`
 changes, a new third-party dependency is introduced, or an existing
 one's linkage status changes.

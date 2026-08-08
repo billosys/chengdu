@@ -14,7 +14,7 @@ BUILD_DIR="$SRC_DIR/build"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 
 # shellcheck source=/dev/null
-. "$REPO_ROOT/pins.env"
+. "$REPO_ROOT/vendor.env"
 
 echo "build-engine.sh: building pandaPIengine for $PLATFORM"
 mkdir -p "$BUILD_DIR"
@@ -30,6 +30,6 @@ mkdir -p "$DIST_DIR"
 cp "$BUILD_DIR/pandaPIengine" "$DIST_DIR/pandaPIengine"
 
 COMPILER="$(resolve_compiler_id c++)"
-append_provenance "$DIST_DIR" "pandaPIengine" "$ENGINE_SHA" "none" "$COMPILER"
+append_provenance "$DIST_DIR" "pandaPIengine" "ENGINE" "$COMPILER"
 
 echo "build-engine.sh: OK: $DIST_DIR/pandaPIengine"

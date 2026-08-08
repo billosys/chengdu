@@ -32,14 +32,34 @@ resolve_compiler_id() {
   fi
 }
 
-# append_provenance <dist_dir> <component> <sha> <patches_csv> <compiler_id>
+# vendor_field <metadata-prefix> <field> - read a variable loaded from
+# vendor.env, e.g. vendor_field PARSER UPSTREAM_SHA.
+vendor_field() {
+  local prefix="$1" field="$2" name value
+  name="${prefix}_${field}"
+  eval "value=\${$name:-}"
+  printf '%s' "$value"
+}
+
+# append_provenance <dist_dir> <component> <vendor-prefix> <compiler_id>
 append_provenance() {
-  local dist_dir="$1" component="$2" sha="$3" patches="$4" compiler="$5"
+  local dist_dir="$1" component="$2" metadata="$3" compiler="$4"
+  local chengdu_commit source_prefix upstream_url upstream_sha import_ref import_commit
+  chengdu_commit="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+  source_prefix="$(vendor_field "$metadata" PREFIX)"
+  upstream_url="$(vendor_field "$metadata" URL)"
+  upstream_sha="$(vendor_field "$metadata" UPSTREAM_SHA)"
+  import_ref="$(vendor_field "$metadata" IMPORT_COMMIT)"
+  import_commit="$(git -C "$REPO_ROOT" rev-parse --verify "$import_ref^{commit}")"
   mkdir -p "$dist_dir"
   {
     echo "component=$component"
-    echo "sha=$sha"
-    echo "patches=$patches"
+    echo "chengdu_commit=$chengdu_commit"
+    echo "source_prefix=$source_prefix"
+    echo "upstream_url=$upstream_url"
+    echo "upstream_sha=$upstream_sha"
+    echo "import_commit=$import_commit"
+    echo "patches=none"
     echo "compiler=$compiler"
     echo "---"
   } >> "$dist_dir/provenance.txt"

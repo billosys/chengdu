@@ -1,0 +1,8 @@
+chengdu NOTICE - opts
+
+Origin: https://github.com/danfis/opts.git
+License: BSD 3-Clause; see BSD-LICENSE in this directory.
+Import: upstream commit 819d90e8664f9deda56f0dd8e7b62ea3ab9b2f6d imported at chengdu commit 68072cb3.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIgrounder/cpddl/third-party/opts.
+Divergence: chengdu keeps opts in-tree as cpddl third-party source; v0.2.0 audit confirms it is not linked into shipped binaries.
+Arc01: identity import only; no arc01 source modifications to this opts subtree.

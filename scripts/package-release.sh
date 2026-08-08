@@ -83,12 +83,18 @@ for p in $PLATFORMS; do
 done
 
 # --- THIRD-PARTY-LICENSES: assembled from the committed licenses/
-# directory, per docs/license-audit-v0.1.0.md. Fails loudly if any
+# directory, per docs/license-audit-v0.2.0.md. Fails loudly if any
 # audited component's license text is missing — the release must never
 # ship silently short of what the audit found. ---
 LICENSES_DIR="$REPO_ROOT/licenses"
 THIRD_PARTY="$OUT_DIR/THIRD-PARTY-LICENSES"
-: > "$THIRD_PARTY"
+{
+  echo "chengdu THIRD-PARTY-LICENSES"
+  echo
+  echo "Audit authority: docs/license-audit-v0.2.0.md"
+  echo "Generated from committed licenses/ by scripts/package-release.sh."
+  echo
+} > "$THIRD_PARTY"
 for entry in \
   "pandaPIparser:BSD 3-Clause:pandaPIparser-BSD-3-Clause.txt" \
   "pandaPIgrounder:BSD 3-Clause:pandaPIgrounder-BSD-3-Clause.txt" \
@@ -103,7 +109,7 @@ do
   file="${rest#*:}"
   path="$LICENSES_DIR/$file"
   if [ ! -f "$path" ]; then
-    echo "package-release.sh: FAIL: $path missing — licenses/ is out of sync with docs/license-audit-v0.1.0.md" >&2
+    echo "package-release.sh: FAIL: $path missing — licenses/ is out of sync with docs/license-audit-v0.2.0.md" >&2
     exit 1
   fi
   {
@@ -143,27 +149,31 @@ COMMIT="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 COMMIT_SHORT="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
 
 render_provenance_table() {
-  local p comp block sha patches count
+  local p comp block chengdu_commit source_prefix upstream_sha import_commit
   for p in $PLATFORMS; do
     for comp in pandaPIparser pandaPIgrounder pandaPIengine; do
       block="$(provenance_get_block "$DIST_ROOT/$p/provenance.txt" "$comp")"
-      sha="$(provenance_get_field "$block" sha)"
-      patches="$(provenance_get_field "$block" patches)"
-      if [ "$patches" = "none" ]; then
-        count=0
-      else
-        # NF over comma-separated fields, not `wc -l` on tr'd newlines —
-        # wc -l undercounts by one when the last field has no trailing
-        # newline (found in local testing: 4 patches counted as 3).
-        count="$(printf '%s' "$patches" | awk -F',' '{print NF}')"
-      fi
+      chengdu_commit="$(provenance_get_field "$block" chengdu_commit)"
+      source_prefix="$(provenance_get_field "$block" source_prefix)"
+      upstream_sha="$(provenance_get_field "$block" upstream_sha)"
+      import_commit="$(provenance_get_field "$block" import_commit)"
       # shellcheck disable=SC2016  # single-quoted on purpose: the backticks are literal markdown code-formatting, not command substitution, and %s placeholders are printf's, not shell expansion
-      printf '| %s | %s | `%s` | %s |\n' "$p" "$comp" "$sha" "$count"
+      printf '| %s | %s | `%s` | `%s` | `%s` | `%s` |\n' "$p" "$comp" "$chengdu_commit" "$source_prefix" "$upstream_sha" "$import_commit"
     done
   done
 }
 
 PROVENANCE_TABLE="$(render_provenance_table)"
+
+render_asset_list() {
+  local p
+  for p in $PLATFORMS; do
+    # shellcheck disable=SC2016  # literal markdown backticks; %s placeholders are printf's.
+    printf -- '- `pandapi-%s-%s.tar.gz` - pandaPIparser, pandaPIgrounder, pandaPIengine, provenance.txt, fixtures/ (a minimal HDDL pair for an offline `--verify` smoke)\n' "$TAG" "$p"
+  done
+}
+
+ASSET_LIST="$(render_asset_list)"
 
 sed \
   -e "s|@@TAG@@|$TAG|g" \
@@ -174,6 +184,8 @@ sed \
 # The provenance table is multi-line, so splice it in with awk rather
 # than fight sed's single-line substitution semantics.
 awk -v table="$PROVENANCE_TABLE" '{ if ($0 == "@@PROVENANCE_TABLE@@") print table; else print }' \
+  "$NOTES" > "$NOTES.tmp" && mv "$NOTES.tmp" "$NOTES"
+awk -v assets="$ASSET_LIST" '{ if ($0 == "@@ASSET_LIST@@") print assets; else print }' \
   "$NOTES" > "$NOTES.tmp" && mv "$NOTES.tmp" "$NOTES"
 echo "package-release.sh: rendered notes.md"
 

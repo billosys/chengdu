@@ -115,7 +115,7 @@ in-tree with full history, superseding patches-not-fork.
 - **Provenance rework:** `pins.env` becomes historical (frozen as the
   import-point record); `check-provenance.sh` and the manifests
   re-anchor on the chengdu commit + the per-component import-merge
-  SHAs. `fetch-upstream.sh` retires.
+  SHAs. `retired upstream-fetch helper` retires.
 - **Licensing:** vendoring GPL-3.0 source (h2-fd-preprocessor) publicly
   is compliant — but per-directory license delineation is required, and
   the audit gets a `license-audit-v0.2.0.md` revision. Each `pandaPI/*`

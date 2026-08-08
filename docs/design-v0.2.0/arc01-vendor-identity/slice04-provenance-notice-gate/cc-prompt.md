@@ -31,7 +31,7 @@ Close arc01's public identity surface:
 - Rework provenance generation/checking so binaries report current chengdu
   source identity plus import identities, not "built from upstream SHA plus
   patches." `patches=none` remains true.
-- Retire `scripts/fetch-upstream.sh` from active tooling/documentation.
+- Retire `retired upstream-fetch helper` from active tooling/documentation.
 - Add NOTICE files for the three pandaPI roots, `cpddl`,
   `h2-fd-preprocessor`, `boruvka`, `opts`, durable `bliss`, and `lpsolve`.
 - Write `docs/license-audit-v0.2.0.md` for the in-tree fork baseline,

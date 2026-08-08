@@ -32,7 +32,7 @@ source, without source edits:
 - Dist output remains `dist/<platform>/`, and `provenance.txt` remains
   compatible with `scripts/check-provenance.sh`.
 - GitHub Actions and README source-build commands stop running
-  `scripts/fetch-upstream.sh`. Release install commands and wolong's fetch
+  `retired upstream-fetch helper`. Release install commands and wolong's fetch
   spec do not change.
 
 ## Constraints
@@ -66,6 +66,6 @@ source, without source edits:
 ## Definition of done
 
 All 12 ledger rows at final status with `attested` evidence, source builds
-originating from `pandaPI/`, no active build path running `fetch-upstream.sh`,
+originating from `pandaPI/`, no active build path running `retired upstream-fetch helper`,
 `pandaPI/` clean after builds, local smoke/provenance/package gates passing,
 and Slice 3 set up to dissolve patches as normal in-tree commits.

@@ -1,0 +1,8 @@
+chengdu NOTICE - lpsolve
+
+Origin: cpddl's vendored lp_solve third-party source directory.
+License: LGPL per in-source lp_solve headers; see lp_lib.h and docs/license-audit-v0.2.0.md.
+Import: not a separate subtree import; source derives from cpddl's third-party tree.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIgrounder/cpddl/third-party/lpsolve.
+Divergence: chengdu keeps lpsolve in-tree as cpddl third-party source; v0.2.0 audit confirms it is built by cpddl tooling but not linked into shipped binaries.
+Arc01: identity/delineation only; no arc01 source modifications to this lpsolve subtree.

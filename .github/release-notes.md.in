@@ -1,9 +1,9 @@
 # chengdu @@TAG@@
 
 Prebuilt pandaPI planner binaries for Linux (x86_64) and macOS (Apple
-Silicon), built and gate-verified by chengdu's CI from pinned upstream
-sources. See https://github.com/billosys/chengdu for the build scripts
-and design docs.
+Silicon), built and gate-verified by chengdu's CI from this repository's
+in-tree pandaPI source. See https://github.com/billosys/chengdu for the
+source tree, build scripts, and design docs.
 
 ## Compatibility
 
@@ -14,44 +14,37 @@ and design docs.
 
 Built from chengdu commit `@@COMMIT_SHORT@@` (`@@COMMIT@@`).
 
-| Platform | Component | Upstream SHA | Patches applied |
-|---|---|---|---|
+| Platform | Component | chengdu commit | source_prefix | upstream_sha | import_commit |
+|---|---|---|---|---|---|
 @@PROVENANCE_TABLE@@
 
-Full per-component detail (exact patch lists, compilers): see
+Full per-component detail (`upstream_url`, `patches=none`, compilers): see
 `release-manifest.txt`, attached below. Verify downloads against
 `SHA256SUMS`.
 
 ## Licensing and source availability
 
-`pandaPIparser` and `pandaPIengine` are BSD 3-Clause throughout.
-`pandaPIgrounder` links `h2-fd-preprocessor` (GPL-3.0, derived from
-Fast Downward) alongside BSD-licensed `cpddl`/`boruvka` — see
+`pandaPIparser` and `pandaPIengine` are BSD 3-Clause at the shipped
+build configuration. `pandaPIgrounder` links `h2-fd-preprocessor`
+(treated conservatively as GPL-3.0-derived from Fast Downward) alongside
+BSD-licensed `cpddl`/`boruvka` — see
 `THIRD-PARTY-LICENSES`, attached below, for full license texts, and
-[`docs/license-audit-v0.1.0.md`](https://github.com/billosys/chengdu/blob/main/docs/license-audit-v0.1.0.md)
+[`docs/license-audit-v0.2.0.md`](https://github.com/billosys/chengdu/blob/main/docs/license-audit-v0.2.0.md)
 for the evidence-based linkage audit backing this release.
 
-**Source availability** (GPL-3.0 §6, satisfied by already-public,
-unmodified sources — nothing here is re-hosted, only pointed to):
+**Source availability** (GPL-3.0 section 6):
 
-- `pandaPIgrounder`: https://github.com/panda-planner-dev/pandaPIgrounder
-  — exact SHA in the provenance table above (this release's `pandaPIgrounder`
-  row; `h2-fd-preprocessor`, `cpddl`, and `boruvka` are pinned
-  transitively by that same commit, since they are its own submodules —
-  their exact SHAs are recorded in
-  [`docs/license-audit-v0.1.0.md`](https://github.com/billosys/chengdu/blob/@@COMMIT@@/docs/license-audit-v0.1.0.md)
-  at this release's chengdu commit).
-- chengdu's own patches: `patches/` in this repository, at commit
-  `@@COMMIT@@` — unchanged from upstream except the three named,
-  disclosed fixes documented there.
+- Corresponding source for every shipped binary is this public chengdu
+  repository at commit `@@COMMIT@@`. The provenance table and
+  `release-manifest.txt` record each component's `source_prefix`,
+  `upstream_sha`, and `import_commit`.
+- `vendor.env` at commit `@@COMMIT@@` is the machine-readable import
+  identity record for the in-tree fork baseline.
 
 ## Assets
 
-- `pandapi-@@TAG@@-linux-x86_64.tar.gz` — pandaPIparser, pandaPIgrounder,
-  pandaPIengine, provenance.txt, fixtures/ (a minimal HDDL pair for an
-  offline `--verify` smoke)
-- `pandapi-@@TAG@@-macos-arm64.tar.gz` — the same, for macOS arm64
-- `SHA256SUMS` — checksums for both tarballs, `release-manifest.txt`,
+@@ASSET_LIST@@
+- `SHA256SUMS` — checksums for the tarball(s), `release-manifest.txt`,
   and `THIRD-PARTY-LICENSES`
 - `release-manifest.txt` — aggregated provenance for every platform in
   this release

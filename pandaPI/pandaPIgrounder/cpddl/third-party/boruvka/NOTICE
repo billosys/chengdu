@@ -1,0 +1,8 @@
+chengdu NOTICE - boruvka
+
+Origin: https://gitlab.com/danfis/boruvka.git
+License: BSD 3-Clause; see BSD-LICENSE in this directory and licenses/boruvka-BSD-3-Clause.txt.
+Import: upstream commit e320cc7b02714e4096a686965fab343735d82bec imported at chengdu commit 1f0ac094.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIgrounder/cpddl/third-party/boruvka.
+Divergence: chengdu keeps boruvka in-tree as a cpddl dependency linked into pandaPIgrounder.
+Arc01: patch-dissolution converted the former boruvka endian compatibility patch into normal in-tree source history.

@@ -58,7 +58,8 @@ On success, the last line is `Plan verification result: true` and the
 command exits 0. `pandaPIparser`, `pandaPIgrounder`, `pandaPIengine`,
 and `provenance.txt` are now in the current directory. See
 `THIRD-PARTY-LICENSES` (downloadable from the same release) for
-licensing, and `docs/license-audit-v0.1.0.md` for the audit behind it.
+licensing, and `docs/license-audit-v0.2.0.md` for the current audit
+behind it.
 
 
 ## Build from Source
@@ -102,16 +103,15 @@ generic failure):
 ### Notes
 
 - Source builds use the in-tree `pandaPI/` source and do not clone planner
-  source. `scripts/fetch-upstream.sh` is retained only as historical
-  source-inspection tooling for the 0.1.0 pinned upstream layout.
+  source.
 - The macOS grounder compiler defaults to clang (`GROUNDER_CC=cc
   GROUNDER_CXX=c++`); override via those two env vars if you need brew gcc.
 - `smoke-test.sh --corpus DIR` additionally runs the IPC 2023 Transport
   `pfile01` domain through the full chain, given an `ipc2023-domains`
   checkout at `DIR`. Optional — not part of the required gate.
-- Vendored source is consumed at the historical pins recorded in `pins.env`;
-  the former build-time compatibility deltas are now normal in-tree source
-  history.
+- Vendored source identity is recorded in `vendor.env`: the current build
+  source is the chengdu commit, and upstream SHAs are import identities.
+  `pins.env` remains historical 0.1.0/import-point evidence only.
 
 ## Maintaining `chengdu`
 
@@ -137,9 +137,9 @@ Every build leg runs the same three builds → `check-provenance.sh` →
 smoke (positive + negative) sequence as the local commands above, with
 the resulting `dist/<platform>/` (including `provenance.txt`) uploaded as
 a workflow artifact per runner. `check-provenance.sh` fails the run if any
-component's SHA, no-build-time-patches field, or compiler field doesn't match what
-`pins.env` and the platform actually require — the provenance file is no
-longer just attested, it's CI-enforced. Two `readme-verbatim*` jobs
+component's `chengdu_commit`, `source_prefix`, import identity,
+`patches=none`, or compiler field does not match `vendor.env` and Git
+state — the provenance file is no longer just attested, it's CI-enforced. Two `readme-verbatim*` jobs
 (`ubuntu-22.04` and `macos-15`) run this file's own prerequisite line and
 four build commands, unmodified, on a clean runner per platform — if this
 README and the workflow drift, those jobs go red. `actionlint` gates the
@@ -168,7 +168,7 @@ draft-then-promote model is a one-line change in
 release already exists fails loudly rather than overwriting anything —
 see the workflow file's header for the exact contract. Every release's
 licensing is backed by an evidence-based linkage audit:
-[`docs/license-audit-v0.1.0.md`](docs/license-audit-v0.1.0.md).
+[`docs/license-audit-v0.2.0.md`](docs/license-audit-v0.2.0.md).
 
 [//]: ---Named-Links---
 

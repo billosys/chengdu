@@ -39,7 +39,7 @@ foundation.
 **Out (disclosed, not dropped):**
 
 - Repointing scripts/workflows to build from `pandaPI/` - slice02.
-- Retiring `scripts/fetch-upstream.sh` or changing `pins.env` semantics -
+- Retiring `retired upstream-fetch helper` or changing `pins.env` semantics -
   slice02/slice04.
 - Converting build-time patches into in-tree commits and retiring `patches/`
   - slice03.

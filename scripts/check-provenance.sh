@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
-# Validates dist/<platform>/provenance.txt against pins.env: every
-# component's SHA matches its pin, each component reports no build-time
-# source patches, and every component's compiler field is non-empty.
-# Retires slice02's W-4/W-5 residue — "CC attested the provenance file" —
-# mechanically: no CI run is green unless the provenance is actually right.
+# Validates dist/<platform>/provenance.txt against vendor.env and Git state:
+# every component is anchored on the current chengdu commit, names its source
+# prefix, records the imported upstream identity, reports no build-time source
+# patches, and has a non-empty compiler field.
 #
 # Usage: check-provenance.sh [--platform linux-x86_64|macos-arm64] [PROVENANCE_FILE]
 #   Defaults to dist/<platform>/provenance.txt, PLATFORM auto-detected
 #   from the running machine. --platform overrides detection — needed
 #   by package-release.sh, which validates both platforms' provenance
 #   files from a single packaging runner (auto-detection would check
-#   the other platform's file against the wrong expected patch set).
+#   the other platform's file).
 #   An explicit FILE path is accepted so a tamper test can point this at
 #   a hand-edited copy without disturbing a real build's output.
 set -euo pipefail
@@ -54,14 +53,12 @@ fi
 FILE="${1:-$REPO_ROOT/dist/$PLATFORM/provenance.txt}"
 
 # shellcheck source=/dev/null
-. "$REPO_ROOT/pins.env"
+. "$REPO_ROOT/vendor.env"
 
 if [ ! -f "$FILE" ]; then
   echo "check-provenance.sh: FAIL: $FILE not found — run the build scripts first" >&2
   exit 1
 fi
-
-GROUNDER_PATCHES_EXPECTED="none"
 
 FAIL_COUNT=0
 
@@ -70,15 +67,17 @@ fail() {
   FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
-# sorted_csv <csv> — comma-separated list, sorted, for an
-# order-independent comparison of patch lists.
-sorted_csv() {
-  printf '%s' "$1" | tr ',' '\n' | sort | tr '\n' ',' | sed 's/,$//'
+expect_field() {
+  local name="$1" field="$2" actual="$3" expected="$4"
+  if [ "$actual" != "$expected" ]; then
+    fail "$name: $field mismatch - provenance has '$actual', expected '$expected'"
+  fi
 }
 
 check_component() {
-  local name="$1" expected_sha="$2" expected_patches="$3"
-  local block sha patches compiler
+  local name="$1" metadata="$2"
+  local block chengdu_commit source_prefix upstream_url upstream_sha import_commit patches compiler
+  local expected_chengdu expected_prefix expected_url expected_upstream expected_import_ref expected_import
 
   block="$(provenance_get_block "$FILE" "$name")"
   if [ -z "$block" ]; then
@@ -86,16 +85,42 @@ check_component() {
     return
   fi
 
-  sha="$(provenance_get_field "$block" sha)"
+  if [ -n "$(provenance_get_field "$block" sha)" ]; then
+    fail "$name: obsolete sha field is present; expected upstream_sha/import_commit schema"
+  fi
+
+  chengdu_commit="$(provenance_get_field "$block" chengdu_commit)"
+  source_prefix="$(provenance_get_field "$block" source_prefix)"
+  upstream_url="$(provenance_get_field "$block" upstream_url)"
+  upstream_sha="$(provenance_get_field "$block" upstream_sha)"
+  import_commit="$(provenance_get_field "$block" import_commit)"
   patches="$(provenance_get_field "$block" patches)"
   compiler="$(provenance_get_field "$block" compiler)"
 
-  if [ "$sha" != "$expected_sha" ]; then
-    fail "$name: sha mismatch — provenance has '$sha', pins.env has '$expected_sha'"
+  expected_chengdu="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+  expected_prefix="$(vendor_field "$metadata" PREFIX)"
+  expected_url="$(vendor_field "$metadata" URL)"
+  expected_upstream="$(vendor_field "$metadata" UPSTREAM_SHA)"
+  expected_import_ref="$(vendor_field "$metadata" IMPORT_COMMIT)"
+  expected_import="$(git -C "$REPO_ROOT" rev-parse --verify "$expected_import_ref^{commit}")"
+
+  expect_field "$name" chengdu_commit "$chengdu_commit" "$expected_chengdu"
+  expect_field "$name" source_prefix "$source_prefix" "$expected_prefix"
+  expect_field "$name" upstream_url "$upstream_url" "$expected_url"
+  expect_field "$name" upstream_sha "$upstream_sha" "$expected_upstream"
+  expect_field "$name" import_commit "$import_commit" "$expected_import"
+  expect_field "$name" patches "$patches" "none"
+
+  if [ ! -e "$REPO_ROOT/$source_prefix" ]; then
+    fail "$name: source_prefix does not exist in worktree: $source_prefix"
   fi
 
-  if [ "$(sorted_csv "$patches")" != "$(sorted_csv "$expected_patches")" ]; then
-    fail "$name: patches mismatch on $PLATFORM — provenance has '$patches', expected '$expected_patches'"
+  if ! git -C "$REPO_ROOT" merge-base --is-ancestor "$expected_import" HEAD; then
+    fail "$name: import_commit is not an ancestor of HEAD: $expected_import"
+  fi
+
+  if ! git -C "$REPO_ROOT" cat-file -e "$expected_import:$expected_prefix" 2>/dev/null; then
+    fail "$name: source_prefix was not present at import_commit: $expected_prefix"
   fi
 
   if [ -z "$compiler" ]; then
@@ -103,13 +128,13 @@ check_component() {
   fi
 }
 
-check_component "pandaPIparser" "$PARSER_SHA" "none"
-check_component "pandaPIgrounder" "$GROUNDER_SHA" "$GROUNDER_PATCHES_EXPECTED"
-check_component "pandaPIengine" "$ENGINE_SHA" "none"
+check_component "pandaPIparser" "PARSER"
+check_component "pandaPIgrounder" "GROUNDER"
+check_component "pandaPIengine" "ENGINE"
 
 if [ "$FAIL_COUNT" -gt 0 ]; then
   echo "check-provenance.sh: $FAIL_COUNT check(s) failed against $FILE" >&2
   exit 1
 fi
 
-echo "check-provenance.sh: OK: all 3 components verified against pins.env ($PLATFORM)"
+echo "check-provenance.sh: OK: all 3 components verified against vendor.env and Git state ($PLATFORM)"

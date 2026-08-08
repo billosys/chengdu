@@ -1,0 +1,8 @@
+chengdu NOTICE - bliss
+
+Origin: cpddl's vendored bliss 0.73 source archive, materialized as durable source in chengdu during arc01.
+License: LGPL-3.0; see COPYING.LESSER and COPYING in this directory.
+Import: not a separate subtree import; source derives from cpddl's former third-party bliss archive.
+Derived: current source is maintained in chengdu under source_prefix=pandaPI/pandaPIgrounder/cpddl/third-party/bliss.
+Divergence: chengdu keeps durable bliss source in-tree; v0.2.0 audit confirms it is built by cpddl tooling but not linked into shipped binaries.
+Arc01: patch-dissolution converted cpddl's former memleak patch and chengdu's former C++11 string-literal patch into normal in-tree source history.
