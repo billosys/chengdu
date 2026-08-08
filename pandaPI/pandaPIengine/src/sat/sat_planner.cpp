@@ -779,7 +779,7 @@ void optimise_with_sat_planner_linear_bound_increase(Model * htn, bool block_com
 
 
 
-void solve_with_sat_planner_linear_bound_increase(Model * htn, bool block_compression, bool sat_mutexes, sat_pruning pruningMode, bool effectLessActionsInSeparateLeaf){
+int solve_with_sat_planner_linear_bound_increase(Model * htn, bool block_compression, bool sat_mutexes, sat_pruning pruningMode, bool effectLessActionsInSeparateLeaf){
 	PDT* pdt = new PDT(htn);
 	//graph * dg = compute_disabling_graph(htn, true);
 	sat_capsule capsule;
@@ -827,7 +827,7 @@ void solve_with_sat_planner_linear_bound_increase(Model * htn, bool block_compre
 			ipasir_release(solver);
 			if (optimisePlan)
 				optimise_with_sat_planner_linear_bound_increase(htn, block_compression, sat_mutexes, pruningMode, effectLessActionsInSeparateLeaf, capsule, pdt, depth, apparentCost);
-			return;
+			return 0;
 		} else {
 			depth++;
 			//return;
@@ -835,6 +835,7 @@ void solve_with_sat_planner_linear_bound_increase(Model * htn, bool block_compre
 		// release the solver	
 		ipasir_release(solver);
 	}
+	return 2;
 }
 
 #define THREAD_PREFIX "\t\t\t\t\t\t\t\t\t"
@@ -1040,7 +1041,7 @@ void solve_with_sat_planner_time_interleave(Model * htn, bool block_compression,
 
 
 
-void solve_with_sat_planner(Model * htn, bool block_compression, bool sat_mutexes, sat_pruning pruningMode, bool effectLessActionsInSeparateLeaf, bool optimise, bool outputOrder){
+int solve_with_sat_planner(Model * htn, bool block_compression, bool sat_mutexes, sat_pruning pruningMode, bool effectLessActionsInSeparateLeaf, bool optimise, bool outputOrder){
 	// prepare helper data structured (used for SOG)
 	htn->calcSCCs();
 	htn->constructSCCGraph();
@@ -1087,7 +1088,7 @@ void solve_with_sat_planner(Model * htn, bool block_compression, bool sat_mutexe
 
 
 	//solve_with_sat_planner_time_interleave(htn, block_compression, sat_mutexes, pruningMode);
-	solve_with_sat_planner_linear_bound_increase(htn, block_compression, sat_mutexes, pruningMode, effectLessActionsInSeparateLeaf);
+	return solve_with_sat_planner_linear_bound_increase(htn, block_compression, sat_mutexes, pruningMode, effectLessActionsInSeparateLeaf);
 }
 
 

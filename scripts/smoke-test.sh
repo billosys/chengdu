@@ -8,7 +8,7 @@
 #               exit 2), broken-syntax fixture (exit 255, "Parse error
 #               in file"), broken-reference fixture (exit 255, a
 #               different — semantic — message), and the unsolvable
-#               fixture (engine exit 0 but "Status: Proven unsolvable",
+#               fixture (engine exit 2 and "Status: Proven unsolvable",
 #               which must be classified as UNSOLVABLE, never as
 #               success and never as a generic failure).
 #
@@ -239,16 +239,16 @@ run_negative() {
     gate_fail "negative: broken-reference: expected exit 255 + \"not declared\" without \"Parse error in file\", got exit $RC"
   fi
 
-  # d. unsolvable -> engine exit 0 but Status: Proven unsolvable —
+  # d. unsolvable -> engine exit 2 and Status: Proven unsolvable —
   # classified UNSOLVABLE, never success, never a generic failure.
   local htn="$WORK/uns.htn" sas="$WORK/uns.sas" raw="$WORK/uns.raw"
   if require_step "negative: unsolvable setup (parse)" "$P" -C "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn" \
     && require_step "negative: unsolvable setup (ground)" "$G" "$htn" "$sas"; then
     run_engine "$sas" "$raw"
-    if [ "$RC" -eq 0 ] && grep -q '^- Status: Proven unsolvable$' "$raw"; then
-      gate_pass "negative: unsolvable -> engine exit 0, Status: Proven unsolvable (UNSOLVABLE, not success, not failure)"
+    if [ "$RC" -eq 2 ] && grep -q '^- Status: Proven unsolvable$' "$raw"; then
+      gate_pass "negative: unsolvable -> engine exit 2, Status: Proven unsolvable (UNSOLVABLE, not success, not failure)"
     else
-      gate_fail "negative: unsolvable: expected exit 0 + 'Status: Proven unsolvable', got exit $RC: $(grep 'Status:' "$raw" || echo 'no Status line')"
+      gate_fail "negative: unsolvable: expected exit 2 + 'Status: Proven unsolvable', got exit $RC: $(grep 'Status:' "$raw" || echo 'no Status line')"
     fi
   fi
 }

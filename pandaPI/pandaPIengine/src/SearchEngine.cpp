@@ -220,6 +220,7 @@ int main(int argc, char *argv[]) {
 	//
 
 	bool useTaskHash = true;
+	int searchRes = 0;
 
 
 
@@ -448,7 +449,7 @@ int main(int argc, char *argv[]) {
 
 
 		bool printPlan = !args_info.noPlanOutput_flag;
-    	search.search(htn, tnI, timeL, suboptimalSearch, printPlan, heuristics, hLength, visi, fringe);
+		searchRes = search.search(htn, tnI, timeL, suboptimalSearch, printPlan, heuristics, hLength, visi, fringe);
 	} else if (algo == SAT){
 #ifndef CMAKE_NO_SAT
 		bool block_compression = args_info.blockcompression_flag;
@@ -465,15 +466,17 @@ int main(int argc, char *argv[]) {
 		extract_invariants_from_parsed_model(htn);
 		if (sat_mutexes) compute_Rintanen_Invariants(htn);
 
-		solve_with_sat_planner(htn, block_compression, sat_mutexes, pruningMode, effectLessActionsInSeparateLeaf, optimisingMode, outputOrder);
+		searchRes = solve_with_sat_planner(htn, block_compression, sat_mutexes, pruningMode, effectLessActionsInSeparateLeaf, optimisingMode, outputOrder);
 #else
 		cout << "Planner compiled without SAT planner support" << endl;
+		searchRes = 1;
 #endif
 	} else if (algo == BDD){
 #ifndef CMAKE_NO_BDD
 		build_automaton(htn);
 #else
 		cout << "Planner compiled without symbolic planner support" << endl;
+		searchRes = 1;
 #endif
 	} else if (algo == TRANSLATION){
 		TranslationType type;
@@ -483,7 +486,7 @@ int main(int argc, char *argv[]) {
 		if (string(args_info.transtype_arg) == "postrips") type = BaseStrips;
 		if (string(args_info.transtype_arg) == "pocond") type = BaseCondEffects;
 
-		runTranslationPlanner(htn,type, args_info.forceTransType_flag, args_info.pgb_arg, args_info.pgbsteps_arg,
+		searchRes = runTranslationPlanner(htn,type, args_info.forceTransType_flag, args_info.pgb_arg, args_info.pgbsteps_arg,
 				string(args_info.downward_arg), string(args_info.downwardConf_arg), string(args_info.sasfile_arg),
 				args_info.iterate_flag, args_info.onlyGenerate_flag,
 				args_info.realCosts_flag);
@@ -492,7 +495,7 @@ int main(int argc, char *argv[]) {
     delete htn;
     
 	
-	return 0;
+	return searchRes;
 }
 
 
@@ -606,4 +609,3 @@ int main(int argc, char *argv[]) {
     lmc->prettyPrintLMs();
 
 	exit(17);*/
-

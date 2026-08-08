@@ -31,7 +31,7 @@ namespace progression {
         virtual ~PriorityQueueSearch();
 
         template<class VisitedList, class Fringe>
-        void
+        int
         search(Model *htn, searchNode *tnI, int timeLimit, bool suboptimalSearch, bool printSolution, Heuristic **hF,
                int hLength, VisitedList &visitedList, Fringe &fringe) {
             timeval tp;
@@ -281,6 +281,7 @@ namespace progression {
                 cout << "  - first solution after " << this->firstSolTime << "ms." << endl;
                 cout << "  - best solution after " << this->bestSolTime << "ms." << endl;
             }
+            int searchResult = 2;
             if (tnSol != nullptr) {
 #ifdef TRACESOLUTION
                 auto[sol, sLength] = extractSolutionFromSearchNode(htn, tnSol);
@@ -291,6 +292,7 @@ namespace progression {
                 cout << "- Found solution of length " << sLength << endl;
                 cout << "- Total costs of actions: " << tnSol->actionCosts << endl;
                 if (printSolution) cout << sol << endl;
+                searchResult = 0;
 #ifdef TRACKLMSFULL
                 assert(tnSol->lookForT->size == 0);
                 assert(tnSol->lookForM->size == 0);
@@ -310,6 +312,7 @@ namespace progression {
             }
             delete tnSol;
 #endif
+            return searchResult;
         }
 
 
