@@ -153,7 +153,10 @@ no-ops or 0.3.0 material.
 
 - **arc01 — closed 2026-08-08.** Closing report:
   [`arc01-vendor-identity/closing-report.md`](arc01-vendor-identity/closing-report.md).
-- **arc02 — planned at roadmap level only; ready for detailed planning.**
+- **arc02 — active.** Detailed plan opened at
+  [`arc02-upstream-absorption/arc-plan.md`](arc02-upstream-absorption/arc-plan.md);
+  slice01 open set created at
+  [`arc02-upstream-absorption/slice01-upstream-triage/`](arc02-upstream-absorption/slice01-upstream-triage/).
 
 ## 6. Project ledger
 
@@ -171,6 +174,10 @@ walk) in this project's `closing-report.md`. Strength vocabulary per
 
 ## 7. Version history
 
+- **v1.6 — 2026-08-08.** Opened arc02 detailed planning and slice01's
+  upstream-triage open set. No roadmap scope change. Surfaced by: operator
+  instruction to kick off arc02. Why: arc02 needs a current, evidence-backed
+  upstream PR/issue disposition before any source absorption lands.
 - **v1.5 — 2026-08-08.** Closed arc01 after Slice04 CDC verification and
   arc-level composition check. No roadmap scope change. Surfaced by: arc01
   close. Why: arc01 delivered the in-tree, identity-verified, no-fetch,
