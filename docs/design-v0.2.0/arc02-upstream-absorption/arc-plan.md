@@ -137,6 +137,10 @@ this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.3 - 2026-08-08.** Opened slice03's parser-makefile-pr implementation
+  plan after slice02 CDC verification. No queue change. Surfaced by: operator
+  instruction to draw up the next slice docs. Why: parser PR #21 remains the
+  final selected upstream PR absorption before release publication.
 - **v1.2 - 2026-08-08.** Opened slice02's engine-exit-status implementation
   plan from the slice01 absorption queue. No queue change. Surfaced by:
   operator instruction to dive into slice02. Why: engine PR #14 / issue #12 is
