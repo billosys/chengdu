@@ -26,46 +26,62 @@ to a vetted upstream PR or a reproduced genuine upstream issue. It is not the
 ## 2. Current upstream snapshot
 
 CDC refreshed primary-source GitHub state on 2026-08-08 while opening this
-arc. Slice01 must refresh it again before making dispositions.
+arc. CC refreshed it again on 2026-08-08 during slice01 before making
+dispositions.
 
-Known open pull requests:
+Current open pull requests:
 
-| Repo | PR | State | Title | Head SHA | Notes |
-|------|----|-------|-------|----------|-------|
-| `pandaPIengine` | [#14](https://github.com/panda-planner-dev/pandaPIengine/pull/14) | open | Set exit status from search. | `304048392e2b3ee53aca7f93d88b5a35230f638b` | Current detailed API check reports `mergeable_state=dirty`; likely absorbs or informs the exit-status slice. |
-| `pandaPIengine` | [#15](https://github.com/panda-planner-dev/pandaPIengine/pull/15) | open | Easier-to-user Panda script. | `bb8a4c7acf393eee97a910d9551af6fc30e9480a` | Needs triage against chengdu's existing wrapper/release shape. |
-| `pandaPIengine` | [#9](https://github.com/panda-planner-dev/pandaPIengine/pull/9) | open | merge SAT verifier | `68747acbcaa611818331a49ebe79801346bb86df` | Older base; needs applicability and release-surface review. |
-| `pandaPIparser` | [#21](https://github.com/panda-planner-dev/pandaPIparser/pull/21) | open | Add "make install" target | `9735763ffd694d95c287766a447deba980d7deaa` | May be no-op for chengdu release packaging; must be explicitly dispositioned. |
-| `pandaPIgrounder` | [#7](https://github.com/panda-planner-dev/pandaPIgrounder/pull/7) | open draft | Dockerfile for grounder. | `f289c5c8033785eb5845842143726d86834bc8fe` | Draft and likely outside chengdu's binary-release contract; must be explicitly dispositioned. |
+| Repo | PR | State | Draft | Title | Head SHA | Merge state | Patch check against in-tree subtree | Disposition |
+|------|----|-------|-------|-------|----------|-------------|-----------------------------------|-------------|
+| `pandaPIengine` | [#14](https://github.com/panda-planner-dev/pandaPIengine/pull/14) | open | false | Set exit status from search. | `304048392e2b3ee53aca7f93d88b5a35230f638b` | dirty | conflicts in `SearchEngine.cpp`, `sat_planner.cpp`, `sat_planner.h` | **absorb** by bounded port in slice02; preserves Robert P. Goldman authorship/trailers where cherry-pickable and records PR URL. |
+| `pandaPIengine` | [#15](https://github.com/panda-planner-dev/pandaPIengine/pull/15) | open | false | Easier-to-user Panda script. | `bb8a4c7acf393eee97a910d9551af6fc30e9480a` | clean | clean, whitespace warnings only | **no-op** for v0.2.0; adds a convenience driver script outside wolong's frozen release contract and chengdu's existing build/smoke/release entry points. |
+| `pandaPIengine` | [#9](https://github.com/panda-planner-dev/pandaPIengine/pull/9) | open | false | merge SAT verifier | `68747acbcaa611818331a49ebe79801346bb86df` | clean | clean, whitespace warnings only | **defer** to 0.3.0/backlog; large verifier subsystem (13 commits, 39 files, vendored Catch2) changes build/license/test surface beyond 0.2.0 release hardening. Re-entry: plan a verifier/SAT capability slice with licensing and CI scope. |
+| `pandaPIparser` | [#21](https://github.com/panda-planner-dev/pandaPIparser/pull/21) | open | false | Add "make install" target | `9735763ffd694d95c287766a447deba980d7deaa` | clean | clean | **absorb** in slice03; one Robert P. Goldman commit fixes the `all` dependency and adds an install target without changing runtime behavior. |
+| `pandaPIgrounder` | [#7](https://github.com/panda-planner-dev/pandaPIgrounder/pull/7) | open | true | Dockerfile for grounder. | `f289c5c8033785eb5845842143726d86834bc8fe` | clean | clean, whitespace warnings only | **no-op** for v0.2.0; draft Docker/workflow/script surface is outside the binary-release contract. Grounder build portability is already handled in-tree by arc01. |
 
-Known issue candidates from the project plan:
+Planned issue candidate dispositions:
 
-| Repo | Issue | Title | Initial routing |
-|------|-------|-------|-----------------|
-| `pandaPIengine` | [#12](https://github.com/panda-planner-dev/pandaPIengine/issues/12) | Set exit status based on success/failure? | Likely covered by PR #14 if reproducible and applicable. |
-| `pandaPIgrounder` | [#8](https://github.com/panda-planner-dev/pandaPIgrounder/issues/8) | Feature request: set exit status when goal unreachable | Candidate only if bounded to upstream-described behavior; otherwise 0.3.0. |
-| `pandaPIparser` | [#25](https://github.com/panda-planner-dev/pandaPIparser/issues/25) | Segmentation fault running parser to check plan | Reproduce before fixing. |
-| `pandaPIparser` | [#15](https://github.com/panda-planner-dev/pandaPIparser/issues/15) | Domain with conditional effects causes parser to fail to terminate | Reproduce before fixing; may be 0.3.0/non-bounded. |
-| `pandaPIparser` | [#28](https://github.com/panda-planner-dev/pandaPIparser/issues/28) | pandaPIparser run "Killed" | Reproduce before fixing; may be resource-limit/0.3.0. |
-| `pandaPIparser` | [#29](https://github.com/panda-planner-dev/pandaPIparser/issues/29) | Domain and problem that cause parsing explosion | Reproduce before fixing; may be resource-limit/0.3.0. |
+| Repo | Issue | Title | Evidence | Disposition |
+|------|-------|-------|----------|-------------|
+| `pandaPIengine` | [#12](https://github.com/panda-planner-dev/pandaPIengine/issues/12) | Set exit status based on success/failure? | Issue author points to PR #14; maintainer comments define SAT return-code direction. | **absorb** through slice02 with PR #14. |
+| `pandaPIgrounder` | [#8](https://github.com/panda-planner-dev/pandaPIgrounder/issues/8) | Feature request: set exit status when goal unreachable | No reproducer or PR; policy question mentions possible `--error-on-fail`. | **defer** to 0.3.0/status contract. Re-entry: provide a grounding-stage unreachable-goal fixture and decide whether status change is default or opt-in. |
+| `pandaPIparser` | [#25](https://github.com/panda-planner-dev/pandaPIparser/issues/25) | Segmentation fault running parser to check plan | Referenced gist downloaded; `pandaPIparser -v domain problem plan` exits 0 and verifies true on current macOS fork. | **no-op** for v0.2.0; unreproduced and likely covered by current upstream/chengdu baseline. |
+| `pandaPIparser` | [#15](https://github.com/panda-planner-dev/pandaPIparser/issues/15) | Domain with conditional effects causes parser to fail to terminate | Referenced gist downloaded; `pandaPIparser -k domain problem` was still running at 15s and killed by alarm. | **defer** to 0.3.0/parser-normalization work. Re-entry: design static-antecedent or disjunction/forall handling with bounded output expectations. |
+| `pandaPIparser` | [#28](https://github.com/panda-planner-dev/pandaPIparser/issues/28) | pandaPIparser run "Killed" | Body has command/output only; no domain/problem files attached. | **no-op** for v0.2.0 due unavailable reproducer. Re-open if exact inputs are provided; likely related to #29/resource exhaustion. |
+| `pandaPIparser` | [#29](https://github.com/panda-planner-dev/pandaPIparser/issues/29) | Domain and problem that cause parsing explosion | Attached files downloaded; `pandaPIparser -k domain p06` was still running at 30s and killed by alarm. | **defer** to 0.3.0/parser-normalization work with #15. Re-entry: same static goal/disjunction/quantifier design, plus an output-size guard. |
 
-Broader open upstream issues still require slice01 review so nothing is
-silently dropped, but the table above is the planned 0.2.0 candidate set.
+Broader open upstream issues were reviewed during slice01. They do not add
+new 0.2.0 source absorption work:
+
+| Repo | Issues | Disposition |
+|------|--------|-------------|
+| `pandaPIengine` | #17 PDDL support/examples; #10 multiple plans | **no-op**: support/API expansion outside 0.2.0. |
+| `pandaPIengine` | #16 infinite planning time | **defer** to 0.3.0/performance backlog. Re-entry: exact fixture plus agreed timeout/resource target. |
+| `pandaPIengine` | #6 Windows build; #3 optional SAT dependency build | **no-op**: outside supported matrix and current SAT-off release path. |
+| `pandaPIparser` | #24 verifier diagnostic/scoping; #23 task-index diagnostic | **no-op** for v0.2.0: unreproduced/diagnostic behavior, related to #25. |
+| `pandaPIparser` | #16 build after `make clean`; #10 macOS flex/bison build | **no-op**: current import/chengdu build path already covers the build fixes. |
+| `pandaPIparser` | #11 case sensitivity; #1 MIT relicensing | **no-op**: language semantics/licensing requests outside 0.2.0. |
+| `pandaPIgrounder` | #12 bliss Mac build; #2 boruvka Mac build | **no-op**: arc01 in-tree grounder/cpddl/boruvka/bliss build path now passes macOS. |
+| `pandaPIgrounder` | #11 and #10 bad parser output/diagnostics | **no-op** for 0.2.0: upstream comments say parser safety checks were added; no current chengdu fixture remains. Re-enter only with a failing current fixture. |
+| `pandaPIgrounder` | #5 Dockerfile; #3 Windows/cpddl build | **no-op**: covered by draft PR #7 disposition or outside supported matrix. |
+
+The 0.2.0 absorption queue is therefore: engine #14/#12 in slice02, parser
+#21 in slice03, then release publication. Deferred parser expansion/resource
+work and SAT verifier work are explicit 0.3.0/backlog candidates rather than
+silent drops.
 
 ## 3. Slice breakdown
 
 | Slice | Slug | Scope (one line) | Load-bearing for |
 |-------|------|------------------|------------------|
 | slice01 | `upstream-triage` | Refresh live upstream PR/issue state, dry-run PR applicability against the in-tree subtrees, attempt issue reproduction from upstream evidence, and update this arc plan with an explicit absorb/defer/no-op queue before any source changes. | all later arc02 slices; project ledger P3 |
-| slice02 | `engine-exit-status` | Expected first absorption slice: absorb or reimplement the bounded engine exit-status change from PR #14 / issue #12 with full upstream credit, tests/smoke evidence, and no 0.3.0 CLI redesign. Final scope is set by slice01. | release slice; wolong usability |
-| slice03 | `vetted-pr-carry` | Absorb or explicitly no-op the remaining vetted PRs (`engine` #15/#9, `parser` #21, `grounder` #7) according to the slice01 queue; split if triage shows the work will not fit one context. | release slice; project ledger P3 |
-| slice04 | `bounded-issue-fixes` | Fix only reproduced, bounded upstream issues selected by slice01 that are not already covered by PR absorption; defer nontermination/OOM/API redesign material to 0.3.0 with re-entry conditions. | release slice; project ledger P3 |
-| slice05 | `release-publication` | Run the final full no-fetch gate, update provenance/license/release docs if source changes require it, publish `v0.2.0` in wolong's frozen asset shape, verify wolong's 4-command fetch path, and file upstream courtesy announcements. | project close |
+| slice02 | `engine-exit-status` | Port/absorb engine PR #14 and issue #12 as a bounded exit-status change, with upstream author credit, PR/issue URL trailers, tests/smoke evidence, and no 0.3.0 CLI redesign. | release slice; wolong usability; project ledger P3 |
+| slice03 | `parser-makefile-pr` | Absorb parser PR #21 as a small build-system fix with upstream author credit and PR URL trailer; confirm engine #15, engine #9, and grounder #7 remain no-op/deferred as triaged. | release slice; project ledger P3 |
+| slice04 | `release-publication` | Run the final full no-fetch gate, update provenance/license/release docs if source changes require it, publish `v0.2.0` in wolong's frozen asset shape, verify wolong's 4-command fetch path, and file upstream courtesy announcements. | project close |
 
-Slices 02-04 are intentionally provisional until slice01 closes. If slice01
-finds a PR is no-op, conflict-heavy, superseded by chengdu, or out of 0.2.0
-scope, the arc plan must be updated before planning the next implementation
-slice.
+Slices 02-04 are now planned from slice01 evidence. Deferred work is not part
+of the v0.2.0 release unless the operator explicitly changes the project
+boundary.
 
 ## 4. Dependencies
 
@@ -80,13 +96,13 @@ fetchable by wolong without changing wolong's frozen spec.
 
 ## 5. Open questions and risks
 
-- **OQ1 - absorption queue is not yet final.** Slice01 owns the live
-  disposition. A candidate remains "planned input," not "accepted work," until
-  slice01 refreshes upstream, dry-runs applicability, and records absorb /
-  defer / no-op.
-- **OQ2 - conflict risk.** Engine PR #14 currently reports a dirty merge state
-  against upstream. That does not decide chengdu applicability, but it means
-  slice02 must be planned from a dry-run, not from hope.
+- **OQ1 - absorption queue resolved by slice01.** Accepted v0.2.0 source
+  changes are engine #14/#12 and parser #21. Engine #9 and parser #15/#29 are
+  deferred with re-entry conditions; engine #15, grounder #7, parser #25/#28,
+  and broader support/build/Docker/licensing issues are no-op for this release.
+- **OQ2 - conflict risk.** Engine PR #14 reports `mergeable_state=dirty`, and
+  slice01's patch check conflicts in engine source files. Slice02 must plan a
+  bounded port/adaptation, not a mechanical cherry-pick.
 - **OQ3 - 0.2.0 versus 0.3.0 boundary.** Exit-status fixes described by
   upstream issues/PRs are in scope. Systematic stdout/stderr, machine-readable
   status, unbounded resource policy, and CLI/API redesign remain 0.3.0 unless
@@ -96,8 +112,13 @@ fetchable by wolong without changing wolong's frozen spec.
   not require new import identities, but release notes/audit wording must not
   imply byte identity with upstream pins after absorption.
 - **OQ5 - upstream courtesy timing.** The project plan requires announcement
-  issues per upstream repo. Slice05 should prepare/file them after the release
+  issues per upstream repo. Slice04 should prepare/file them after the release
   identity and absorbed-change list are final.
+
+- **OQ6 - deferred parser expansion issues.** Parser #15 and #29 reproduce as
+  long-running parse/expansion behavior, but the fix is a parser-normalization
+  design problem, not a release-hardening patch. Carry both to 0.3.0/backlog
+  together with a bounded output-size/time expectation.
 
 ## 6. Arc ledger
 
@@ -116,6 +137,15 @@ this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.1 - 2026-08-08.** Slice01 refreshed live upstream PR/issue state and
+  replaced the provisional queue with explicit dispositions. Source absorption
+  narrowed to engine #14/#12 and parser #21; engine #9, parser #15/#29, and
+  grounder #8 are deferred with re-entry conditions; wrapper/Docker/support/
+  build-only/licensing items are no-op for v0.2.0. Slice breakdown reduced to
+  engine exit status, parser makefile PR, and release publication. Surfaced by:
+  slice01 upstream triage. Why: current primary-source evidence and local
+  applicability/reproduction attempts separated release-hardening work from
+  0.3.0/backlog material.
 - **v1.0 - 2026-08-08.** Initial arc02 breakdown and slice01 open set. Source:
   project plan v1.6, arc01 closing report, and primary-source GitHub API
   refresh for upstream PR/issue state. No slice bubble-ups yet.
