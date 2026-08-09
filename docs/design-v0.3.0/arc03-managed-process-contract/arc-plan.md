@@ -120,10 +120,11 @@ consumer verification requirements.
   [`status-exit-signal-taxonomy.md`](status-exit-signal-taxonomy.md).
   CDC verification:
   [`slice02-status-exit-signal-taxonomy/cdc-verification.md`](slice02-status-exit-signal-taxonomy/cdc-verification.md).
-- **slice03 stdio-event-tty-contract - next unopened slice.** It should consume
-  the accepted surface classification and status taxonomy, decide where human
-  summaries and machine status payloads are emitted, and preserve the Arc02
-  gates for fmt and nlohmann/json.
+- **slice03 stdio-event-tty-contract - open.** It should consume the accepted
+  surface classification and status taxonomy, decide where human summaries and
+  machine status payloads are emitted, and preserve the Arc02 gates for fmt and
+  nlohmann/json. Open set:
+  [`slice03-stdio-event-tty-contract/slice-doc.md`](slice03-stdio-event-tty-contract/slice-doc.md).
 - **slice04-slice06 - planned only.** Do not open their slice docs until their
   predecessors close and bubble up their design inputs.
 
@@ -135,6 +136,7 @@ Arc03 uses arc-local design artifacts:
 |----------|--------------|
 | Supported surface classification | `docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` |
 | Status, exit, and signal taxonomy | `docs/design-v0.3.0/arc03-managed-process-contract/status-exit-signal-taxonomy.md` |
+| Stdio, event, and TTY contract | `docs/design-v0.3.0/arc03-managed-process-contract/stdio-event-tty-contract.md` |
 | Final managed-process contract | `docs/design-v0.3.0/arc03-managed-process-contract/managed-process-contract.md` |
 
 Intermediate slices may produce additional arc-local reports only when their
@@ -183,6 +185,10 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.4 - 2026-08-09.** Opened slice03 stdio-event-tty-contract. Surfaced by:
+  slice02 CDC verification. Why: stdout/stderr/event/TTY/color/buffering can
+  now be designed against the accepted surface matrix and status taxonomy,
+  including the Arc02 gates for fmt and nlohmann/json.
 - **v1.3 - 2026-08-09.** Marked slice02 status-exit-signal-taxonomy closed and
   CDC-verified. Surfaced by: slice02 CDC verification. Why: slice03 can now
   define stdio/event/TTY/color/buffering from an accepted status vocabulary and
