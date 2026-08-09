@@ -126,7 +126,12 @@ not from today's guesses.
   [`arc02-cpp-library-research/arc-plan.md`](arc02-cpp-library-research/arc-plan.md).
   Slice01 parser library research has an attested closing report:
   [`arc02-cpp-library-research/slice01-parser-library-research/closing-report.md`](arc02-cpp-library-research/slice01-parser-library-research/closing-report.md).
-  Slice02 and slice03 wait for the grounder and engine audit reports.
+  Slice02 grounder library research has an attested closing report:
+  [`arc02-cpp-library-research/slice02-grounder-library-research/closing-report.md`](arc02-cpp-library-research/slice02-grounder-library-research/closing-report.md).
+  Slice03 engine library research has an attested closing report:
+  [`arc02-cpp-library-research/slice03-engine-library-research/closing-report.md`](arc02-cpp-library-research/slice03-engine-library-research/closing-report.md).
+  Slice04 combined library recommendations are ready to plan once the operator
+  wants the final dependency portfolio.
 - **arc03-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc01 and Arc02 close and their synthesis/recommendation reports are
   accepted.
@@ -178,6 +183,10 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.6 - 2026-08-09.** Updated Arc02 status after the engine library research
+  slice landed. Surfaced by: Arc02 slice03 engine-library-research. Why: all
+  three component-level library research reports now exist, so Arc02 can move
+  to combined recommendations before Arc03 managed-process design.
 - **v1.5 - 2026-08-09.** Updated current status after slice02 grounder audit
   closed and CDC verification accepted it. Surfaced by: slice02 CDC
   verification. Why: Arc01 has two of three per-component audits verified, and

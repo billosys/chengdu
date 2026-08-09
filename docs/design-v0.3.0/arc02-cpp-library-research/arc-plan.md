@@ -89,10 +89,10 @@ be resolved before writing the managed-process design.
   [`slice01-parser-library-research/closing-report.md`](slice01-parser-library-research/closing-report.md).
 - **slice02 grounder-library-research - attested.** Report:
   [`slice02-grounder-library-research/closing-report.md`](slice02-grounder-library-research/closing-report.md).
-- **slice03 engine-library-research - pending.** Waits for accepted engine audit
-  report.
-- **slice04 combined-library-recommendations - pending.** Waits for all three
-  component research slices.
+- **slice03 engine-library-research - attested.** Report:
+  [`slice03-engine-library-research/closing-report.md`](slice03-engine-library-research/closing-report.md).
+- **slice04 combined-library-recommendations - ready to plan.** Parser,
+  grounder, and engine component research slices are all available.
 
 ## 5. Candidate scoring rubric
 
@@ -139,6 +139,12 @@ arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.2 - 2026-08-09.** Added slice03 engine-library-research status after
+  applying the reusable workflow to the accepted engine audit. Surfaced by:
+  operator direction after `audit-results-pandapi-engine.md` landed. Why:
+  engine evidence completes the component-level library research set and adds
+  supported-surface containment for translation/SAT/BDD/CUDD as a final-report
+  input.
 - **v1.1 - 2026-08-09.** Added slice02 grounder-library-research status after
   applying the reusable workflow to the accepted grounder audit. Surfaced by:
   operator direction after `audit-results-pandapi-grounder.md` landed. Why:
