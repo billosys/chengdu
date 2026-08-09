@@ -130,8 +130,14 @@ consumer verification requirements.
   [`cli-naming-version-migration.md`](cli-naming-version-migration.md).
   CDC verification:
   [`slice04-cli-naming-version-migration/cdc-verification.md`](slice04-cli-naming-version-migration/cdc-verification.md).
-- **slice05-slice06 - planned only.** Do not open their slice docs until their
-  predecessors close and bubble up their design inputs.
+- **slice05 contract-test-matrix - open.** It should consume the accepted
+  supported-surface, status/exit, stdio/event/TTY, and CLI
+  naming/version/migration contracts, then define golden process fixtures,
+  acceptance probes, fixture schema, normalization rules, and the split between
+  black-box process fixtures and Catch2 seam tests. Open set:
+  [`slice05-contract-test-matrix/slice-doc.md`](slice05-contract-test-matrix/slice-doc.md).
+- **slice06 - planned only.** Do not open its slice docs until slice05 closes
+  and bubbles up its design inputs.
 
 ## 6. Contract artifact paths
 
@@ -193,6 +199,11 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.8 - 2026-08-09.** Opened slice05 contract-test-matrix. Surfaced by:
+  slice04 CDC verification. Why: Arc03 can now convert the accepted surface,
+  status/exit, stdio/event/TTY, and CLI naming/version/migration contracts
+  into golden process fixture requirements, black-box versus Catch2 test
+  ownership, and later Arc04/Arc05/Arc06 gates.
 - **v1.7 - 2026-08-09.** Marked slice04 cli-naming-version-migration closed
   and CDC-verified. Surfaced by: slice04 CDC verification. Why: slice05 can
   now define golden process fixtures against stable command names, inherited
