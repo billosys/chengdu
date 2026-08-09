@@ -91,12 +91,15 @@ checks that prove the new substrate is packaged correctly.
 
 ## 5. Current status
 
-- **slice01 runtime-build-skeleton - open.** Open set:
+- **slice01 runtime-build-skeleton - closed and CDC-verified.** Slice set:
   [`slice01-runtime-build-skeleton/slice-doc.md`](slice01-runtime-build-skeleton/slice-doc.md),
   [`slice01-runtime-build-skeleton/ledger.md`](slice01-runtime-build-skeleton/ledger.md),
   [`slice01-runtime-build-skeleton/cc-prompt.md`](slice01-runtime-build-skeleton/cc-prompt.md).
-- **slice02-slice06 - planned, not open.** Do not write their open sets until
-  slice01 closes and CDC verifies the bubble-up.
+  CDC verification:
+  [`slice01-runtime-build-skeleton/cdc-verification.md`](slice01-runtime-build-skeleton/cdc-verification.md).
+- **slice02-slice06 - planned, not open.** Slice02 can now be opened from the
+  accepted runtime root, namespace, CMake target, CTest hook, and dependency
+  gate constraints.
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -152,6 +155,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.1 - 2026-08-09.** Marked slice01 runtime-build-skeleton closed and
+  CDC-verified. Surfaced by: slice01 CDC verification of commit
+  `2732865d78b5a4dc7330eac7f4ce1164627a3bc2`. Why: the chengdu-owned runtime
+  root, namespace, static CMake target, smoke test, and build entrypoint are
+  accepted; slice02 can now add the status/result substrate without changing
+  binary behavior.
 - **v1.0 - 2026-08-09.** Initial Arc04 plan and slice01 open set. Source:
   Arc03 close, final managed-process contract, Arc02 dependency portfolio, and
   current build-script inspection. Why: the project can now move from accepted

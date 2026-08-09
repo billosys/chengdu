@@ -177,8 +177,8 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc03-managed-process-contract/managed-process-contract.md`](arc03-managed-process-contract/managed-process-contract.md).
 - **arc04 - active.** Detailed plan:
   [`arc04-shared-runtime-substrate/arc-plan.md`](arc04-shared-runtime-substrate/arc-plan.md).
-  Slice01 runtime-build-skeleton is open:
-  [`arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/slice-doc.md`](arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/slice-doc.md).
+  Slice01 runtime-build-skeleton is closed and CDC-verified:
+  [`arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md`](arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md).
 - **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc04 closes or explicitly bubbles up a planning dependency.
 
@@ -259,6 +259,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.26 - 2026-08-09.** Marked Arc04 slice01 runtime-build-skeleton closed
+  and CDC-verified. Surfaced by: slice01 CDC verification of commit
+  `2732865d78b5a4dc7330eac7f4ce1164627a3bc2`. Why: the chengdu-owned runtime
+  root, namespace, static CMake target, CTest smoke test, and
+  `scripts/build-runtime.sh` entrypoint are accepted; Arc04 can now open
+  slice02 status-result-core from a stable inert runtime skeleton.
 - **v1.25 - 2026-08-09.** Opened Arc04 shared-runtime-substrate and slice01
   runtime-build-skeleton. Surfaced by: operator request after Arc03 close.
   Why: the project can now establish a chengdu-owned C++ runtime/build
