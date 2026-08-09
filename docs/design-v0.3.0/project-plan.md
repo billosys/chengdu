@@ -139,8 +139,11 @@ not from today's guesses.
   [`arc02-cpp-library-research/combined-library-recommendations.md`](arc02-cpp-library-research/combined-library-recommendations.md).
 - **arc03 - active.** Detailed plan:
   [`arc03-managed-process-contract/arc-plan.md`](arc03-managed-process-contract/arc-plan.md).
-  Slice01 supported-surface classification is open:
-  [`arc03-managed-process-contract/slice01-supported-surface-classification/slice-doc.md`](arc03-managed-process-contract/slice01-supported-surface-classification/slice-doc.md).
+  Slice01 supported-surface classification is closed and CDC-verified:
+  [`arc03-managed-process-contract/slice01-supported-surface-classification/cdc-verification.md`](arc03-managed-process-contract/slice01-supported-surface-classification/cdc-verification.md),
+  with accepted report:
+  [`arc03-managed-process-contract/supported-surface-classification.md`](arc03-managed-process-contract/supported-surface-classification.md).
+  Slice02 status-exit-signal-taxonomy is the next unopened slice.
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
 
@@ -191,6 +194,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.13 - 2026-08-09.** Marked Arc03 slice01
+  supported-surface-classification closed and CDC-verified. Surfaced by:
+  slice01 CDC verification. Why: Arc03 can now open slice02 from the accepted
+  narrow managed-process product boundary and avoid expanding 0.3.0 around
+  inherited optional modes.
 - **v1.12 - 2026-08-09.** Opened Arc03 managed-process-contract with slice01
   supported-surface-classification. Surfaced by: Arc01 and Arc02 close. Why:
   the contract design can now start from verified audit synthesis and

@@ -94,10 +94,18 @@ consumer verification requirements.
 
 ## 5. Current status
 
-- **slice01 supported-surface-classification - open.** Open set:
-  [`slice01-supported-surface-classification/slice-doc.md`](slice01-supported-surface-classification/slice-doc.md).
-- **slice02-slice06 - planned only.** Do not open their slice docs until
-  slice01 closes and its surface classifications have been bubbled up.
+- **slice01 supported-surface-classification - closed and CDC-verified.**
+  Accepted report:
+  [`supported-surface-classification.md`](supported-surface-classification.md).
+  CDC verification:
+  [`slice01-supported-surface-classification/cdc-verification.md`](slice01-supported-surface-classification/cdc-verification.md).
+- **slice02 status-exit-signal-taxonomy - next unopened slice.** It should
+  consume the accepted narrow supported surface: normal parser HDDL parse,
+  normal grounder `.htn` grounding, and normal engine search. It also needs
+  deterministic statuses for legacy, experimental, unsupported, and future
+  surfaces that remain reachable.
+- **slice03-slice06 - planned only.** Do not open their slice docs until their
+  predecessors close and bubble up their design inputs.
 
 ## 6. Contract artifact paths
 
@@ -149,6 +157,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.1 - 2026-08-09.** Marked slice01 supported-surface-classification
+  closed and CDC-verified. Surfaced by: slice01 CDC verification. Why: Arc03
+  can now open slice02 from an accepted product boundary: supported normal
+  parser HDDL parse, normal grounder `.htn` grounding, and normal engine search;
+  legacy parser helpers, grounder `cpddl`/FAM, and engine interactive mode;
+  experimental H2 and engine translation; unsupported SAT; future BDD/CUDD.
 - **v1.0 - 2026-08-09.** Initial Arc03 plan and slice01 open set. Source:
   closed Arc01 audit synthesis, closed Arc02 combined library recommendations,
   and project-plan v1.11. Why: the project is ready to turn verified audit and
