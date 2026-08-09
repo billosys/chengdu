@@ -145,8 +145,12 @@ from earlier guesses.
   All four library-research slices are CDC-verified, and the accepted combined
   recommendation report is:
   [`arc02-cpp-library-research/combined-library-recommendations.md`](arc02-cpp-library-research/combined-library-recommendations.md).
-- **arc03 - active.** Detailed plan:
+- **arc03 - closed.** Detailed plan:
   [`arc03-managed-process-contract/arc-plan.md`](arc03-managed-process-contract/arc-plan.md).
+  Closing report:
+  [`arc03-managed-process-contract/closing-report.md`](arc03-managed-process-contract/closing-report.md).
+  Accepted final contract:
+  [`arc03-managed-process-contract/managed-process-contract.md`](arc03-managed-process-contract/managed-process-contract.md).
   Slice01 supported-surface classification is closed and CDC-verified:
   [`arc03-managed-process-contract/slice01-supported-surface-classification/cdc-verification.md`](arc03-managed-process-contract/slice01-supported-surface-classification/cdc-verification.md),
   with accepted report:
@@ -171,8 +175,9 @@ from earlier guesses.
   [`arc03-managed-process-contract/slice06-managed-process-contract-synthesis/cdc-verification.md`](arc03-managed-process-contract/slice06-managed-process-contract-synthesis/cdc-verification.md),
   with accepted final contract:
   [`arc03-managed-process-contract/managed-process-contract.md`](arc03-managed-process-contract/managed-process-contract.md).
-- **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
-  Arc03 closes or explicitly bubbles up a planning dependency.
+- **arc04-arc06 - roadmap only.** Arc04 is ready to plan from the accepted
+  Arc03 managed-process contract when the operator opens the next detailed
+  arc. Do not write Arc04-Arc06 detailed plans until explicitly requested.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -251,6 +256,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.24 - 2026-08-09.** Marked Arc03 closed after arc-level composition
+  review. Surfaced by: Arc03 closing report. Why: project ledger P3 is now
+  delivered; Arc04 can be planned from the accepted managed-process contract,
+  while Arc05 binary adoption and Arc06 release/wolong proof remain roadmap
+  work.
 - **v1.23 - 2026-08-09.** Marked Arc03 slice06
   managed-process-contract-synthesis closed and CDC-verified. Surfaced by:
   slice06 CDC verification. Why: Arc03 now has an accepted final normative

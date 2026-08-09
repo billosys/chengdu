@@ -3,6 +3,9 @@
 > Plan-of-record for arc03, per `PROJECT-MANAGEMENT.md` (v2.1). Parent:
 > [`../project-plan.md`](../project-plan.md). This arc begins after Arc01
 > `vendored-source-audit` and Arc02 `cpp-library-research` are closed.
+>
+> Status: **closed** on 2026-08-09. Closing report:
+> [`closing-report.md`](closing-report.md).
 
 ## 1. Capability statement
 
@@ -139,7 +142,10 @@ consumer verification requirements.
   [`managed-process-contract.md`](managed-process-contract.md).
   CDC verification:
   [`slice06-managed-process-contract-synthesis/cdc-verification.md`](slice06-managed-process-contract-synthesis/cdc-verification.md).
-  Arc03 is ready for arc-level close after the composition check.
+- **Arc03 - closed.** Closing report:
+  [`closing-report.md`](closing-report.md).
+  Final accepted contract:
+  [`managed-process-contract.md`](managed-process-contract.md).
 
 ## 6. Contract artifact paths
 
@@ -201,6 +207,11 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.12 - 2026-08-09.** Closed Arc03 after arc-level composition review.
+  Surfaced by: slice06 CDC verification and arc ledger A1-A8 reproduction.
+  Why: all six planned slices are closed and CDC-verified, the final
+  managed-process contract satisfies the arc capability, and remaining
+  implementation/release/wolong proof is explicitly routed to Arc04-Arc06.
 - **v1.11 - 2026-08-09.** Marked slice06
   managed-process-contract-synthesis closed and CDC-verified. Surfaced by:
   slice06 CDC verification. Why: Arc03 now has a final accepted normative
