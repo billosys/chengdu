@@ -137,8 +137,14 @@ not from today's guesses.
   [`arc02-cpp-library-research/slice02-grounder-library-research/closing-report.md`](arc02-cpp-library-research/slice02-grounder-library-research/closing-report.md).
   Slice03 engine library research has an attested closing report:
   [`arc02-cpp-library-research/slice03-engine-library-research/closing-report.md`](arc02-cpp-library-research/slice03-engine-library-research/closing-report.md).
-  Slice04 combined library recommendations are open:
-  [`arc02-cpp-library-research/slice04-combined-library-recommendations/slice-doc.md`](arc02-cpp-library-research/slice04-combined-library-recommendations/slice-doc.md).
+  Slice04 combined library recommendations are closed and CDC-verified:
+  [`arc02-cpp-library-research/slice04-combined-library-recommendations/cdc-verification.md`](arc02-cpp-library-research/slice04-combined-library-recommendations/cdc-verification.md),
+  with accepted report:
+  [`arc02-cpp-library-research/combined-library-recommendations.md`](arc02-cpp-library-research/combined-library-recommendations.md).
+  Arc02 has all four planned reports; before arc-level close, decide whether
+  the attested component-level research slices require independent CDC
+  verification or can be accepted as research-only inputs through the combined
+  report verification.
 - **arc03-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc01 and Arc02 close and their synthesis/recommendation reports are
   accepted.
@@ -190,6 +196,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.9 - 2026-08-09.** Updated Arc02 status after slice04 combined library
+  recommendations closed and CDC verification accepted the final portfolio.
+  Surfaced by: Arc02 slice04 CDC verification. Why: Arc03 now has a verified
+  dependency-decision input, while Arc02 arc close still needs an explicit
+  policy on the attested component research slices.
 - **v1.8 - 2026-08-09.** Updated Arc01 status after slice04 audit synthesis
   closed and CDC verification accepted it. Surfaced by: Arc01 slice04 CDC
   verification. Why: all Arc01 slices are verified, and the audit synthesis now

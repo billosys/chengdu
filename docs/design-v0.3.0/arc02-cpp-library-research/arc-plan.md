@@ -91,8 +91,11 @@ be resolved before writing the managed-process design.
   [`slice02-grounder-library-research/closing-report.md`](slice02-grounder-library-research/closing-report.md).
 - **slice03 engine-library-research - attested.** Report:
   [`slice03-engine-library-research/closing-report.md`](slice03-engine-library-research/closing-report.md).
-- **slice04 combined-library-recommendations - open.** Open set:
-  [`slice04-combined-library-recommendations/slice-doc.md`](slice04-combined-library-recommendations/slice-doc.md).
+- **slice04 combined-library-recommendations - closed and CDC-verified.**
+  Verification:
+  [`slice04-combined-library-recommendations/cdc-verification.md`](slice04-combined-library-recommendations/cdc-verification.md).
+  Accepted report:
+  [`combined-library-recommendations.md`](combined-library-recommendations.md).
 
 ## 5. Candidate scoring rubric
 
@@ -139,6 +142,12 @@ arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.4 - 2026-08-09.** Updated slice04 status after the combined library
+  recommendations closed and CDC verification accepted it. Surfaced by:
+  slice04 CDC verification. Why: Arc03 can now plan from the accepted
+  dependency portfolio, while the arc close still needs an explicit decision
+  on whether the attested component-level research slices require independent
+  CDC verification.
 - **v1.3 - 2026-08-09.** Opened slice04 combined-library-recommendations with
   explicit architecture-impact and supported-surface criteria. Surfaced by:
   operator guidance after the engine library-research slice landed. Why: final
