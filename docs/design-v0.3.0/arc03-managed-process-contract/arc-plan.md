@@ -134,8 +134,12 @@ consumer verification requirements.
   [`contract-test-matrix.md`](contract-test-matrix.md).
   CDC verification:
   [`slice05-contract-test-matrix/cdc-verification.md`](slice05-contract-test-matrix/cdc-verification.md).
-- **slice06 - planned only.** Do not open its slice docs until slice05 close
-  state has landed and its design inputs are available.
+- **slice06 managed-process-contract-synthesis - open.** It should synthesize
+  the accepted Arc03 slice01-05 reports into the final
+  `managed-process-contract.md`, route Arc02-informed implementation inputs to
+  Arc04/Arc05/Arc06, and state whether Arc03 is ready for arc-level close. Open
+  set:
+  [`slice06-managed-process-contract-synthesis/slice-doc.md`](slice06-managed-process-contract-synthesis/slice-doc.md).
 
 ## 6. Contract artifact paths
 
@@ -197,6 +201,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.10 - 2026-08-09.** Opened slice06
+  managed-process-contract-synthesis. Surfaced by: slice05 CDC verification.
+  Why: Arc03 now has accepted supported-surface, status/exit/signal,
+  stdio/event/TTY, CLI naming/version/migration, and contract-test-matrix
+  inputs ready to synthesize into the final managed-process contract and route
+  to Arc04/Arc05/Arc06.
 - **v1.9 - 2026-08-09.** Marked slice05 contract-test-matrix closed and
   CDC-verified. Surfaced by: slice05 CDC verification. Why: slice06 can now
   synthesize the final managed-process contract from accepted surface,
