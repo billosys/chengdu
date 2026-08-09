@@ -155,8 +155,8 @@ no-ops or 0.3.0 material.
   [`arc01-vendor-identity/closing-report.md`](arc01-vendor-identity/closing-report.md).
 - **arc02 — active.** Detailed plan opened at
   [`arc02-upstream-absorption/arc-plan.md`](arc02-upstream-absorption/arc-plan.md);
-  slices01-02 closed and CDC-verified; slice03 open set created at
-  [`arc02-upstream-absorption/slice03-parser-makefile-pr/`](arc02-upstream-absorption/slice03-parser-makefile-pr/).
+  slices01-03 closed and CDC-verified; slice04 open set created at
+  [`arc02-upstream-absorption/slice04-release-publication/`](arc02-upstream-absorption/slice04-release-publication/).
 
 ## 6. Project ledger
 
@@ -174,6 +174,11 @@ walk) in this project's `closing-report.md`. Strength vocabulary per
 
 ## 7. Version history
 
+- **v1.9 — 2026-08-08.** Opened arc02 slice04's release-publication open set
+  after slice03 closed and CDC verification accepted the parser makefile PR
+  absorption. No roadmap scope change. Surfaced by: operator instruction to do
+  slice04. Why: release publication is the final planned Arc02 slice and the
+  remaining project ledger P5 work.
 - **v1.8 — 2026-08-08.** Opened arc02 slice03's parser-makefile-pr open set
   after slice02 closed and CDC verification accepted the engine exit-status
   absorption. No roadmap scope change. Surfaced by: operator instruction to

@@ -137,6 +137,12 @@ this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.4 - 2026-08-08.** Opened slice04's release-publication implementation
+  plan after slice03 CDC verification. No queue change. Surfaced by: operator
+  instruction to do slice04. Why: engine PR #14 / issue #12 and parser PR #21
+  are now absorbed and verified, leaving the real `v0.2.0` release,
+  wolong-frozen asset verification, and upstream courtesy announcements as the
+  final Arc02 work.
 - **v1.3 - 2026-08-08.** Opened slice03's parser-makefile-pr implementation
   plan after slice02 CDC verification. No queue change. Surfaced by: operator
   instruction to draw up the next slice docs. Why: parser PR #21 remains the
