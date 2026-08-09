@@ -1,12 +1,10 @@
-# chengdu 0.3.0 — pre-planning notes (placeholder)
+# chengdu 0.3.0 - pre-planning notes (absorbed)
 
-> **This is not a plan-of-record.** No project has been convened at this
-> design version; there is no DoD, no arc roadmap, no ledger. These are
-> the tentative intentions and accumulated notes for 0.3.0, parked
-> in-repo at the correct contextual level so they survive session
-> boundaries. When 0.3.0 is convened, write a real `project-plan.md`
-> per `PROJECT-MANAGEMENT.md` (research → definition → plan) and retire
-> or absorb this file — tracked, not silently.
+> **This is not a plan-of-record.** The 0.3.0 project was convened on
+> 2026-08-09. The plan-of-record now lives in
+> [`project-plan.md`](project-plan.md), and these notes are retained as
+> absorbed input for provenance. Do not plan new work from this file except by
+> checking it against the current project plan.
 >
 > Recorded 2026-08-06, from the fork-decision working session
 > (operator + Cowork session). Prerequisite: chengdu 0.2.0 closed
