@@ -162,8 +162,8 @@ no-ops or 0.3.0 material.
   [`arc02-upstream-absorption/arc-plan.md`](arc02-upstream-absorption/arc-plan.md);
   slices01-04 closed and CDC-verified; `v0.2.0` is public at
   https://github.com/billosys/chengdu/releases/tag/v0.2.0.
-- **project — ready for close.** Both planned arcs are closed. Project
-  close/status synthesis remains CDC-owned follow-up.
+- **project — closed 2026-08-09.** Closing report:
+  [`closing-report.md`](closing-report.md). Gate: GO.
 
 ## 6. Project ledger
 
@@ -181,6 +181,11 @@ walk) in this project's `closing-report.md`. Strength vocabulary per
 
 ## 7. Version history
 
+- **v2.2 — 2026-08-09.** Closed the 0.2.0 project after Arc01 and Arc02
+  composed into the project definition of done. Surfaced by: project close.
+  Why: both planned arcs are closed, the final pushed branch CI is green, and
+  the public `v0.2.0` release satisfies wolong's frozen asset/consumer
+  contract on both supported platforms.
 - **v2.1 — 2026-08-09.** Closed Arc02 and tightened project-level
   upstream-credit wording for the accepted engine PR #14 manual-port exception.
   Surfaced by: Arc02 close gate review. Why: parser PR #21 preserved native
