@@ -120,11 +120,11 @@ consumer verification requirements.
   [`status-exit-signal-taxonomy.md`](status-exit-signal-taxonomy.md).
   CDC verification:
   [`slice02-status-exit-signal-taxonomy/cdc-verification.md`](slice02-status-exit-signal-taxonomy/cdc-verification.md).
-- **slice03 stdio-event-tty-contract - open.** It should consume the accepted
-  surface classification and status taxonomy, decide where human summaries and
-  machine status payloads are emitted, and preserve the Arc02 gates for fmt and
-  nlohmann/json. Open set:
-  [`slice03-stdio-event-tty-contract/slice-doc.md`](slice03-stdio-event-tty-contract/slice-doc.md).
+- **slice03 stdio-event-tty-contract - closed and CDC-verified.** Accepted
+  report:
+  [`stdio-event-tty-contract.md`](stdio-event-tty-contract.md).
+  CDC verification:
+  [`slice03-stdio-event-tty-contract/cdc-verification.md`](slice03-stdio-event-tty-contract/cdc-verification.md).
 - **slice04-slice06 - planned only.** Do not open their slice docs until their
   predecessors close and bubble up their design inputs.
 
@@ -165,9 +165,9 @@ arc's `closing-report.md`.
   but current release assets still ship inherited binary names. Arc03 must
   decide whether 0.3.0 ships dual names, wrappers/aliases, or an explicit
   breaking change.
-- **OQ2 - event format.** Machine-readable output may be JSON Lines, tagged
-  text, or a narrower status-only side channel. Arc03 must choose behavior
-  before nlohmann/json or any event writer is adopted.
+- **OQ2 - event format resolved.** Slice03 selected tagged text status-only
+  output for 0.3.0, not JSON Lines. `nlohmann/json` remains held unless a
+  later accepted event-format decision reopens JSON.
 - **OQ3 - optional surface gravity.** H2, cpddl/FAM, translation, interactive,
   SAT, BDD, and CUDD can expand architecture scope quickly. Slice01 must fence
   or accept each surface explicitly.
@@ -178,13 +178,21 @@ arc's `closing-report.md`.
   matrix strong enough for Arc04 to build the proof harness before Arc05
   changes binary behavior.
 - **OQ6 - Arc02 implementation gates.** Arc03 must decide semantics before
-  implementation libraries enter. `tl::expected` waits for slice02, fmt and
-  nlohmann/json wait for slice03 stream/event decisions, CLI11 waits for
+  implementation libraries enter. `tl::expected` is gated by the accepted
+  status taxonomy, fmt waits for an Arc04 diagnostics/process I/O facade,
+  nlohmann/json is held by the slice03 tagged-text decision, CLI11 waits for
   slice04 golden compatibility decisions, and Catch2/process fixtures wait for
   slice05/Arc04 test-substrate decisions.
 
 ## 9. Version history
 
+- **v1.5 - 2026-08-09.** Marked slice03 stdio-event-tty-contract closed and
+  CDC-verified. Surfaced by: slice03 CDC verification after CC's corrective
+  close-set commit. Why: slice04 can now map CLI names, flags, aliases,
+  help/version text, no-color/no-colour behavior, and machine-status
+  enablement from the accepted stream/event/TTY contract; nlohmann/json remains
+  held because slice03 selected tagged text status-only output rather than
+  JSON Lines.
 - **v1.4 - 2026-08-09.** Opened slice03 stdio-event-tty-contract. Surfaced by:
   slice02 CDC verification. Why: stdout/stderr/event/TTY/color/buffering can
   now be designed against the accepted surface matrix and status taxonomy,

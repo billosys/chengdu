@@ -155,8 +155,10 @@ from earlier guesses.
   [`arc03-managed-process-contract/slice02-status-exit-signal-taxonomy/cdc-verification.md`](arc03-managed-process-contract/slice02-status-exit-signal-taxonomy/cdc-verification.md),
   with accepted report:
   [`arc03-managed-process-contract/status-exit-signal-taxonomy.md`](arc03-managed-process-contract/status-exit-signal-taxonomy.md).
-  Slice03 stdio-event-tty-contract is open:
-  [`arc03-managed-process-contract/slice03-stdio-event-tty-contract/slice-doc.md`](arc03-managed-process-contract/slice03-stdio-event-tty-contract/slice-doc.md).
+  Slice03 stdio-event-tty-contract is closed and CDC-verified:
+  [`arc03-managed-process-contract/slice03-stdio-event-tty-contract/cdc-verification.md`](arc03-managed-process-contract/slice03-stdio-event-tty-contract/cdc-verification.md),
+  with accepted report:
+  [`arc03-managed-process-contract/stdio-event-tty-contract.md`](arc03-managed-process-contract/stdio-event-tty-contract.md).
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
 
@@ -176,10 +178,11 @@ input to all remaining work:
 - **Pilots:** `tl::expected` may enter only behind a local status/result facade
   after Arc03 defines the taxonomy; reproc++ may enter only behind a
   child-process adapter if a supported surface requires subprocess containment.
-- **Held:** nlohmann/json waits for an event-format decision; GSL,
-  performance containers, google/benchmark, parser-generator alternatives,
-  SAT/BDD/CUDD enablement, H2/cpddl dependency-internal work, and optional
-  dependency audits wait for explicit re-entry criteria.
+- **Held:** nlohmann/json remains held because slice03 selected tagged text
+  status-only output instead of JSON Lines; GSL, performance containers,
+  google/benchmark, parser-generator alternatives, SAT/BDD/CUDD enablement,
+  H2/cpddl dependency-internal work, and optional dependency audits wait for
+  explicit re-entry criteria.
 - **Rejected for 0.3.0 foundations:** Abseil and Boost.Process are not
   foundation choices for this release.
 
@@ -235,6 +238,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.17 - 2026-08-09.** Marked Arc03 slice03
+  stdio-event-tty-contract closed and CDC-verified. Surfaced by: slice03 CDC
+  verification after CC's corrective close-set commit. Why: Arc03 can now
+  open slice04 from an accepted stream/event/TTY contract; machine-readable
+  output is tagged text status-only for 0.3.0, and nlohmann/json remains held
+  unless a later accepted event-format decision reopens JSON.
 - **v1.16 - 2026-08-09.** Opened Arc03 slice03 stdio-event-tty-contract.
   Surfaced by: slice02 CDC verification. Why: the project can now define
   stdout/stderr/event/TTY/color/buffering from accepted surface and status

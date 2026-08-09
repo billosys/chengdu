@@ -4,40 +4,66 @@ Date: 2026-08-09
 
 Branch: `release/0.3.x`
 
-Verified commit: `e465f42736db9d443b196621d06436c6e644ee2f`
-(`Close Arc03 stdio event tty contract`)
+Verified commits:
+
+- `e465f42736db9d443b196621d06436c6e644ee2f`
+  (`Close Arc03 stdio event tty contract`)
+- `7f5940426138409b0b12b3a677480dbc408d67c0`
+  (`docs: add stdio event tty closing report`)
+
+Prior CDC blocker:
+
+- `34e0e6ce204bbe421c16f2fc2f43b04c0232657f`
+  (`docs: record stdio event tty cdc blocker`)
 
 ## Verdict
 
-Not accepted yet. The stdio/event/TTY contract content reproduces against all
-12 ledger rows, and the slice stayed inside its design-only boundary, but the
-required CC close-set artifact is missing:
+Accepted. Slice03 is CDC-verified.
 
-`docs/design-v0.3.0/arc03-managed-process-contract/slice03-stdio-event-tty-contract/closing-report.md`
+The stdio/event/TTY contract report is complete for the slice scope, all 12
+ledger rows reproduce independently, the supplemental CC closing report fixes
+the previously missing close-set artifact, and the slice stayed inside its
+design-only boundary.
 
-Per `PROJECT-MANAGEMENT.md`, a slice close requires both the CC
-`closing-report.md` and the independent CDC `cdc-verification.md`. The
-`cc-prompt.md` for this slice also explicitly required CC to write the closing
-report with a row-by-row walk and Bubble-up to Arc03.
+The accepted design decisions are:
 
-CDC should rerun verification after CC adds the missing closing report. The
-technical ledger evidence below can be reused if the contract report and
-ledger do not change.
+- stdout is a single selected artifact sink, event/status sink, or empty;
+- stderr is the human diagnostics, warnings, progress, statistics, and summary
+  channel;
+- supervisors classify outcomes from exit codes and tagged status records, not
+  diagnostic prose;
+- 0.3.0 uses tagged text status-only machine-readable output, not JSON Lines;
+- `nlohmann/json` remains held because the accepted event/status format is not
+  JSON;
+- `fmt` remains behind a future diagnostics/process I/O facade;
+- legacy, experimental, unsupported, and future surfaces are fenced before
+  they can contaminate supported stream semantics.
 
 ## Scope and Commit Check
 
-`git show --name-status --format=full e465f42736db9d443b196621d06436c6e644ee2f`
-showed only these slice content changes:
+Primary slice commit:
+
+```bash
+git show --name-status --format=full e465f42736db9d443b196621d06436c6e644ee2f
+```
+
+Result: the commit included only:
 
 - `docs/design-v0.3.0/arc03-managed-process-contract/stdio-event-tty-contract.md`
 - `docs/design-v0.3.0/arc03-managed-process-contract/slice03-stdio-event-tty-contract/ledger.md`
 
-It did not include:
+Supplemental close-set commit:
+
+```bash
+git show --name-status --format=full 7f5940426138409b0b12b3a677480dbc408d67c0
+```
+
+Result: the commit included only:
 
 - `docs/design-v0.3.0/arc03-managed-process-contract/slice03-stdio-event-tty-contract/closing-report.md`
 
-`git show -s --format=full e465f42736db9d443b196621d06436c6e644ee2f`
-confirmed the required co-author trailers:
+`git show -s --format=full` for both commits confirmed the required co-author
+trailers:
 
 - `Co-authored-by: Codex <noreply@openai.com>`
 - `Co-authored-by: Billo AI <ai-engineering@billo.systems>`
@@ -45,18 +71,44 @@ confirmed the required co-author trailers:
 Protected-path check:
 
 ```bash
-git diff --name-only HEAD^..HEAD -- pandaPI scripts .github README.md release-manifest.txt vendor.env pins.env dist build
+git diff --name-only -- pandaPI scripts .github README.md release-manifest.txt vendor.env pins.env dist build
 ```
 
 Result: no output.
 
-Format check:
+Format check for the current verification state:
 
 ```bash
-git diff --check HEAD^..HEAD
+git diff --check -- docs/design-v0.3.0/arc03-managed-process-contract/slice03-stdio-event-tty-contract docs/design-v0.3.0/arc03-managed-process-contract/stdio-event-tty-contract.md
 ```
 
 Result: no output.
+
+## Close-Set Verification
+
+The required CC closing report now exists:
+
+```bash
+test -f docs/design-v0.3.0/arc03-managed-process-contract/slice03-stdio-event-tty-contract/closing-report.md
+```
+
+Result: command exit 0.
+
+The closing report includes the expected close sections:
+
+```bash
+rg -n "Ledger Walk|Silent-Drop Diff|Bubble-Up To Arc03|CDC Handoff|12" docs/design-v0.3.0/arc03-managed-process-contract/slice03-stdio-event-tty-contract/closing-report.md
+```
+
+Result: matched row count, ledger walk, silent-drop diff, Bubble-up to Arc03,
+and CDC handoff sections.
+
+The closing report's silent-drop diff is complete and honest: it defers final
+CLI spelling/help/version and CLI11 migration to slice04, contract tests and
+fixtures to slice05/Arc04, implementation substrate work to Arc04, per-binary
+migration to Arc05, release documentation/license/NOTICE/behavior-change work
+to Arc06, and keeps JSON Lines/`nlohmann/json` held after selecting tagged
+text status-only output.
 
 ## Ledger Verification
 
@@ -93,37 +145,29 @@ Result: no output, command exit 1 from no matches.
 
 ## Bubble-Up Check
 
-CDC cannot accept the slice bubble-up yet because the CC closing report is
-absent. Without the closing report, there is no CC-authored row-by-row walk,
-no explicit silent-drop diff, and no CC Bubble-up to Arc03 for CDC to verify.
+Slice03 delivered the assigned Arc03 capability from the arc-plan slice
+breakdown: stdout/stderr ownership, event-output mode, buffering/flushing,
+diagnostics/progress routing, quiet modes, and ANSI/color/TTY policy.
 
-Based on the contract artifact itself, the likely bubble-up is:
+No silent drops were found. The opening ledger had 12 rows, the closing ledger
+has 12 rows, the closing report walks all 12 rows, and every requested
+out-of-scope item is explicitly deferred to the owning later slice or arc.
 
-- slice03 delivered the assigned Arc03 piece for stdout/stderr/event/status
-  routing, buffering/flushing, ANSI/color/TTY behavior, quiet/progress policy,
-  and non-supported-surface stream fencing;
-- slice04 must map semantic modes and color/status behavior to final CLI
-  spelling, aliases, help, and version behavior;
-- slice05 must convert the stream/status/TTY contract into process fixtures;
-- Arc04 must own the diagnostics/process I/O facade, status line escaping,
-  buffering/flushing helpers, and TTY/color detection.
+CDC agrees that the slice findings require a small Arc03 plan update before
+slice04 opens:
 
-This likely bubble-up is not accepted as a substitute for CC's required
-closing report.
+- mark slice03 closed and CDC-verified;
+- mark the event-format question resolved as tagged text status-only output;
+- route CLI spelling, aliases, help/version, no-color/no-colour controls, and
+  machine-status enablement to slice04;
+- keep `nlohmann/json` held unless a later accepted event-format decision
+  reopens JSON.
 
-## Required Fix Before Acceptance
+## What Worked
 
-CC needs to add:
-
-`docs/design-v0.3.0/arc03-managed-process-contract/slice03-stdio-event-tty-contract/closing-report.md`
-
-That report should include:
-
-- the 12-row ledger walk matching the opening ledger count;
-- the same final status disposition reflected in `ledger.md`;
-- the Bubble-up to Arc03;
-- a silent-drop diff for scope-as-specified versus scope-as-delivered;
-- the protected-path and whitespace verification evidence.
-
-After that lands, CDC should rerun the closing-report check and either replace
-or supersede this verification with an accepted one.
+- The contract gives supervisors parseable status observation without making
+  diagnostic prose normative.
+- Tagged text status-only output gives 0.3.0 a machine-readable path while
+  avoiding premature JSON dependency adoption.
+- The slice cleanly converts Arc02 library findings into design gates rather
+  than letting libraries define product semantics.
