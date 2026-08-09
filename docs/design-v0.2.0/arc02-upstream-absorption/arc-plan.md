@@ -65,10 +65,10 @@ new 0.2.0 source absorption work:
 | `pandaPIgrounder` | #11 and #10 bad parser output/diagnostics | **no-op** for 0.2.0: upstream comments say parser safety checks were added; no current chengdu fixture remains. Re-enter only with a failing current fixture. |
 | `pandaPIgrounder` | #5 Dockerfile; #3 Windows/cpddl build | **no-op**: covered by draft PR #7 disposition or outside supported matrix. |
 
-The 0.2.0 absorption queue is therefore: engine #14/#12 in slice02, parser
-#21 in slice03, then release publication. Deferred parser expansion/resource
-work and SAT verifier work are explicit 0.3.0/backlog candidates rather than
-silent drops.
+The 0.2.0 absorption queue is complete: engine #14/#12 landed in slice02,
+parser #21 landed in slice03, and `v0.2.0` was published in slice04. Deferred
+parser expansion/resource work and SAT verifier work are explicit
+0.3.0/backlog candidates rather than silent drops.
 
 ## 3. Slice breakdown
 
@@ -79,9 +79,8 @@ silent drops.
 | slice03 | `parser-makefile-pr` | Absorb parser PR #21 as a small build-system fix with upstream author credit and PR URL trailer; confirm engine #15, engine #9, and grounder #7 remain no-op/deferred as triaged. | release slice; project ledger P3 |
 | slice04 | `release-publication` | Run the final full no-fetch gate, update provenance/license/release docs if source changes require it, publish `v0.2.0` in wolong's frozen asset shape, verify wolong's 4-command fetch path, and file upstream courtesy announcements. | project close |
 
-Slices 02-04 are now planned from slice01 evidence. Deferred work is not part
-of the v0.2.0 release unless the operator explicitly changes the project
-boundary.
+Slices 01-04 are closed and CDC-verified. Deferred work is not part of the
+v0.2.0 release unless the operator explicitly changes the project boundary.
 
 ## 4. Dependencies
 
@@ -137,6 +136,11 @@ this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.5 - 2026-08-09.** Updated arc status after Slice04 CDC verification
+  accepted the public `v0.2.0` release publication and reproduced both
+  supported-platform consumer walks. No queue change. Surfaced by: Slice04 CDC
+  verification. Why: all planned Arc02 slices are now closed and verified, so
+  this arc is ready for composition close.
 - **v1.4 - 2026-08-08.** Opened slice04's release-publication implementation
   plan after slice03 CDC verification. No queue change. Surfaced by: operator
   instruction to do slice04. Why: engine PR #14 / issue #12 and parser PR #21

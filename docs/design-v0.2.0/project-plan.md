@@ -153,10 +153,11 @@ no-ops or 0.3.0 material.
 
 - **arc01 — closed 2026-08-08.** Closing report:
   [`arc01-vendor-identity/closing-report.md`](arc01-vendor-identity/closing-report.md).
-- **arc02 — active.** Detailed plan opened at
+- **arc02 — ready for close.** Detailed plan opened at
   [`arc02-upstream-absorption/arc-plan.md`](arc02-upstream-absorption/arc-plan.md);
-  slices01-03 closed and CDC-verified; slice04 open set created at
-  [`arc02-upstream-absorption/slice04-release-publication/`](arc02-upstream-absorption/slice04-release-publication/).
+  slices01-04 closed and CDC-verified; `v0.2.0` is public at
+  https://github.com/billosys/chengdu/releases/tag/v0.2.0. Arc02 close and
+  project close/status synthesis remain CDC-owned follow-ups.
 
 ## 6. Project ledger
 
@@ -174,6 +175,11 @@ walk) in this project's `closing-report.md`. Strength vocabulary per
 
 ## 7. Version history
 
+- **v2.0 — 2026-08-09.** Updated current status after slice04 closed and CDC
+  verification accepted the public `v0.2.0` release publication. No roadmap
+  scope change. Surfaced by: Slice04 CDC verification. Why: all planned Arc02
+  slices are now closed and verified, so Arc02 is ready for composition close
+  and project close/status synthesis.
 - **v1.9 — 2026-08-08.** Opened arc02 slice04's release-publication open set
   after slice03 closed and CDC verification accepted the parser makefile PR
   absorption. No roadmap scope change. Surfaced by: operator instruction to do
