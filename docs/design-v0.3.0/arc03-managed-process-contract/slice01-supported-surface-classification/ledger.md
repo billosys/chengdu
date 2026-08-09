@@ -1,0 +1,18 @@
+# Slice 01: supported-surface-classification
+
+## Ledger
+
+| ID | Criterion | Verify | Significance | Origin | Status | Evidence | Notes |
+|----|-----------|--------|--------------|--------|--------|----------|-------|
+| F-1 | The supported-surface classification report exists at `docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` and names Arc01 and Arc02 as evidence inputs. | `test -f docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md && rg -n "Arc01|Arc02|audit-synthesis-pandapi|combined-library-recommendations" docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` | serious | arc ledger A2 | open | | |
+| F-2 | The report uses the agreed classification vocabulary: supported, legacy, experimental, unsupported, and future. | `rg -n "supported|legacy|experimental|unsupported|future" docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` | serious | slice-doc §3 | open | | |
+| F-3 | The report classifies parser normal HDDL parse path and parser verifier/output helper paths with rationale, audit evidence, behavior expectation, and re-entry condition where applicable. | `rg -n "parser normal|HDDL parse|parser verifier|output helper|P-00[1-9]|P-01[0-5]|Re-entry|Behavior expectation|Rationale" docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` | correctness-grade | Arc01 synthesis §4 | open | | |
+| F-4 | The report classifies grounder normal `.htn` path, H2 path, and `cpddl`/FAM integration with rationale, audit evidence, behavior expectation, and re-entry condition where applicable. | `rg -n "grounder normal|\\.htn|H2|cpddl|FAM|G-00[1-9]|G-01[0-9]|Re-entry|Behavior expectation|Rationale" docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` | correctness-grade | Arc01 synthesis §4; Arc02 hold decisions | open | | |
+| F-5 | The report classifies engine normal search, interactive mode, translation mode, SAT path, and BDD/CUDD path with rationale, audit evidence, behavior expectation, and re-entry condition where applicable. | `rg -n "engine normal|normal search|interactive|translation|SAT|BDD|CUDD|E-00[1-9]|E-01[0-6]|Re-entry|Behavior expectation|Rationale" docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` | correctness-grade | Arc01 synthesis §4; Arc02 hold decisions | open | | |
+| F-6 | The report keeps dependency availability separate from support decisions for reproc++, nlohmann/json, CUDD, H2, cpddl, parser generators, CLI11, and fmt. | `rg -n "dependency availability|reproc|nlohmann/json|CUDD|H2|cpddl|parser generator|CLI11|fmt|does not decide|cannot make" docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` | correctness-grade | Arc01/Arc02 non-inputs | open | | |
+| F-7 | The report identifies which later Arc03 slices consume each classification for status/exit/signal, stdio/event/TTY, CLI naming/version/migration, and contract tests. | `rg -n "slice02|status|exit|signal|slice03|stdio|event|TTY|slice04|CLI|naming|version|migration|slice05|test matrix|contract tests" docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` | serious | arc slice sequencing | open | | |
+| F-8 | No planner source, dependency source, scripts, workflows, release assets, build outputs, or vendored dependency files are changed by this slice. | `git diff --name-only -- pandaPI scripts .github README.md release-manifest.txt vendor.env pins.env dist build` | serious | diagnosis/design-only constraint | open | | |
+
+## What Worked
+
+_(Fill at slice close.)_

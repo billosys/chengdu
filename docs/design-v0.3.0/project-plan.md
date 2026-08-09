@@ -137,8 +137,10 @@ not from today's guesses.
   All four library-research slices are CDC-verified, and the accepted combined
   recommendation report is:
   [`arc02-cpp-library-research/combined-library-recommendations.md`](arc02-cpp-library-research/combined-library-recommendations.md).
-- **arc03 - ready for detailed planning.** Arc01 and Arc02 are closed, and
-  their accepted synthesis/recommendation reports are now verified inputs.
+- **arc03 - active.** Detailed plan:
+  [`arc03-managed-process-contract/arc-plan.md`](arc03-managed-process-contract/arc-plan.md).
+  Slice01 supported-surface classification is open:
+  [`arc03-managed-process-contract/slice01-supported-surface-classification/slice-doc.md`](arc03-managed-process-contract/slice01-supported-surface-classification/slice-doc.md).
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
 
@@ -189,6 +191,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.12 - 2026-08-09.** Opened Arc03 managed-process-contract with slice01
+  supported-surface-classification. Surfaced by: Arc01 and Arc02 close. Why:
+  the contract design can now start from verified audit synthesis and
+  dependency recommendations, with supported-surface classification first so
+  optional inherited paths do not silently define the 0.3.0 product surface.
 - **v1.11 - 2026-08-09.** Marked Arc01 closed after arc-level composition
   accepted the parser, grounder, engine, and synthesis reports. Surfaced by:
   Arc01 close. Why: Arc03 can now open from both verified prerequisites, Arc01
