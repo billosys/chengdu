@@ -134,12 +134,12 @@ consumer verification requirements.
   [`contract-test-matrix.md`](contract-test-matrix.md).
   CDC verification:
   [`slice05-contract-test-matrix/cdc-verification.md`](slice05-contract-test-matrix/cdc-verification.md).
-- **slice06 managed-process-contract-synthesis - open.** It should synthesize
-  the accepted Arc03 slice01-05 reports into the final
-  `managed-process-contract.md`, route Arc02-informed implementation inputs to
-  Arc04/Arc05/Arc06, and state whether Arc03 is ready for arc-level close. Open
-  set:
-  [`slice06-managed-process-contract-synthesis/slice-doc.md`](slice06-managed-process-contract-synthesis/slice-doc.md).
+- **slice06 managed-process-contract-synthesis - closed and CDC-verified.**
+  Accepted report:
+  [`managed-process-contract.md`](managed-process-contract.md).
+  CDC verification:
+  [`slice06-managed-process-contract-synthesis/cdc-verification.md`](slice06-managed-process-contract-synthesis/cdc-verification.md).
+  Arc03 is ready for arc-level close after the composition check.
 
 ## 6. Contract artifact paths
 
@@ -201,6 +201,11 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.11 - 2026-08-09.** Marked slice06
+  managed-process-contract-synthesis closed and CDC-verified. Surfaced by:
+  slice06 CDC verification. Why: Arc03 now has a final accepted normative
+  managed-process contract and can run the arc-level composition close without
+  re-discovering implementation, release, or wolong caveats.
 - **v1.10 - 2026-08-09.** Opened slice06
   managed-process-contract-synthesis. Surfaced by: slice05 CDC verification.
   Why: Arc03 now has accepted supported-surface, status/exit/signal,

@@ -167,8 +167,10 @@ from earlier guesses.
   [`arc03-managed-process-contract/slice05-contract-test-matrix/cdc-verification.md`](arc03-managed-process-contract/slice05-contract-test-matrix/cdc-verification.md),
   with accepted report:
   [`arc03-managed-process-contract/contract-test-matrix.md`](arc03-managed-process-contract/contract-test-matrix.md).
-  Slice06 managed-process-contract-synthesis is open:
-  [`arc03-managed-process-contract/slice06-managed-process-contract-synthesis/slice-doc.md`](arc03-managed-process-contract/slice06-managed-process-contract-synthesis/slice-doc.md).
+  Slice06 managed-process-contract-synthesis is closed and CDC-verified:
+  [`arc03-managed-process-contract/slice06-managed-process-contract-synthesis/cdc-verification.md`](arc03-managed-process-contract/slice06-managed-process-contract-synthesis/cdc-verification.md),
+  with accepted final contract:
+  [`arc03-managed-process-contract/managed-process-contract.md`](arc03-managed-process-contract/managed-process-contract.md).
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
 
@@ -249,6 +251,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.23 - 2026-08-09.** Marked Arc03 slice06
+  managed-process-contract-synthesis closed and CDC-verified. Surfaced by:
+  slice06 CDC verification. Why: Arc03 now has an accepted final normative
+  managed-process contract and can move to arc-level closure; implementation,
+  release packaging, and wolong runtime proof remain deliberately routed to
+  Arc04-Arc06.
 - **v1.22 - 2026-08-09.** Opened Arc03 slice06
   managed-process-contract-synthesis. Surfaced by: slice05 CDC verification.
   Why: the project can now synthesize the accepted Arc03 design reports into
