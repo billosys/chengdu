@@ -97,9 +97,12 @@ checks that prove the new substrate is packaged correctly.
   [`slice01-runtime-build-skeleton/cc-prompt.md`](slice01-runtime-build-skeleton/cc-prompt.md).
   CDC verification:
   [`slice01-runtime-build-skeleton/cdc-verification.md`](slice01-runtime-build-skeleton/cdc-verification.md).
-- **slice02-slice06 - planned, not open.** Slice02 can now be opened from the
-  accepted runtime root, namespace, CMake target, CTest hook, and dependency
-  gate constraints.
+- **slice02 status-result-core - open.** Open set:
+  [`slice02-status-result-core/slice-doc.md`](slice02-status-result-core/slice-doc.md),
+  [`slice02-status-result-core/ledger.md`](slice02-status-result-core/ledger.md),
+  [`slice02-status-result-core/cc-prompt.md`](slice02-status-result-core/cc-prompt.md).
+- **slice03-slice06 - planned, not open.** Do not write their open sets until
+  slice02 closes and CDC verifies the bubble-up.
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -155,6 +158,11 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.2 - 2026-08-09.** Opened slice02 status-result-core. Surfaced by:
+  slice01 CDC verification. Why: Arc04 now has an accepted runtime root,
+  namespace, CMake target, CTest hook, and dependency-gate baseline, so the
+  Arc03 status taxonomy can become tested C++ runtime code without binary
+  adoption.
 - **v1.1 - 2026-08-09.** Marked slice01 runtime-build-skeleton closed and
   CDC-verified. Surfaced by: slice01 CDC verification of commit
   `2732865d78b5a4dc7330eac7f4ce1164627a3bc2`. Why: the chengdu-owned runtime

@@ -179,6 +179,8 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc04-shared-runtime-substrate/arc-plan.md`](arc04-shared-runtime-substrate/arc-plan.md).
   Slice01 runtime-build-skeleton is closed and CDC-verified:
   [`arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md`](arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md).
+  Slice02 status-result-core is open:
+  [`arc04-shared-runtime-substrate/slice02-status-result-core/slice-doc.md`](arc04-shared-runtime-substrate/slice02-status-result-core/slice-doc.md).
 - **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc04 closes or explicitly bubbles up a planning dependency.
 
@@ -259,6 +261,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.27 - 2026-08-09.** Opened Arc04 slice02 status-result-core. Surfaced
+  by: Arc04 slice01 CDC verification. Why: the accepted runtime skeleton can
+  now receive the Arc03 status vocabulary, exit-code mapping, payload-class
+  vocabulary, and local status/result facade as tested runtime code while
+  keeping binary adoption in Arc05.
 - **v1.26 - 2026-08-09.** Marked Arc04 slice01 runtime-build-skeleton closed
   and CDC-verified. Surfaced by: slice01 CDC verification of commit
   `2732865d78b5a4dc7330eac7f4ce1164627a3bc2`. Why: the chengdu-owned runtime
