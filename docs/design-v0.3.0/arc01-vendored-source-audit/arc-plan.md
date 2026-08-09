@@ -20,8 +20,8 @@ managed-process rubric for process behavior. They inspect source quality,
 correctness risks, error handling, stdio/TTY behavior, CLI surface,
 build/test posture, resource behavior, process-manager suitability,
 duplication, and candidates for shared C/C++ substrate. The final synthesis
-turns the three reports into a prioritized recommendation set for Arc02's
-managed-process design and the later implementation arcs.
+turns the three reports into prioritized inputs for Arc02's C++ library
+research, Arc03's managed-process design, and the later implementation arcs.
 
 This arc is diagnosis only. It may create audit reports and planning docs; it
 does not modify planner source, scripts, workflows, release assets, or
@@ -31,10 +31,10 @@ packaging.
 
 | Slice | Slug | Scope (one line) | Load-bearing for |
 |-------|------|------------------|------------------|
-| slice01 | `parser-audit` | Audit `pandaPI/pandaPIparser` and produce a complete report with findings, clean checks, and recommendations. | slice04 synthesis; Arc02 CLI/process contract |
-| slice02 | `grounder-audit` | Audit `pandaPI/pandaPIgrounder`, including grounder-owned integration with `cpddl` and `h2-fd-preprocessor`, and produce a complete report. | slice04 synthesis; Arc02/Arc03 integration design |
-| slice03 | `engine-audit` | Audit `pandaPI/pandaPIengine` and produce a complete report focused on managed-process behavior, resource safety, status semantics, and source quality. | slice04 synthesis; Arc02/Arc04 engine adoption |
-| slice04 | `audit-synthesis` | Synthesize the three reports into a prioritized cross-codebase recommendation document covering cleanup, shared code, third-party libraries, binary naming, and implementation sequencing. | Arc02 detailed planning |
+| slice01 | `parser-audit` | Audit `pandaPI/pandaPIparser` and produce a complete report with findings, clean checks, and recommendations. | slice04 synthesis; Arc02 library research; Arc03 CLI/process contract |
+| slice02 | `grounder-audit` | Audit `pandaPI/pandaPIgrounder`, including grounder-owned integration with `cpddl` and `h2-fd-preprocessor`, and produce a complete report. | slice04 synthesis; Arc02 library research; Arc03/Arc04 integration design |
+| slice03 | `engine-audit` | Audit `pandaPI/pandaPIengine` and produce a complete report focused on managed-process behavior, resource safety, status semantics, and source quality. | slice04 synthesis; Arc02 library research; Arc03/Arc05 engine adoption |
+| slice04 | `audit-synthesis` | Synthesize the three reports into a prioritized cross-codebase recommendation document covering cleanup, shared code, third-party libraries, binary naming, and implementation sequencing. | Arc02 recommendation synthesis; Arc03 detailed planning |
 
 Slice01 is closed and CDC-verified. Its accepted report now lives at the arc
 root as durable design evidence:
@@ -52,9 +52,9 @@ topic guides under `knowledge/cpp/guides/`; root `README.md`; `AGENTS.md`;
 source under `pandaPI/`; build scripts under `scripts/`; CI/release workflows
 as needed for build/test/report findings.
 
-**Leaves for arc02:** three concrete audit reports, one synthesis report, a
-clear set of design inputs and non-inputs, and a recommended ordering for
-managed-process contract decisions.
+**Leaves for arc02/arc03:** three concrete audit reports, one synthesis report,
+a clear set of dependency/design inputs and non-inputs, and a recommended
+ordering for library-research and managed-process contract decisions.
 
 ## 4. Audit rubric
 
@@ -103,8 +103,9 @@ Arc01 uses arc-local reports as durable diagnostic artifacts:
 | Synthesis | `docs/design-v0.3.0/arc01-vendored-source-audit/audit-synthesis-pandapi.md` |
 
 The slice close reports link to these files and walk their ledgers. Accepted
-recommendations become design inputs in Arc02; unaccepted or deferred
-recommendations remain visible in the synthesis with re-entry conditions.
+recommendations become inputs in Arc02 library research and Arc03 design;
+unaccepted or deferred recommendations remain visible in the synthesis with
+re-entry conditions.
 
 ## 6. Open questions and risks
 
@@ -136,11 +137,16 @@ this arc's `closing-report.md`.
 | A2 | Every per-repo report covers the required audit rubric categories or explicitly marks a category no-op with evidence-backed rationale. | reproduced |
 | A3 | The grounder audit distinguishes grounder-owned source/integration findings from dependency-internal findings in `cpddl`/`h2-fd-preprocessor`, with any deeper dependency audit routed as a recommendation. | reproduced |
 | A4 | The synthesis report compares all three audits and produces prioritized recommendations for error handling, stdio/process behavior, CLI/binary naming, duplicate-code removal, shared code/header/library candidates, third-party dependencies, and implementation sequencing. | reproduced |
-| A5 | Arc02 can be planned from the synthesis without silent drops: every High/Blocker finding is either accepted into a later arc/slice candidate, deferred with re-entry condition, or rejected/no-op with rationale. | reproduced |
+| A5 | Arc02 and Arc03 can be planned from the synthesis without silent drops: every High/Blocker finding is either accepted into a later arc/slice candidate, deferred with re-entry condition, or rejected/no-op with rationale. | reproduced |
 | A6 | No planner source, build scripts, workflows, or release assets are changed by this audit arc except for explicitly planned docs/report artifacts. | reproduced |
 
 ## 8. Version history
 
+- **v1.4 - 2026-08-09.** Updated downstream arc references after insertion of
+  `arc02-cpp-library-research` in the project roadmap. Surfaced by: operator
+  direction to create a dedicated library-research arc. Why: Arc01 audit
+  outputs now feed both Arc02 dependency research and Arc03 managed-process
+  design, rather than a single former Arc02.
 - **v1.3 - 2026-08-09.** Promoted the parser audit report into the arc
   directory, changed all remaining Arc01 report homes to arc-local paths, and
   opened slice02 grounder-audit plus slice03 engine-audit. Surfaced by:

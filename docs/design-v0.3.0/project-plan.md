@@ -98,13 +98,15 @@ releases:
 | Arc | Slug | Capability (one line) | Depends on |
 |-----|------|----------------------|------------|
 | arc01 | `vendored-source-audit` | Complete per-repo audits for parser, grounder, and engine, then synthesize cross-codebase recommendations for cleanup, shared code, process contracts, and dependency choices. | 0.2.0 closed fork baseline |
-| arc02 | `managed-process-contract` | Produce the accepted design for CLI + supervised-process behavior: command naming, exit/status taxonomy, stdout/stderr/events, buffering, ANSI/TTY, signals/resources, version/provenance, and migration policy. | arc01 |
-| arc03 | `shared-runtime-substrate` | Introduce the shared C/C++ runtime/build substrate selected by the design, with tests and no behavior changes beyond wiring. | arc02 |
-| arc04 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, preserving or explicitly migrating compatibility surfaces. | arc03 |
-| arc05 | `release-hardening` | Prove the new behavior locally and in CI, update docs/release assets/migration notes, and publish `v0.3.0` only after wolong-oriented consumer verification. | arc04 |
+| arc02 | `cpp-library-research` | Research open source C++ libraries against the parser, grounder, and engine audit findings; produce per-component assessments and a final combined dependency recommendation set. | arc01 per-component audit reports; closes before managed-process design |
+| arc03 | `managed-process-contract` | Produce the accepted design for CLI + supervised-process behavior: command naming, exit/status taxonomy, stdout/stderr/events, buffering, ANSI/TTY, signals/resources, version/provenance, and migration policy. | arc01, arc02 |
+| arc04 | `shared-runtime-substrate` | Introduce the shared C/C++ runtime/build substrate selected by the design, with tests and no behavior changes beyond wiring. | arc03 |
+| arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, preserving or explicitly migrating compatibility surfaces. | arc04 |
+| arc06 | `release-hardening` | Prove the new behavior locally and in CI, update docs/release assets/migration notes, and publish `v0.3.0` only after wolong-oriented consumer verification. | arc05 |
 
-Detailed planning is intentionally open only for arc01. Later arcs will be
-planned late, from the audit and design evidence, not from today's guesses.
+Detailed planning is intentionally open only for arc01 and arc02. Later arcs
+will be planned late, from the audit, library-research, and design evidence,
+not from today's guesses.
 
 ## 5. Current status
 
@@ -117,8 +119,14 @@ planned late, from the audit and design evidence, not from today's guesses.
   Slice02 grounder audit and slice03 engine audit are now opened:
   [`arc01-vendored-source-audit/slice02-grounder-audit/slice-doc.md`](arc01-vendored-source-audit/slice02-grounder-audit/slice-doc.md),
   [`arc01-vendored-source-audit/slice03-engine-audit/slice-doc.md`](arc01-vendored-source-audit/slice03-engine-audit/slice-doc.md).
-- **arc02-arc05 - roadmap only.** Do not write their detailed arc plans until
-  Arc01 closes and its synthesis report is accepted.
+- **arc02 - active in parallel with arc01.** Detailed plan:
+  [`arc02-cpp-library-research/arc-plan.md`](arc02-cpp-library-research/arc-plan.md).
+  Slice01 parser library research has an attested closing report:
+  [`arc02-cpp-library-research/slice01-parser-library-research/closing-report.md`](arc02-cpp-library-research/slice01-parser-library-research/closing-report.md).
+  Slice02 and slice03 wait for the grounder and engine audit reports.
+- **arc03-arc06 - roadmap only.** Do not write their detailed arc plans until
+  Arc01 and Arc02 close and their synthesis/recommendation reports are
+  accepted.
 
 ## 6. Project ledger
 
@@ -128,16 +136,17 @@ per-row in this project's `closing-report.md`.
 | Row | Criterion | Target strength |
 |-----|-----------|-----------------|
 | P1 | Arc01 closes with complete parser, grounder, and engine audit reports plus a synthesis report; every report cites concrete file/line evidence, maps findings to C++ Core Guidelines rule IDs where applicable, and records clean checks as well as findings. | reproduced |
-| P2 | Arc02 closes with an accepted managed-process design covering CLI ergonomics, supervised-process behavior, binary naming, exit/status semantics, stdout/stderr/event output, buffering, ANSI/TTY, signals/resources, version/provenance, and migration policy. | reproduced |
-| P3 | Arc03 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted. | reproduced |
-| P4 | Arc04 closes with all three primary binaries conforming to the accepted process contract, including namespaced `pandapi-*` entry points or an explicit compatibility transition. | reproduced |
-| P5 | The full local and CI gate suite proves positive and negative behavior under both CLI and pipe-supervised invocation; release docs include a behavior-change table and wolong migration evidence. | reproduced |
-| P6 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, licensing, and the wolong fetch/install/migration path are verified on supported platforms. | reproduced |
+| P2 | Arc02 closes with parser, grounder, and engine library-research reports plus a combined recommendation report; every candidate is mapped to concrete audit defect classes, license/build/packaging consequences, maintenance evidence, and an adopt/pilot/hold/reject disposition. | reproduced |
+| P3 | Arc03 closes with an accepted managed-process design covering CLI ergonomics, supervised-process behavior, binary naming, exit/status semantics, stdout/stderr/event output, buffering, ANSI/TTY, signals/resources, version/provenance, and migration policy. | reproduced |
+| P4 | Arc04 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted. | reproduced |
+| P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract, including namespaced `pandapi-*` entry points or an explicit compatibility transition. | reproduced |
+| P6 | The full local and CI gate suite proves positive and negative behavior under both CLI and pipe-supervised invocation; release docs include a behavior-change table and wolong migration evidence. | reproduced |
+| P7 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, licensing, and the wolong fetch/install/migration path are verified on supported platforms. | reproduced |
 
 ## 7. Open questions and risks
 
 - **OQ1 - binary rename migration.** The operator wants `pandapi-*` names to
-  avoid system conflicts. Arc02 must decide whether 0.3.0 ships dual names for
+  avoid system conflicts. Arc03 must decide whether 0.3.0 ships dual names for
   compatibility, wrappers/aliases, or an explicit breaking change to tarball
   contents and README command paths.
 - **OQ2 - report home resolved.** Arc01 audit reports are durable design
@@ -159,12 +168,19 @@ per-row in this project's `closing-report.md`.
   under the grounder. Arc01 should audit grounder-owned integration and record
   dependency risks; a deep fourth/fifth audit of those upstream codebases is a
   possible recommendation, not silently part of the three primary reports.
-- **OQ5 - dependency temptation.** Modern libraries may be the right answer,
-  but each candidate must clear license, supported-platform build, static vs
-  vendored packaging, maintenance, and security/update implications.
+- **OQ5 - dependency temptation routed.** Modern libraries may be the right
+  answer, but each candidate must clear license, supported-platform build,
+  static vs vendored packaging, maintenance, and security/update implications.
+  Arc02 owns that research before Arc03 turns any dependency into design.
 
 ## 8. Version history
 
+- **v1.4 - 2026-08-09.** Inserted new Arc02 `cpp-library-research` and
+  renumbered the managed-process/design/implementation/release arcs to
+  Arc03-Arc06. Surfaced by: operator direction after the first parser audit.
+  Why: open source C++ library choices should be researched from audit evidence
+  before the managed-process design locks in shared runtime and dependency
+  decisions.
 - **v1.3 - 2026-08-09.** Promoted the accepted parser audit report from
   workbench output into the arc directory and opened slice02 grounder-audit
   plus slice03 engine-audit. Surfaced by: operator direction after parser CDC
