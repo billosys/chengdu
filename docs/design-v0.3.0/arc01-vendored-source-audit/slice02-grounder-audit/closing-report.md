@@ -8,20 +8,20 @@ Branch: `release/0.3.x`
 
 | ID | Final status | Evidence |
 |----|--------------|----------|
-| F-1 | closed | Report exists at `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-grounder.md`; section 2 records project root, branch, date, audited paths, and C++ knowledge-pack/Core Guidelines substrate. |
-| F-2 | closed | Report section 2 inventories `pandaPI/pandaPIgrounder/src`, `options.ggo`, `src/Makefile`, `build.sh`, docs, and test/fixture posture. |
-| F-3 | closed | Report sections 2 and 4 identify `cpddl` and `h2-fd-preprocessor`, distinguish grounder-owned integration findings from dependency-internal findings, and give re-entry conditions. |
-| F-4 | closed | Report section 3 covers correctness/runtime safety, error handling, stdio/TTY behavior, CLI/API surface, build/tests, maintainability, and modernization/resource candidates. |
-| F-5 | closed | Every grounder-owned finding uses Blocker/High/Medium/Low style severity and cites exact `pandaPI/pandaPIgrounder/...:<line>` locations. |
-| F-6 | closed | Findings G-004, G-005, and G-006 audit exit/status propagation and managed-process classification risks. |
-| F-7 | closed | Findings G-007, G-008, and G-009 audit stdout/stderr, buffering/flush risk, ANSI/color, and TTY/pipe behavior. |
-| F-8 | closed | Findings G-010 and G-011 audit `options.ggo`, `--help`, `--version`, binary-name migration, and `pandapi-*` naming implications. |
-| F-9 | closed | Findings G-012, G-013, G-014, and G-015 audit Makefile/build.sh posture, generated `gengetopt` assumptions, dependency build coupling, CI/test gaps, and fixture absence. |
-| F-10 | closed | Findings G-013, G-017, and the synthesis section identify adapter/shared-code candidates; the report also states no algorithmic shared-library extraction is ready before parser/engine synthesis. |
-| F-11 | closed | Report section 6 records eight clean checks tied to the grounder audit scope. |
-| F-12 | closed | Report section 5 lists cross-codebase synthesis inputs for parser/engine comparison and slice04. |
-| F-13 | closed | Findings map source-quality issues to C++ Core Guidelines rule IDs where applicable and label Chengdu managed-process findings where no direct Core Guidelines rule applies. |
-| F-14 | closed | `git diff --name-only -- pandaPI scripts .github README.md release-manifest.txt vendor.env pins.env` produced no output. |
+| F-1 | done | Report exists at `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-grounder.md`; section 2 records project root, branch, date, audited paths, and C++ knowledge-pack/Core Guidelines substrate. |
+| F-2 | done | Report section 2 inventories `pandaPI/pandaPIgrounder/src`, `options.ggo`, `src/Makefile`, `build.sh`, docs, and test/fixture posture. |
+| F-3 | done | Report sections 2 and 4 identify `cpddl` and `h2-fd-preprocessor`, distinguish grounder-owned integration findings from dependency-internal findings, and give re-entry conditions. |
+| F-4 | done | Report section 3 covers correctness/runtime safety, error handling, stdio/TTY behavior, CLI/API surface, build/tests, maintainability, and modernization/resource candidates. |
+| F-5 | done | Every grounder-owned finding uses Blocker/High/Medium/Low style severity and cites exact `pandaPI/pandaPIgrounder/...:<line>` locations. |
+| F-6 | done | Findings G-004, G-005, and G-006 audit exit/status propagation and managed-process classification risks. |
+| F-7 | done | Findings G-007, G-008, and G-009 audit stdout/stderr, buffering/flush risk, ANSI/color, and TTY/pipe behavior. |
+| F-8 | done | Findings G-010 and G-011 audit `options.ggo`, `--help`, `--version`, binary-name migration, and `pandapi-*` naming implications. |
+| F-9 | done | Findings G-012, G-013, G-014, and G-015 audit Makefile/build.sh posture, generated `gengetopt` assumptions, dependency build coupling, CI/test gaps, and fixture absence. |
+| F-10 | done | Findings G-013, G-017, and the synthesis section identify adapter/shared-code candidates; the report also states no algorithmic shared-library extraction is ready before parser/engine synthesis. |
+| F-11 | done | Report section 6 records eight clean checks tied to the grounder audit scope. |
+| F-12 | done | Report section 5 lists cross-codebase synthesis inputs for parser/engine comparison and slice04. |
+| F-13 | done | Findings map source-quality issues to C++ Core Guidelines rule IDs where applicable and label Chengdu managed-process findings where no direct Core Guidelines rule applies. |
+| F-14 | done | `git diff --name-only -- pandaPI scripts .github README.md release-manifest.txt vendor.env pins.env` produced no output. |
 
 ## Verification commands
 
@@ -52,5 +52,5 @@ suppresses H2 output by mutating global `std::cout` state. Those are more
 specific than the initial generic dependency-coupling risk.
 
 Silent-drop diff: no planner source, dependency source, scripts, workflows, or
-release assets changed. CDC remains independent and should write
-`cdc-verification.md` separately.
+release assets changed. CDC verification is recorded separately in
+`cdc-verification.md`.

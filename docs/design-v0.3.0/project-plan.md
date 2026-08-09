@@ -116,8 +116,11 @@ not from today's guesses.
   [`arc01-vendored-source-audit/slice01-parser-audit/cdc-verification.md`](arc01-vendored-source-audit/slice01-parser-audit/cdc-verification.md).
   The accepted parser report has been promoted into the arc directory:
   [`arc01-vendored-source-audit/audit-results-pandapi-parser.md`](arc01-vendored-source-audit/audit-results-pandapi-parser.md).
-  Slice02 grounder audit and slice03 engine audit are now opened:
-  [`arc01-vendored-source-audit/slice02-grounder-audit/slice-doc.md`](arc01-vendored-source-audit/slice02-grounder-audit/slice-doc.md),
+  Slice02 grounder audit is closed and CDC-verified:
+  [`arc01-vendored-source-audit/slice02-grounder-audit/cdc-verification.md`](arc01-vendored-source-audit/slice02-grounder-audit/cdc-verification.md),
+  with accepted report:
+  [`arc01-vendored-source-audit/audit-results-pandapi-grounder.md`](arc01-vendored-source-audit/audit-results-pandapi-grounder.md).
+  Slice03 engine audit remains the last per-component audit before synthesis:
   [`arc01-vendored-source-audit/slice03-engine-audit/slice-doc.md`](arc01-vendored-source-audit/slice03-engine-audit/slice-doc.md).
 - **arc02 - active in parallel with arc01.** Detailed plan:
   [`arc02-cpp-library-research/arc-plan.md`](arc02-cpp-library-research/arc-plan.md).
@@ -175,6 +178,10 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.5 - 2026-08-09.** Updated current status after slice02 grounder audit
+  closed and CDC verification accepted it. Surfaced by: slice02 CDC
+  verification. Why: Arc01 has two of three per-component audits verified, and
+  the grounder report now feeds Arc02 library research plus Arc03 design.
 - **v1.4 - 2026-08-09.** Inserted new Arc02 `cpp-library-research` and
   renumbered the managed-process/design/implementation/release arcs to
   Arc03-Arc06. Surfaced by: operator direction after the first parser audit.
