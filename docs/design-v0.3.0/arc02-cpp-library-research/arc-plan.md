@@ -91,8 +91,8 @@ be resolved before writing the managed-process design.
   [`slice02-grounder-library-research/closing-report.md`](slice02-grounder-library-research/closing-report.md).
 - **slice03 engine-library-research - attested.** Report:
   [`slice03-engine-library-research/closing-report.md`](slice03-engine-library-research/closing-report.md).
-- **slice04 combined-library-recommendations - ready to plan.** Parser,
-  grounder, and engine component research slices are all available.
+- **slice04 combined-library-recommendations - open.** Open set:
+  [`slice04-combined-library-recommendations/slice-doc.md`](slice04-combined-library-recommendations/slice-doc.md).
 
 ## 5. Candidate scoring rubric
 
@@ -139,6 +139,11 @@ arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.3 - 2026-08-09.** Opened slice04 combined-library-recommendations with
+  explicit architecture-impact and supported-surface criteria. Surfaced by:
+  operator guidance after the engine library-research slice landed. Why: final
+  dependency choices need to be sequenced with Arc03/Arc04 architecture, not
+  treated as isolated package picks.
 - **v1.2 - 2026-08-09.** Added slice03 engine-library-research status after
   applying the reusable workflow to the accepted engine audit. Surfaced by:
   operator direction after `audit-results-pandapi-engine.md` landed. Why:

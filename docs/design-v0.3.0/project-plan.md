@@ -120,8 +120,12 @@ not from today's guesses.
   [`arc01-vendored-source-audit/slice02-grounder-audit/cdc-verification.md`](arc01-vendored-source-audit/slice02-grounder-audit/cdc-verification.md),
   with accepted report:
   [`arc01-vendored-source-audit/audit-results-pandapi-grounder.md`](arc01-vendored-source-audit/audit-results-pandapi-grounder.md).
-  Slice03 engine audit remains the last per-component audit before synthesis:
-  [`arc01-vendored-source-audit/slice03-engine-audit/slice-doc.md`](arc01-vendored-source-audit/slice03-engine-audit/slice-doc.md).
+  Slice03 engine audit is closed and CDC-verified:
+  [`arc01-vendored-source-audit/slice03-engine-audit/cdc-verification.md`](arc01-vendored-source-audit/slice03-engine-audit/cdc-verification.md),
+  with accepted report:
+  [`arc01-vendored-source-audit/audit-results-pandapi-engine.md`](arc01-vendored-source-audit/audit-results-pandapi-engine.md).
+  Slice04 audit synthesis is open:
+  [`arc01-vendored-source-audit/slice04-audit-synthesis/slice-doc.md`](arc01-vendored-source-audit/slice04-audit-synthesis/slice-doc.md).
 - **arc02 - active in parallel with arc01.** Detailed plan:
   [`arc02-cpp-library-research/arc-plan.md`](arc02-cpp-library-research/arc-plan.md).
   Slice01 parser library research has an attested closing report:
@@ -130,8 +134,8 @@ not from today's guesses.
   [`arc02-cpp-library-research/slice02-grounder-library-research/closing-report.md`](arc02-cpp-library-research/slice02-grounder-library-research/closing-report.md).
   Slice03 engine library research has an attested closing report:
   [`arc02-cpp-library-research/slice03-engine-library-research/closing-report.md`](arc02-cpp-library-research/slice03-engine-library-research/closing-report.md).
-  Slice04 combined library recommendations are ready to plan once the operator
-  wants the final dependency portfolio.
+  Slice04 combined library recommendations are open:
+  [`arc02-cpp-library-research/slice04-combined-library-recommendations/slice-doc.md`](arc02-cpp-library-research/slice04-combined-library-recommendations/slice-doc.md).
 - **arc03-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc01 and Arc02 close and their synthesis/recommendation reports are
   accepted.
@@ -183,6 +187,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.7 - 2026-08-09.** Opened Arc01 slice04 audit synthesis and Arc02
+  slice04 combined library recommendations, and corrected Arc01 status after
+  engine audit CDC verification. Surfaced by: operator architecture guidance
+  after all audit and component-library inputs landed. Why: final synthesis
+  must preserve big-change architecture options and library-selection impacts
+  before Arc03 design begins.
 - **v1.6 - 2026-08-09.** Updated Arc02 status after the engine library research
   slice landed. Surfaced by: Arc02 slice03 engine-library-research. Why: all
   three component-level library research reports now exist, so Arc02 can move

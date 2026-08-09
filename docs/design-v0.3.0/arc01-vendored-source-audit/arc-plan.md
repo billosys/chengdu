@@ -44,7 +44,7 @@ and
 `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-grounder.md`
 and
 `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-engine.md`.
-Slice04 (`audit-synthesis`) is the remaining Arc01 slice.
+Slice04 (`audit-synthesis`) is open and is the remaining Arc01 slice.
 
 ## 3. Dependencies
 
@@ -145,6 +145,11 @@ this arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.7 - 2026-08-09.** Opened slice04 audit-synthesis with explicit
+  architecture-option and supported-surface criteria. Surfaced by: operator
+  guidance after Arc01 audits and Arc02 component research landed. Why: the
+  synthesis must be willing to recommend a larger shared architecture if that
+  is the best path, while preserving sequencing and verification discipline.
 - **v1.6 - 2026-08-09.** Marked slice03 engine audit CDC-verified and surfaced
   that slice04 audit synthesis is now the remaining Arc01 work. Surfaced by:
   slice03 CDC verification. Why: parser, grounder, and engine reports are all
