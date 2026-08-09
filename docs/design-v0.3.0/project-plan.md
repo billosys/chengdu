@@ -111,10 +111,10 @@ releases:
 | arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, preserving or explicitly migrating compatibility surfaces. | arc04 |
 | arc06 | `release-hardening` | Prove the new behavior locally and in CI, update docs/release assets/migration notes, and publish `v0.3.0` only after wolong-oriented consumer verification. | arc05 |
 
-Detailed planning is currently open through Arc03. Arc04-Arc06 remain roadmap
+Detailed planning is currently open through Arc04. Arc05-Arc06 remain roadmap
 only and must be planned late, from the audit synthesis, Arc02 combined
-library recommendations, and the accepted Arc03 managed-process contract, not
-from earlier guesses.
+library recommendations, the accepted Arc03 managed-process contract, and the
+closed Arc04 substrate, not from earlier guesses.
 
 ## 5. Current status
 
@@ -175,9 +175,12 @@ from earlier guesses.
   [`arc03-managed-process-contract/slice06-managed-process-contract-synthesis/cdc-verification.md`](arc03-managed-process-contract/slice06-managed-process-contract-synthesis/cdc-verification.md),
   with accepted final contract:
   [`arc03-managed-process-contract/managed-process-contract.md`](arc03-managed-process-contract/managed-process-contract.md).
-- **arc04-arc06 - roadmap only.** Arc04 is ready to plan from the accepted
-  Arc03 managed-process contract when the operator opens the next detailed
-  arc. Do not write Arc04-Arc06 detailed plans until explicitly requested.
+- **arc04 - active.** Detailed plan:
+  [`arc04-shared-runtime-substrate/arc-plan.md`](arc04-shared-runtime-substrate/arc-plan.md).
+  Slice01 runtime-build-skeleton is open:
+  [`arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/slice-doc.md`](arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/slice-doc.md).
+- **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
+  Arc04 closes or explicitly bubbles up a planning dependency.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -256,6 +259,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.25 - 2026-08-09.** Opened Arc04 shared-runtime-substrate and slice01
+  runtime-build-skeleton. Surfaced by: operator request after Arc03 close.
+  Why: the project can now establish a chengdu-owned C++ runtime/build
+  substrate from the accepted Arc03 contract, while keeping per-binary behavior
+  migration in Arc05 and release/wolong proof in Arc06.
 - **v1.24 - 2026-08-09.** Marked Arc03 closed after arc-level composition
   review. Surfaced by: Arc03 closing report. Why: project ledger P3 is now
   delivered; Arc04 can be planned from the accepted managed-process contract,
