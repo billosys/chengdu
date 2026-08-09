@@ -159,8 +159,10 @@ from earlier guesses.
   [`arc03-managed-process-contract/slice03-stdio-event-tty-contract/cdc-verification.md`](arc03-managed-process-contract/slice03-stdio-event-tty-contract/cdc-verification.md),
   with accepted report:
   [`arc03-managed-process-contract/stdio-event-tty-contract.md`](arc03-managed-process-contract/stdio-event-tty-contract.md).
-  Slice04 cli-naming-version-migration is open:
-  [`arc03-managed-process-contract/slice04-cli-naming-version-migration/slice-doc.md`](arc03-managed-process-contract/slice04-cli-naming-version-migration/slice-doc.md).
+  Slice04 cli-naming-version-migration is closed and CDC-verified:
+  [`arc03-managed-process-contract/slice04-cli-naming-version-migration/cdc-verification.md`](arc03-managed-process-contract/slice04-cli-naming-version-migration/cdc-verification.md),
+  with accepted report:
+  [`arc03-managed-process-contract/cli-naming-version-migration.md`](arc03-managed-process-contract/cli-naming-version-migration.md).
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
 
@@ -210,10 +212,11 @@ per-row in this project's `closing-report.md`.
 
 ## 7. Open questions and risks
 
-- **OQ1 - binary rename migration.** The operator wants `pandapi-*` names to
-  avoid system conflicts. Arc03 must decide whether 0.3.0 ships dual names for
-  compatibility, wrappers/aliases, or an explicit breaking change to tarball
-  contents and README command paths.
+- **OQ1 - binary rename migration resolved.** Slice04 selected canonical
+  `pandapi-*` names while keeping inherited `pandaPI*` names executable in
+  0.3.0 as a compatibility transition. A future breaking removal requires an
+  explicit operator decision, release-note migration table, wolong
+  verification, and a new design update.
 - **OQ2 - report home resolved.** Arc01 audit reports are durable design
   evidence, not transient workbench output. The report home is
   `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-*.md`
@@ -240,6 +243,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.19 - 2026-08-09.** Marked Arc03 slice04
+  cli-naming-version-migration closed and CDC-verified. Surfaced by: slice04
+  CDC verification. Why: Arc03 can now open slice05 from stable CLI
+  naming/version/migration semantics; 0.3.0 is a compatibility transition with
+  canonical `pandapi-*` commands and inherited `pandaPI*` commands retained,
+  while `--supervised`, `--status`, help/version/provenance, CLI parse-error,
+  and color behavior are accepted.
 - **v1.18 - 2026-08-09.** Opened Arc03 slice04
   cli-naming-version-migration. Surfaced by: slice03 CDC verification. Why:
   Arc03 can now decide `pandapi-*` command names, inherited-name compatibility,

@@ -125,12 +125,11 @@ consumer verification requirements.
   [`stdio-event-tty-contract.md`](stdio-event-tty-contract.md).
   CDC verification:
   [`slice03-stdio-event-tty-contract/cdc-verification.md`](slice03-stdio-event-tty-contract/cdc-verification.md).
-- **slice04 cli-naming-version-migration - open.** It should consume the
-  accepted supported-surface, status/exit, and stdio/event/TTY contracts,
-  decide the `pandapi-*` naming and inherited-name compatibility policy, and
-  define help/version/provenance, CLI parse-error, color, supervised, and
-  machine-status option behavior. Open set:
-  [`slice04-cli-naming-version-migration/slice-doc.md`](slice04-cli-naming-version-migration/slice-doc.md).
+- **slice04 cli-naming-version-migration - closed and CDC-verified.**
+  Accepted report:
+  [`cli-naming-version-migration.md`](cli-naming-version-migration.md).
+  CDC verification:
+  [`slice04-cli-naming-version-migration/cdc-verification.md`](slice04-cli-naming-version-migration/cdc-verification.md).
 - **slice05-slice06 - planned only.** Do not open their slice docs until their
   predecessors close and bubble up their design inputs.
 
@@ -168,10 +167,11 @@ arc's `closing-report.md`.
 
 ## 8. Open questions and risks
 
-- **OQ1 - compatibility strategy.** `pandapi-*` names avoid system conflicts,
-  but current release assets still ship inherited binary names. Arc03 must
-  decide whether 0.3.0 ships dual names, wrappers/aliases, or an explicit
-  breaking change.
+- **OQ1 - compatibility strategy resolved.** Slice04 selected canonical
+  `pandapi-*` names while keeping inherited `pandaPI*` names executable in
+  0.3.0 as a compatibility transition. A future breaking removal requires an
+  explicit operator decision, release-note migration table, wolong
+  verification, and a new design update.
 - **OQ2 - event format resolved.** Slice03 selected tagged text status-only
   output for 0.3.0, not JSON Lines. `nlohmann/json` remains held unless a
   later accepted event-format decision reopens JSON.
@@ -193,6 +193,11 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.7 - 2026-08-09.** Marked slice04 cli-naming-version-migration closed
+  and CDC-verified. Surfaced by: slice04 CDC verification. Why: slice05 can
+  now define golden process fixtures against stable command names, inherited
+  compatibility entries, `--supervised`, `--status`, help/version/provenance,
+  parse-error behavior, and color controls.
 - **v1.6 - 2026-08-09.** Opened slice04 cli-naming-version-migration.
   Surfaced by: slice03 CDC verification. Why: command names, compatibility
   aliases/wrappers, help/version/provenance, CLI parse-error behavior,
