@@ -151,8 +151,11 @@ from earlier guesses.
   [`arc03-managed-process-contract/slice01-supported-surface-classification/cdc-verification.md`](arc03-managed-process-contract/slice01-supported-surface-classification/cdc-verification.md),
   with accepted report:
   [`arc03-managed-process-contract/supported-surface-classification.md`](arc03-managed-process-contract/supported-surface-classification.md).
-  Slice02 status-exit-signal-taxonomy is open:
-  [`arc03-managed-process-contract/slice02-status-exit-signal-taxonomy/slice-doc.md`](arc03-managed-process-contract/slice02-status-exit-signal-taxonomy/slice-doc.md).
+  Slice02 status-exit-signal-taxonomy is closed and CDC-verified:
+  [`arc03-managed-process-contract/slice02-status-exit-signal-taxonomy/cdc-verification.md`](arc03-managed-process-contract/slice02-status-exit-signal-taxonomy/cdc-verification.md),
+  with accepted report:
+  [`arc03-managed-process-contract/status-exit-signal-taxonomy.md`](arc03-managed-process-contract/status-exit-signal-taxonomy.md).
+  Slice03 stdio-event-tty-contract is the next unopened slice.
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
 
@@ -231,6 +234,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.15 - 2026-08-09.** Marked Arc03 slice02
+  status-exit-signal-taxonomy closed and CDC-verified. Surfaced by: slice02
+  CDC verification. Why: Arc03 can now open slice03 from an accepted status
+  vocabulary and exit-code map, with Arc02 dependency gates preserved for
+  later stream/event, CLI, test, and substrate decisions.
 - **v1.14 - 2026-08-09.** Added explicit Arc02 findings carry-forward and
   tightened Arc03-Arc06 project ledger criteria around dependency gates,
   release packaging, and optional-surface containment. Surfaced by: operator

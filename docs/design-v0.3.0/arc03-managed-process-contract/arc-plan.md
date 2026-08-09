@@ -115,13 +115,16 @@ consumer verification requirements.
   [`supported-surface-classification.md`](supported-surface-classification.md).
   CDC verification:
   [`slice01-supported-surface-classification/cdc-verification.md`](slice01-supported-surface-classification/cdc-verification.md).
-- **slice02 status-exit-signal-taxonomy - open.** It should
-  consume the accepted narrow supported surface: normal parser HDDL parse,
-  normal grounder `.htn` grounding, and normal engine search. It also needs
-  deterministic statuses for legacy, experimental, unsupported, and future
-  surfaces that remain reachable. Open set:
-  [`slice02-status-exit-signal-taxonomy/slice-doc.md`](slice02-status-exit-signal-taxonomy/slice-doc.md).
-- **slice03-slice06 - planned only.** Do not open their slice docs until their
+- **slice02 status-exit-signal-taxonomy - closed and CDC-verified.** Accepted
+  report:
+  [`status-exit-signal-taxonomy.md`](status-exit-signal-taxonomy.md).
+  CDC verification:
+  [`slice02-status-exit-signal-taxonomy/cdc-verification.md`](slice02-status-exit-signal-taxonomy/cdc-verification.md).
+- **slice03 stdio-event-tty-contract - next unopened slice.** It should consume
+  the accepted surface classification and status taxonomy, decide where human
+  summaries and machine status payloads are emitted, and preserve the Arc02
+  gates for fmt and nlohmann/json.
+- **slice04-slice06 - planned only.** Do not open their slice docs until their
   predecessors close and bubble up their design inputs.
 
 ## 6. Contract artifact paths
@@ -180,6 +183,10 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.3 - 2026-08-09.** Marked slice02 status-exit-signal-taxonomy closed and
+  CDC-verified. Surfaced by: slice02 CDC verification. Why: slice03 can now
+  define stdio/event/TTY/color/buffering from an accepted status vocabulary and
+  exit-code map, while preserving Arc02 gates around fmt and nlohmann/json.
 - **v1.2 - 2026-08-09.** Opened slice02 status-exit-signal-taxonomy and made
   Arc02 dependency findings explicit across the remaining Arc03 slice
   breakdown. Surfaced by: operator request to verify that Arc02's inserted
