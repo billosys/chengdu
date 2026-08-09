@@ -15,8 +15,10 @@ it into the releasable 0.2.0 fork. It refreshes the live upstream PR/issue
 state, decides which changes are genuinely in scope for 0.2.0, absorbs the
 selected upstream PRs and issue fixes as ordinary in-tree chengdu history, and
 ships `v0.2.0` without changing wolong's fetch/install contract. Every
-absorbed upstream PR keeps original author identity and names the upstream PR
-URL; every issue fix names the upstream issue URL. The full no-fetch
+absorbed upstream PR keeps original author identity when natively applicable,
+or explicitly records the upstream author when a dirty PR requires a bounded
+manual port, and names the upstream PR URL; every issue fix names the upstream
+issue URL. The full no-fetch
 build/provenance/smoke/package gate remains the behavioral boundary.
 
 Arc02 is allowed to change planner source only where the change is traceable
@@ -127,7 +129,7 @@ this arc's `closing-report.md`.
 | Row | Criterion | Target strength |
 |-----|-----------|-----------------|
 | A1 | Slice01 closes with a refreshed upstream PR/issue disposition covering all known candidate PRs/issues and the broader open upstream issue lists, with no silent drops. | reproduced |
-| A2 | Every absorbed upstream PR commit in `pandaPI/` preserves original author identity and names its upstream PR URL; every issue fix names its upstream issue URL. | reproduced |
+| A2 | Every absorbed upstream PR commit in `pandaPI/` preserves original author identity when natively applicable, or explicitly records the upstream author when a dirty PR requires a bounded manual port, and names its upstream PR URL; every issue fix names its upstream issue URL. | reproduced |
 | A3 | Every candidate from the arc input set has a final absorb/defer/no-op disposition with rationale and, for deferrals, a re-entry condition. | reproduced |
 | A4 | After all selected absorptions/fixes, the full local and CI gates pass: parser, grounder, engine, `check-provenance`, positive smoke, negative smoke, package dry-run, maintained static checks, and full matrix workflow. | reconciled |
 | A5 | Active build/release paths still consume only in-tree source, and release provenance/manifests remain anchored on chengdu commit plus import identities without reviving upstream fetches or patch files. | reproduced |
@@ -136,6 +138,11 @@ this arc's `closing-report.md`.
 
 ## 7. Version history
 
+- **v1.6 - 2026-08-09.** Closed Arc02 and tightened A2/source-credit wording
+  for the accepted engine PR #14 manual-port exception. Surfaced by: Arc02
+  close gate review. Why: parser PR #21 preserved native upstream authorship,
+  while engine PR #14 was dirty and therefore closed as a credited manual port
+  with upstream author/PR/issue trailers rather than native author metadata.
 - **v1.5 - 2026-08-09.** Updated arc status after Slice04 CDC verification
   accepted the public `v0.2.0` release publication and reproduced both
   supported-platform consumer walks. No queue change. Surfaced by: Slice04 CDC

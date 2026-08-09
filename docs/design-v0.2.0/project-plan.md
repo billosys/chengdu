@@ -109,9 +109,12 @@ in-tree with full history, superseding patches-not-fork.
   files are retired.
 - **Absorption with credit:** upstream PRs are absorbed by fetching
   `refs/pull/N/head` from the original repos and
-  `git cherry-pick -Xsubtree=…` — original author and date preserved
-  natively in commit metadata, upstream PR URL in a commit trailer.
-  Issue fixes reference their upstream issue URL in the commit message.
+  `git cherry-pick -Xsubtree=…` where the PR applies cleanly — original author
+  and date preserved natively in commit metadata, upstream PR URL in a commit
+  trailer. When a vetted PR is dirty and needs a bounded manual port, the
+  downstream commit records the upstream author plus upstream PR URL instead of
+  claiming native author preservation. Issue fixes reference their upstream
+  issue URL in the commit message.
 - **Provenance rework:** `pins.env` becomes historical (frozen as the
   import-point record); `check-provenance.sh` and the manifests
   re-anchor on the chengdu commit + the per-component import-merge
@@ -153,11 +156,14 @@ no-ops or 0.3.0 material.
 
 - **arc01 — closed 2026-08-08.** Closing report:
   [`arc01-vendor-identity/closing-report.md`](arc01-vendor-identity/closing-report.md).
-- **arc02 — ready for close.** Detailed plan opened at
+- **arc02 — closed 2026-08-09.** Closing report:
+  [`arc02-upstream-absorption/closing-report.md`](arc02-upstream-absorption/closing-report.md).
+  Detailed plan:
   [`arc02-upstream-absorption/arc-plan.md`](arc02-upstream-absorption/arc-plan.md);
   slices01-04 closed and CDC-verified; `v0.2.0` is public at
-  https://github.com/billosys/chengdu/releases/tag/v0.2.0. Arc02 close and
-  project close/status synthesis remain CDC-owned follow-ups.
+  https://github.com/billosys/chengdu/releases/tag/v0.2.0.
+- **project — ready for close.** Both planned arcs are closed. Project
+  close/status synthesis remains CDC-owned follow-up.
 
 ## 6. Project ledger
 
@@ -169,12 +175,18 @@ walk) in this project's `closing-report.md`. Strength vocabulary per
 |-----|-----------|-----------------|
 | P1 | For every imported component, the tree at its import commit is diff-identical to the upstream tree at its pinned SHA (`git diff <import>^2 <upstream-pin> -- .` empty, or equivalent), and full upstream history is reachable (`git log` within the subdir reaches the upstream root commits). | reproduced |
 | P2 | A full CI matrix run builds and gates all three binaries from in-tree sources with zero network fetch of planner source (workflow logs show no clone of panda-planner-dev or gitlab.com). | reproduced |
-| P3 | Every absorbed upstream PR commit preserves the original author identity and names its upstream PR URL; every absorbed issue fix names its upstream issue URL. Verified by `git log` inspection across `pandaPI/`. | reproduced |
+| P3 | Every absorbed upstream PR commit preserves original author identity where natively applicable, or explicitly records the upstream author for accepted manual ports, and names its upstream PR URL; every absorbed issue fix names its upstream issue URL. Verified by `git log` inspection across `pandaPI/`. | reproduced |
 | P4 | Licensing holds post-vendoring: per-directory delineation present, `license-audit-v0.2.0.md` landed, NOTICE files in every `pandaPI/*` subdir, `THIRD-PARTY-LICENSES` regenerated. | reproduced |
 | P5 | The `v0.2.0` release is live, published only after a green full-matrix gate, in the exact asset shape frozen at 0.1.0 — verified by running wolong's 4-command fetch spec against it on a clean machine per platform. | reproduced |
 
 ## 7. Version history
 
+- **v2.1 — 2026-08-09.** Closed Arc02 and tightened project-level
+  upstream-credit wording for the accepted engine PR #14 manual-port exception.
+  Surfaced by: Arc02 close gate review. Why: parser PR #21 preserved native
+  upstream authorship, while engine PR #14 was dirty and closed as a credited
+  manual port with upstream author/PR/issue trailers. The project is now ready
+  for final project close/status synthesis.
 - **v2.0 — 2026-08-09.** Updated current status after slice04 closed and CDC
   verification accepted the public `v0.2.0` release publication. No roadmap
   scope change. Surfaced by: Slice04 CDC verification. Why: all planned Arc02
