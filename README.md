@@ -15,13 +15,13 @@ This repo mechanizes the PANDA Runbook: it vendors pandaPIparser,
 pandaPIgrounder, and pandaPIengine in-tree, builds all three from that source,
 and smoke-verifies the full `parse → ground → solve → convert → verify` gate
 sequence against in-repo fixtures. See `docs/design-v0.2.0/` for the current
-fork plan and `docs/design-v0.1.0/` for the original design substrate.
+closed fork plan and `docs/design-v0.1.0/` for the original design substrate.
 
 ## Install from the `chengdu` Release:
 
 No build tools required. Download → checksum-verify → extract → run a
 real `--verify` against the shipped fixtures, in 4 commands. Replace
-`v0.1.0` with the release you want; asset names, `SHA256SUMS`, and this
+`v0.2.0` with the release you want; asset names, `SHA256SUMS`, and this
 command shape are frozen as of v0.1.0 — this is wolong's fetch spec.
 
 **Linux (x86_64):**
@@ -121,7 +121,8 @@ generic failure):
 across the full support matrix:
 
 - **`build` (Linux)** — matrixed over `ubuntu-22.04` (canonical — what
-  arc02 will package) and `ubuntu-24.04` (forward-compat check only).
+  the release workflow packages) and `ubuntu-24.04` (forward-compat
+  check only).
 - **`build (macos-15)`** — the macOS arm64 leg, pinned to `macos-15`
   (the oldest currently-maintained GA arm64 GitHub-hosted image;
   `macos-14` is deprecated, `macos-latest`/`macos-26` is the newest —
@@ -139,7 +140,8 @@ the resulting `dist/<platform>/` (including `provenance.txt`) uploaded as
 a workflow artifact per runner. `check-provenance.sh` fails the run if any
 component's `chengdu_commit`, `source_prefix`, import identity,
 `patches=none`, or compiler field does not match `vendor.env` and Git
-state — the provenance file is no longer just attested, it's CI-enforced. Two `readme-verbatim*` jobs
+state — the provenance file is no longer just attested, it's
+CI-enforced. Two `readme-verbatim*` jobs
 (`ubuntu-22.04` and `macos-15`) run this file's own prerequisite line and
 four build commands, unmodified, on a clean runner per platform — if this
 README and the workflow drift, those jobs go red. `actionlint` gates the
@@ -158,9 +160,9 @@ logic is duplicated between "every push" and "on a release tag."
 `.github/workflows/release.yml` triggers on pushing a tag matching
 `v*`. It runs the identical build+gate matrix described above; only if
 every leg is green does it package per-platform tarballs (binaries +
-`provenance.txt` + `fixtures/`), a `SHA256SUMS`, an aggregated
-provenance manifest, and `THIRD-PARTY-LICENSES`, then publish a GitHub
-Release — a red build has no path to a published release, by
+`provenance.txt` + `fixtures/`), `SHA256SUMS`, `release-manifest.txt`
+(the aggregated provenance manifest), and `THIRD-PARTY-LICENSES`, then
+publish a GitHub Release — a red build has no path to a published release, by
 construction (the publish job depends on the whole matrix succeeding).
 Publishing is direct (the gates are the approval); switching to a
 draft-then-promote model is a one-line change in
