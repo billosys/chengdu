@@ -110,8 +110,10 @@ not from today's guesses.
 
 ## 5. Current status
 
-- **arc01 - active.** Detailed plan:
+- **arc01 - closed.** Detailed plan:
   [`arc01-vendored-source-audit/arc-plan.md`](arc01-vendored-source-audit/arc-plan.md).
+  Closing report:
+  [`arc01-vendored-source-audit/closing-report.md`](arc01-vendored-source-audit/closing-report.md).
   Slice01 parser audit is closed and CDC-verified:
   [`arc01-vendored-source-audit/slice01-parser-audit/cdc-verification.md`](arc01-vendored-source-audit/slice01-parser-audit/cdc-verification.md).
   The accepted parser report has been promoted into the arc directory:
@@ -128,7 +130,6 @@ not from today's guesses.
   [`arc01-vendored-source-audit/slice04-audit-synthesis/cdc-verification.md`](arc01-vendored-source-audit/slice04-audit-synthesis/cdc-verification.md),
   with accepted synthesis:
   [`arc01-vendored-source-audit/audit-synthesis-pandapi.md`](arc01-vendored-source-audit/audit-synthesis-pandapi.md).
-  Arc01 is ready for arc-level close.
 - **arc02 - closed.** Detailed plan:
   [`arc02-cpp-library-research/arc-plan.md`](arc02-cpp-library-research/arc-plan.md).
   Closing report:
@@ -136,9 +137,10 @@ not from today's guesses.
   All four library-research slices are CDC-verified, and the accepted combined
   recommendation report is:
   [`arc02-cpp-library-research/combined-library-recommendations.md`](arc02-cpp-library-research/combined-library-recommendations.md).
-- **arc03-arc06 - roadmap only.** Do not write their detailed arc plans until
-  Arc01 and Arc02 close and their synthesis/recommendation reports are
-  accepted.
+- **arc03 - ready for detailed planning.** Arc01 and Arc02 are closed, and
+  their accepted synthesis/recommendation reports are now verified inputs.
+- **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
+  Arc03 closes or explicitly bubbles up a planning dependency.
 
 ## 6. Project ledger
 
@@ -187,6 +189,10 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.11 - 2026-08-09.** Marked Arc01 closed after arc-level composition
+  accepted the parser, grounder, engine, and synthesis reports. Surfaced by:
+  Arc01 close. Why: Arc03 can now open from both verified prerequisites, Arc01
+  audit synthesis and Arc02 combined library recommendations.
 - **v1.10 - 2026-08-09.** Marked Arc02 closed after full CDC verification of
   parser, grounder, engine, and combined library-recommendation slices.
   Surfaced by: operator request to CDC-verify Arc02. Why: the dependency
