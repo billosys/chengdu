@@ -44,7 +44,8 @@ and
 `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-grounder.md`
 and
 `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-engine.md`.
-Slice04 (`audit-synthesis`) is open and is the remaining Arc01 slice.
+Slice04 (`audit-synthesis`) is closed and CDC-verified. All Arc01 slices are
+closed; the arc is ready for an arc-level closing report and composition check.
 
 ## 3. Dependencies
 
@@ -145,6 +146,10 @@ this arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.8 - 2026-08-09.** Marked slice04 audit-synthesis CDC-verified and
+  surfaced that Arc01 is ready for arc-level close. Surfaced by: slice04 CDC
+  verification. Why: all four Arc01 slices are now verified, and the synthesis
+  report provides the composition evidence for the arc close.
 - **v1.7 - 2026-08-09.** Opened slice04 audit-synthesis with explicit
   architecture-option and supported-surface criteria. Surfaced by: operator
   guidance after Arc01 audits and Arc02 component research landed. Why: the

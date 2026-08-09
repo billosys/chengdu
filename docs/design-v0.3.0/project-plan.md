@@ -124,8 +124,11 @@ not from today's guesses.
   [`arc01-vendored-source-audit/slice03-engine-audit/cdc-verification.md`](arc01-vendored-source-audit/slice03-engine-audit/cdc-verification.md),
   with accepted report:
   [`arc01-vendored-source-audit/audit-results-pandapi-engine.md`](arc01-vendored-source-audit/audit-results-pandapi-engine.md).
-  Slice04 audit synthesis is open:
-  [`arc01-vendored-source-audit/slice04-audit-synthesis/slice-doc.md`](arc01-vendored-source-audit/slice04-audit-synthesis/slice-doc.md).
+  Slice04 audit synthesis is closed and CDC-verified:
+  [`arc01-vendored-source-audit/slice04-audit-synthesis/cdc-verification.md`](arc01-vendored-source-audit/slice04-audit-synthesis/cdc-verification.md),
+  with accepted synthesis:
+  [`arc01-vendored-source-audit/audit-synthesis-pandapi.md`](arc01-vendored-source-audit/audit-synthesis-pandapi.md).
+  Arc01 is ready for arc-level close.
 - **arc02 - active in parallel with arc01.** Detailed plan:
   [`arc02-cpp-library-research/arc-plan.md`](arc02-cpp-library-research/arc-plan.md).
   Slice01 parser library research has an attested closing report:
@@ -187,6 +190,10 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.8 - 2026-08-09.** Updated Arc01 status after slice04 audit synthesis
+  closed and CDC verification accepted it. Surfaced by: Arc01 slice04 CDC
+  verification. Why: all Arc01 slices are verified, and the audit synthesis now
+  feeds Arc02 combined recommendations plus Arc03 managed-process design.
 - **v1.7 - 2026-08-09.** Opened Arc01 slice04 audit synthesis and Arc02
   slice04 combined library recommendations, and corrected Arc01 status after
   engine audit CDC verification. Surfaced by: operator architecture guidance
