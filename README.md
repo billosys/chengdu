@@ -28,20 +28,20 @@ command shape are frozen as of v0.1.0 — this is wolong's fetch spec.
 
 ```bash
 curl \
-  -LO https://github.com/billosys/chengdu/releases/download/v0.1.0/pandapi-v0.1.0-linux-x86_64.tar.gz \
-  -LO https://github.com/billosys/chengdu/releases/download/v0.1.0/SHA256SUMS
+  -LO https://github.com/billosys/chengdu/releases/download/v0.2.0/pandapi-v0.2.0-linux-x86_64.tar.gz \
+  -LO https://github.com/billosys/chengdu/releases/download/v0.2.0/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
-tar xzf pandapi-v0.1.0-linux-x86_64.tar.gz
+tar xzf pandapi-v0.2.0-linux-x86_64.tar.gz
 ```
 
 **macOS (arm64):**
 
 ```bash
 curl \
-  -LO https://github.com/billosys/chengdu/releases/download/v0.1.0/pandapi-v0.1.0-macos-arm64.tar.gz \
-  -LO https://github.com/billosys/chengdu/releases/download/v0.1.0/SHA256SUMS
+  -LO https://github.com/billosys/chengdu/releases/download/v0.2.0/pandapi-v0.2.0-macos-arm64.tar.gz \
+  -LO https://github.com/billosys/chengdu/releases/download/v0.2.0/SHA256SUMS
 shasum -a 256 -c SHA256SUMS --ignore-missing
-tar xzf pandapi-v0.1.0-macos-arm64.tar.gz
+tar xzf pandapi-v0.2.0-macos-arm64.tar.gz
 ```
 
 Then make sure everything's working:
