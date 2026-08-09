@@ -21,11 +21,15 @@ No ledger rows were dropped.
 
 ## Commit and Scope Check
 
-`afe18cd4` changes only:
+At original close time, `afe18cd4` changed only:
 
 - `docs/design-v0.3.0/arc01-vendored-source-audit/slice01-parser-audit/closing-report.md`
 - `docs/design-v0.3.0/arc01-vendored-source-audit/slice01-parser-audit/ledger.md`
 - `workbench/2026.08.09-audit-results-pandapi-parser.md`
+
+The accepted report was later promoted to the arc-local durable evidence path:
+
+- `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
 
 Both `948c54d3` and `afe18cd4` include the required assistant co-author
 trailers.
@@ -135,8 +139,9 @@ source defects, as required by the diagnosis-only boundary.
 
 Arc-plan impact: no slice breakdown change is required. The parser audit
 confirmed the planned sequencing: grounder audit next, engine audit after that,
-then synthesis. The only status updates required are to mark slice01
-CDC-verified and make slice02 the next unopened slice.
+then synthesis. The follow-up status updates were to mark slice01
+CDC-verified, promote the accepted parser report into the arc directory, and
+open the slice02 and slice03 audit open sets.
 
 ## What Worked
 

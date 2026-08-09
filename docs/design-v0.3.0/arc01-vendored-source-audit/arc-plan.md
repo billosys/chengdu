@@ -36,10 +36,12 @@ packaging.
 | slice03 | `engine-audit` | Audit `pandaPI/pandaPIengine` and produce a complete report focused on managed-process behavior, resource safety, status semantics, and source quality. | slice04 synthesis; Arc02/Arc04 engine adoption |
 | slice04 | `audit-synthesis` | Synthesize the three reports into a prioritized cross-codebase recommendation document covering cleanup, shared code, third-party libraries, binary naming, and implementation sequencing. | Arc02 detailed planning |
 
-Slice01 is closed and CDC-verified. Slice02 (`grounder-audit`) is the next
-unopened slice; its open set should incorporate parser-audit learnings where
-they tighten the grounder ledger, without rewriting the four-slice arc
-breakdown.
+Slice01 is closed and CDC-verified. Its accepted report now lives at the arc
+root as durable design evidence:
+`docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`.
+Slice02 (`grounder-audit`) and slice03 (`engine-audit`) are opened. Their open
+sets incorporate parser-audit learnings where those tighten the ledgers,
+without rewriting the four-slice arc breakdown.
 
 ## 3. Dependencies
 
@@ -91,14 +93,14 @@ visible and the report does not become only a list of defects.
 
 ## 5. Report paths
 
-Arc01 uses dated workbench reports as diagnostic artifacts:
+Arc01 uses arc-local reports as durable diagnostic artifacts:
 
 | Report | Planned path |
 |--------|--------------|
-| Parser audit | `workbench/2026.08.09-audit-results-pandapi-parser.md` |
-| Grounder audit | `workbench/2026.08.09-audit-results-pandapi-grounder.md` |
-| Engine audit | `workbench/2026.08.09-audit-results-pandapi-engine.md` |
-| Synthesis | `workbench/2026.08.09-audit-synthesis-pandapi.md` |
+| Parser audit | `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md` |
+| Grounder audit | `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-grounder.md` |
+| Engine audit | `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-engine.md` |
+| Synthesis | `docs/design-v0.3.0/arc01-vendored-source-audit/audit-synthesis-pandapi.md` |
 
 The slice close reports link to these files and walk their ledgers. Accepted
 recommendations become design inputs in Arc02; unaccepted or deferred
@@ -130,7 +132,7 @@ this arc's `closing-report.md`.
 
 | Row | Criterion | Target strength |
 |-----|-----------|-----------------|
-| A1 | Parser, grounder, and engine each have a complete audit report at the planned workbench path, with exact file/line citations for findings, C++ Core Guidelines rule IDs where applicable, and at least five clean checks per report. | reproduced |
+| A1 | Parser, grounder, and engine each have a complete audit report at the planned arc-local path, with exact file/line citations for findings, C++ Core Guidelines rule IDs where applicable, and at least five clean checks per report. | reproduced |
 | A2 | Every per-repo report covers the required audit rubric categories or explicitly marks a category no-op with evidence-backed rationale. | reproduced |
 | A3 | The grounder audit distinguishes grounder-owned source/integration findings from dependency-internal findings in `cpddl`/`h2-fd-preprocessor`, with any deeper dependency audit routed as a recommendation. | reproduced |
 | A4 | The synthesis report compares all three audits and produces prioritized recommendations for error handling, stdio/process behavior, CLI/binary naming, duplicate-code removal, shared code/header/library candidates, third-party dependencies, and implementation sequencing. | reproduced |
@@ -139,6 +141,12 @@ this arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.3 - 2026-08-09.** Promoted the parser audit report into the arc
+  directory, changed all remaining Arc01 report homes to arc-local paths, and
+  opened slice02 grounder-audit plus slice03 engine-audit. Surfaced by:
+  operator direction after parser CDC verification. Why: the per-repo reports
+  are durable design evidence for synthesis and Arc02, not transient workbench
+  scratch artifacts.
 - **v1.2 - 2026-08-09.** Marked slice01 parser audit CDC-verified and made
   slice02 grounder audit the next unopened slice. No arc breakdown change.
   Surfaced by: slice01 CDC verification. Why: the parser audit delivered its

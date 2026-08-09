@@ -8,9 +8,9 @@
 
 Audit `pandaPI/pandaPIparser` as a vendored C/C++ command-line tool that must
 become both a high-quality CLI and a high-quality supervised process. Produce
-`workbench/2026.08.09-audit-results-pandapi-parser.md` with concrete findings,
-clean checks, and recommendations that later slices can compare against the
-grounder and engine reports.
+`docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+with concrete findings, clean checks, and recommendations that later slices can
+compare against the grounder and engine reports.
 
 ## 2. Scope
 
@@ -70,7 +70,7 @@ evidence-backed.
 ## 5. Exit criteria
 
 The ledger reaches final status. The parser audit report exists at the planned
-workbench path, uses the required categories and severity scale, cites concrete
+arc-local path, uses the required categories and severity scale, cites concrete
 parser source locations, maps findings to C++ Core Guidelines rule IDs where
 applicable, includes at least five clean checks, names cross-codebase synthesis
 inputs, and leaves the worktree with no parser source or build/release changes.

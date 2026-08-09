@@ -112,7 +112,11 @@ planned late, from the audit and design evidence, not from today's guesses.
   [`arc01-vendored-source-audit/arc-plan.md`](arc01-vendored-source-audit/arc-plan.md).
   Slice01 parser audit is closed and CDC-verified:
   [`arc01-vendored-source-audit/slice01-parser-audit/cdc-verification.md`](arc01-vendored-source-audit/slice01-parser-audit/cdc-verification.md).
-  Slice02 grounder audit is next and not yet opened.
+  The accepted parser report has been promoted into the arc directory:
+  [`arc01-vendored-source-audit/audit-results-pandapi-parser.md`](arc01-vendored-source-audit/audit-results-pandapi-parser.md).
+  Slice02 grounder audit and slice03 engine audit are now opened:
+  [`arc01-vendored-source-audit/slice02-grounder-audit/slice-doc.md`](arc01-vendored-source-audit/slice02-grounder-audit/slice-doc.md),
+  [`arc01-vendored-source-audit/slice03-engine-audit/slice-doc.md`](arc01-vendored-source-audit/slice03-engine-audit/slice-doc.md).
 - **arc02-arc05 - roadmap only.** Do not write their detailed arc plans until
   Arc01 closes and its synthesis report is accepted.
 
@@ -136,10 +140,13 @@ per-row in this project's `closing-report.md`.
   avoid system conflicts. Arc02 must decide whether 0.3.0 ships dual names for
   compatibility, wrappers/aliases, or an explicit breaking change to tarball
   contents and README command paths.
-- **OQ2 - report home.** Arc01 audit reports are execution artifacts. The
-  planned home is `workbench/2026.08.09-audit-results-pandapi-*.md` plus
-  `workbench/2026.08.09-audit-synthesis-pandapi.md`, referenced from slice
-  close reports. Accepted recommendations are then promoted into design docs.
+- **OQ2 - report home resolved.** Arc01 audit reports are durable design
+  evidence, not transient workbench output. The report home is
+  `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-*.md`
+  plus
+  `docs/design-v0.3.0/arc01-vendored-source-audit/audit-synthesis-pandapi.md`,
+  referenced from slice close reports. Accepted recommendations are then
+  promoted into later design docs.
 - **OQ3 - C/C++ knowledge substrate resolved.** Arc01 audits must use
   `ai-engineering/knowledge/cpp/SKILL.md` and its guide set as the C++ audit
   substrate. The substrate is grounded in the C++ Core Guidelines by Bjarne
@@ -158,6 +165,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.3 - 2026-08-09.** Promoted the accepted parser audit report from
+  workbench output into the arc directory and opened slice02 grounder-audit
+  plus slice03 engine-audit. Surfaced by: operator direction after parser CDC
+  verification. Why: the parser report is durable design evidence, and the
+  remaining per-repo audits should use the same report home and slice shape.
 - **v1.2 - 2026-08-09.** Updated current status after slice01 parser audit
   closed and CDC verification accepted it. No roadmap change. Surfaced by:
   slice01 CDC verification. Why: Arc01 remains active, and slice02

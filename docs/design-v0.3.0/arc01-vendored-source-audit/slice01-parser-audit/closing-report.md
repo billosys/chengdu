@@ -4,7 +4,7 @@ Date: 2026-08-09
 
 Branch: `release/0.3.x`
 
-Report: `workbench/2026.08.09-audit-results-pandapi-parser.md`
+Report: `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
 
 ## Result
 
@@ -15,7 +15,7 @@ workflows, release assets, or build outputs were changed.
 
 ## Per-Row Walk
 
-F-1: done. The report exists at the planned workbench path and records date,
+F-1: done. The report exists at the planned arc-local path and records date,
 project root, branch, audited paths, commands, the C++ knowledge-pack guides,
 `11-anti-patterns`, and Core Guidelines rule substrate.
 
@@ -72,17 +72,17 @@ Commands recorded in the audit report:
 
 Closeout commands:
 
-- `test -f workbench/2026.08.09-audit-results-pandapi-parser.md && rg -n "Project root|Branch|Audited paths|C\\+\\+ knowledge|Core Guidelines|11-anti-patterns" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "pandaPI/pandaPIparser/src|options\\.ggo|makefile|tests" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "correctness|runtime safety|error handling|stdio|TTY|CLI|API|build|tests|maintainability|modernization" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "Severity|Location|pandaPI/pandaPIparser/.+:[0-9]+" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "exit|status|return code|error handling|supervised process|managed process" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "stdout|stderr|buffer|flush|ANSI|colour|color|isatty|pipe|TTY" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "options\\.ggo|--help|--version|pandapi-|binary name|namespac" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "duplicate|shared|common|library|header|helper|candidate" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "Things I looked for|did not find|Clean checks" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "Synthesis inputs|Compare with grounder|Compare with engine|cross-codebase" workbench/2026.08.09-audit-results-pandapi-parser.md`
-- `rg -n "C\\+\\+ Core Guidelines|Rule ID|I\\.[0-9]+|F\\.[0-9]+|R\\.[0-9]+|E\\.[0-9]+|ES\\.[0-9]+|SF\\.[0-9]+|SL\\." workbench/2026.08.09-audit-results-pandapi-parser.md`
+- `test -f docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md && rg -n "Project root|Branch|Audited paths|C\\+\\+ knowledge|Core Guidelines|11-anti-patterns" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "pandaPI/pandaPIparser/src|options\\.ggo|makefile|tests" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "correctness|runtime safety|error handling|stdio|TTY|CLI|API|build|tests|maintainability|modernization" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "Severity|Location|pandaPI/pandaPIparser/.+:[0-9]+" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "exit|status|return code|error handling|supervised process|managed process" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "stdout|stderr|buffer|flush|ANSI|colour|color|isatty|pipe|TTY" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "options\\.ggo|--help|--version|pandapi-|binary name|namespac" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "duplicate|shared|common|library|header|helper|candidate" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "Things I looked for|did not find|Clean checks" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "Synthesis inputs|Compare with grounder|Compare with engine|cross-codebase" docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
+- `rg -n "C\\+\\+ Core Guidelines|Rule ID|I\\.[0-9]+|F\\.[0-9]+|R\\.[0-9]+|E\\.[0-9]+|ES\\.[0-9]+|SF\\.[0-9]+|SL\\." docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
 - `git diff --name-only -- pandaPI scripts .github README.md release-manifest.txt vendor.env pins.env`
 - `git diff --check`
 
