@@ -11,11 +11,11 @@
 CI build matrix and binary releases for the [PANDA (pandaPI) HTN planning
 toolchain][panda] — Linux + macOS. Primary consumer: `wolong`.
 
-This repo mechanizes the PANDA Runbook: it vendors pandaPIparser,
-pandaPIgrounder, and pandaPIengine in-tree, builds all three from that source,
-and smoke-verifies the full `parse → ground → solve → convert → verify` gate
-sequence against in-repo fixtures. See `docs/design-v0.2.0/` for the current
-closed fork plan and `docs/design-v0.1.0/` for the original design substrate.
+This repo vendors pandaPIparser, pandaPIgrounder, and pandaPIengine in-tree,
+builds all three from that source, and smoke-verifies the full
+`parse → ground → solve → convert → verify` gate sequence against in-repo
+fixtures. See `docs/design-v0.2.0/` for the current closed fork plan and
+`docs/design-v0.1.0/` for the original design substrate.
 
 ## Install from the `chengdu` Release:
 
@@ -64,7 +64,8 @@ behind it.
 
 ## Build from Source
 
-(using the `chengdu` workflow)
+If you don't want to use the pre-built binaries, you can build from scratch on
+Linux or macOS by following the instructions in this section.
 
 ### Prerequisites
 
