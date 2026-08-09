@@ -83,6 +83,17 @@ candidate documentation/release metadata; local build/release constraints under
 rationales, library-specific migration risks, and explicit questions that must
 be resolved before writing the managed-process design.
 
+## 4.1 Current status
+
+- **slice01 parser-library-research - attested.** Report:
+  [`slice01-parser-library-research/closing-report.md`](slice01-parser-library-research/closing-report.md).
+- **slice02 grounder-library-research - attested.** Report:
+  [`slice02-grounder-library-research/closing-report.md`](slice02-grounder-library-research/closing-report.md).
+- **slice03 engine-library-research - pending.** Waits for accepted engine audit
+  report.
+- **slice04 combined-library-recommendations - pending.** Waits for all three
+  component research slices.
+
 ## 5. Candidate scoring rubric
 
 | Score | Meaning |
@@ -128,6 +139,11 @@ arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.1 - 2026-08-09.** Added slice02 grounder-library-research status after
+  applying the reusable workflow to the accepted grounder audit. Surfaced by:
+  operator direction after `audit-results-pandapi-grounder.md` landed. Why:
+  grounder evidence strengthens shared CLI/status/stdio/test candidates and
+  adds dependency-process containment as a research input.
 - **v1.0 - 2026-08-09.** Initial arc plan. Source: operator direction to create
   a new arc for open source C++ library research after the parser audit and
   before the managed-process design.
