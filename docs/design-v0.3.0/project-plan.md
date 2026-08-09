@@ -159,6 +159,8 @@ from earlier guesses.
   [`arc03-managed-process-contract/slice03-stdio-event-tty-contract/cdc-verification.md`](arc03-managed-process-contract/slice03-stdio-event-tty-contract/cdc-verification.md),
   with accepted report:
   [`arc03-managed-process-contract/stdio-event-tty-contract.md`](arc03-managed-process-contract/stdio-event-tty-contract.md).
+  Slice04 cli-naming-version-migration is open:
+  [`arc03-managed-process-contract/slice04-cli-naming-version-migration/slice-doc.md`](arc03-managed-process-contract/slice04-cli-naming-version-migration/slice-doc.md).
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
 
@@ -238,6 +240,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.18 - 2026-08-09.** Opened Arc03 slice04
+  cli-naming-version-migration. Surfaced by: slice03 CDC verification. Why:
+  Arc03 can now decide `pandapi-*` command names, inherited-name compatibility,
+  help/version/provenance, CLI parse-error behavior, no-color/no-colour
+  controls, machine-status enablement, CLI11 adoption gates, and wolong
+  migration implications from accepted surface, status, and stream contracts.
 - **v1.17 - 2026-08-09.** Marked Arc03 slice03
   stdio-event-tty-contract closed and CDC-verified. Surfaced by: slice03 CDC
   verification after CC's corrective close-set commit. Why: Arc03 can now

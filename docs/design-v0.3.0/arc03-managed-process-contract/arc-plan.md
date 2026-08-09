@@ -125,7 +125,13 @@ consumer verification requirements.
   [`stdio-event-tty-contract.md`](stdio-event-tty-contract.md).
   CDC verification:
   [`slice03-stdio-event-tty-contract/cdc-verification.md`](slice03-stdio-event-tty-contract/cdc-verification.md).
-- **slice04-slice06 - planned only.** Do not open their slice docs until their
+- **slice04 cli-naming-version-migration - open.** It should consume the
+  accepted supported-surface, status/exit, and stdio/event/TTY contracts,
+  decide the `pandapi-*` naming and inherited-name compatibility policy, and
+  define help/version/provenance, CLI parse-error, color, supervised, and
+  machine-status option behavior. Open set:
+  [`slice04-cli-naming-version-migration/slice-doc.md`](slice04-cli-naming-version-migration/slice-doc.md).
+- **slice05-slice06 - planned only.** Do not open their slice docs until their
   predecessors close and bubble up their design inputs.
 
 ## 6. Contract artifact paths
@@ -137,6 +143,7 @@ Arc03 uses arc-local design artifacts:
 | Supported surface classification | `docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` |
 | Status, exit, and signal taxonomy | `docs/design-v0.3.0/arc03-managed-process-contract/status-exit-signal-taxonomy.md` |
 | Stdio, event, and TTY contract | `docs/design-v0.3.0/arc03-managed-process-contract/stdio-event-tty-contract.md` |
+| CLI naming, version, and migration contract | `docs/design-v0.3.0/arc03-managed-process-contract/cli-naming-version-migration.md` |
 | Final managed-process contract | `docs/design-v0.3.0/arc03-managed-process-contract/managed-process-contract.md` |
 
 Intermediate slices may produce additional arc-local reports only when their
@@ -186,6 +193,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.6 - 2026-08-09.** Opened slice04 cli-naming-version-migration.
+  Surfaced by: slice03 CDC verification. Why: command names, compatibility
+  aliases/wrappers, help/version/provenance, CLI parse-error behavior,
+  no-color/no-colour controls, machine-status enablement, and CLI11 adoption
+  gates can now be planned against the accepted supported-surface,
+  status/exit, and stdio/event/TTY contracts.
 - **v1.5 - 2026-08-09.** Marked slice03 stdio-event-tty-contract closed and
   CDC-verified. Surfaced by: slice03 CDC verification after CC's corrective
   close-set commit. Why: slice04 can now map CLI names, flags, aliases,
