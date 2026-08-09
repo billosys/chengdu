@@ -32,12 +32,14 @@ documented process behavior, without scraping human diagnostic text from a
 mixed stream. CLI usage remains first-class: humans still get useful help,
 diagnostics, and plain command flows.
 
-**Required first step:** no source redesign starts until Arc01 produces one
+**Required first steps:** no source redesign starts until Arc01 produces one
 complete audit report for each of the three pandaPI repos now vendored in this
-monorepo, followed by a synthesis report. The synthesis must address best
-practices, duplicate code, shared-library/header opportunities, build-system
-shape, and candidate third-party C/C++ libraries that would materially improve
-the fork.
+monorepo, followed by a synthesis report, and Arc02 researches open source C++
+library choices against those audits. The synthesis must address best
+practices, duplicate code, shared-library/header opportunities, and
+build-system shape. Arc02's combined recommendations then decide which
+candidate libraries are adopted, piloted, held, or rejected before Arc03 turns
+the evidence into a managed-process design.
 
 **Explicit non-goals for 0.3.0 unless amended by the operator:**
 
@@ -92,6 +94,11 @@ releases:
 - Treat third-party libraries as design choices, not conveniences. Candidates
   must be justified by a real defect class, maintenance benefit, performance
   gain, license compatibility, build-matrix cost, and release-packaging impact.
+- Treat Arc02's accepted portfolio as a planning constraint for every later
+  arc: standard-library modernization is the baseline; fmt, CLI11, and Catch2
+  are adopted only through their owning design/test gates; `tl::expected` and
+  reproc++ are pilots behind explicit status or child-process decisions; held
+  and rejected libraries do not re-enter by drift.
 
 ## 4. Arc roadmap
 
@@ -104,9 +111,10 @@ releases:
 | arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, preserving or explicitly migrating compatibility surfaces. | arc04 |
 | arc06 | `release-hardening` | Prove the new behavior locally and in CI, update docs/release assets/migration notes, and publish `v0.3.0` only after wolong-oriented consumer verification. | arc05 |
 
-Detailed planning is intentionally open only for arc01 and arc02. Later arcs
-will be planned late, from the audit, library-research, and design evidence,
-not from today's guesses.
+Detailed planning is currently open through Arc03. Arc04-Arc06 remain roadmap
+only and must be planned late, from the audit synthesis, Arc02 combined
+library recommendations, and the accepted Arc03 managed-process contract, not
+from earlier guesses.
 
 ## 5. Current status
 
@@ -143,9 +151,38 @@ not from today's guesses.
   [`arc03-managed-process-contract/slice01-supported-surface-classification/cdc-verification.md`](arc03-managed-process-contract/slice01-supported-surface-classification/cdc-verification.md),
   with accepted report:
   [`arc03-managed-process-contract/supported-surface-classification.md`](arc03-managed-process-contract/supported-surface-classification.md).
-  Slice02 status-exit-signal-taxonomy is the next unopened slice.
+  Slice02 status-exit-signal-taxonomy is open:
+  [`arc03-managed-process-contract/slice02-status-exit-signal-taxonomy/slice-doc.md`](arc03-managed-process-contract/slice02-status-exit-signal-taxonomy/slice-doc.md).
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
+
+## 5.1 Arc02 Findings Carried Forward
+
+Arc02 was inserted after the original 0.3.0 outline and is now a load-bearing
+input to all remaining work:
+
+- **Adopted baseline:** standard-library modernization is the default for
+  ownership, paths, strings, chrono/timeouts, bounds, streams, and local hash
+  hygiene before adding dependencies.
+- **Adopted implementation choices:** fmt, CLI11, and Catch2 are accepted for
+  0.3.0 only through their owning gates: fmt under a diagnostics/process
+  facade after stream policy; CLI11 after CLI/name/help/version compatibility
+  and golden-output tests; Catch2 as test-only seam coverage paired with
+  process fixtures.
+- **Pilots:** `tl::expected` may enter only behind a local status/result facade
+  after Arc03 defines the taxonomy; reproc++ may enter only behind a
+  child-process adapter if a supported surface requires subprocess containment.
+- **Held:** nlohmann/json waits for an event-format decision; GSL,
+  performance containers, google/benchmark, parser-generator alternatives,
+  SAT/BDD/CUDD enablement, H2/cpddl dependency-internal work, and optional
+  dependency audits wait for explicit re-entry criteria.
+- **Rejected for 0.3.0 foundations:** Abseil and Boost.Process are not
+  foundation choices for this release.
+
+Arc03 must convert these findings into semantic constraints. Arc04 must
+implement only the dependency gates accepted by Arc03. Arc05 must adopt them
+per binary without expanding optional surfaces. Arc06 must verify license,
+NOTICE, provenance, test-only dependency exclusion, and release-asset shape.
 
 ## 6. Project ledger
 
@@ -156,11 +193,11 @@ per-row in this project's `closing-report.md`.
 |-----|-----------|-----------------|
 | P1 | Arc01 closes with complete parser, grounder, and engine audit reports plus a synthesis report; every report cites concrete file/line evidence, maps findings to C++ Core Guidelines rule IDs where applicable, and records clean checks as well as findings. | reproduced |
 | P2 | Arc02 closes with parser, grounder, and engine library-research reports plus a combined recommendation report; every candidate is mapped to concrete audit defect classes, license/build/packaging consequences, maintenance evidence, and an adopt/pilot/hold/reject disposition. | reproduced |
-| P3 | Arc03 closes with an accepted managed-process design covering CLI ergonomics, supervised-process behavior, binary naming, exit/status semantics, stdout/stderr/event output, buffering, ANSI/TTY, signals/resources, version/provenance, and migration policy. | reproduced |
-| P4 | Arc04 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted. | reproduced |
-| P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract, including namespaced `pandapi-*` entry points or an explicit compatibility transition. | reproduced |
-| P6 | The full local and CI gate suite proves positive and negative behavior under both CLI and pipe-supervised invocation; release docs include a behavior-change table and wolong migration evidence. | reproduced |
-| P7 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, licensing, and the wolong fetch/install/migration path are verified on supported platforms. | reproduced |
+| P3 | Arc03 closes with an accepted managed-process design covering CLI ergonomics, supervised-process behavior, binary naming, exit/status semantics, stdout/stderr/event output, buffering, ANSI/TTY, signals/resources, version/provenance, migration policy, and explicit incorporation or deferral of Arc02 dependency findings. | reproduced |
+| P4 | Arc04 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted, with Arc02-selected dependencies entering only through approved facades/pilots. | reproduced |
+| P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract, including namespaced `pandapi-*` entry points or an explicit compatibility transition, without library availability expanding optional inherited surfaces. | reproduced |
+| P6 | The full local and CI gate suite proves positive and negative behavior under both CLI and pipe-supervised invocation; release docs include a behavior-change table, Arc02-driven dependency behavior notes, and wolong migration evidence. | reproduced |
+| P7 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, and the wolong fetch/install/migration path are verified on supported platforms. | reproduced |
 
 ## 7. Open questions and risks
 
@@ -194,6 +231,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.14 - 2026-08-09.** Added explicit Arc02 findings carry-forward and
+  tightened Arc03-Arc06 project ledger criteria around dependency gates,
+  release packaging, and optional-surface containment. Surfaced by: operator
+  concern that Arc02 was inserted after the original plan and might not be
+  fully incorporated before Arc03 slice02. Why: the accepted library portfolio
+  must shape status, stream, CLI, test, substrate, adoption, and release work
+  without letting dependency availability redefine product semantics.
 - **v1.13 - 2026-08-09.** Marked Arc03 slice01
   supported-surface-classification closed and CDC-verified. Surfaced by:
   slice01 CDC verification. Why: Arc03 can now open slice02 from the accepted

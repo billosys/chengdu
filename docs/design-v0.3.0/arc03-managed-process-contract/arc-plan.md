@@ -52,17 +52,23 @@ workflows, release assets, or packaging.
 7. **Wolong compatibility is load-bearing.** Binary renaming is in scope, but
    release asset shape and install/migration behavior must remain compatible
    unless the operator explicitly accepts a breaking transition.
+8. **Arc02 findings are design constraints.** Standard-library modernization,
+   fmt, CLI11, Catch2, `tl::expected`, conditional reproc++, and held/rejected
+   candidates must be routed through the contract deliberately. Arc03 may
+   define the semantics those libraries would implement; it must not let a
+   library choice pull status, stream, CLI, test, or optional-surface semantics
+   across slice boundaries.
 
 ## 3. Slice breakdown
 
 | Slice | Slug | Scope (one line) | Load-bearing for |
 |-------|------|------------------|------------------|
 | slice01 | `supported-surface-classification` | Classify every inherited parser/grounder/engine surface as supported, legacy, experimental, unsupported, or future work for 0.3.0. | all later Arc03 slices; Arc04 substrate scope; Arc05 adoption scope |
-| slice02 | `status-exit-signal-taxonomy` | Define process statuses, exit codes, error payload classes, timeout/resource/signal semantics, and dependency/child-process failure handling. | slice06 final contract; Arc04 status/result substrate |
-| slice03 | `stdio-event-tty-contract` | Define stdout/stderr ownership, event-output mode, buffering/flushing, diagnostics/progress routing, quiet modes, and ANSI/color/TTY policy. | slice06 final contract; Arc04 diagnostics substrate; Arc05 behavior tests |
-| slice04 | `cli-naming-version-migration` | Define `pandapi-*` command names, compatibility aliases/wrappers, help/version/provenance output, parse-error behavior, CLI11 migration constraints, and wolong migration policy. | slice06 final contract; Arc05 binary naming/adoption; Arc06 release docs |
-| slice05 | `contract-test-matrix` | Define golden process fixtures and acceptance probes for human CLI and supervised-process behavior across parser, grounder, and engine. | slice06 final contract; Arc04 test harness; Arc05 per-binary gates |
-| slice06 | `managed-process-contract-synthesis` | Produce the final accepted `managed-process-contract.md` and route explicit implementation inputs to Arc04, Arc05, and Arc06. | Arc04 detailed planning; project ledger P3 |
+| slice02 | `status-exit-signal-taxonomy` | Define process statuses, exit codes, error payload classes, timeout/resource/signal semantics, and dependency/child-process failure handling, while preserving Arc02 gates around `tl::expected`, reproc++, JSON, CLI11, fmt, and test dependencies. | slice06 final contract; Arc04 status/result substrate |
+| slice03 | `stdio-event-tty-contract` | Define stdout/stderr ownership, event-output mode, buffering/flushing, diagnostics/progress routing, quiet modes, and ANSI/color/TTY policy, including whether nlohmann/json re-enters for event output and how fmt remains behind a facade. | slice06 final contract; Arc04 diagnostics substrate; Arc05 behavior tests |
+| slice04 | `cli-naming-version-migration` | Define `pandapi-*` command names, compatibility aliases/wrappers, help/version/provenance output, parse-error behavior, CLI11 migration constraints, and wolong migration policy with golden-output compatibility rules. | slice06 final contract; Arc05 binary naming/adoption; Arc06 release docs |
+| slice05 | `contract-test-matrix` | Define golden process fixtures and acceptance probes for human CLI and supervised-process behavior across parser, grounder, and engine, plus the split between process fixtures and Catch2 seam tests. | slice06 final contract; Arc04 test harness; Arc05 per-binary gates |
+| slice06 | `managed-process-contract-synthesis` | Produce the final accepted `managed-process-contract.md` and route explicit Arc02-informed implementation inputs to Arc04, Arc05, and Arc06. | Arc04 detailed planning; project ledger P3 |
 
 ## 4. Dependencies
 
@@ -84,12 +90,22 @@ stream/event/color rules, CLI/naming/version/provenance policy, supported
 surface matrix, test matrix, dependency exposure constraints, and explicit
 implementation boundaries for the shared runtime substrate.
 
+Arc02-specific Arc04 inputs must include: standard-library modernization as the
+default C++17 baseline; fmt only under a diagnostics/process I/O facade; CLI11
+only behind accepted CLI golden tests; Catch2 as test-only seam coverage paired
+with process fixtures; `tl::expected` only behind a local status/result alias
+after slice02; and reproc++ only behind a child-process adapter if a supported
+surface needs it.
+
 **Leaves for arc05:** binary-by-binary adoption order, compatibility/migration
 requirements, accepted behavior-change table inputs, and per-binary contract
-test obligations.
+test obligations. Arc05 must keep algorithmic code separated from
+process-contract code and must not un-fence optional surfaces through library
+availability.
 
 **Leaves for arc06:** release documentation, migration proof, asset-shape
-guardrails, license/NOTICE implications for adopted dependencies, and wolong
+guardrails, license/NOTICE implications for adopted or piloted dependencies,
+proof that test-only dependencies do not enter release tarballs, and wolong
 consumer verification requirements.
 
 ## 5. Current status
@@ -99,11 +115,12 @@ consumer verification requirements.
   [`supported-surface-classification.md`](supported-surface-classification.md).
   CDC verification:
   [`slice01-supported-surface-classification/cdc-verification.md`](slice01-supported-surface-classification/cdc-verification.md).
-- **slice02 status-exit-signal-taxonomy - next unopened slice.** It should
+- **slice02 status-exit-signal-taxonomy - open.** It should
   consume the accepted narrow supported surface: normal parser HDDL parse,
   normal grounder `.htn` grounding, and normal engine search. It also needs
   deterministic statuses for legacy, experimental, unsupported, and future
-  surfaces that remain reachable.
+  surfaces that remain reachable. Open set:
+  [`slice02-status-exit-signal-taxonomy/slice-doc.md`](slice02-status-exit-signal-taxonomy/slice-doc.md).
 - **slice03-slice06 - planned only.** Do not open their slice docs until their
   predecessors close and bubble up their design inputs.
 
@@ -114,6 +131,7 @@ Arc03 uses arc-local design artifacts:
 | Artifact | Planned path |
 |----------|--------------|
 | Supported surface classification | `docs/design-v0.3.0/arc03-managed-process-contract/supported-surface-classification.md` |
+| Status, exit, and signal taxonomy | `docs/design-v0.3.0/arc03-managed-process-contract/status-exit-signal-taxonomy.md` |
 | Final managed-process contract | `docs/design-v0.3.0/arc03-managed-process-contract/managed-process-contract.md` |
 
 Intermediate slices may produce additional arc-local reports only when their
@@ -154,9 +172,21 @@ arc's `closing-report.md`.
 - **OQ5 - test-first sequencing.** The design must produce a contract test
   matrix strong enough for Arc04 to build the proof harness before Arc05
   changes binary behavior.
+- **OQ6 - Arc02 implementation gates.** Arc03 must decide semantics before
+  implementation libraries enter. `tl::expected` waits for slice02, fmt and
+  nlohmann/json wait for slice03 stream/event decisions, CLI11 waits for
+  slice04 golden compatibility decisions, and Catch2/process fixtures wait for
+  slice05/Arc04 test-substrate decisions.
 
 ## 9. Version history
 
+- **v1.2 - 2026-08-09.** Opened slice02 status-exit-signal-taxonomy and made
+  Arc02 dependency findings explicit across the remaining Arc03 slice
+  breakdown. Surfaced by: operator request to verify that Arc02's inserted
+  research arc was fully incorporated before handing slice02 to CC. Why:
+  status taxonomy must become the semantic basis for later `tl::expected`,
+  JSON/event, CLI11, fmt, Catch2, and reproc++ implementation choices without
+  letting those choices decide the product contract.
 - **v1.1 - 2026-08-09.** Marked slice01 supported-surface-classification
   closed and CDC-verified. Surfaced by: slice01 CDC verification. Why: Arc03
   can now open slice02 from an accepted product boundary: supported normal
