@@ -37,13 +37,14 @@ packaging.
 | slice04 | `audit-synthesis` | Synthesize the three reports into a prioritized cross-codebase recommendation document covering cleanup, shared code, third-party libraries, binary naming, and implementation sequencing. | Arc02 recommendation synthesis; Arc03 detailed planning |
 
 Slice01 (`parser-audit`) and slice02 (`grounder-audit`) are closed and
-CDC-verified. Their accepted reports live at the arc root as durable design
-evidence:
+CDC-verified. Slice03 (`engine-audit`) is also closed and CDC-verified. The
+accepted reports live at the arc root as durable design evidence:
 `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-parser.md`
 and
-`docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-grounder.md`.
-Slice03 (`engine-audit`) is the remaining per-component audit before slice04
-synthesis.
+`docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-grounder.md`
+and
+`docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-engine.md`.
+Slice04 (`audit-synthesis`) is the remaining Arc01 slice.
 
 ## 3. Dependencies
 
@@ -144,6 +145,11 @@ this arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.6 - 2026-08-09.** Marked slice03 engine audit CDC-verified and surfaced
+  that slice04 audit synthesis is now the remaining Arc01 work. Surfaced by:
+  slice03 CDC verification. Why: parser, grounder, and engine reports are all
+  accepted design evidence for synthesis, Arc02 library research, and Arc03
+  managed-process design.
 - **v1.5 - 2026-08-09.** Marked slice02 grounder audit CDC-verified and
   surfaced its Arc02/Arc03 inputs. Surfaced by: slice02 CDC verification. Why:
   the grounder audit delivered its assigned report, dependency-boundary notes,
