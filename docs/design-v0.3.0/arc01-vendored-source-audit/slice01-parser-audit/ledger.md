@@ -18,3 +18,12 @@
 | F-12 | No parser source, scripts, workflows, or release assets are changed by this slice. | `git diff --name-only -- pandaPI scripts .github README.md release-manifest.txt vendor.env pins.env` | serious | arc ledger A6; slice constraint | done | Diff scope is limited to `workbench/2026.08.09-audit-results-pandapi-parser.md`, this ledger, and slice `closing-report.md`; verification command produced no protected-path output. | |
 
 ## What Worked
+
+- The C++ knowledge pack made the audit more concrete: source-quality findings
+  could cite Core Guidelines rule IDs while managed-process findings stayed
+  explicitly Chengdu-specific.
+- The parser CLI probes turned the strongest process-contract findings into
+  reproducible evidence: stdout contamination, `--no-colour` ANSI leakage, and
+  observed statuses 1, 2, 255, and 0.
+- The protected-path guard stayed simple and effective because the slice was
+  diagnosis-only.

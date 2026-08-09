@@ -36,9 +36,10 @@ packaging.
 | slice03 | `engine-audit` | Audit `pandaPI/pandaPIengine` and produce a complete report focused on managed-process behavior, resource safety, status semantics, and source quality. | slice04 synthesis; Arc02/Arc04 engine adoption |
 | slice04 | `audit-synthesis` | Synthesize the three reports into a prioritized cross-codebase recommendation document covering cleanup, shared code, third-party libraries, binary naming, and implementation sequencing. | Arc02 detailed planning |
 
-Only slice01 is open at arc start. Slice02 should be opened after slice01 is
-closed and CDC-verified, so audit findings can tighten the later ledgers
-without rewriting premature plans.
+Slice01 is closed and CDC-verified. Slice02 (`grounder-audit`) is the next
+unopened slice; its open set should incorporate parser-audit learnings where
+they tighten the grounder ledger, without rewriting the four-slice arc
+breakdown.
 
 ## 3. Dependencies
 
@@ -138,6 +139,10 @@ this arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.2 - 2026-08-09.** Marked slice01 parser audit CDC-verified and made
+  slice02 grounder audit the next unopened slice. No arc breakdown change.
+  Surfaced by: slice01 CDC verification. Why: the parser audit delivered its
+  assigned report and confirmed the planned audit sequencing.
 - **v1.1 - 2026-08-09.** Added the new `ai-engineering/knowledge/cpp` Core
   Guidelines skill as mandatory audit substrate for all Arc01 reports, while
   preserving chengdu's managed-process rubric for process-contract findings.

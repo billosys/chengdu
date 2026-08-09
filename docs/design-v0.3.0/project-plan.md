@@ -110,8 +110,9 @@ planned late, from the audit and design evidence, not from today's guesses.
 
 - **arc01 - active.** Detailed plan:
   [`arc01-vendored-source-audit/arc-plan.md`](arc01-vendored-source-audit/arc-plan.md).
-  Slice01 parser audit is open:
-  [`arc01-vendored-source-audit/slice01-parser-audit/slice-doc.md`](arc01-vendored-source-audit/slice01-parser-audit/slice-doc.md).
+  Slice01 parser audit is closed and CDC-verified:
+  [`arc01-vendored-source-audit/slice01-parser-audit/cdc-verification.md`](arc01-vendored-source-audit/slice01-parser-audit/cdc-verification.md).
+  Slice02 grounder audit is next and not yet opened.
 - **arc02-arc05 - roadmap only.** Do not write their detailed arc plans until
   Arc01 closes and its synthesis report is accepted.
 
@@ -157,6 +158,10 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.2 - 2026-08-09.** Updated current status after slice01 parser audit
+  closed and CDC verification accepted it. No roadmap change. Surfaced by:
+  slice01 CDC verification. Why: Arc01 remains active, and slice02
+  grounder-audit is now the next unopened slice.
 - **v1.1 - 2026-08-09.** Replaced the temporary "no C/C++ substrate" risk with
   the new `ai-engineering/knowledge/cpp` Core Guidelines skill as mandatory
   Arc01 audit substrate, while preserving the chengdu-specific managed-process
