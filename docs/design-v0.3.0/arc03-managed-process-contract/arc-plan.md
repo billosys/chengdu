@@ -130,14 +130,12 @@ consumer verification requirements.
   [`cli-naming-version-migration.md`](cli-naming-version-migration.md).
   CDC verification:
   [`slice04-cli-naming-version-migration/cdc-verification.md`](slice04-cli-naming-version-migration/cdc-verification.md).
-- **slice05 contract-test-matrix - open.** It should consume the accepted
-  supported-surface, status/exit, stdio/event/TTY, and CLI
-  naming/version/migration contracts, then define golden process fixtures,
-  acceptance probes, fixture schema, normalization rules, and the split between
-  black-box process fixtures and Catch2 seam tests. Open set:
-  [`slice05-contract-test-matrix/slice-doc.md`](slice05-contract-test-matrix/slice-doc.md).
-- **slice06 - planned only.** Do not open its slice docs until slice05 closes
-  and bubbles up its design inputs.
+- **slice05 contract-test-matrix - closed and CDC-verified.** Accepted report:
+  [`contract-test-matrix.md`](contract-test-matrix.md).
+  CDC verification:
+  [`slice05-contract-test-matrix/cdc-verification.md`](slice05-contract-test-matrix/cdc-verification.md).
+- **slice06 - planned only.** Do not open its slice docs until slice05 close
+  state has landed and its design inputs are available.
 
 ## 6. Contract artifact paths
 
@@ -199,6 +197,11 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.9 - 2026-08-09.** Marked slice05 contract-test-matrix closed and
+  CDC-verified. Surfaced by: slice05 CDC verification. Why: slice06 can now
+  synthesize the final managed-process contract from accepted surface,
+  status/exit/signal, stdio/event/TTY, CLI naming/version/migration, and
+  contract-test-matrix inputs.
 - **v1.8 - 2026-08-09.** Opened slice05 contract-test-matrix. Surfaced by:
   slice04 CDC verification. Why: Arc03 can now convert the accepted surface,
   status/exit, stdio/event/TTY, and CLI naming/version/migration contracts

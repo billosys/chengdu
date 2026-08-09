@@ -163,8 +163,10 @@ from earlier guesses.
   [`arc03-managed-process-contract/slice04-cli-naming-version-migration/cdc-verification.md`](arc03-managed-process-contract/slice04-cli-naming-version-migration/cdc-verification.md),
   with accepted report:
   [`arc03-managed-process-contract/cli-naming-version-migration.md`](arc03-managed-process-contract/cli-naming-version-migration.md).
-  Slice05 contract-test-matrix is open:
-  [`arc03-managed-process-contract/slice05-contract-test-matrix/slice-doc.md`](arc03-managed-process-contract/slice05-contract-test-matrix/slice-doc.md).
+  Slice05 contract-test-matrix is closed and CDC-verified:
+  [`arc03-managed-process-contract/slice05-contract-test-matrix/cdc-verification.md`](arc03-managed-process-contract/slice05-contract-test-matrix/cdc-verification.md),
+  with accepted report:
+  [`arc03-managed-process-contract/contract-test-matrix.md`](arc03-managed-process-contract/contract-test-matrix.md).
 - **arc04-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc03 closes or explicitly bubbles up a planning dependency.
 
@@ -245,6 +247,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.21 - 2026-08-09.** Marked Arc03 slice05 contract-test-matrix closed and
+  CDC-verified. Surfaced by: slice05 CDC verification. Why: Arc03 can now open
+  slice06 final synthesis from accepted surface, status/exit/signal,
+  stdio/event/TTY, CLI naming/version/migration, and contract-test-matrix
+  evidence.
 - **v1.20 - 2026-08-09.** Opened Arc03 slice05 contract-test-matrix. Surfaced
   by: slice04 CDC verification. Why: the project can now define the golden
   process fixture and acceptance-probe matrix from accepted surface,

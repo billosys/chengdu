@@ -17,21 +17,21 @@ Evidence inputs:
 - Arc01 vendored-source audit close:
   `arc01-vendored-source-audit/closing-report.md` and
   `arc01-vendored-source-audit/audit-synthesis-pandapi.md`;
-- Arc02 upstream absorption close:
+- Arc02 C++ library research close:
   `arc02-cpp-library-research/closing-report.md` and
   `arc02-cpp-library-research/combined-library-recommendations.md`;
 - Arc03 slice01:
-  `slice01-supported-surface-classification/supported-surface-classification.md`
-  and CDC verification;
+  `supported-surface-classification.md` and
+  `slice01-supported-surface-classification/cdc-verification.md`;
 - Arc03 slice02:
-  `slice02-status-exit-signal-taxonomy/status-exit-signal-taxonomy.md` and
-  CDC verification;
+  `status-exit-signal-taxonomy.md` and
+  `slice02-status-exit-signal-taxonomy/cdc-verification.md`;
 - Arc03 slice03:
-  `slice03-stdio-event-tty-contract/stdio-event-tty-contract.md` and CDC
-  verification;
+  `stdio-event-tty-contract.md` and
+  `slice03-stdio-event-tty-contract/cdc-verification.md`;
 - Arc03 slice04:
-  `slice04-cli-naming-version-migration/cli-naming-version-migration.md` and
-  CDC verification.
+  `cli-naming-version-migration.md` and
+  `slice04-cli-naming-version-migration/cdc-verification.md`.
 
 The matrix preserves the accepted 0.3.0 boundary: supported parser normal HDDL
 parse, supported grounder normal `.htn` grounding, and supported engine normal
