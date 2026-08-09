@@ -85,17 +85,20 @@ be resolved before writing the managed-process design.
 
 ## 4.1 Current status
 
-- **slice01 parser-library-research - attested.** Report:
-  [`slice01-parser-library-research/closing-report.md`](slice01-parser-library-research/closing-report.md).
-- **slice02 grounder-library-research - attested.** Report:
-  [`slice02-grounder-library-research/closing-report.md`](slice02-grounder-library-research/closing-report.md).
-- **slice03 engine-library-research - attested.** Report:
-  [`slice03-engine-library-research/closing-report.md`](slice03-engine-library-research/closing-report.md).
+- **slice01 parser-library-research - closed and CDC-verified.** Verification:
+  [`slice01-parser-library-research/cdc-verification.md`](slice01-parser-library-research/cdc-verification.md).
+- **slice02 grounder-library-research - closed and CDC-verified.**
+  Verification:
+  [`slice02-grounder-library-research/cdc-verification.md`](slice02-grounder-library-research/cdc-verification.md).
+- **slice03 engine-library-research - closed and CDC-verified.** Verification:
+  [`slice03-engine-library-research/cdc-verification.md`](slice03-engine-library-research/cdc-verification.md).
 - **slice04 combined-library-recommendations - closed and CDC-verified.**
   Verification:
   [`slice04-combined-library-recommendations/cdc-verification.md`](slice04-combined-library-recommendations/cdc-verification.md).
   Accepted report:
   [`combined-library-recommendations.md`](combined-library-recommendations.md).
+- **Arc02 - closed.** Closing report:
+  [`closing-report.md`](closing-report.md).
 
 ## 5. Candidate scoring rubric
 
@@ -142,6 +145,11 @@ arc's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.5 - 2026-08-09.** Closed Arc02 after CDC verification accepted the
+  parser, grounder, engine, and combined recommendation slices. Surfaced by:
+  operator request to CDC-verify Arc02. Why: Arc03 needs the combined
+  dependency portfolio as a verified design input, not a chain of attested
+  reports.
 - **v1.4 - 2026-08-09.** Updated slice04 status after the combined library
   recommendations closed and CDC verification accepted it. Surfaced by:
   slice04 CDC verification. Why: Arc03 can now plan from the accepted
