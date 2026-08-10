@@ -25,8 +25,9 @@ fi
 
 mkdir -p "$DIST_DIR"
 cp "$SRC_DIR/pandaPIparser" "$DIST_DIR/pandaPIparser"
+"$REPO_ROOT/scripts/install-parser-adapter.sh" "$DIST_DIR"
 
 COMPILER="$(resolve_compiler_id g++)"
 append_provenance "$DIST_DIR" "pandaPIparser" "PARSER" "$COMPILER"
 
-echo "build-parser.sh: OK: $DIST_DIR/pandaPIparser"
+echo "build-parser.sh: OK: $DIST_DIR/pandapi-parser and $DIST_DIR/pandaPIparser"

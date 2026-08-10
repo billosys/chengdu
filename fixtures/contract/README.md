@@ -14,8 +14,9 @@ claim.
 ## Fixture Record Shape
 
 Fixture records use a dependency-free, YAML-like documentation format in
-[`baseline-records.md`](baseline-records.md). The fields mirror the accepted
-Arc04 runtime fixture vocabulary:
+[`baseline-records.md`](baseline-records.md) and
+[`parser-contract-records.md`](parser-contract-records.md). The fields mirror
+the accepted Arc04 runtime fixture vocabulary:
 
 - `id`: stable fixture identifier used by the runner output.
 - `owner`: planning owner, currently Arc05 Slice02 for baseline scaffold rows.
@@ -89,8 +90,11 @@ Build first, then run:
 ./scripts/build-all.sh
 ./scripts/run-contract-fixtures.sh --baseline
 ./scripts/run-contract-fixtures.sh --baseline --component parser
+./scripts/run-contract-fixtures.sh --contract --component parser
+./scripts/run-contract-fixtures.sh --contract --component parser --case parser-canonical-file-success
 ./scripts/run-contract-fixtures.sh --list
+./scripts/run-contract-fixtures.sh --contract --component parser --list
 ```
 
 The runner emits labeled PASS/FAIL lines and exits nonzero if any selected
-fixture misses its baseline expectation.
+fixture misses its baseline or managed-process contract expectation.
