@@ -4,6 +4,7 @@ project(pandapi_runtime VERSION 0.1.0 LANGUAGES CXX)
 
 add_library(pandapi_runtime STATIC
   src/runtime.cpp
+  src/status.cpp
 )
 add_library(pandapi::runtime ALIAS pandapi_runtime)
 
@@ -39,3 +40,16 @@ set_target_properties(pandapi_runtime_smoke PROPERTIES
 )
 
 add_test(NAME pandapi_runtime_smoke COMMAND pandapi_runtime_smoke)
+
+add_executable(pandapi_status_result_smoke
+  tests/status_result_smoke.cpp
+)
+target_link_libraries(pandapi_status_result_smoke PRIVATE pandapi::runtime)
+
+set_target_properties(pandapi_status_result_smoke PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO
+)
+
+add_test(NAME pandapi_status_result_smoke COMMAND pandapi_status_result_smoke)

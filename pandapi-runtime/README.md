@@ -29,9 +29,13 @@ test policy.
 pandapi-runtime/
   CMakeLists.txt
   cmake/
+  include/pandapi/runtime/result.hpp
   include/pandapi/runtime/runtime.hpp
+  include/pandapi/runtime/status.hpp
   src/runtime.cpp
+  src/status.cpp
   tests/runtime_smoke.cpp
+  tests/status_result_smoke.cpp
 ```
 
 The current CMake shape produces one static library target,
@@ -62,6 +66,27 @@ support. Later Arc04 slices will add shared facilities for:
 Those helpers do not exist in this skeleton yet. Slice01 only establishes the
 buildable runtime boundary.
 
+## Status/result core
+
+Slice02 implements the first Arc03 status semantics as standard-library-only
+C++17 runtime APIs:
+
+- `StatusCode` names every Arc03 status, including `signal_terminated`.
+- `StatusClass` represents the payload class vocabulary used by process
+  managers.
+- `Component` and `SurfaceDisposition` provide typed vocabulary for later
+  parser, grounder, and engine adoption.
+- `ProcessStatus` carries a status code plus component, surface disposition,
+  and the dynamic signal number needed for supervisor-observed
+  `signal_terminated`.
+- `status_name`, `status_class`, and `exit_code` implement the stable Arc03
+  exit-code mapping without requiring diagnostic prose parsing.
+- `StatusResult<T>` is a local value-or-status facade for helper returns.
+
+This is no binary adoption: parser, grounder, and engine do not link to or call
+these helpers yet, and their stdout/stderr behavior, CLI shape, current exit
+codes, artifacts, release assets, and wolong-facing behavior remain unchanged.
+
 ## Arc02 Dependency Gates
 
 Arc02 selected the standard library as the baseline and placed every external
@@ -78,6 +103,10 @@ candidate behind explicit gates:
 - `nlohmann/json` remains held because the selected status format is tagged
   text, not JSON Lines.
 - Abseil and Boost.Process remain rejected as 0.3.0 foundation dependencies.
+
+The slice02 dependency gate keeps `tl::expected` out of the public API and out
+of direct imports. The local `StatusResult<T>` facade can later hide an
+approved pilot, but this runtime core remains standard-library-only today.
 
 ## No Behavior Change
 
