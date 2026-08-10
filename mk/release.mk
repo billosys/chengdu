@@ -37,5 +37,31 @@ publish-release:
 	  exit 1; \
 	fi
 	printf '%b\n' "$(BLUE)Publishing release $(TAG) from $(RELEASE_DIR)...$(RESET)"
-	./scripts/publish-release.sh "$(TAG)" "$(RELEASE_DIR)"
+	release_dir="$(RELEASE_DIR)"; \
+	if [ ! -f "$$release_dir/PRERELEASE" ]; then \
+	  printf '%b\n' "$(RED)publish-release: $$release_dir/PRERELEASE not found; run make package-release first$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	for asset in SHA256SUMS release-manifest.txt THIRD-PARTY-LICENSES notes.md; do \
+	  if [ ! -f "$$release_dir/$$asset" ]; then \
+	    printf '%b\n' "$(RED)publish-release: $$release_dir/$$asset missing; run make package-release first$(RESET)" >&2; \
+	    exit 1; \
+	  fi; \
+	done; \
+	tarball_count="$$(find "$$release_dir" -maxdepth 1 -name 'pandapi-*.tar.gz' | wc -l | tr -d ' ')"; \
+	if [ "$$tarball_count" -eq 0 ]; then \
+	  printf '%b\n' "$(RED)publish-release: no pandapi-*.tar.gz found in $$release_dir$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	prerelease_args=(); \
+	if [ "$$(cat "$$release_dir/PRERELEASE")" = "true" ]; then \
+	  prerelease_args+=(--prerelease); \
+	fi; \
+	gh release create "$(TAG)" \
+	  --title "$(TAG)" \
+	  --notes-file "$$release_dir/notes.md" \
+	  "$${prerelease_args[@]}" \
+	  "$$release_dir"/pandapi-*.tar.gz "$$release_dir/SHA256SUMS" \
+	  "$$release_dir/release-manifest.txt" "$$release_dir/THIRD-PARTY-LICENSES"; \
+	printf '%b\n' "$(GREEN)publish-release: published $(TAG) ($$tarball_count tarball(s) + SHA256SUMS + release-manifest.txt + THIRD-PARTY-LICENSES)$(RESET)"
 	printf '%b\n' "$(GREEN)Release published: $(TAG)$(RESET)"

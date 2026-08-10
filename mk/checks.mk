@@ -88,7 +88,25 @@ provenance-check:
 .PHONY: record-min-os
 record-min-os:
 	printf '%b\n' "$(BLUE)Recording macOS minimum-OS observation...$(RESET)"
-	./scripts/record-min-os.sh
+	dist_dir="dist/macos-arm64"; \
+	provenance="$$dist_dir/provenance.txt"; \
+	if [ ! -d "$$dist_dir" ]; then \
+	  printf '%b\n' "$(RED)record-min-os: $$dist_dir missing; run make build first$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	{ \
+	  printf '%s\n' "min-os-macos-arm64:"; \
+	  for bin in pandaPIparser pandaPIgrounder pandaPIengine; do \
+	    path="$$dist_dir/$$bin"; \
+	    if [ ! -x "$$path" ]; then \
+	      printf '%b\n' "$(RED)record-min-os: $$path missing or not executable$(RESET)" >&2; \
+	      exit 1; \
+	    fi; \
+	    minos="$$(otool -l "$$path" | awk '/LC_BUILD_VERSION/{f=1} f && /minos/{print $$2; exit}')"; \
+	    printf '%s=%s\n' "$$bin" "$$minos"; \
+	  done; \
+	  printf '%s\n' "---"; \
+	} >> "$$provenance"
 	printf '%b\n' "$(GREEN)Minimum-OS observation recorded$(RESET)"
 
 .PHONY: record-min-os-if-macos

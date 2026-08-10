@@ -30,7 +30,6 @@ test-contract-parser: build
 .PHONY: test-contract-parser-managed
 test-contract-parser-managed: build-parser
 	printf '%b\n' "$(BLUE)Running managed parser contract fixtures...$(RESET)"
-	./scripts/install-parser-adapter.sh "$(DIST_DIR)"
 	./scripts/run-contract-fixtures.sh --contract --component parser
 	printf '%b\n' "$(GREEN)Managed parser contract fixtures passed$(RESET)"
 
