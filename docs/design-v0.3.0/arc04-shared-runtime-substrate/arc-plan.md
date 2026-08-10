@@ -121,10 +121,10 @@ checks that prove the new substrate is packaged correctly.
   [`slice05-fixture-and-seam-test-substrate/cc-prompt.md`](slice05-fixture-and-seam-test-substrate/cc-prompt.md).
   CDC verification:
   [`slice05-fixture-and-seam-test-substrate/cdc-verification.md`](slice05-fixture-and-seam-test-substrate/cdc-verification.md).
-- **slice06 - planned, not open.** Slice06 should open only after the
-  fixture and seam-test substrate is implemented and CDC-verified, so
-  integration-readiness work can route accepted harness, dependency, and
-  release-exclusion evidence without guessing.
+- **slice06 substrate-integration-readiness - open.** Slice set:
+  [`slice06-substrate-integration-readiness/slice-doc.md`](slice06-substrate-integration-readiness/slice-doc.md),
+  [`slice06-substrate-integration-readiness/ledger.md`](slice06-substrate-integration-readiness/ledger.md),
+  [`slice06-substrate-integration-readiness/cc-prompt.md`](slice06-substrate-integration-readiness/cc-prompt.md).
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -180,6 +180,14 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v2.0 - 2026-08-09.** Opened slice06
+  substrate-integration-readiness. Surfaced by: slice05 CDC verification. Why:
+  Arc04 now has accepted runtime build, status/result, diagnostics/status I/O,
+  CLI/TTY/provenance, and fixture/seam-test substrate evidence, so the final
+  implementation slice can synthesize integration readiness, add an inert
+  all-build probe, route Arc02 dependency state, preserve the Slice05
+  stdin/full-duplex caveat, and hand Arc05/Arc06 concrete adoption and release
+  proof inputs without changing binary behavior.
 - **v1.9 - 2026-08-09.** Marked slice05
   fixture-and-seam-test-substrate closed and CDC-verified. Surfaced by:
   slice05 CDC verification of commit
