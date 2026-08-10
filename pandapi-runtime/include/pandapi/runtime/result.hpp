@@ -34,8 +34,14 @@ public:
   }
 
 private:
-  explicit StatusResult(T value) : storage_{std::move(value)} {}
-  explicit StatusResult(ProcessStatus status) : storage_{status} {}
+  explicit StatusResult(T value)
+      : storage_{std::move(value)}
+  {
+  }
+  explicit StatusResult(ProcessStatus status)
+      : storage_{status}
+  {
+  }
 
   std::variant<T, ProcessStatus> storage_;
 };

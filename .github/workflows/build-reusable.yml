@@ -44,35 +44,8 @@ jobs:
       - name: Install prerequisites
         run: sudo apt-get install -y g++ clang clang-format make cmake flex bison gengetopt zip git
 
-      - name: Check owned source formatting
-        run: ./scripts/check-format-owned.sh
-
-      - name: Build runtime
-        run: ./scripts/build-runtime.sh
-
-      - name: Sanitize runtime
-        run: ./scripts/sanitize-runtime.sh
-
-      - name: Build parser
-        run: ./scripts/build-parser.sh
-
-      - name: Build grounder
-        run: ./scripts/build-grounder.sh
-
-      - name: Build engine
-        run: ./scripts/build-engine.sh
-
-      - name: Contract fixtures (baseline)
-        run: ./scripts/run-contract-fixtures.sh --baseline
-
-      - name: Check provenance
-        run: ./scripts/check-provenance.sh
-
-      - name: Smoke test (positive)
-        run: ./scripts/smoke-test.sh
-
-      - name: Smoke test (negative)
-        run: ./scripts/smoke-test.sh --negative
+      - name: Run Linux CI target
+        run: make ci-linux
 
       - uses: actions/upload-artifact@v7
         with:
@@ -115,35 +88,8 @@ jobs:
       - name: Install prerequisites
         run: brew install gcc make cmake flex bison gengetopt zip
 
-      - name: Check owned source formatting
-        run: ./scripts/check-format-owned.sh
-
-      - name: Build runtime
-        run: ./scripts/build-runtime.sh
-
-      - name: Build parser
-        run: ./scripts/build-parser.sh
-
-      - name: Build grounder
-        run: ./scripts/build-grounder.sh
-
-      - name: Build engine
-        run: ./scripts/build-engine.sh
-
-      - name: Contract fixtures (baseline)
-        run: ./scripts/run-contract-fixtures.sh --baseline
-
-      - name: Record min-OS observation
-        run: ./scripts/record-min-os.sh
-
-      - name: Check provenance
-        run: ./scripts/check-provenance.sh
-
-      - name: Smoke test (positive)
-        run: ./scripts/smoke-test.sh
-
-      - name: Smoke test (negative)
-        run: ./scripts/smoke-test.sh --negative
+      - name: Run macOS CI target
+        run: make ci-macos
 
       - uses: actions/upload-artifact@v7
         with:
@@ -180,10 +126,7 @@ jobs:
       - name: Run README verbatim
         run: |
           brew install gcc make cmake flex bison gengetopt zip
-          ./scripts/build-parser.sh
-          ./scripts/build-grounder.sh
-          ./scripts/build-engine.sh
-          ./scripts/smoke-test.sh
+          make readme-verbatim
 
   readme-verbatim:
     name: readme-verbatim (ubuntu-22.04)
@@ -197,7 +140,4 @@ jobs:
       - name: Run README verbatim
         run: |
           sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
-          ./scripts/build-parser.sh
-          ./scripts/build-grounder.sh
-          ./scripts/build-engine.sh
-          ./scripts/smoke-test.sh
+          make readme-verbatim

@@ -78,13 +78,10 @@ sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
 brew install gcc make cmake flex bison gengetopt zip
 ```
 
-### Build + smoke test (4 commands)
+### Build + smoke test
 
 ```bash
-./scripts/build-parser.sh
-./scripts/build-grounder.sh
-./scripts/build-engine.sh
-./scripts/smoke-test.sh
+make readme-verbatim
 ```
 
 On success, `dist/<platform>/` (`linux-x86_64` or `macos-arm64`) contains
@@ -95,7 +92,7 @@ provably-unsolvable — each a distinct outcome, none collapsed into a
 generic failure):
 
 ```bash
-./scripts/smoke-test.sh --negative
+make smoke-negative
 ```
 
 ### Notes
@@ -104,7 +101,8 @@ generic failure):
   source.
 - The macOS grounder compiler defaults to clang (`GROUNDER_CC=cc
   GROUNDER_CXX=c++`); override via those two env vars if you need brew gcc.
-- `smoke-test.sh --corpus DIR` additionally runs the IPC 2023 Transport
+- `make help` lists the local build, quality, and CI-equivalent entrypoints.
+- `scripts/smoke-test.sh --corpus DIR` additionally runs the IPC 2023 Transport
   `pfile01` domain through the full chain, given an `ipc2023-domains`
   checkout at `DIR`. Optional — not part of the required gate.
 - Vendored source identity is recorded in `vendor.env`: the current build
@@ -132,17 +130,18 @@ across the full support matrix:
   (`ubuntu-24.04` / `macos-26`), on a real GitHub-hosted runner rather
   than an emulated one.
 
-Every build leg runs the same three builds → `check-provenance.sh` →
-smoke (positive + negative) sequence as the local commands above, with
-the resulting `dist/<platform>/` (including `provenance.txt`) uploaded as
-a workflow artifact per runner. `check-provenance.sh` fails the run if any
+Every build leg runs the same top-level Makefile entrypoints used locally:
+Linux runs `make ci-linux`; macOS runs `make ci-macos`. Those targets build,
+validate provenance, run positive and negative smoke tests, and upload the
+resulting `dist/<platform>/` (including `provenance.txt`) as a workflow
+artifact per runner. `make provenance-check` fails the run if any
 component's `chengdu_commit`, `source_prefix`, import identity,
 `patches=none`, or compiler field does not match `vendor.env` and Git
 state — the provenance file is no longer just attested, it's
 CI-enforced. Two `readme-verbatim*` jobs
 (`ubuntu-22.04` and `macos-15`) run this file's own prerequisite line and
-four build commands, unmodified, on a clean runner per platform — if this
-README and the workflow drift, those jobs go red. `actionlint` gates the
+documented Makefile target, unmodified, on a clean runner per platform — if
+this README and the workflow drift, those jobs go red. `actionlint` gates the
 workflow file itself.
 
 Brew-installed dependency versions (bison, flex, etc.) float with the

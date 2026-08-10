@@ -9,5 +9,6 @@ DerivePointerAlignment: false
 PointerAlignment: Left
 SortIncludes: false
 BreakBeforeBraces: Custom
+PackConstructorInitializers: Never
 BraceWrapping:
   AfterFunction: true

@@ -5,7 +5,9 @@ namespace pandapi::runtime {
 ProcessStatus::ProcessStatus(StatusCode code, Component component,
                              SurfaceDisposition surface_disposition,
                              int signal_number) noexcept
-    : code_{code}, component_{component}, surface_disposition_{surface_disposition},
+    : code_{code},
+      component_{component},
+      surface_disposition_{surface_disposition},
       signal_number_{signal_number}
 {
 }

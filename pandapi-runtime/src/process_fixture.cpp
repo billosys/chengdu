@@ -18,13 +18,20 @@ namespace {
 class UniqueFd {
 public:
   UniqueFd() noexcept = default;
-  explicit UniqueFd(int fd) noexcept : fd_{fd} {}
+  explicit UniqueFd(int fd) noexcept
+      : fd_{fd}
+  {
+  }
   ~UniqueFd() noexcept { close(); }
 
   UniqueFd(const UniqueFd&) = delete;
   UniqueFd& operator=(const UniqueFd&) = delete;
 
-  UniqueFd(UniqueFd&& other) noexcept : fd_{other.fd_} { other.fd_ = -1; }
+  UniqueFd(UniqueFd&& other) noexcept
+      : fd_{other.fd_}
+  {
+    other.fd_ = -1;
+  }
 
   UniqueFd& operator=(UniqueFd&& other) noexcept
   {

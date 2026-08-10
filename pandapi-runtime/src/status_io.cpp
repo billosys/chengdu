@@ -356,7 +356,9 @@ struct ParsedField {
 } // namespace
 
 StatusRecord::StatusRecord(ProcessStatus process_status, std::string surface)
-    : process_status_{process_status}, surface_{std::move(surface)}, fields_{},
+    : process_status_{process_status},
+      surface_{std::move(surface)},
+      fields_{},
       partial_output_policy_{PartialOutputPolicy::Unknown},
       has_partial_output_policy_{false}
 {
