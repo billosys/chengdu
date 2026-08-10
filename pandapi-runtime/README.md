@@ -32,10 +32,13 @@ pandapi-runtime/
   include/pandapi/runtime/result.hpp
   include/pandapi/runtime/runtime.hpp
   include/pandapi/runtime/status.hpp
+  include/pandapi/runtime/status_io.hpp
   src/runtime.cpp
   src/status.cpp
+  src/status_io.cpp
   tests/runtime_smoke.cpp
   tests/status_result_smoke.cpp
+  tests/status_io_smoke.cpp
 ```
 
 The current CMake shape produces one static library target,
@@ -52,19 +55,14 @@ management before considering third-party dependencies.
 ## Arc03 Inputs
 
 Arc03 defines the managed-process contract this runtime will eventually
-support. Later Arc04 slices will add shared facilities for:
+support at the parser, grounder, and engine executable boundary. The runtime
+now provides the inert substrate for status/result mapping and
+Diagnostics/status I/O while leaving binary adoption to later Arc04/Arc05
+slices.
 
-- status/result types and exit-code mapping;
-- diagnostics/process I/O and stdout/stderr ownership;
-- tagged `PANDAPI_STATUS` writing and parsing;
-- TTY/color policy;
-- output finalization and partial-output policy;
-- provenance/version field assembly;
-- CLI parser wrapper policy;
-- fixture harness support and seam tests.
-
-Those helpers do not exist in this skeleton yet. Slice01 only establishes the
-buildable runtime boundary.
+Later Arc04 slices still own TTY/color policy, output finalization,
+provenance/version field assembly, CLI parser wrapper policy, fixture harness
+support, and any approved test-only dependency integration.
 
 ## Status/result core
 
@@ -87,6 +85,36 @@ This is no binary adoption: parser, grounder, and engine do not link to or call
 these helpers yet, and their stdout/stderr behavior, CLI shape, current exit
 codes, artifacts, release assets, and wolong-facing behavior remain unchanged.
 
+## Diagnostics/status I/O
+
+Slice03 implements a standard-library-only Diagnostics/status I/O facade for
+the Arc03 tagged status contract:
+
+- `StatusRecord` builds one final machine status record from `ProcessStatus`
+  plus a validated surface name.
+- `StatusStream` and `status_stream_allowed` encode stdout/stderr ownership:
+  stderr is always legal for status, while stdout is legal only when stdout is
+  empty or already assigned to tagged status, not when it carries a data
+  artifact or human informational output.
+- `serialize_status_record` and `write_status_record` emit one single-line
+  `PANDAPI_STATUS` record with required fields `status`, `component`,
+  `surface`, `surface_disposition`, `exit_code`, and `class`.
+- `write_status_record` flushes the selected stream before returning so final
+  status is visible before process exit.
+- `parse_status_record` accepts tagged status records and returns the local
+  `StatusResult<StatusRecord>` facade with `input_invalid` on malformed
+  machine text.
+- field escaping keeps newline and tab content parseable without raw control
+  characters in the emitted record, rejects ANSI escape sequences, and rejects
+  placeholder prose values instead of making them part of the machine contract.
+- `PartialOutputPolicy` covers `absent`, `retained`, `discarded`, `complete`,
+  and `unknown` partial-output outcomes.
+
+This is still no binary adoption: the helper can write and parse
+`PANDAPI_STATUS`, but parser, grounder, and engine do not yet call it, no
+`pandapi-*` wrappers are introduced, and current stdout/stderr behavior is not
+changed.
+
 ## Arc02 Dependency Gates
 
 Arc02 selected the standard library as the baseline and placed every external
@@ -104,9 +132,11 @@ candidate behind explicit gates:
   text, not JSON Lines.
 - Abseil and Boost.Process remain rejected as 0.3.0 foundation dependencies.
 
-The slice02 dependency gate keeps `tl::expected` out of the public API and out
-of direct imports. The local `StatusResult<T>` facade can later hide an
-approved pilot, but this runtime core remains standard-library-only today.
+The slice02 and slice03 dependency gates keep `tl::expected`, fmt, CLI11,
+Catch2, reproc++, nlohmann/json, Boost, Abseil, and GSL out of the public API
+and out of direct imports. The local `StatusResult<T>` and Diagnostics/status
+I/O facades can later hide approved pilots, but this runtime core remains
+standard-library-only today.
 
 ## No Behavior Change
 
