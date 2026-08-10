@@ -12,8 +12,7 @@ build-runtime:
 	  -DCMAKE_BUILD_TYPE=Release \
 	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON; \
 	cmake --build "$(RUNTIME_BUILD_DIR)" --parallel; \
-	( cd "$(RUNTIME_BUILD_DIR)" && ctest --output-on-failure -C Release ); \
-	printf '%b\n' "$(GREEN)Runtime build passed: $(RUNTIME_BUILD_DIR)$(RESET)"
+	printf '%b\n' "$(GREEN)Runtime build complete: $(RUNTIME_BUILD_DIR)$(RESET)"
 
 .PHONY: sanitize-runtime
 sanitize-runtime:
@@ -55,16 +54,24 @@ build-parser:
 	SRC_DIR="$$(prepare_build_source_copy pandaPIparser)"; \
 	DIST_DIR="$$REPO_ROOT/dist/$$PLATFORM"; \
 	. "$$REPO_ROOT/vendor.env"; \
-	$(MAKE) -C "$$SRC_DIR" -j; \
+	$(MAKE) -C "$$SRC_DIR"; \
 	if [ ! -x "$$SRC_DIR/pandaPIparser" ]; then \
 	  printf '%b\n' "$(RED)pandaPIparser build did not produce an executable$(RESET)" >&2; \
 	  exit 1; \
 	fi; \
 	mkdir -p "$$DIST_DIR"; \
-	cp "$$SRC_DIR/pandaPIparser" "$$DIST_DIR/pandaPIparser"; \
+	if [ -f "$$REPO_ROOT/scripts/pandapi-parser-adapter.sh" ]; then \
+	  cp "$$SRC_DIR/pandaPIparser" "$$DIST_DIR/pandaPIparser.legacy"; \
+	  cp "$$REPO_ROOT/scripts/pandapi-parser-adapter.sh" "$$DIST_DIR/pandapi-parser"; \
+	  cp "$$REPO_ROOT/scripts/pandapi-parser-adapter.sh" "$$DIST_DIR/pandaPIparser"; \
+	  chmod +x "$$DIST_DIR/pandaPIparser.legacy" "$$DIST_DIR/pandapi-parser" "$$DIST_DIR/pandaPIparser"; \
+	else \
+	  cp "$$SRC_DIR/pandaPIparser" "$$DIST_DIR/pandaPIparser"; \
+	  chmod +x "$$DIST_DIR/pandaPIparser"; \
+	fi; \
 	COMPILER="$$(resolve_compiler_id g++)"; \
 	append_provenance "$$DIST_DIR" "pandaPIparser" "PARSER" "$$COMPILER"; \
-	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandaPIparser$(RESET)"
+	printf '%b\n' "$(GREEN)Built parser artifacts in $$DIST_DIR$(RESET)"
 
 .PHONY: build-grounder
 build-grounder:

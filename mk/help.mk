@@ -9,18 +9,28 @@ help:
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)Build:$(RESET)"; \
 	printf '%b\n' "  $(YELLOW)make build$(RESET)              - Build runtime, parser, grounder, and engine"; \
-	printf '%b\n' "  $(YELLOW)make build-runtime$(RESET)      - Build and test chengdu-owned runtime"; \
+	printf '%b\n' "  $(YELLOW)make build-runtime$(RESET)      - Build chengdu-owned runtime"; \
 	printf '%b\n' "  $(YELLOW)make build-parser$(RESET)       - Build inherited pandaPIparser into dist/"; \
 	printf '%b\n' "  $(YELLOW)make build-grounder$(RESET)     - Build inherited pandaPIgrounder into dist/"; \
 	printf '%b\n' "  $(YELLOW)make build-engine$(RESET)       - Build inherited pandaPIengine into dist/"; \
 	printf '\n'; \
+	printf '%b\n' "$(GREEN)Tests:$(RESET)"; \
+	printf '%b\n' "  $(YELLOW)make test$(RESET)               - Build and run runtime, contract, and smoke tests"; \
+	printf '%b\n' "  $(YELLOW)make test-runtime$(RESET)       - Run chengdu-owned runtime CTest suite"; \
+	printf '%b\n' "  $(YELLOW)make test-runtime-sanitize$(RESET) - Run runtime ASan/UBSan tests"; \
+	printf '%b\n' "  $(YELLOW)make test-contract$(RESET)      - Run all baseline contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-parser$(RESET) - Run parser contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-grounder$(RESET) - Run grounder contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-engine$(RESET) - Run engine contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-pipeline$(RESET) - Run pipeline contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make smoke$(RESET)              - Run positive smoke test"; \
+	printf '%b\n' "  $(YELLOW)make smoke-negative$(RESET)     - Run negative smoke test"; \
+	printf '%b\n' "  $(YELLOW)make test-corpus CORPUS_DIR=...$(RESET) - Run optional IPC corpus smoke"; \
+	printf '\n'; \
 	printf '%b\n' "$(GREEN)Quality:$(RESET)"; \
 	printf '%b\n' "  $(YELLOW)make format-check$(RESET)       - Check owned C++ formatting"; \
 	printf '%b\n' "  $(YELLOW)make format$(RESET)             - Format owned C++ source"; \
-	printf '%b\n' "  $(YELLOW)make sanitize-runtime$(RESET)   - Run runtime ASan/UBSan gate"; \
-	printf '%b\n' "  $(YELLOW)make contract-baseline$(RESET)  - Run baseline contract fixtures"; \
-	printf '%b\n' "  $(YELLOW)make smoke$(RESET)              - Run positive smoke test"; \
-	printf '%b\n' "  $(YELLOW)make smoke-negative$(RESET)     - Run negative smoke test"; \
+	printf '%b\n' "  $(YELLOW)make sanitize-runtime$(RESET)   - Build and run runtime ASan/UBSan gate"; \
 	printf '%b\n' "  $(YELLOW)make provenance-check$(RESET)   - Verify dist provenance"; \
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)CI entrypoints:$(RESET)"; \

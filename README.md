@@ -95,6 +95,12 @@ generic failure):
 make smoke-negative
 ```
 
+Full local test suite:
+
+```bash
+make test
+```
+
 ### Notes
 
 - Source builds use the in-tree `pandaPI/` source and do not clone planner
@@ -102,7 +108,7 @@ make smoke-negative
 - The macOS grounder compiler defaults to clang (`GROUNDER_CC=cc
   GROUNDER_CXX=c++`); override via those two env vars if you need brew gcc.
 - `make help` lists the local build, quality, and CI-equivalent entrypoints.
-- `scripts/smoke-test.sh --corpus DIR` additionally runs the IPC 2023 Transport
+- `make test-corpus CORPUS_DIR=DIR` additionally runs the IPC 2023 Transport
   `pfile01` domain through the full chain, given an `ipc2023-domains`
   checkout at `DIR`. Optional — not part of the required gate.
 - Vendored source identity is recorded in `vendor.env`: the current build
@@ -131,10 +137,12 @@ across the full support matrix:
   than an emulated one.
 
 Every build leg runs the same top-level Makefile entrypoints used locally:
-Linux runs `make ci-linux`; macOS runs `make ci-macos`. Those targets build,
-validate provenance, run positive and negative smoke tests, and upload the
+Linux runs `make ci-linux`; macOS runs `make ci-macos`. Those targets run
+format checks, build, run `make test`, validate provenance, and upload the
 resulting `dist/<platform>/` (including `provenance.txt`) as a workflow
-artifact per runner. `make provenance-check` fails the run if any
+artifact per runner. `make test` covers the runtime CTest suite, baseline
+contract fixtures, and positive and negative smoke tests. `make
+provenance-check` fails the run if any
 component's `chengdu_commit`, `source_prefix`, import identity,
 `patches=none`, or compiler field does not match `vendor.env` and Git
 state — the provenance file is no longer just attested, it's

@@ -217,8 +217,9 @@ surface is:
 
 - `pandapi_runtime` / `pandapi::runtime` as the CMake target for shared runtime
   helpers;
-- `scripts/build-runtime.sh` for runtime CMake build and CTest execution;
-- `scripts/build-all.sh` for a build-only local probe that runs runtime,
+- `make build-runtime` for the runtime CMake build;
+- `make test-runtime` for runtime CTest execution;
+- `make build` for a build-only local probe that runs runtime,
   parser, grounder, and engine builds in that order;
 - status/result, diagnostics/status I/O, CLI/TTY/provenance, fixture,
   normalization, and process observation headers under
@@ -246,18 +247,20 @@ It deliberately does not bulk-format vendored `pandaPI/` source.
 Developer gates:
 
 ```sh
-./scripts/check-format-owned.sh
-./scripts/build-runtime.sh
-./scripts/sanitize-runtime.sh
+make format-check
+make build-runtime
+make test-runtime
+make test-runtime-sanitize
 ```
 
-`check-format-owned.sh` prefers `clang-format` on `PATH` and falls back to the
-macOS Xcode `xcrun` lookup. `build-runtime.sh` configures the runtime with
+`make format-check` prefers `clang-format` on `PATH` and falls back to the
+macOS Xcode `xcrun` lookup. `make build-runtime` configures the runtime with
 `CMAKE_EXPORT_COMPILE_COMMANDS=ON`, so the normal generated build tree under
 `build/runtime/<platform>/` contains `compile_commands.json` for future
-`clang-tidy` adoption. `sanitize-runtime.sh` uses Clang ASan/UBSan flags in a
-dedicated `build/runtime-sanitize/<platform>/` tree, builds only
-`pandapi-runtime/`, and runs CTest. It does not produce release binaries.
+`clang-tidy` adoption. `make test-runtime` runs that build tree's CTest suite.
+`make test-runtime-sanitize` uses Clang ASan/UBSan flags in a dedicated
+`build/runtime-sanitize/<platform>/` tree, builds only `pandapi-runtime/`, and
+runs CTest. It does not produce release binaries.
 
 `clang-tidy` remains deferred behind an installed-toolchain gate because the
 default local environment does not provide `clang-tidy` on `PATH`. The

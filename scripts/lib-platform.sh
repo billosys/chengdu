@@ -81,22 +81,21 @@ provenance_get_field() {
   printf '%s\n' "$block" | sed -n "s/^$key=//p"
 }
 
-# prepare_build_source_copy <pandaPI-component> — refresh and return the
+# prepare_build_source_copy <pandaPI-component> — create and return a
 # disposable source copy used for build-time mutation. The sourcing script
 # must define REPO_ROOT and PLATFORM.
 prepare_build_source_copy() {
   local component="$1"
   local vendor_dir="$REPO_ROOT/pandaPI/$component"
   local source_root="$REPO_ROOT/build/$PLATFORM/source"
-  local copy_dir="$source_root/$component"
+  local copy_dir="$source_root/$component.$$.$RANDOM"
 
   if [ ! -d "$vendor_dir" ]; then
     echo "chengdu: missing vendored source: $vendor_dir" >&2
     return 1
   fi
 
-  rm -rf "$copy_dir"
   mkdir -p "$source_root"
-  cp -R "$vendor_dir" "$source_root/"
+  cp -R "$vendor_dir" "$copy_dir"
   printf '%s\n' "$copy_dir"
 }
