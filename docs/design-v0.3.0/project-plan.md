@@ -186,6 +186,10 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/ledger.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/ledger.md),
   [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cc-prompt.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cc-prompt.md),
   [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cdc-verification.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cdc-verification.md).
+  Slice04 cli-tty-provenance-core is open:
+  [`arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/slice-doc.md`](arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/slice-doc.md),
+  [`arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/ledger.md`](arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/ledger.md),
+  [`arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cc-prompt.md`](arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cc-prompt.md).
 - **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc04 closes or explicitly bubbles up a planning dependency.
 
@@ -266,6 +270,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.31 - 2026-08-09.** Opened Arc04 slice04 cli-tty-provenance-core.
+  Surfaced by: Arc04 slice03 CDC verification. Why: the accepted status/result
+  and diagnostics/status I/O substrate can now support runtime common CLI
+  policy, TTY/color policy, command identity, and provenance/version assembly
+  while preserving Arc02 dependency gates, especially no CLI11 import before
+  golden/process tests.
 - **v1.30 - 2026-08-09.** Marked Arc04 slice03 diagnostics-status-io closed
   and CDC-verified after Iteration 01. Surfaced by: slice03 CDC verification
   of commit `ece82e0e311ab2e63c922a6b679bb3ae647fdbec`. Why: the accepted

@@ -109,10 +109,16 @@ checks that prove the new substrate is packaged correctly.
   [`slice03-diagnostics-status-io/cc-prompt.md`](slice03-diagnostics-status-io/cc-prompt.md).
   CDC verification:
   [`slice03-diagnostics-status-io/cdc-verification.md`](slice03-diagnostics-status-io/cdc-verification.md).
-- **slice04-slice06 - planned, not open.** Slice04 should open only after the
-  status I/O facade is implemented and CDC-verified, so CLI/TTY/provenance
-  policy can build on accepted status-stream helpers. Slice04 can now be
-  opened from accepted status/result and diagnostics/status I/O APIs.
+- **slice04 cli-tty-provenance-core - open.** Slice set:
+  [`slice04-cli-tty-provenance-core/slice-doc.md`](slice04-cli-tty-provenance-core/slice-doc.md),
+  [`slice04-cli-tty-provenance-core/ledger.md`](slice04-cli-tty-provenance-core/ledger.md),
+  [`slice04-cli-tty-provenance-core/cc-prompt.md`](slice04-cli-tty-provenance-core/cc-prompt.md).
+  This slice implements common CLI policy values, TTY/color policy, command
+  identity, and provenance/version field assembly without binary adoption or
+  CLI11 import.
+- **slice05-slice06 - planned, not open.** Slice05 should open only after the
+  CLI/TTY/provenance core is implemented and CDC-verified, so the fixture and
+  seam-test substrate can build on accepted runtime helpers.
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -168,6 +174,11 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.6 - 2026-08-09.** Opened slice04 cli-tty-provenance-core. Surfaced by:
+  slice03 CDC verification. Why: Arc04 now has accepted status/result and
+  diagnostics/status I/O helpers, so the runtime can add common CLI policy,
+  TTY/color policy, command identity, and provenance/version assembly while
+  preserving the CLI11 gate and no-binary-adoption boundary.
 - **v1.5 - 2026-08-09.** Marked slice03 diagnostics-status-io closed and
   CDC-verified after Iteration 01. Surfaced by: slice03 CDC verification of
   commit `ece82e0e311ab2e63c922a6b679bb3ae647fdbec`. Why: Arc04 now has a
