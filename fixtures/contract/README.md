@@ -49,6 +49,19 @@ final `PANDAPI_STATUS` fields, color/ANSI rules, normalization, and safety.
 Those expectations are documented here so later slices can extend the runner
 without treating this baseline scaffold as final conformance.
 
+## Comparison Policy
+
+Baseline fixture comparison is limited to stable process fields, generated
+artifact state, semantic predicates, and normalized output. Paths, ANSI
+sequences, line endings, timing, and other environment-sensitive details are
+normalized before they can affect a fixture result.
+
+Human diagnostic prose may be used as a baseline predicate when it is the only
+current inherited signal, but it is not final managed-process contract
+evidence. Later adoption slices should replace prose-sensitive checks with
+stable status fields, stream ownership assertions, and final `PANDAPI_STATUS`
+records where the managed-process contract requires them.
+
 ## Black-Box Versus Seam Tests
 
 These fixtures own product behavior. They execute binaries and inspect
