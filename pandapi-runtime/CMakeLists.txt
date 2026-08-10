@@ -4,6 +4,9 @@ project(pandapi_runtime VERSION 0.1.0 LANGUAGES CXX)
 
 add_library(pandapi_runtime STATIC
   src/cli_policy.cpp
+  src/fixture.cpp
+  src/normalization.cpp
+  src/process_fixture.cpp
   src/provenance.cpp
   src/runtime.cpp
   src/status.cpp
@@ -85,3 +88,43 @@ set_target_properties(pandapi_cli_tty_provenance_smoke PROPERTIES
 add_test(
   NAME pandapi_cli_tty_provenance_smoke
   COMMAND pandapi_cli_tty_provenance_smoke)
+
+add_executable(pandapi_fixture_substrate_smoke
+  tests/fixture_substrate_smoke.cpp
+)
+target_link_libraries(pandapi_fixture_substrate_smoke PRIVATE pandapi::runtime)
+
+set_target_properties(pandapi_fixture_substrate_smoke PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO
+)
+
+add_test(
+  NAME pandapi_fixture_substrate_smoke
+  COMMAND pandapi_fixture_substrate_smoke)
+
+find_package(Catch2 QUIET CONFIG)
+if(Catch2_FOUND)
+  add_executable(pandapi_fixture_catch2_smoke
+    tests/fixture_catch2_smoke.cpp
+  )
+  target_link_libraries(
+    pandapi_fixture_catch2_smoke
+    PRIVATE
+      pandapi::runtime
+      Catch2::Catch2WithMain
+  )
+
+  set_target_properties(pandapi_fixture_catch2_smoke PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+  )
+
+  add_test(
+    NAME pandapi_fixture_catch2_smoke
+    COMMAND pandapi_fixture_catch2_smoke)
+else()
+  message(STATUS "Catch2 not found; optional test-only fixture seam gate skipped")
+endif()

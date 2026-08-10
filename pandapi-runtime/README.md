@@ -30,6 +30,9 @@ pandapi-runtime/
   CMakeLists.txt
   cmake/
   include/pandapi/runtime/cli_policy.hpp
+  include/pandapi/runtime/fixture.hpp
+  include/pandapi/runtime/normalization.hpp
+  include/pandapi/runtime/process_fixture.hpp
   include/pandapi/runtime/provenance.hpp
   include/pandapi/runtime/result.hpp
   include/pandapi/runtime/runtime.hpp
@@ -37,12 +40,17 @@ pandapi-runtime/
   include/pandapi/runtime/status_io.hpp
   include/pandapi/runtime/tty.hpp
   src/cli_policy.cpp
+  src/fixture.cpp
+  src/normalization.cpp
+  src/process_fixture.cpp
   src/provenance.cpp
   src/runtime.cpp
   src/status.cpp
   src/status_io.cpp
   src/tty.cpp
   tests/cli_tty_provenance_smoke.cpp
+  tests/fixture_catch2_smoke.cpp
+  tests/fixture_substrate_smoke.cpp
   tests/runtime_smoke.cpp
   tests/status_result_smoke.cpp
   tests/status_io_smoke.cpp
@@ -162,6 +170,44 @@ vendored, fetched, discovered with `find_package`, included, or exposed by
 the runtime API. Parser, grounder, and engine command behavior, stdout/stderr,
 exit codes, generated artifacts, release shape, and wolong-facing behavior are
 unchanged.
+
+## Fixture and Seam-Test Substrate
+
+Slice05 implements reusable fixture and seam-test substrate APIs for later
+Arc05 executable conformance work. This is still no binary adoption.
+
+- `fixture.hpp` defines typed fixture records for command identity, argv,
+  environment, stdin, stdout/stderr role expectations, output artifact state,
+  expected exit/status, wait status, final status policy, normalization rules,
+  and safe timeout/resource/signal probe policy. The vocabulary keeps golden
+  fields, semantic predicates, harness-owned timeouts, binary-owned timeouts,
+  resource-limit probes, quarantine probes, and manual probes explicit.
+- `normalization.hpp` provides comparison helpers for stable golden fields and
+  semantic predicates. It normalizes path tokens such as `$FixtureRoot`,
+  `$BuildRoot`, `$TempRoot`, and `$ReleaseRoot`, converts line endings to LF,
+  detects or strips ANSI escapes, checks duration/timestamp/build metadata
+  predicates, normalizes errno and signal values, and parses final
+  `PANDAPI_STATUS` lines through the accepted Slice03 status parser rather than
+  diagnostic regex matching.
+- `process_fixture.hpp` provides a local Linux/macOS process observation
+  substrate for harness tests. It captures stdout, stderr, exit code, wait
+  status, supervisor-observed signal termination, harness timeout disposition,
+  and cleanup state using local POSIX shims hidden in the implementation.
+- Runtime tests exercise typed fixture construction, normalization,
+  structured comparison failures, final status matching, process observation
+  success/failure, and a bounded CI-safe harness timeout with a tiny local
+  helper command. These tests do not invoke parser, grounder, or engine as
+  managed-process conformance proof.
+- Catch2 integration is optional and test-only. `CMakeLists.txt` looks for an
+  already installed local Catch2 package and registers `fixture_catch2_smoke`
+  only when available. It never fetches Catch2, never exposes Catch2 from
+  public runtime headers, and the default runtime build continues to pass when
+  Catch2 is absent.
+
+The fixture substrate is intended for black-box process fixtures and seam tests
+that Arc05 will own. It does not add `pandapi-*` executable entry points,
+wrappers, symlinks, copied binaries, release packaging, or planner behavior
+changes.
 
 ## Arc02 Dependency Gates
 
