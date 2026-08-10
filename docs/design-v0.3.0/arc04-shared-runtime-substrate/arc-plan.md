@@ -109,13 +109,12 @@ checks that prove the new substrate is packaged correctly.
   [`slice03-diagnostics-status-io/cc-prompt.md`](slice03-diagnostics-status-io/cc-prompt.md).
   CDC verification:
   [`slice03-diagnostics-status-io/cdc-verification.md`](slice03-diagnostics-status-io/cdc-verification.md).
-- **slice04 cli-tty-provenance-core - open.** Slice set:
+- **slice04 cli-tty-provenance-core - closed and CDC-verified.** Slice set:
   [`slice04-cli-tty-provenance-core/slice-doc.md`](slice04-cli-tty-provenance-core/slice-doc.md),
   [`slice04-cli-tty-provenance-core/ledger.md`](slice04-cli-tty-provenance-core/ledger.md),
   [`slice04-cli-tty-provenance-core/cc-prompt.md`](slice04-cli-tty-provenance-core/cc-prompt.md).
-  This slice implements common CLI policy values, TTY/color policy, command
-  identity, and provenance/version field assembly without binary adoption or
-  CLI11 import.
+  CDC verification:
+  [`slice04-cli-tty-provenance-core/cdc-verification.md`](slice04-cli-tty-provenance-core/cdc-verification.md).
 - **slice05-slice06 - planned, not open.** Slice05 should open only after the
   CLI/TTY/provenance core is implemented and CDC-verified, so the fixture and
   seam-test substrate can build on accepted runtime helpers.
@@ -174,6 +173,13 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.7 - 2026-08-09.** Marked slice04 cli-tty-provenance-core closed and
+  CDC-verified after Iteration 01. Surfaced by: slice04 CDC verification of
+  commit `56966f989888f39c20030b0c99ca32c4a5d3f8d8`. Why: Arc04 now has
+  tested common CLI policy, command identity, informational-command,
+  TTY/color, ANSI legality, and required version/provenance helpers without
+  binary adoption or CLI11 import; slice05 can build fixture and seam-test
+  substrate on accepted runtime policy inputs.
 - **v1.6 - 2026-08-09.** Opened slice04 cli-tty-provenance-core. Surfaced by:
   slice03 CDC verification. Why: Arc04 now has accepted status/result and
   diagnostics/status I/O helpers, so the runtime can add common CLI policy,

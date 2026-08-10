@@ -186,10 +186,11 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/ledger.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/ledger.md),
   [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cc-prompt.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cc-prompt.md),
   [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cdc-verification.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cdc-verification.md).
-  Slice04 cli-tty-provenance-core is open:
+  Slice04 cli-tty-provenance-core is closed and CDC-verified:
   [`arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/slice-doc.md`](arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/slice-doc.md),
   [`arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/ledger.md`](arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/ledger.md),
-  [`arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cc-prompt.md`](arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cc-prompt.md).
+  [`arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cc-prompt.md`](arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cc-prompt.md),
+  [`arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cdc-verification.md`](arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cdc-verification.md).
 - **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc04 closes or explicitly bubbles up a planning dependency.
 
