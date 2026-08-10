@@ -111,10 +111,10 @@ releases:
 | arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, preserving or explicitly migrating compatibility surfaces. | arc04 |
 | arc06 | `release-hardening` | Prove the new behavior locally and in CI, update docs/release assets/migration notes, and publish `v0.3.0` only after wolong-oriented consumer verification. | arc05 |
 
-Detailed planning is currently open through Arc04. Arc05-Arc06 remain roadmap
-only and must be planned late, from the audit synthesis, Arc02 combined
-library recommendations, the accepted Arc03 managed-process contract, and the
-closed Arc04 substrate, not from earlier guesses.
+Detailed planning is closed through Arc04. Arc05-Arc06 remain roadmap only
+until the operator opens them; Arc05 must be planned from the audit synthesis,
+Arc02 combined library recommendations, the accepted Arc03 managed-process
+contract, and the closed Arc04 substrate, not from earlier guesses.
 
 ## 5. Current status
 
@@ -175,8 +175,10 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc03-managed-process-contract/slice06-managed-process-contract-synthesis/cdc-verification.md`](arc03-managed-process-contract/slice06-managed-process-contract-synthesis/cdc-verification.md),
   with accepted final contract:
   [`arc03-managed-process-contract/managed-process-contract.md`](arc03-managed-process-contract/managed-process-contract.md).
-- **arc04 - active.** Detailed plan:
+- **arc04 - closed.** Detailed plan:
   [`arc04-shared-runtime-substrate/arc-plan.md`](arc04-shared-runtime-substrate/arc-plan.md).
+  Closing report:
+  [`arc04-shared-runtime-substrate/closing-report.md`](arc04-shared-runtime-substrate/closing-report.md).
   Slice01 runtime-build-skeleton is closed and CDC-verified:
   [`arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md`](arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md).
   Slice02 status-result-core is closed and CDC-verified:
@@ -201,8 +203,9 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/ledger.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/ledger.md),
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md),
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md).
-- **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
-  Arc04 closes or explicitly bubbles up a planning dependency.
+- **arc05-arc06 - roadmap only.** Arc05 is now eligible for detailed planning
+  from the accepted Arc04 close when the operator opens it. Arc06 remains
+  downstream of Arc05 adoption evidence.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -228,8 +231,9 @@ input to all remaining work:
 - **Rejected for 0.3.0 foundations:** Abseil and Boost.Process are not
   foundation choices for this release.
 
-Arc03 must convert these findings into semantic constraints. Arc04 must
-implement only the dependency gates accepted by Arc03. Arc05 must adopt them
+Arc03 converted these findings into semantic constraints. Arc04 implemented
+only the dependency gates accepted by Arc03 and kept held or rejected
+dependencies out of the runtime substrate. Arc05 must adopt accepted helpers
 per binary without expanding optional surfaces. Arc06 must verify license,
 NOTICE, provenance, test-only dependency exclusion, and release-asset shape.
 
