@@ -58,15 +58,13 @@ enum class OutputRole {
 };
 
 struct ProcessStatus {
-  [[nodiscard]] static ProcessStatus from_code(
-    StatusCode code,
-    Component component,
-    SurfaceDisposition surface_disposition) noexcept;
+  [[nodiscard]] static ProcessStatus
+  from_code(StatusCode code, Component component,
+            SurfaceDisposition surface_disposition) noexcept;
 
-  [[nodiscard]] static ProcessStatus signal_terminated(
-    int signal_number,
-    Component component,
-    SurfaceDisposition surface_disposition) noexcept;
+  [[nodiscard]] static ProcessStatus
+  signal_terminated(int signal_number, Component component,
+                    SurfaceDisposition surface_disposition) noexcept;
 
   [[nodiscard]] StatusCode code() const noexcept;
   [[nodiscard]] Component component() const noexcept;
@@ -75,11 +73,8 @@ struct ProcessStatus {
   [[nodiscard]] bool is_signal_terminated() const noexcept;
 
 private:
-  ProcessStatus(
-    StatusCode code,
-    Component component,
-    SurfaceDisposition surface_disposition,
-    int signal_number) noexcept;
+  ProcessStatus(StatusCode code, Component component,
+                SurfaceDisposition surface_disposition, int signal_number) noexcept;
 
   StatusCode code_;
   Component component_;
@@ -93,8 +88,8 @@ private:
 [[nodiscard]] StatusClass status_class(ProcessStatus status) noexcept;
 [[nodiscard]] std::string_view status_class_name(StatusClass status_class) noexcept;
 [[nodiscard]] std::string_view component_name(Component component) noexcept;
-[[nodiscard]] std::string_view surface_disposition_name(
-  SurfaceDisposition surface_disposition) noexcept;
+[[nodiscard]] std::string_view
+surface_disposition_name(SurfaceDisposition surface_disposition) noexcept;
 [[nodiscard]] int exit_code(ProcessStatus status) noexcept;
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

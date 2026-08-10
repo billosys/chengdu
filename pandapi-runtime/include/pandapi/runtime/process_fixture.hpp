@@ -41,17 +41,15 @@ struct RunOptions {
   std::chrono::milliseconds timeout{0};
 };
 
-[[nodiscard]] std::string_view timeout_disposition_name(
-  TimeoutDisposition disposition) noexcept;
+[[nodiscard]] std::string_view
+timeout_disposition_name(TimeoutDisposition disposition) noexcept;
 [[nodiscard]] std::string_view cleanup_state_name(CleanupState state) noexcept;
 [[nodiscard]] WaitStatus exited_wait_status(int exit_code) noexcept;
 [[nodiscard]] WaitStatus signaled_wait_status(int signal_number) noexcept;
-[[nodiscard]] ProcessStatus signal_terminated_status(
-  const WaitStatus& wait_status,
-  Component component,
-  SurfaceDisposition surface_disposition) noexcept;
-[[nodiscard]] StatusResult<ProcessObservation> run_process_fixture(
-  const CommandSpec& command,
-  RunOptions options);
+[[nodiscard]] ProcessStatus
+signal_terminated_status(const WaitStatus& wait_status, Component component,
+                         SurfaceDisposition surface_disposition) noexcept;
+[[nodiscard]] StatusResult<ProcessObservation>
+run_process_fixture(const CommandSpec& command, RunOptions options);
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

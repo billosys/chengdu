@@ -13,7 +13,9 @@ BUILD_DIR="$REPO_ROOT/build/runtime/$PLATFORM"
 
 echo "build-runtime.sh: building pandapi-runtime for $PLATFORM"
 mkdir -p "$BUILD_DIR"
-cmake -S "$SRC_DIR" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
+cmake -S "$SRC_DIR" -B "$BUILD_DIR" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build "$BUILD_DIR" --parallel
 ( cd "$BUILD_DIR" && ctest --output-on-failure -C Release )
 

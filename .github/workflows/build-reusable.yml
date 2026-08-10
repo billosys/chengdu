@@ -42,7 +42,16 @@ jobs:
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Install prerequisites
-        run: sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
+        run: sudo apt-get install -y g++ clang clang-format make cmake flex bison gengetopt zip git
+
+      - name: Check owned source formatting
+        run: ./scripts/check-format-owned.sh
+
+      - name: Build runtime
+        run: ./scripts/build-runtime.sh
+
+      - name: Sanitize runtime
+        run: ./scripts/sanitize-runtime.sh
 
       - name: Build parser
         run: ./scripts/build-parser.sh
@@ -102,6 +111,12 @@ jobs:
 
       - name: Install prerequisites
         run: brew install gcc make cmake flex bison gengetopt zip
+
+      - name: Check owned source formatting
+        run: ./scripts/check-format-owned.sh
+
+      - name: Build runtime
+        run: ./scripts/build-runtime.sh
 
       - name: Build parser
         run: ./scripts/build-parser.sh

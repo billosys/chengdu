@@ -2,14 +2,8 @@
 
 namespace pandapi::runtime {
 
-std::string runtime_name()
-{
-  return "pandapi-runtime";
-}
+std::string runtime_name() { return "pandapi-runtime"; }
 
-int runtime_abi_version() noexcept
-{
-  return 1;
-}
+int runtime_abi_version() noexcept { return 1; }
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

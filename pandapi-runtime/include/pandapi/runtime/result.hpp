@@ -7,8 +7,7 @@
 
 namespace pandapi::runtime {
 
-template <typename T>
-class StatusResult {
+template <typename T> class StatusResult {
 public:
   [[nodiscard]] static StatusResult success(T value)
   {
@@ -25,15 +24,9 @@ public:
     return std::holds_alternative<T>(storage_);
   }
 
-  [[nodiscard]] const T& value() const
-  {
-    return std::get<T>(storage_);
-  }
+  [[nodiscard]] const T& value() const { return std::get<T>(storage_); }
 
-  [[nodiscard]] T& value()
-  {
-    return std::get<T>(storage_);
-  }
+  [[nodiscard]] T& value() { return std::get<T>(storage_); }
 
   [[nodiscard]] const ProcessStatus& status() const
   {
@@ -47,4 +40,4 @@ private:
   std::variant<T, ProcessStatus> storage_;
 };
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

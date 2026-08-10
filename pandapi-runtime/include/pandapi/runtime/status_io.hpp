@@ -30,9 +30,8 @@ struct StatusField {
 
 class StatusRecord {
 public:
-  [[nodiscard]] static StatusResult<StatusRecord> create(
-    ProcessStatus process_status,
-    std::string surface);
+  [[nodiscard]] static StatusResult<StatusRecord> create(ProcessStatus process_status,
+                                                         std::string surface);
 
   [[nodiscard]] ProcessStatus process_status() const noexcept;
   [[nodiscard]] std::string_view surface() const noexcept;
@@ -54,19 +53,19 @@ private:
 };
 
 [[nodiscard]] std::string_view status_stream_name(StatusStream stream) noexcept;
-[[nodiscard]] bool status_stream_allowed(
-  StatusStream stream,
-  OutputRole stdout_role) noexcept;
-[[nodiscard]] std::string_view partial_output_policy_name(
-  PartialOutputPolicy policy) noexcept;
-[[nodiscard]] StatusResult<PartialOutputPolicy> parse_partial_output_policy(
-  std::string_view value);
+[[nodiscard]] bool status_stream_allowed(StatusStream stream,
+                                         OutputRole stdout_role) noexcept;
+[[nodiscard]] std::string_view
+partial_output_policy_name(PartialOutputPolicy policy) noexcept;
+[[nodiscard]] StatusResult<PartialOutputPolicy>
+parse_partial_output_policy(std::string_view value);
 
 [[nodiscard]] bool is_status_value_single_line(std::string_view value) noexcept;
 [[nodiscard]] StatusResult<std::string> escape_status_value(std::string_view value);
-[[nodiscard]] StatusResult<std::string> serialize_status_record(
-  const StatusRecord& record);
-[[nodiscard]] bool write_status_record(std::ostream& output, const StatusRecord& record);
+[[nodiscard]] StatusResult<std::string>
+serialize_status_record(const StatusRecord& record);
+[[nodiscard]] bool write_status_record(std::ostream& output,
+                                       const StatusRecord& record);
 [[nodiscard]] StatusResult<StatusRecord> parse_status_record(std::string_view line);
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

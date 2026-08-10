@@ -8,8 +8,8 @@ TEST_CASE("Catch2 stays test-only for fixture seam checks", "[fixture][Catch2]")
   fixture.id = "catch2-test-only-fixture";
   fixture.stdout_expectation.role = pandapi::runtime::StreamRole::TaggedStatus;
 
-  REQUIRE(pandapi::runtime::stream_role_name(fixture.stdout_expectation.role)
-    == "tagged_status");
-  REQUIRE(pandapi::runtime::probe_safety_name(
-    pandapi::runtime::ProbeSafety::CiSafe) == "CI-safe");
+  REQUIRE(pandapi::runtime::stream_role_name(fixture.stdout_expectation.role) ==
+          "tagged_status");
+  REQUIRE(pandapi::runtime::probe_safety_name(pandapi::runtime::ProbeSafety::CiSafe) ==
+          "CI-safe");
 }

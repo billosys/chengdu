@@ -18,10 +18,8 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
 
 [[nodiscard]] ProcessStatus input_invalid_status() noexcept
 {
-  return ProcessStatus::from_code(
-    StatusCode::InputInvalid,
-    Component::Parser,
-    SurfaceDisposition::Supported);
+  return ProcessStatus::from_code(StatusCode::InputInvalid, Component::Parser,
+                                  SurfaceDisposition::Supported);
 }
 
 [[nodiscard]] bool is_lower_alpha(char value) noexcept
@@ -47,9 +45,9 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
 
 [[nodiscard]] bool is_reserved_field(std::string_view key) noexcept
 {
-  return key == "status" || key == "component" || key == "surface"
-    || key == "surface_disposition" || key == "exit_code" || key == "class"
-    || key == "signal_number" || key == "partial_output_policy";
+  return key == "status" || key == "component" || key == "surface" ||
+         key == "surface_disposition" || key == "exit_code" || key == "class" ||
+         key == "signal_number" || key == "partial_output_policy";
 }
 
 [[nodiscard]] bool is_surface_name(std::string_view value) noexcept
@@ -62,8 +60,8 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
   std::string lowered;
   lowered.reserve(value.size());
   for (char character : value) {
-    lowered.push_back(static_cast<char>(std::tolower(
-      static_cast<unsigned char>(character))));
+    lowered.push_back(
+        static_cast<char>(std::tolower(static_cast<unsigned char>(character))));
   }
   return lowered;
 }
@@ -71,10 +69,10 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
 [[nodiscard]] bool contains_placeholder_prose(std::string_view value)
 {
   const auto lowered = lowercase_ascii(value);
-  return lowered.find("placeholder") != std::string::npos
-    || lowered.find("todo") != std::string::npos
-    || lowered.find("tbd") != std::string::npos
-    || lowered.find("n/a") != std::string::npos;
+  return lowered.find("placeholder") != std::string::npos ||
+         lowered.find("todo") != std::string::npos ||
+         lowered.find("tbd") != std::string::npos ||
+         lowered.find("n/a") != std::string::npos;
 }
 
 [[nodiscard]] bool contains_ansi_escape(std::string_view value) noexcept
@@ -84,8 +82,8 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
 
 [[nodiscard]] bool is_valid_field_value(std::string_view value)
 {
-  return !value.empty() && !contains_ansi_escape(value)
-    && !contains_placeholder_prose(value);
+  return !value.empty() && !contains_ansi_escape(value) &&
+         !contains_placeholder_prose(value);
 }
 
 [[nodiscard]] StatusResult<std::string> unescape_status_value(std::string_view value)
@@ -101,20 +99,20 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
   for (char character : value) {
     if (escaping) {
       switch (character) {
-        case 'n':
-          unescaped.push_back('\n');
-          break;
-        case 'r':
-          unescaped.push_back('\r');
-          break;
-        case 't':
-          unescaped.push_back('\t');
-          break;
-        case '\\':
-          unescaped.push_back('\\');
-          break;
-        default:
-          return StatusResult<std::string>::failure(input_invalid_status());
+      case 'n':
+        unescaped.push_back('\n');
+        break;
+      case 'r':
+        unescaped.push_back('\r');
+        break;
+      case 't':
+        unescaped.push_back('\t');
+        break;
+      case '\\':
+        unescaped.push_back('\\');
+        break;
+      default:
+        return StatusResult<std::string>::failure(input_invalid_status());
       }
       escaping = false;
       continue;
@@ -141,20 +139,18 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
     return false;
   }
 
-  const auto has_only_digits = std::all_of(
-    value.begin(),
-    value.end(),
-    [](char character) noexcept { return is_digit(character); });
+  const auto has_only_digits =
+      std::all_of(value.begin(), value.end(),
+                  [](char character) noexcept { return is_digit(character); });
   if (!has_only_digits) {
     return false;
   }
 
   int result = 0;
-  const auto parse_result = std::from_chars(
-    value.data(),
-    value.data() + value.size(),
-    result);
-  if (parse_result.ec != std::errc{} || parse_result.ptr != value.data() + value.size()) {
+  const auto parse_result =
+      std::from_chars(value.data(), value.data() + value.size(), result);
+  if (parse_result.ec != std::errc{} ||
+      parse_result.ptr != value.data() + value.size()) {
     return false;
   }
 
@@ -234,8 +230,8 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
   return StatusResult<Component>::failure(input_invalid_status());
 }
 
-[[nodiscard]] StatusResult<SurfaceDisposition> parse_surface_disposition(
-  std::string_view value)
+[[nodiscard]] StatusResult<SurfaceDisposition>
+parse_surface_disposition(std::string_view value)
 {
   if (value == "supported") {
     return StatusResult<SurfaceDisposition>::success(SurfaceDisposition::Supported);
@@ -263,9 +259,8 @@ struct ParsedField {
 
 [[nodiscard]] StatusResult<std::vector<ParsedField>> parse_fields(std::string_view line)
 {
-  if (line.find('\n') != std::string_view::npos
-      || line.find('\r') != std::string_view::npos
-      || contains_ansi_escape(line)) {
+  if (line.find('\n') != std::string_view::npos ||
+      line.find('\r') != std::string_view::npos || contains_ansi_escape(line)) {
     return StatusResult<std::vector<ParsedField>>::failure(input_invalid_status());
   }
 
@@ -286,9 +281,9 @@ struct ParsedField {
     ++cursor;
 
     const auto next = line.find('\t', cursor);
-    const auto token = line.substr(
-      cursor,
-      next == std::string_view::npos ? std::string_view::npos : next - cursor);
+    const auto token =
+        line.substr(cursor, next == std::string_view::npos ? std::string_view::npos
+                                                           : next - cursor);
     const auto separator = token.find('=');
     if (separator == std::string_view::npos) {
       return StatusResult<std::vector<ParsedField>>::failure(input_invalid_status());
@@ -300,10 +295,9 @@ struct ParsedField {
       return StatusResult<std::vector<ParsedField>>::failure(input_invalid_status());
     }
 
-    const auto existing = std::find_if(
-      fields.begin(),
-      fields.end(),
-      [key](const ParsedField& field) { return field.key == key; });
+    const auto existing =
+        std::find_if(fields.begin(), fields.end(),
+                     [key](const ParsedField& field) { return field.key == key; });
     if (existing != fields.end()) {
       return StatusResult<std::vector<ParsedField>>::failure(input_invalid_status());
     }
@@ -313,9 +307,7 @@ struct ParsedField {
       return StatusResult<std::vector<ParsedField>>::failure(unescaped.status());
     }
 
-    fields.push_back(ParsedField{
-      std::string{key},
-      std::move(unescaped.value())});
+    fields.push_back(ParsedField{std::string{key}, std::move(unescaped.value())});
 
     if (next == std::string_view::npos) {
       break;
@@ -326,24 +318,20 @@ struct ParsedField {
   return StatusResult<std::vector<ParsedField>>::success(std::move(fields));
 }
 
-[[nodiscard]] const ParsedField* find_field(
-  const std::vector<ParsedField>& fields,
-  std::string_view key) noexcept
+[[nodiscard]] const ParsedField* find_field(const std::vector<ParsedField>& fields,
+                                            std::string_view key) noexcept
 {
   const auto match = std::find_if(
-    fields.begin(),
-    fields.end(),
-    [key](const ParsedField& field) noexcept { return field.key == key; });
+      fields.begin(), fields.end(),
+      [key](const ParsedField& field) noexcept { return field.key == key; });
   if (match == fields.end()) {
     return nullptr;
   }
   return &(*match);
 }
 
-[[nodiscard]] bool required_field(
-  const std::vector<ParsedField>& fields,
-  std::string_view key,
-  std::string& value)
+[[nodiscard]] bool required_field(const std::vector<ParsedField>& fields,
+                                  std::string_view key, std::string& value)
 {
   const auto* field = find_field(fields, key);
   if (field == nullptr) {
@@ -353,10 +341,8 @@ struct ParsedField {
   return true;
 }
 
-[[nodiscard]] bool append_field(
-  std::ostringstream& output,
-  std::string_view key,
-  std::string_view value)
+[[nodiscard]] bool append_field(std::ostringstream& output, std::string_view key,
+                                std::string_view value)
 {
   auto escaped = escape_status_value(value);
   if (!escaped.has_value()) {
@@ -367,39 +353,29 @@ struct ParsedField {
   return true;
 }
 
-}  // namespace
+} // namespace
 
 StatusRecord::StatusRecord(ProcessStatus process_status, std::string surface)
-  : process_status_{process_status},
-    surface_{std::move(surface)},
-    fields_{},
-    partial_output_policy_{PartialOutputPolicy::Unknown},
-    has_partial_output_policy_{false}
+    : process_status_{process_status}, surface_{std::move(surface)}, fields_{},
+      partial_output_policy_{PartialOutputPolicy::Unknown},
+      has_partial_output_policy_{false}
 {
 }
 
-StatusResult<StatusRecord> StatusRecord::create(
-  ProcessStatus process_status,
-  std::string surface)
+StatusResult<StatusRecord> StatusRecord::create(ProcessStatus process_status,
+                                                std::string surface)
 {
   if (!is_surface_name(surface) || !is_valid_field_value(surface)) {
     return StatusResult<StatusRecord>::failure(input_invalid_status());
   }
 
-  return StatusResult<StatusRecord>::success(StatusRecord{
-    process_status,
-    std::move(surface)});
+  return StatusResult<StatusRecord>::success(
+      StatusRecord{process_status, std::move(surface)});
 }
 
-ProcessStatus StatusRecord::process_status() const noexcept
-{
-  return process_status_;
-}
+ProcessStatus StatusRecord::process_status() const noexcept { return process_status_; }
 
-std::string_view StatusRecord::surface() const noexcept
-{
-  return surface_;
-}
+std::string_view StatusRecord::surface() const noexcept { return surface_; }
 
 const std::vector<StatusField>& StatusRecord::fields() const noexcept
 {
@@ -412,10 +388,9 @@ bool StatusRecord::add_field(std::string key, std::string value)
     return false;
   }
 
-  const auto existing = std::find_if(
-    fields_.begin(),
-    fields_.end(),
-    [&key](const StatusField& field) { return field.key == key; });
+  const auto existing =
+      std::find_if(fields_.begin(), fields_.end(),
+                   [&key](const StatusField& field) { return field.key == key; });
   if (existing != fields_.end()) {
     return false;
   }
@@ -443,10 +418,10 @@ PartialOutputPolicy StatusRecord::partial_output_policy() const noexcept
 std::string_view status_stream_name(StatusStream stream) noexcept
 {
   switch (stream) {
-    case StatusStream::Stderr:
-      return "stderr";
-    case StatusStream::Stdout:
-      return "stdout";
+  case StatusStream::Stderr:
+    return "stderr";
+  case StatusStream::Stdout:
+    return "stdout";
   }
 
   return "stderr";
@@ -464,16 +439,16 @@ bool status_stream_allowed(StatusStream stream, OutputRole stdout_role) noexcept
 std::string_view partial_output_policy_name(PartialOutputPolicy policy) noexcept
 {
   switch (policy) {
-    case PartialOutputPolicy::Absent:
-      return "absent";
-    case PartialOutputPolicy::Retained:
-      return "retained";
-    case PartialOutputPolicy::Discarded:
-      return "discarded";
-    case PartialOutputPolicy::Complete:
-      return "complete";
-    case PartialOutputPolicy::Unknown:
-      return "unknown";
+  case PartialOutputPolicy::Absent:
+    return "absent";
+  case PartialOutputPolicy::Retained:
+    return "retained";
+  case PartialOutputPolicy::Discarded:
+    return "discarded";
+  case PartialOutputPolicy::Complete:
+    return "complete";
+  case PartialOutputPolicy::Unknown:
+    return "unknown";
   }
 
   return "unknown";
@@ -502,10 +477,9 @@ StatusResult<PartialOutputPolicy> parse_partial_output_policy(std::string_view v
 
 bool is_status_value_single_line(std::string_view value) noexcept
 {
-  return value.find('\n') == std::string_view::npos
-    && value.find('\r') == std::string_view::npos
-    && value.find('\t') == std::string_view::npos
-    && !contains_ansi_escape(value);
+  return value.find('\n') == std::string_view::npos &&
+         value.find('\r') == std::string_view::npos &&
+         value.find('\t') == std::string_view::npos && !contains_ansi_escape(value);
 }
 
 StatusResult<std::string> escape_status_value(std::string_view value)
@@ -519,21 +493,21 @@ StatusResult<std::string> escape_status_value(std::string_view value)
 
   for (char character : value) {
     switch (character) {
-      case '\n':
-        escaped += "\\n";
-        break;
-      case '\r':
-        escaped += "\\r";
-        break;
-      case '\t':
-        escaped += "\\t";
-        break;
-      case '\\':
-        escaped += "\\\\";
-        break;
-      default:
-        escaped.push_back(character);
-        break;
+    case '\n':
+      escaped += "\\n";
+      break;
+    case '\r':
+      escaped += "\\r";
+      break;
+    case '\t':
+      escaped += "\\t";
+      break;
+    case '\\':
+      escaped += "\\\\";
+      break;
+    default:
+      escaped.push_back(character);
+      break;
     }
   }
 
@@ -555,36 +529,27 @@ StatusResult<std::string> serialize_status_record(const StatusRecord& record)
   if (!append_field(output, "surface", record.surface())) {
     return StatusResult<std::string>::failure(input_invalid_status());
   }
-  if (!append_field(
-        output,
-        "surface_disposition",
-        surface_disposition_name(process_status.surface_disposition()))) {
+  if (!append_field(output, "surface_disposition",
+                    surface_disposition_name(process_status.surface_disposition()))) {
     return StatusResult<std::string>::failure(input_invalid_status());
   }
   if (!append_field(output, "exit_code", std::to_string(exit_code(process_status)))) {
     return StatusResult<std::string>::failure(input_invalid_status());
   }
-  if (!append_field(
-        output,
-        "class",
-        status_class_name(status_class(process_status)))) {
+  if (!append_field(output, "class", status_class_name(status_class(process_status)))) {
     return StatusResult<std::string>::failure(input_invalid_status());
   }
 
   if (process_status.is_signal_terminated()) {
-    if (!append_field(
-          output,
-          "signal_number",
-          std::to_string(process_status.signal_number()))) {
+    if (!append_field(output, "signal_number",
+                      std::to_string(process_status.signal_number()))) {
       return StatusResult<std::string>::failure(input_invalid_status());
     }
   }
 
   if (record.has_partial_output_policy()) {
-    if (!append_field(
-          output,
-          "partial_output_policy",
-          partial_output_policy_name(record.partial_output_policy()))) {
+    if (!append_field(output, "partial_output_policy",
+                      partial_output_policy_name(record.partial_output_policy()))) {
       return StatusResult<std::string>::failure(input_invalid_status());
     }
   }
@@ -624,23 +589,21 @@ StatusResult<StatusRecord> parse_status_record(std::string_view line)
   std::string exit_code_value;
   std::string class_value;
 
-  if (!required_field(parsed_fields.value(), "status", status_value)
-      || !required_field(parsed_fields.value(), "component", component_value)
-      || !required_field(parsed_fields.value(), "surface", surface_value)
-      || !required_field(
-        parsed_fields.value(),
-        "surface_disposition",
-        surface_disposition_value)
-      || !required_field(parsed_fields.value(), "exit_code", exit_code_value)
-      || !required_field(parsed_fields.value(), "class", class_value)) {
+  if (!required_field(parsed_fields.value(), "status", status_value) ||
+      !required_field(parsed_fields.value(), "component", component_value) ||
+      !required_field(parsed_fields.value(), "surface", surface_value) ||
+      !required_field(parsed_fields.value(), "surface_disposition",
+                      surface_disposition_value) ||
+      !required_field(parsed_fields.value(), "exit_code", exit_code_value) ||
+      !required_field(parsed_fields.value(), "class", class_value)) {
     return StatusResult<StatusRecord>::failure(input_invalid_status());
   }
 
   auto parsed_status_code = parse_status_code(status_value);
   auto parsed_component = parse_component(component_value);
   auto parsed_disposition = parse_surface_disposition(surface_disposition_value);
-  if (!parsed_status_code.has_value() || !parsed_component.has_value()
-      || !parsed_disposition.has_value()) {
+  if (!parsed_status_code.has_value() || !parsed_component.has_value() ||
+      !parsed_disposition.has_value()) {
     return StatusResult<StatusRecord>::failure(input_invalid_status());
   }
 
@@ -650,29 +613,25 @@ StatusResult<StatusRecord> parse_status_record(std::string_view line)
   }
 
   ProcessStatus process_status = ProcessStatus::from_code(
-    parsed_status_code.value(),
-    parsed_component.value(),
-    parsed_disposition.value());
+      parsed_status_code.value(), parsed_component.value(), parsed_disposition.value());
 
   const auto* signal_number = find_field(parsed_fields.value(), "signal_number");
   if (parsed_status_code.value() == StatusCode::SignalTerminated) {
     int parsed_signal_number = 0;
-    if (signal_number == nullptr
-        || !parse_int(signal_number->value, parsed_signal_number)
-        || parsed_signal_number <= 0) {
+    if (signal_number == nullptr ||
+        !parse_int(signal_number->value, parsed_signal_number) ||
+        parsed_signal_number <= 0) {
       return StatusResult<StatusRecord>::failure(input_invalid_status());
     }
 
     process_status = ProcessStatus::signal_terminated(
-      parsed_signal_number,
-      parsed_component.value(),
-      parsed_disposition.value());
+        parsed_signal_number, parsed_component.value(), parsed_disposition.value());
   } else if (signal_number != nullptr) {
     return StatusResult<StatusRecord>::failure(input_invalid_status());
   }
 
-  if (parsed_exit_code != exit_code(process_status)
-      || class_value != status_class_name(status_class(process_status))) {
+  if (parsed_exit_code != exit_code(process_status) ||
+      class_value != status_class_name(status_class(process_status))) {
     return StatusResult<StatusRecord>::failure(input_invalid_status());
   }
 
@@ -681,9 +640,8 @@ StatusResult<StatusRecord> parse_status_record(std::string_view line)
     return StatusResult<StatusRecord>::failure(record.status());
   }
 
-  const auto* partial_output = find_field(
-    parsed_fields.value(),
-    "partial_output_policy");
+  const auto* partial_output =
+      find_field(parsed_fields.value(), "partial_output_policy");
   if (partial_output != nullptr) {
     auto policy = parse_partial_output_policy(partial_output->value);
     if (!policy.has_value()) {
@@ -703,4 +661,4 @@ StatusResult<StatusRecord> parse_status_record(std::string_view line)
   return StatusResult<StatusRecord>::success(std::move(record.value()));
 }
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

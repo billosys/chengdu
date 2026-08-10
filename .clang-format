@@ -1,0 +1,13 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++17
+ColumnLimit: 88
+IndentWidth: 2
+ContinuationIndentWidth: 4
+DerivePointerAlignment: false
+PointerAlignment: Left
+SortIncludes: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true

@@ -235,6 +235,46 @@ Arc06 still owns release shape, wolong proof, license and NOTICE updates,
 test-only dependency exclusion, and CI/release gate evidence. Arc04 performs
 no binary adoption.
 
+## Quality Tooling
+
+Arc05 Slice01 adds the pre-adoption quality runway for chengdu-owned C++
+source. The top-level `.clang-format` is an LLVM-derived C++17 style contract
+applied first to owned runtime headers, sources, and tests under
+`pandapi-runtime/include`, `pandapi-runtime/src`, and `pandapi-runtime/tests`.
+It deliberately does not bulk-format vendored `pandaPI/` source.
+
+Developer gates:
+
+```sh
+./scripts/check-format-owned.sh
+./scripts/build-runtime.sh
+./scripts/sanitize-runtime.sh
+```
+
+`check-format-owned.sh` prefers `clang-format` on `PATH` and falls back to the
+macOS Xcode `xcrun` lookup. `build-runtime.sh` configures the runtime with
+`CMAKE_EXPORT_COMPILE_COMMANDS=ON`, so the normal generated build tree under
+`build/runtime/<platform>/` contains `compile_commands.json` for future
+`clang-tidy` adoption. `sanitize-runtime.sh` uses Clang ASan/UBSan flags in a
+dedicated `build/runtime-sanitize/<platform>/` tree, builds only
+`pandapi-runtime/`, and runs CTest. It does not produce release binaries.
+
+`clang-tidy` remains deferred behind an installed-toolchain gate because the
+default local environment does not provide `clang-tidy` on `PATH`. The
+intended first scope is the same owned runtime source set and future
+chengdu-owned adapter/facade code that can consume the runtime
+`compile_commands.json`; Makefile-era parser and grounder source is not forced
+into clang-tidy yet.
+
+Coverage and TSan are also explicit deferrals. Coverage should re-enter after
+Arc05 process fixtures exercise migrated binaries and representative runtime
+adapter paths, so reports measure meaningful owned process-policy coverage
+rather than inherited-source volume. TSan waits for representative subprocess,
+timeout/signal, and stream-draining workloads; it should stay separate from
+ASan/UBSan. Arc06 still owns release-package, license/NOTICE, test-only
+exclusion, checksum, manifest, wolong, package, publish, and publication
+proof.
+
 ## Arc02 Dependency Gates
 
 Arc02 selected the standard library as the baseline and placed every external

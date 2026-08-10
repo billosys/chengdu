@@ -19,18 +19,12 @@ class UniqueFd {
 public:
   UniqueFd() noexcept = default;
   explicit UniqueFd(int fd) noexcept : fd_{fd} {}
-  ~UniqueFd() noexcept
-  {
-    close();
-  }
+  ~UniqueFd() noexcept { close(); }
 
   UniqueFd(const UniqueFd&) = delete;
   UniqueFd& operator=(const UniqueFd&) = delete;
 
-  UniqueFd(UniqueFd&& other) noexcept : fd_{other.fd_}
-  {
-    other.fd_ = -1;
-  }
+  UniqueFd(UniqueFd&& other) noexcept : fd_{other.fd_} { other.fd_ = -1; }
 
   UniqueFd& operator=(UniqueFd&& other) noexcept
   {
@@ -42,15 +36,9 @@ public:
     return *this;
   }
 
-  [[nodiscard]] int get() const noexcept
-  {
-    return fd_;
-  }
+  [[nodiscard]] int get() const noexcept { return fd_; }
 
-  [[nodiscard]] bool valid() const noexcept
-  {
-    return fd_ >= 0;
-  }
+  [[nodiscard]] bool valid() const noexcept { return fd_ >= 0; }
 
   [[nodiscard]] int release() noexcept
   {
@@ -80,10 +68,9 @@ struct PipePair {
 {
   int fds[2] = {-1, -1};
   if (::pipe(fds) != 0) {
-    return StatusResult<PipePair>::failure(ProcessStatus::from_code(
-      StatusCode::ChildProcessFailure,
-      Component::Engine,
-      SurfaceDisposition::Supported));
+    return StatusResult<PipePair>::failure(
+        ProcessStatus::from_code(StatusCode::ChildProcessFailure, Component::Engine,
+                                 SurfaceDisposition::Supported));
   }
 
   return StatusResult<PipePair>::success(PipePair{UniqueFd{fds[0]}, UniqueFd{fds[1]}});
@@ -127,10 +114,8 @@ void write_stdin_and_close(UniqueFd& fd, const StdinSpec& stdin_spec)
   if (stdin_spec.mode == StdinMode::Bytes) {
     std::string::size_type written = 0;
     while (written < stdin_spec.bytes.size()) {
-      const auto count = ::write(
-        fd.get(),
-        stdin_spec.bytes.data() + written,
-        stdin_spec.bytes.size() - written);
+      const auto count = ::write(fd.get(), stdin_spec.bytes.data() + written,
+                                 stdin_spec.bytes.size() - written);
       if (count > 0) {
         written += static_cast<std::string::size_type>(count);
         continue;
@@ -153,8 +138,8 @@ void write_stdin_and_close(UniqueFd& fd, const StdinSpec& stdin_spec)
   return std::vector<std::string>{command.executable_path};
 }
 
-[[nodiscard]] std::vector<std::string> environment_strings(
-  const EnvironmentSpec& environment)
+[[nodiscard]] std::vector<std::string>
+environment_strings(const EnvironmentSpec& environment)
 {
   std::vector<std::string> values;
   values.reserve(environment.variables.size());
@@ -177,23 +162,21 @@ void write_stdin_and_close(UniqueFd& fd, const StdinSpec& stdin_spec)
 
 [[nodiscard]] ProcessStatus child_process_failure_status() noexcept
 {
-  return ProcessStatus::from_code(
-    StatusCode::ChildProcessFailure,
-    Component::Engine,
-    SurfaceDisposition::Supported);
+  return ProcessStatus::from_code(StatusCode::ChildProcessFailure, Component::Engine,
+                                  SurfaceDisposition::Supported);
 }
 
-}  // namespace
+} // namespace
 
 std::string_view timeout_disposition_name(TimeoutDisposition disposition) noexcept
 {
   switch (disposition) {
-    case TimeoutDisposition::None:
-      return "none";
-    case TimeoutDisposition::HarnessTimeout:
-      return "harness-timeout";
-    case TimeoutDisposition::BinaryTimeout:
-      return "binary-timeout";
+  case TimeoutDisposition::None:
+    return "none";
+  case TimeoutDisposition::HarnessTimeout:
+    return "harness-timeout";
+  case TimeoutDisposition::BinaryTimeout:
+    return "binary-timeout";
   }
 
   return "none";
@@ -202,12 +185,12 @@ std::string_view timeout_disposition_name(TimeoutDisposition disposition) noexce
 std::string_view cleanup_state_name(CleanupState state) noexcept
 {
   switch (state) {
-    case CleanupState::NotRequired:
-      return "not_required";
-    case CleanupState::Completed:
-      return "cleanup_completed";
-    case CleanupState::Failed:
-      return "cleanup_failed";
+  case CleanupState::NotRequired:
+    return "not_required";
+  case CleanupState::Completed:
+    return "cleanup_completed";
+  case CleanupState::Failed:
+    return "cleanup_failed";
   }
 
   return "cleanup_failed";
@@ -220,26 +203,20 @@ WaitStatus exited_wait_status(int exit_code) noexcept
 
 WaitStatus signaled_wait_status(int signal_number) noexcept
 {
-  return WaitStatus{
-    WaitStatusKind::Signaled,
-    supervisor_exit_code_for_signal(signal_number),
-    signal_number};
+  return WaitStatus{WaitStatusKind::Signaled,
+                    supervisor_exit_code_for_signal(signal_number), signal_number};
 }
 
-ProcessStatus signal_terminated_status(
-  const WaitStatus& wait_status,
-  Component component,
-  SurfaceDisposition surface_disposition) noexcept
+ProcessStatus signal_terminated_status(const WaitStatus& wait_status,
+                                       Component component,
+                                       SurfaceDisposition surface_disposition) noexcept
 {
-  return ProcessStatus::signal_terminated(
-    wait_status.signal_number,
-    component,
-    surface_disposition);
+  return ProcessStatus::signal_terminated(wait_status.signal_number, component,
+                                          surface_disposition);
 }
 
-StatusResult<ProcessObservation> run_process_fixture(
-  const CommandSpec& command,
-  RunOptions options)
+StatusResult<ProcessObservation> run_process_fixture(const CommandSpec& command,
+                                                     RunOptions options)
 {
   auto stdin_pipe = make_pipe();
   auto stdout_pipe = make_pipe();
@@ -295,8 +272,8 @@ StatusResult<ProcessObservation> run_process_fixture(
   int status = 0;
   const auto start = std::chrono::steady_clock::now();
 
-  while (!process_done || stdout_pipe.value().read_end.valid()
-         || stderr_pipe.value().read_end.valid()) {
+  while (!process_done || stdout_pipe.value().read_end.valid() ||
+         stderr_pipe.value().read_end.valid()) {
     append_available_output(stdout_pipe.value().read_end, observation.stdout_text);
     append_available_output(stderr_pipe.value().read_end, observation.stderr_text);
 
@@ -319,8 +296,8 @@ StatusResult<ProcessObservation> run_process_fixture(
       }
     }
 
-    if (!process_done || stdout_pipe.value().read_end.valid()
-        || stderr_pipe.value().read_end.valid()) {
+    if (!process_done || stdout_pipe.value().read_end.valid() ||
+        stderr_pipe.value().read_end.valid()) {
       std::this_thread::sleep_for(std::chrono::milliseconds{5});
     }
   }
@@ -334,12 +311,11 @@ StatusResult<ProcessObservation> run_process_fixture(
   }
   observation.exit_code = observation.wait_status.exit_code;
   if (observation.cleanup_state == CleanupState::NotRequired) {
-    observation.cleanup_state = killed_for_timeout
-      ? CleanupState::Completed
-      : CleanupState::NotRequired;
+    observation.cleanup_state =
+        killed_for_timeout ? CleanupState::Completed : CleanupState::NotRequired;
   }
 
   return StatusResult<ProcessObservation>::success(std::move(observation));
 }
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

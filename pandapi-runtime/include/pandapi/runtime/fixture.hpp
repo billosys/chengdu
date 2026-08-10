@@ -155,8 +155,8 @@ struct FixtureSpec {
 [[nodiscard]] std::string_view stream_role_name(StreamRole role) noexcept;
 [[nodiscard]] std::string_view artifact_state_name(ArtifactState state) noexcept;
 [[nodiscard]] std::string_view wait_status_kind_name(WaitStatusKind kind) noexcept;
-[[nodiscard]] std::string_view final_status_observation_name(
-  FinalStatusObservation observation) noexcept;
+[[nodiscard]] std::string_view
+final_status_observation_name(FinalStatusObservation observation) noexcept;
 [[nodiscard]] std::string_view probe_kind_name(ProbeKind kind) noexcept;
 [[nodiscard]] std::string_view probe_safety_name(ProbeSafety safety) noexcept;
 [[nodiscard]] std::string_view cleanup_policy_name(CleanupPolicy policy) noexcept;
@@ -165,4 +165,4 @@ struct FixtureSpec {
 [[nodiscard]] bool stream_allows_ansi(const StreamExpectation& expectation) noexcept;
 [[nodiscard]] OutputRole output_role_for_stream(StreamRole role) noexcept;
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

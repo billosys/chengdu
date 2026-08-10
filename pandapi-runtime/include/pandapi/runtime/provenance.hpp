@@ -34,21 +34,17 @@ struct ProvenanceRecord {
 };
 
 [[nodiscard]] std::string_view provenance_record_kind() noexcept;
-[[nodiscard]] StatusResult<std::vector<ProvenanceField>> version_fields(
-  const ProvenanceRecord& record,
-  Component component,
-  SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
+[[nodiscard]] StatusResult<std::vector<ProvenanceField>>
+version_fields(const ProvenanceRecord& record, Component component,
+               SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
 [[nodiscard]] StatusResult<std::vector<ProvenanceField>> provenance_fields(
-  const ProvenanceRecord& record,
-  Component component,
-  SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
-[[nodiscard]] StatusResult<std::string> format_version(
-  const ProvenanceRecord& record,
-  Component component,
-  SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
+    const ProvenanceRecord& record, Component component,
+    SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
+[[nodiscard]] StatusResult<std::string>
+format_version(const ProvenanceRecord& record, Component component,
+               SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
 [[nodiscard]] StatusResult<std::string> format_provenance(
-  const ProvenanceRecord& record,
-  Component component,
-  SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
+    const ProvenanceRecord& record, Component component,
+    SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime

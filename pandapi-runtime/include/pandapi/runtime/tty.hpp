@@ -46,15 +46,13 @@ struct AnsiPolicy {
 [[nodiscard]] std::string_view terminal_kind_name(TerminalKind terminal) noexcept;
 [[nodiscard]] std::string_view ansi_stream_name(AnsiStream stream) noexcept;
 [[nodiscard]] StatusResult<ColorMode> parse_color_mode(
-  std::string_view value,
-  Component component,
-  SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
+    std::string_view value, Component component,
+    SurfaceDisposition surface_disposition = SurfaceDisposition::Supported);
 [[nodiscard]] TerminalKind detect_terminal(bool observed_is_tty) noexcept;
 [[nodiscard]] bool terminal_allows_color(TerminalKind terminal) noexcept;
-[[nodiscard]] bool color_disabling_control_present(
-  const ColorControls& controls) noexcept;
-[[nodiscard]] ColorMode effective_color_mode(
-  const ColorControls& controls) noexcept;
+[[nodiscard]] bool
+color_disabling_control_present(const ColorControls& controls) noexcept;
+[[nodiscard]] ColorMode effective_color_mode(const ColorControls& controls) noexcept;
 [[nodiscard]] bool allows_color(const AnsiPolicy& policy) noexcept;
 
-}  // namespace pandapi::runtime
+} // namespace pandapi::runtime
