@@ -113,10 +113,12 @@ amendments.
   [`slice02-contract-fixture-scaffold/cc-prompt.md`](slice02-contract-fixture-scaffold/cc-prompt.md),
   [`slice02-contract-fixture-scaffold/closing-report.md`](slice02-contract-fixture-scaffold/closing-report.md),
   [`slice02-contract-fixture-scaffold/cdc-verification.md`](slice02-contract-fixture-scaffold/cdc-verification.md).
-- **slice03 parser-contract-adoption - open.** Open set:
+- **slice03 parser-contract-adoption - closed and CDC-verified.** Slice set:
   [`slice03-parser-contract-adoption/slice-doc.md`](slice03-parser-contract-adoption/slice-doc.md),
   [`slice03-parser-contract-adoption/ledger.md`](slice03-parser-contract-adoption/ledger.md),
-  [`slice03-parser-contract-adoption/cc-prompt.md`](slice03-parser-contract-adoption/cc-prompt.md).
+  [`slice03-parser-contract-adoption/cc-prompt.md`](slice03-parser-contract-adoption/cc-prompt.md),
+  [`slice03-parser-contract-adoption/closing-report.md`](slice03-parser-contract-adoption/closing-report.md),
+  [`slice03-parser-contract-adoption/cdc-verification.md`](slice03-parser-contract-adoption/cdc-verification.md).
 
 ## 6. Planned implementation surface
 
@@ -170,6 +172,14 @@ arc's `closing-report.md`.
   slice proves the migration is safer than preserving compatibility.
 
 ## 9. Version history
+
+- **v1.6 - 2026-08-10.** Marked Slice03 parser-contract-adoption closed and
+  CDC-verified after independent review of CC implementation commit
+  `5c807016`, make-target follow-up commit `1d91a1ae`, and CDC evidence
+  repair commit `fe4efbfa`. Surfaced by: Slice03 CDC verification. Why:
+  Arc05 now has accepted parser managed-process behavior through canonical
+  `pandapi-parser` and inherited `pandaPIparser`, with the parser contract
+  fixture gate routed through make-based CI entrypoints.
 
 - **v1.5 - 2026-08-10.** Opened Slice03 parser-contract-adoption.
   Surfaced by: Slice02 CDC verification. Why: parser adoption can now begin
