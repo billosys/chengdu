@@ -141,7 +141,7 @@ fi
 if [ "$MODE" = "baseline" ]; then
   for bin in "$P" "$G" "$E"; do
     if [ ! -x "$bin" ]; then
-      echo "run-contract-fixtures.sh: missing binary: $bin; run ./scripts/build-all.sh first" >&2
+      echo "run-contract-fixtures.sh: missing binary: $bin; run make build first" >&2
       exit 1
     fi
   done
@@ -154,7 +154,7 @@ if [ "$MODE" = "contract" ]; then
   fi
   for bin in "$PC" "$P"; do
     if [ ! -x "$bin" ]; then
-      echo "run-contract-fixtures.sh: missing binary: $bin; run ./scripts/build-parser.sh first" >&2
+      echo "run-contract-fixtures.sh: missing binary: $bin; run make build-parser first" >&2
       exit 1
     fi
   done
