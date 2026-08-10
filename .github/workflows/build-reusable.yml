@@ -62,6 +62,9 @@ jobs:
       - name: Build engine
         run: ./scripts/build-engine.sh
 
+      - name: Contract fixtures (baseline)
+        run: ./scripts/run-contract-fixtures.sh --baseline
+
       - name: Check provenance
         run: ./scripts/check-provenance.sh
 
@@ -126,6 +129,9 @@ jobs:
 
       - name: Build engine
         run: ./scripts/build-engine.sh
+
+      - name: Contract fixtures (baseline)
+        run: ./scripts/run-contract-fixtures.sh --baseline
 
       - name: Record min-OS observation
         run: ./scripts/record-min-os.sh
