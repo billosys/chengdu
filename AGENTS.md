@@ -58,7 +58,15 @@ live in-tree under `pandaPI/` with full upstream history.
   assistant-authored commit message includes these trailers:
   `Co-authored-by: Codex <noreply@openai.com>` and
   `Co-authored-by: Billo AI <ai-engineering@billo.systems>`.
-- **Standing constraint for every release:** wolong's fetch spec is
-  frozen (asset naming, `SHA256SUMS`, `release-manifest.txt` shape,
-  4-command install path). Releases that change the shape are breaking
-  changes and need an explicit operator decision.
+- **0.3.0 binary-name/interface decision (operator override, 2026-08-10):**
+  `v0.3.0` is not a backwards-compatibility release for inherited
+  `pandaPI*` command names or old process behavior. `v0.2.0` is the
+  transition release from the old three-repo pandaPI world to chengdu's
+  monorepo/prebuilt-binary distribution. `v0.3.0` may intentionally break the
+  old external interface and should ship the new `pandapi-*` command names and
+  managed-process contract. Any parser/grounder adapter shims kept during
+  Arc05 are temporary implementation scaffolding only: once a binary builds
+  and passes its contract tests under the new name, update tests, make
+  targets, docs, release tooling, and README to the new name, then delete the
+  shim. Arc08 must document and verify the new wolong fetch/install/migration
+  path rather than preserve the old one by default.

@@ -20,14 +20,16 @@
 ## 1. Definition of done, and boundaries
 
 **Done means:** `v0.3.0` ships a deliberate managed-process contract for
-`pandaPIparser`, `pandaPIgrounder`, and `pandaPIengine`, backed by source
+`pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`, backed by source
 audits, a design document, implementation, tests, release documentation, and
-consumer-facing migration guidance. The release provides namespaced
-`pandapi-*` entry points or an explicitly accepted compatibility transition,
-and every intentional behavior change is documented in a behavior-change
-table. The three binaries can be supervised by another process using pipes
-without regex archaeology, stdout/stderr ambiguity, accidental ANSI leakage,
-or exit-code guessing. The release also includes a public tutorial and
+consumer-facing migration guidance. The release does not require inherited
+`pandaPI*` command-name compatibility; any parser or grounder shims used while
+Arc05 migrates binaries are temporary scaffolding and must be deleted once the
+owning binary builds and passes contract tests under its new name. Every
+intentional behavior change is documented in a behavior-change table. The
+three binaries can be supervised by another process using pipes without regex
+archaeology, stdout/stderr ambiguity, accidental ANSI leakage, or exit-code
+guessing. The release also includes a public tutorial and
 documentation set that can bring a newcomer from first HTN/PDDL/HDDL concepts
 through simple and intermediate pandaPI project workflows, then into the new
 0.3.0 `pandapi-*` CLI surface and architecture.
@@ -57,9 +59,10 @@ the evidence into a managed-process design.
   managed-process design proves insufficient.
 - No unreviewed wholesale import of large optional subsystems such as the SAT
   verifier without a dedicated plan, license review, and build/test scope.
-- No silent break of wolong's frozen fetch spec. Binary renaming is in scope,
-  but the release must either preserve compatibility through aliases/wrappers
-  or record an explicit operator-approved migration decision.
+- No silent break of wolong's fetch/install expectations. Binary renaming and
+  interface changes are in scope for 0.3.0 by explicit operator decision on
+  2026-08-10; Arc08 must document and verify the new wolong migration path
+  rather than preserve inherited command compatibility by default.
 
 ## 2. Research basis and absorbed notes
 
@@ -135,7 +138,7 @@ releases:
 | arc02 | `cpp-library-research` | Research open source C++ libraries against the parser, grounder, and engine audit findings; produce per-component assessments and a final combined dependency recommendation set. | arc01 per-component audit reports; closes before managed-process design |
 | arc03 | `managed-process-contract` | Produce the accepted design for CLI + supervised-process behavior: command naming, exit/status taxonomy, stdout/stderr/events, buffering, ANSI/TTY, signals/resources, version/provenance, and migration policy. | arc01, arc02 |
 | arc04 | `shared-runtime-substrate` | Introduce the shared C/C++ runtime/build substrate selected by the design, with tests and no behavior changes beyond wiring. | arc03 |
-| arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, preserving or explicitly migrating compatibility surfaces. | arc04 |
+| arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, retiring transition shims after canonical builds pass. | arc04 |
 | arc06 | `ci-and-test-hardening` | Complete the remaining local and CI proof for the new behavior: expanded process fixtures, coverage, heavier sanitizer/static-analysis gates, and pre-release CI evidence. | arc05 |
 | arc07 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06 |
 | arc08 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, and publish `v0.3.0`. | arc06, arc07 |
@@ -255,6 +258,10 @@ documentation/tutorial, and release-publication work.
   [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/slice-doc.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/slice-doc.md),
   [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/ledger.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/ledger.md),
   [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md).
+  Slice05 canonical-binary-cutover is open:
+  [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/slice-doc.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/slice-doc.md),
+  [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/ledger.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/ledger.md),
+  [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/cc-prompt.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/cc-prompt.md).
 - **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
   evidence and should be planned from Arc05's final conformance and CI/test
   hardening handoff. It owns the remaining local/CI matrix, expanded process
@@ -344,18 +351,21 @@ per-row in this project's `closing-report.md`.
 | P2 | Arc02 closes with parser, grounder, and engine library-research reports plus a combined recommendation report; every candidate is mapped to concrete audit defect classes, license/build/packaging consequences, maintenance evidence, and an adopt/pilot/hold/reject disposition. | reproduced |
 | P3 | Arc03 closes with an accepted managed-process design covering CLI ergonomics, supervised-process behavior, binary naming, exit/status semantics, stdout/stderr/event output, buffering, ANSI/TTY, signals/resources, version/provenance, migration policy, and explicit incorporation or deferral of Arc02 dependency findings. | reproduced |
 | P4 | Arc04 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted, with Arc02-selected dependencies entering only through approved facades/pilots. | reproduced |
-| P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract, including namespaced `pandapi-*` entry points or an explicit compatibility transition, without library availability expanding optional inherited surfaces. | reproduced |
+| P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract through namespaced `pandapi-*` entry points, with inherited-name shims deleted once native new-name builds and tests exist, without library availability expanding optional inherited surfaces. | reproduced |
 | P6 | Arc06 closes with the full local and CI gate suite proving positive and negative behavior under both CLI and pipe-supervised invocation, including expanded process fixtures, coverage evidence, and heavier sanitizer/static-analysis gates where supported. | reproduced |
 | P7 | Arc07 closes with the pandaPI 0.3.0 tutorial and documentation suite: beginner HTN/PDDL/HDDL onboarding, simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance, README updates, architecture docs, dependency rationale, behavior-change table, and migration notes. | reproduced |
-| P8 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, release docs, and the wolong fetch/install/migration path are verified on supported platforms. | reproduced |
+| P8 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, release docs, and the new wolong fetch/install/migration path are verified on supported platforms. | reproduced |
 
 ## 7. Open questions and risks
 
-- **OQ1 - binary rename migration resolved.** Slice04 selected canonical
-  `pandapi-*` names while keeping inherited `pandaPI*` names executable in
-  0.3.0 as a compatibility transition. A future breaking removal requires an
-  explicit operator decision, release-note migration table, wolong
-  verification, and a new design update.
+- **OQ1 - binary rename migration resolved.** Operator decision on
+  2026-08-10 supersedes the earlier compatibility-transition assumption.
+  `v0.3.0` is a breaking interface/behavior release with canonical
+  `pandapi-*` names. Inherited `pandaPI*` command compatibility is not a
+  release requirement; temporary shims should be deleted after the owning
+  binary builds and passes tests under its new name. Arc07/Arc08 must carry
+  migration notes, release-package updates, and wolong verification for the
+  new interface.
 - **OQ2 - report home resolved.** Arc01 audit reports are durable design
   evidence, not transient workbench output. The report home is
   `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-*.md`
@@ -387,27 +397,47 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.41 - 2026-08-10.** Inserted Arc05 Slice05
+  canonical-binary-cutover and renumbered Arc05 engine/synthesis work after
+  it. Surfaced by: operator scope correction after parser/grounder managed
+  behavior existed under canonical names. Why: the project must delete
+  parser/grounder transition shims and move active build, test, fixture,
+  tooling, package-helper, README, and planning surfaces to canonical
+  `pandapi-parser`/`pandapi-grounder` before continuing regular engine
+  adoption work.
+
+- **v1.40 - 2026-08-10.** Recorded operator override that `v0.3.0` is not an
+  inherited-name bridge release. Surfaced by: operator correction during
+  Arc05 Slice04 review. Why: `v0.2.0` is the transition release from
+  upstream-style pandaPI to chengdu distribution; `v0.3.0` intentionally
+  rewrites internal and external process behavior around `pandapi-*`, so
+  shim-based `pandaPI*` compatibility would create technical debt without
+  product value.
+
 - **v1.39 - 2026-08-10.** Opened Arc05 Slice04
   grounder-contract-adoption. Surfaced by: Arc05 Slice03 CDC verification.
   Why: accepted parser managed-process evidence and make-targeted CI allow the
   next binary adoption slice to migrate normal `.htn` grounding through
-  canonical `pandapi-grounder` and inherited `pandaPIgrounder`, while fencing
-  H2 and `cpddl`/FAM and keeping engine behavior baseline-only.
+  canonical `pandapi-grounder`, while fencing H2 and `cpddl`/FAM and keeping
+  engine behavior baseline-only. Earlier inherited-command acceptance is
+  superseded by v1.40 and v1.41.
 
 - **v1.38 - 2026-08-10.** Marked Arc05 Slice03
   parser-contract-adoption closed and CDC-verified after independent review
   of CC implementation commit `5c807016`, make-target follow-up commit
   `1d91a1ae`, and CDC evidence repair commit `fe4efbfa`. Surfaced by:
   Slice03 CDC verification. Why: parser managed-process behavior is now
-  accepted with canonical `pandapi-parser`, inherited `pandaPIparser`,
-  executable black-box contract fixtures, and make-targeted CI entrypoints;
-  Slice04 grounder-contract-adoption can open from accepted parser evidence.
+  accepted with canonical `pandapi-parser`, executable black-box contract
+  fixtures, and make-targeted CI entrypoints; the earlier inherited-command
+  acceptance is superseded by v1.40 and v1.41, and Slice04
+  grounder-contract-adoption can open from accepted parser evidence.
 
 - **v1.37 - 2026-08-10.** Opened Arc05 Slice03
   parser-contract-adoption. Surfaced by: Arc05 Slice02 CDC verification. Why:
   parser adoption can now begin from the accepted black-box fixture scaffold,
   making `pandapi-parser` the first executable managed-process contract
-  surface while preserving inherited `pandaPIparser` compatibility.
+  surface. The earlier inherited-command assumption is superseded by v1.40 and
+  v1.41.
 - **v1.36 - 2026-08-10.** Marked Arc05 Slice02
   contract-fixture-scaffold closed and CDC-verified after independent review
   of implementation commit `836fa434` plus F-2 repair commit `f74a7f7a`.
@@ -513,16 +543,19 @@ per-row in this project's `closing-report.md`.
 - **v1.19 - 2026-08-09.** Marked Arc03 slice04
   cli-naming-version-migration closed and CDC-verified. Surfaced by: slice04
   CDC verification. Why: Arc03 can now open slice05 from stable CLI
-  naming/version/migration semantics; 0.3.0 is a compatibility transition with
+  naming/version/migration semantics; 0.3.0 originally carried a transition
+  assumption with
   canonical `pandapi-*` commands and inherited `pandaPI*` commands retained,
   while `--supervised`, `--status`, help/version/provenance, CLI parse-error,
-  and color behavior are accepted.
+  and color behavior are accepted. Superseded by v1.40 operator override:
+  `v0.3.0` is not an inherited-name bridge release.
 - **v1.18 - 2026-08-09.** Opened Arc03 slice04
   cli-naming-version-migration. Surfaced by: slice03 CDC verification. Why:
   Arc03 can now decide `pandapi-*` command names, inherited-name compatibility,
   help/version/provenance, CLI parse-error behavior, no-color/no-colour
   controls, machine-status enablement, CLI11 adoption gates, and wolong
   migration implications from accepted surface, status, and stream contracts.
+  The inherited-name compatibility assumption is superseded by v1.40.
 - **v1.17 - 2026-08-09.** Marked Arc03 slice03
   stdio-event-tty-contract closed and CDC-verified. Surfaced by: slice03 CDC
   verification after CC's corrective close-set commit. Why: Arc03 can now
