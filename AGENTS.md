@@ -40,6 +40,11 @@ live in-tree under `pandaPI/` with full upstream history.
   closes and CDC's independent verification (`cdc-verification.md`) lands.
   Merge timing and verification are separate concerns; only the second is
   load-bearing.
+- **CI entrypoint convention (operator override, 2026-08-10):** all new
+  GitHub Actions / CI jobs must invoke `make` targets, not call project
+  scripts directly. Scripts remain implementation details behind make targets
+  and local developer helpers. If a new job needs behavior without a target,
+  add the target in the same change before wiring the workflow.
 - **Commit footer convention (operator override, 2026-08-07):** every future
   assistant-authored commit message includes these trailers:
   `Co-authored-by: Codex <noreply@openai.com>` and
