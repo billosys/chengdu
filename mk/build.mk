@@ -121,10 +121,5 @@ build-engine:
 	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandaPIengine$(RESET)"
 
 .PHONY: build
-build:
-	$(MAKE) reset-provenance; \
-	$(MAKE) build-runtime; \
-	$(MAKE) build-parser; \
-	$(MAKE) build-grounder; \
-	$(MAKE) build-engine; \
+build: reset-provenance build-runtime build-parser build-grounder build-engine
 	printf '%b\n' "$(GREEN)Build complete: $(DIST_DIR)$(RESET)"

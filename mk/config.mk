@@ -5,6 +5,11 @@ SHELL := /bin/bash
 .SILENT:
 MAKEFLAGS += --no-print-directory
 
+# Keep aggregate entrypoints deterministic even when invoked with `make -j`.
+# GNU Make 3.81, still common on macOS, does not support target-scoped
+# .NOTPARALLEL; component recipes invoke their own parallel sub-builds.
+.NOTPARALLEL:
+
 BLUE := \033[1;34m
 GREEN := \033[1;32m
 YELLOW := \033[1;33m
