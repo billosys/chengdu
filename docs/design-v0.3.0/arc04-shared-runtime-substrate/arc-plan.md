@@ -97,12 +97,15 @@ checks that prove the new substrate is packaged correctly.
   [`slice01-runtime-build-skeleton/cc-prompt.md`](slice01-runtime-build-skeleton/cc-prompt.md).
   CDC verification:
   [`slice01-runtime-build-skeleton/cdc-verification.md`](slice01-runtime-build-skeleton/cdc-verification.md).
-- **slice02 status-result-core - open.** Open set:
+- **slice02 status-result-core - closed and CDC-verified.** Slice set:
   [`slice02-status-result-core/slice-doc.md`](slice02-status-result-core/slice-doc.md),
   [`slice02-status-result-core/ledger.md`](slice02-status-result-core/ledger.md),
   [`slice02-status-result-core/cc-prompt.md`](slice02-status-result-core/cc-prompt.md).
-- **slice03-slice06 - planned, not open.** Do not write their open sets until
-  slice02 closes and CDC verifies the bubble-up.
+  CDC verification:
+  [`slice02-status-result-core/cdc-verification.md`](slice02-status-result-core/cdc-verification.md).
+- **slice03-slice06 - planned, not open.** Slice03 can now be opened from the
+  accepted status/result APIs, with dependency gates and no-binary-adoption
+  constraints preserved.
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -158,6 +161,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.3 - 2026-08-09.** Marked slice02 status-result-core closed and
+  CDC-verified. Surfaced by: slice02 CDC verification of commit
+  `e277c0a568269d18d870789f8e6b60ada479c7a9`. Why: Arc04 now has tested
+  `ProcessStatus`, Arc03 status/exit mapping, status-class vocabulary, and a
+  local standard-library-only `StatusResult<T>` facade; slice03 can implement
+  diagnostics/status I/O against those APIs.
 - **v1.2 - 2026-08-09.** Opened slice02 status-result-core. Surfaced by:
   slice01 CDC verification. Why: Arc04 now has an accepted runtime root,
   namespace, CMake target, CTest hook, and dependency-gate baseline, so the

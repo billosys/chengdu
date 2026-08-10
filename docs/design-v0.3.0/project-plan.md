@@ -179,8 +179,8 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc04-shared-runtime-substrate/arc-plan.md`](arc04-shared-runtime-substrate/arc-plan.md).
   Slice01 runtime-build-skeleton is closed and CDC-verified:
   [`arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md`](arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md).
-  Slice02 status-result-core is open:
-  [`arc04-shared-runtime-substrate/slice02-status-result-core/slice-doc.md`](arc04-shared-runtime-substrate/slice02-status-result-core/slice-doc.md).
+  Slice02 status-result-core is closed and CDC-verified:
+  [`arc04-shared-runtime-substrate/slice02-status-result-core/cdc-verification.md`](arc04-shared-runtime-substrate/slice02-status-result-core/cdc-verification.md).
 - **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc04 closes or explicitly bubbles up a planning dependency.
 
@@ -261,6 +261,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.28 - 2026-08-09.** Marked Arc04 slice02 status-result-core closed and
+  CDC-verified. Surfaced by: slice02 CDC verification of commit
+  `e277c0a568269d18d870789f8e6b60ada479c7a9`. Why: the shared runtime now has
+  tested Arc03 status/exit mapping, status-class vocabulary, dynamic signal
+  status handling, and a local standard-library-only `StatusResult<T>` facade
+  without binary adoption or third-party dependency leakage.
 - **v1.27 - 2026-08-09.** Opened Arc04 slice02 status-result-core. Surfaced
   by: Arc04 slice01 CDC verification. Why: the accepted runtime skeleton can
   now receive the Arc03 status vocabulary, exit-code mapping, payload-class
