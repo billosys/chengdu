@@ -103,9 +103,16 @@ checks that prove the new substrate is packaged correctly.
   [`slice02-status-result-core/cc-prompt.md`](slice02-status-result-core/cc-prompt.md).
   CDC verification:
   [`slice02-status-result-core/cdc-verification.md`](slice02-status-result-core/cdc-verification.md).
-- **slice03-slice06 - planned, not open.** Slice03 can now be opened from the
-  accepted status/result APIs, with dependency gates and no-binary-adoption
-  constraints preserved.
+- **slice03 diagnostics-status-io - open.** Slice set:
+  [`slice03-diagnostics-status-io/slice-doc.md`](slice03-diagnostics-status-io/slice-doc.md),
+  [`slice03-diagnostics-status-io/ledger.md`](slice03-diagnostics-status-io/ledger.md),
+  [`slice03-diagnostics-status-io/cc-prompt.md`](slice03-diagnostics-status-io/cc-prompt.md).
+  This slice implements the diagnostics/status I/O facade, tagged-text
+  `PANDAPI_STATUS` writer/parser, stream ownership helpers, flushing, and
+  partial-output primitives without binary adoption or fmt import.
+- **slice04-slice06 - planned, not open.** Slice04 should open only after the
+  status I/O facade is implemented and CDC-verified, so CLI/TTY/provenance
+  policy can build on accepted status-stream helpers.
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -161,6 +168,13 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.4 - 2026-08-09.** Opened slice03 diagnostics-status-io. Surfaced by:
+  slice02 CDC verification. Why: Arc04 now has accepted `ProcessStatus`,
+  Arc03 status/exit mapping, status-class vocabulary, and a local
+  standard-library-only `StatusResult<T>` facade, so the diagnostics/status
+  I/O layer can implement tagged-text `PANDAPI_STATUS`, stdout/stderr
+  ownership, flushing, and partial-output primitives while preserving the fmt
+  dependency gate and no-binary-adoption boundary.
 - **v1.3 - 2026-08-09.** Marked slice02 status-result-core closed and
   CDC-verified. Surfaced by: slice02 CDC verification of commit
   `e277c0a568269d18d870789f8e6b60ada479c7a9`. Why: Arc04 now has tested
