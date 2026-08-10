@@ -246,7 +246,7 @@ OutputConflict output_conflict_for_options(
     if (options.invocation_mode == InvocationMode::Supervised) {
       return OutputConflict::ColorAlwaysWithSupervised;
     }
-    if (options.status_target == StatusTarget::Stdout || options.machine_output) {
+    if (options.status_target != StatusTarget::None || options.machine_output) {
       return OutputConflict::ColorAlwaysWithMachineOutput;
     }
   }

@@ -1,6 +1,7 @@
 #include "pandapi/runtime/provenance.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <sstream>
 #include <utility>
@@ -63,6 +64,28 @@ namespace {
        });
 }
 
+struct FieldView {
+  std::string_view name;
+  std::string_view value;
+};
+
+[[nodiscard]] StatusResult<bool> add_required_field(
+  std::vector<ProvenanceField>& fields,
+  FieldView field,
+  Component component,
+  SurfaceDisposition surface_disposition)
+{
+  if (!valid_field_name(field.name) || !valid_provenance_value(field.value)) {
+    return StatusResult<bool>::failure(
+      cli_usage_error_status(component, surface_disposition));
+  }
+
+  fields.push_back(ProvenanceField{
+    std::string{field.name},
+    std::string{field.value}});
+  return StatusResult<bool>::success(true);
+}
+
 [[nodiscard]] StatusResult<bool> add_field_if_present(
   std::vector<ProvenanceField>& fields,
   std::string name,
@@ -114,15 +137,31 @@ StatusResult<std::vector<ProvenanceField>> version_fields(
 {
   std::vector<ProvenanceField> fields;
 
-  const auto add_canonical_command = add_field_if_present(
-    fields,
-    "canonical_command",
-    record.canonical_command,
-    component,
-    surface_disposition);
-  if (!add_canonical_command.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_canonical_command.status());
+  const std::array<FieldView, 12> required_fields{{
+    {"canonical_command", record.canonical_command},
+    {"component", record.component},
+    {"chengdu_version", record.chengdu_version},
+    {"contract_version", record.contract_version},
+    {"upstream_project", record.upstream_project},
+    {"upstream_commit", record.upstream_commit},
+    {"source_prefix", record.source_prefix},
+    {"build_commit", record.build_commit},
+    {"platform", record.platform},
+    {"compiler", record.compiler},
+    {"license", record.license},
+    {"notice", record.notice},
+  }};
+
+  for (const auto field : required_fields) {
+    const auto add_required = add_required_field(
+      fields,
+      field,
+      component,
+      surface_disposition);
+    if (!add_required.has_value()) {
+      return StatusResult<std::vector<ProvenanceField>>::failure(
+        add_required.status());
+    }
   }
 
   const auto add_invoked_command = add_field_if_present(
@@ -134,127 +173,6 @@ StatusResult<std::vector<ProvenanceField>> version_fields(
   if (!add_invoked_command.has_value()) {
     return StatusResult<std::vector<ProvenanceField>>::failure(
       add_invoked_command.status());
-  }
-
-  const auto add_component = add_field_if_present(
-    fields,
-    "component",
-    record.component,
-    component,
-    surface_disposition);
-  if (!add_component.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_component.status());
-  }
-
-  const auto add_chengdu_version = add_field_if_present(
-    fields,
-    "chengdu_version",
-    record.chengdu_version,
-    component,
-    surface_disposition);
-  if (!add_chengdu_version.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_chengdu_version.status());
-  }
-
-  const auto add_contract_version = add_field_if_present(
-    fields,
-    "contract_version",
-    record.contract_version,
-    component,
-    surface_disposition);
-  if (!add_contract_version.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_contract_version.status());
-  }
-
-  const auto add_upstream_project = add_field_if_present(
-    fields,
-    "upstream_project",
-    record.upstream_project,
-    component,
-    surface_disposition);
-  if (!add_upstream_project.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_upstream_project.status());
-  }
-
-  const auto add_upstream_commit = add_field_if_present(
-    fields,
-    "upstream_commit",
-    record.upstream_commit,
-    component,
-    surface_disposition);
-  if (!add_upstream_commit.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_upstream_commit.status());
-  }
-
-  const auto add_source_prefix = add_field_if_present(
-    fields,
-    "source_prefix",
-    record.source_prefix,
-    component,
-    surface_disposition);
-  if (!add_source_prefix.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_source_prefix.status());
-  }
-
-  const auto add_build_commit = add_field_if_present(
-    fields,
-    "build_commit",
-    record.build_commit,
-    component,
-    surface_disposition);
-  if (!add_build_commit.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_build_commit.status());
-  }
-
-  const auto add_platform = add_field_if_present(
-    fields,
-    "platform",
-    record.platform,
-    component,
-    surface_disposition);
-  if (!add_platform.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_platform.status());
-  }
-
-  const auto add_compiler = add_field_if_present(
-    fields,
-    "compiler",
-    record.compiler,
-    component,
-    surface_disposition);
-  if (!add_compiler.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_compiler.status());
-  }
-
-  const auto add_license = add_field_if_present(
-    fields,
-    "license",
-    record.license,
-    component,
-    surface_disposition);
-  if (!add_license.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_license.status());
-  }
-
-  const auto add_notice = add_field_if_present(
-    fields,
-    "notice",
-    record.notice,
-    component,
-    surface_disposition);
-  if (!add_notice.has_value()) {
-    return StatusResult<std::vector<ProvenanceField>>::failure(
-      add_notice.status());
   }
 
   return StatusResult<std::vector<ProvenanceField>>::success(std::move(fields));

@@ -120,3 +120,60 @@ The implementation did not reveal a need to change the Arc04 plan. Slice05 can
 still proceed as planned against a process/contract test matrix: it should use
 these helpers as seam-testable policy inputs, but black-box executable
 conformance still belongs to later process fixtures and Arc05 adoption.
+
+## Iteration 01 CDC Fix
+
+CDC did not accept the first close and reported two blocking findings.
+
+- **S04-CDC-001:** `format_version` accepted partial required version records.
+  Repair: `version_fields` now requires canonical command, component, chengdu
+  version, contract version, upstream project, upstream commit, source prefix,
+  build commit, platform, compiler, license, and notice. `invoked_command`
+  remains optional because Arc03 requires it only for inherited compatibility
+  invocation. Optional detailed provenance-only fields may still be omitted.
+- **S04-CDC-002:** `--color=always` with `--status=stderr` was accepted.
+  Repair: `validate_common_cli_options` now rejects effective
+  `ColorMode::Always` whenever any tagged status target is selected, including
+  stderr, unless a disabling control makes the effective color mode `Never`.
+
+New regression coverage in `pandapi_cli_tty_provenance_smoke`:
+
+- missing required version field rejects as `cli_usage_error` / exit `10`;
+- all required version fields succeed;
+- `invoked_command` is omitted for canonical invocation;
+- optional provenance-only fields remain omittable;
+- placeholder values still reject;
+- `--color=always --status=stderr`, `--color=always --status=stdout`, and
+  `--color=always --supervised` reject as `cli_usage_error`;
+- disabling status color through no-colour is accepted because the effective
+  color mode is `Never`.
+
+Iteration 01 verification commands:
+
+```text
+./scripts/build-runtime.sh
+CDC provenance-required probe
+CDC color-status-stderr probe
+./scripts/build-parser.sh
+./scripts/build-grounder.sh
+./scripts/build-engine.sh
+./scripts/smoke-test.sh --negative
+git diff --check
+git diff --cached --check
+git diff --name-only -- pandaPI .github README.md release-manifest.txt vendor.env pins.env dist build release
+rg -c '^\| F-' docs/design-v0.3.0/arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/ledger.md
+! rg -n '\| open \|' docs/design-v0.3.0/arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/ledger.md
+! test -e docs/design-v0.3.0/arc04-shared-runtime-substrate/slice04-cli-tty-provenance-core/cdc-verification.md
+```
+
+Iteration 01 results:
+
+- Runtime build passed on macos-arm64 with 4/4 CTest tests.
+- Both CDC probes exited 0 and printed `rejected`.
+- Parser, grounder, and engine builds passed on macos-arm64; output contained
+  inherited-source compiler warnings only.
+- Negative smoke passed: 4 passed, 0 failed.
+- Whitespace checks passed.
+- Protected-path diff check produced no output.
+- Ledger row count remains 24 with no open rows.
+- CDC verification file remains absent.

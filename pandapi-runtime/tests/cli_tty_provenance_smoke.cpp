@@ -122,12 +122,42 @@ void cli_policy_conflicts_are_cli_usage_error()
   assert(!color_result.has_value());
   assert(color_result.status().code() == StatusCode::CliUsageError);
 
+  auto status_stderr_color_conflict = base_options();
+  status_stderr_color_conflict.status_target = StatusTarget::Stderr;
+  status_stderr_color_conflict.color_controls.color_mode = ColorMode::Always;
+  const auto status_stderr_color_result =
+    pandapi::runtime::validate_common_cli_options(
+      status_stderr_color_conflict,
+      Component::Engine);
+  assert(!status_stderr_color_result.has_value());
+  assert(status_stderr_color_result.status().code() == StatusCode::CliUsageError);
+
+  auto status_stdout_color_conflict = base_options();
+  status_stdout_color_conflict.status_target = StatusTarget::Stdout;
+  status_stdout_color_conflict.output_target = OutputTarget::Absent;
+  status_stdout_color_conflict.output_option = false;
+  status_stdout_color_conflict.color_controls.color_mode = ColorMode::Always;
+  const auto status_stdout_color_result =
+    pandapi::runtime::validate_common_cli_options(
+      status_stdout_color_conflict,
+      Component::Engine);
+  assert(!status_stdout_color_result.has_value());
+  assert(status_stdout_color_result.status().code() == StatusCode::CliUsageError);
+
   auto disabled_color = color_conflict;
   disabled_color.color_controls.no_color = true;
   const auto disabled_color_result = pandapi::runtime::validate_common_cli_options(
     disabled_color,
     Component::Engine);
   assert(disabled_color_result.has_value());
+
+  auto disabled_status_color = status_stderr_color_conflict;
+  disabled_status_color.color_controls.no_colour = true;
+  const auto disabled_status_color_result =
+    pandapi::runtime::validate_common_cli_options(
+      disabled_status_color,
+      Component::Engine);
+  assert(disabled_status_color_result.has_value());
 }
 
 void informational_commands_are_stdout_owned_successes()
@@ -230,8 +260,39 @@ void provenance_output_is_stable_and_caller_supplied()
     != std::string::npos);
   assert(version.value().find("invoked_command=pandaPIengine\n")
     != std::string::npos);
+  assert(version.value().find("component=engine\n") != std::string::npos);
+  assert(version.value().find("chengdu_version=0.3.0\n") != std::string::npos);
   assert(version.value().find("contract_version=0.3.0\n") != std::string::npos);
+  assert(version.value().find("upstream_project=pandaPIengine\n")
+    != std::string::npos);
+  assert(version.value().find("upstream_commit=0123456789abcdef\n")
+    != std::string::npos);
+  assert(version.value().find("source_prefix=pandaPI/engine\n")
+    != std::string::npos);
+  assert(version.value().find("build_commit=fedcba9876543210\n")
+    != std::string::npos);
+  assert(version.value().find("platform=macos-arm64\n") != std::string::npos);
+  assert(version.value().find("compiler=clang-17\n") != std::string::npos);
+  assert(version.value().find("license=LICENSE\n") != std::string::npos);
   assert(version.value().find("notice=NOTICE\n") != std::string::npos);
+
+  auto canonical_invocation = record;
+  canonical_invocation.invoked_command.clear();
+  const auto version_without_invoked = pandapi::runtime::format_version(
+    canonical_invocation,
+    Component::Engine);
+  assert(version_without_invoked.has_value());
+  assert(version_without_invoked.value().find("invoked_command=")
+    == std::string::npos);
+
+  ProvenanceRecord missing_required;
+  missing_required.canonical_command = "pandapi-engine";
+  const auto missing_required_result = pandapi::runtime::format_version(
+    missing_required,
+    Component::Engine);
+  assert(!missing_required_result.has_value());
+  assert(missing_required_result.status().code() == StatusCode::CliUsageError);
+  assert(pandapi::runtime::exit_code(missing_required_result.status()) == 10);
 
   const auto provenance = pandapi::runtime::format_provenance(
     record,

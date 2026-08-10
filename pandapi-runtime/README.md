@@ -147,12 +147,15 @@ stream policy that later per-binary work will consume.
   output, machine output, file output, pipe output, and no-TTY output.
 - `provenance.hpp` defines `ProvenanceRecord` and field-oriented
   `format_version` / `format_provenance` helpers. Callers supply
-  `canonical_command`, `invoked_command`, `component`, `chengdu_version`,
+  `canonical_command`, `component`, `chengdu_version`,
   `contract_version`, `upstream_project`, `upstream_commit`, `source_prefix`,
   `build_commit`, `platform`, `compiler`, `license`, and `NOTICE` fields. The
-  runtime does not shell out to git or infer build metadata, and unknown or
-  placeholder values are omitted when absent or rejected when supplied as
-  placeholder prose so later golden tests see stable field names.
+  optional `invoked_command` field records inherited compatibility invocation
+  when it differs from the canonical command. The runtime does not shell out to
+  git or infer build metadata. Required version fields must be present;
+  optional detailed provenance-only fields are omitted when absent, and unknown
+  or placeholder values are rejected when supplied as placeholder prose so later
+  golden tests see stable field names.
 
 This is a local facade for future CLI11 adoption; CLI11 is still not imported,
 vendored, fetched, discovered with `find_package`, included, or exposed by
