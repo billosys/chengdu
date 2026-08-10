@@ -181,10 +181,11 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md`](arc04-shared-runtime-substrate/slice01-runtime-build-skeleton/cdc-verification.md).
   Slice02 status-result-core is closed and CDC-verified:
   [`arc04-shared-runtime-substrate/slice02-status-result-core/cdc-verification.md`](arc04-shared-runtime-substrate/slice02-status-result-core/cdc-verification.md).
-  Slice03 diagnostics-status-io is open:
+  Slice03 diagnostics-status-io is closed and CDC-verified:
   [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/slice-doc.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/slice-doc.md),
   [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/ledger.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/ledger.md),
-  [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cc-prompt.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cc-prompt.md).
+  [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cc-prompt.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cc-prompt.md),
+  [`arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cdc-verification.md`](arc04-shared-runtime-substrate/slice03-diagnostics-status-io/cdc-verification.md).
 - **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc04 closes or explicitly bubbles up a planning dependency.
 
@@ -265,6 +266,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.30 - 2026-08-09.** Marked Arc04 slice03 diagnostics-status-io closed
+  and CDC-verified after Iteration 01. Surfaced by: slice03 CDC verification
+  of commit `ece82e0e311ab2e63c922a6b679bb3ae647fdbec`. Why: the accepted
+  runtime status I/O substrate now covers tagged `PANDAPI_STATUS`
+  writer/parser, stdout/stderr status-stream legality, final flush,
+  partial-output policy, and overflow-safe numeric parsing while preserving
+  Arc02 dependency gates and leaving binary adoption to Arc05.
 - **v1.29 - 2026-08-09.** Opened Arc04 slice03 diagnostics-status-io. Surfaced
   by: Arc04 slice02 CDC verification. Why: the accepted status/result substrate
   can now support a tested diagnostics/status I/O facade for tagged-text

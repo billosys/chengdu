@@ -103,16 +103,16 @@ checks that prove the new substrate is packaged correctly.
   [`slice02-status-result-core/cc-prompt.md`](slice02-status-result-core/cc-prompt.md).
   CDC verification:
   [`slice02-status-result-core/cdc-verification.md`](slice02-status-result-core/cdc-verification.md).
-- **slice03 diagnostics-status-io - open.** Slice set:
+- **slice03 diagnostics-status-io - closed and CDC-verified.** Slice set:
   [`slice03-diagnostics-status-io/slice-doc.md`](slice03-diagnostics-status-io/slice-doc.md),
   [`slice03-diagnostics-status-io/ledger.md`](slice03-diagnostics-status-io/ledger.md),
   [`slice03-diagnostics-status-io/cc-prompt.md`](slice03-diagnostics-status-io/cc-prompt.md).
-  This slice implements the diagnostics/status I/O facade, tagged-text
-  `PANDAPI_STATUS` writer/parser, stream ownership helpers, flushing, and
-  partial-output primitives without binary adoption or fmt import.
+  CDC verification:
+  [`slice03-diagnostics-status-io/cdc-verification.md`](slice03-diagnostics-status-io/cdc-verification.md).
 - **slice04-slice06 - planned, not open.** Slice04 should open only after the
   status I/O facade is implemented and CDC-verified, so CLI/TTY/provenance
-  policy can build on accepted status-stream helpers.
+  policy can build on accepted status-stream helpers. Slice04 can now be
+  opened from accepted status/result and diagnostics/status I/O APIs.
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -168,6 +168,13 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.5 - 2026-08-09.** Marked slice03 diagnostics-status-io closed and
+  CDC-verified after Iteration 01. Surfaced by: slice03 CDC verification of
+  commit `ece82e0e311ab2e63c922a6b679bb3ae647fdbec`. Why: Arc04 now has a
+  tested standard-library-only status I/O facade, tagged `PANDAPI_STATUS`
+  writer/parser, stdout/stderr status-stream legality, final flush,
+  partial-output policy, and overflow-safe numeric parsing; slice04 can build
+  CLI/TTY/provenance policy on accepted helpers without binary adoption.
 - **v1.4 - 2026-08-09.** Opened slice03 diagnostics-status-io. Surfaced by:
   slice02 CDC verification. Why: Arc04 now has accepted `ProcessStatus`,
   Arc03 status/exit mapping, status-class vocabulary, and a local
