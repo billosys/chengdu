@@ -5,6 +5,7 @@
 /dist/
 /release/
 .worktrees
+/workbench
 
 # Scratch
 *.o
