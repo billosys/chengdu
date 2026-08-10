@@ -4,10 +4,10 @@
 # prefix, records the imported upstream identity, reports no build-time source
 # patches, and has a non-empty compiler field.
 #
-# Usage: check-provenance.sh [--platform linux-x86_64|macos-arm64] [PROVENANCE_FILE]
+# Use: make provenance-check
 #   Defaults to dist/<platform>/provenance.txt, PLATFORM auto-detected
-#   from the running machine. --platform overrides detection — needed
-#   by package-release.sh, which validates both platforms' provenance
+#   from the running machine. --platform overrides detection - needed
+#   by make package-release, which validates both platforms' provenance
 #   files from a single packaging runner (auto-detection would check
 #   the other platform's file).
 #   An explicit FILE path is accepted so a tamper test can point this at
@@ -15,9 +15,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# shellcheck source=scripts/lib-platform.sh
-. "$SCRIPT_DIR/lib-platform.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=tools/shared/platform
+. "$REPO_ROOT/tools/shared/platform"
 
 PLATFORM_OVERRIDE=""
 while [ "$#" -gt 0 ]; do
@@ -42,7 +42,7 @@ if [ -n "$PLATFORM_OVERRIDE" ]; then
       PLATFORM="$PLATFORM_OVERRIDE"
       ;;
     *)
-      echo "check-provenance.sh: FAIL: invalid --platform '$PLATFORM_OVERRIDE' (want linux-x86_64 or macos-arm64)" >&2
+      echo "provenance-check: FAIL: invalid --platform '$PLATFORM_OVERRIDE' (want linux-x86_64 or macos-arm64)" >&2
       exit 1
       ;;
   esac
@@ -56,14 +56,14 @@ FILE="${1:-$REPO_ROOT/dist/$PLATFORM/provenance.txt}"
 . "$REPO_ROOT/vendor.env"
 
 if [ ! -f "$FILE" ]; then
-  echo "check-provenance.sh: FAIL: $FILE not found — run the build scripts first" >&2
+  echo "provenance-check: FAIL: $FILE not found - run make build first" >&2
   exit 1
 fi
 
 FAIL_COUNT=0
 
 fail() {
-  echo "check-provenance.sh: FAIL: $1" >&2
+  echo "provenance-check: FAIL: $1" >&2
   FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
@@ -133,8 +133,8 @@ check_component "pandaPIgrounder" "GROUNDER"
 check_component "pandaPIengine" "ENGINE"
 
 if [ "$FAIL_COUNT" -gt 0 ]; then
-  echo "check-provenance.sh: $FAIL_COUNT check(s) failed against $FILE" >&2
+  echo "provenance-check: $FAIL_COUNT check(s) failed against $FILE" >&2
   exit 1
 fi
 
-echo "check-provenance.sh: OK: all 3 components verified against vendor.env and Git state ($PLATFORM)"
+echo "provenance-check: OK: all 3 components verified against vendor.env and Git state ($PLATFORM)"

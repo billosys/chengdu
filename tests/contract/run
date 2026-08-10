@@ -4,9 +4,15 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: run-contract-fixtures.sh --baseline [--component parser|grounder|engine|pipeline|all] [--preserve]
-       run-contract-fixtures.sh --contract --component parser|grounder [--case CASE] [--preserve]
-       run-contract-fixtures.sh [--baseline|--contract --component parser|grounder] --list
+Use Make targets:
+  make test-contract-list
+  make test-contract
+  make test-contract-parser
+  make test-contract-parser-managed
+  make test-contract-grounder
+  make test-contract-grounder-managed
+  make test-contract-engine
+  make test-contract-pipeline
 
   --baseline   run current inherited-binary baseline fixtures.
   --contract   run managed-process contract fixtures.
@@ -62,7 +68,7 @@ while [ "$#" -gt 0 ]; do
       exit 0
       ;;
     *)
-      echo "run-contract-fixtures.sh: unknown argument: $1" >&2
+      echo "contract-run: unknown argument: $1" >&2
       usage >&2
       exit 1
       ;;
@@ -72,16 +78,16 @@ done
 case "$COMPONENT" in
   all|parser|grounder|engine|pipeline) ;;
   *)
-    echo "run-contract-fixtures.sh: invalid --component: $COMPONENT" >&2
+    echo "contract-run: invalid --component: $COMPONENT" >&2
     usage >&2
     exit 1
     ;;
 esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# shellcheck source=scripts/lib-platform.sh
-. "$SCRIPT_DIR/lib-platform.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=tools/shared/platform
+. "$REPO_ROOT/tools/shared/platform"
 
 PLATFORM="$(detect_platform)"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
@@ -154,7 +160,7 @@ if [ "$LIST" -eq 1 ]; then
 fi
 
 if [ "$MODE" != "baseline" ] && [ "$MODE" != "contract" ]; then
-  echo "run-contract-fixtures.sh: --baseline or --contract is required unless --list is used" >&2
+  echo "contract-run: --baseline or --contract is required unless --list is used" >&2
   usage >&2
   exit 1
 fi
@@ -162,7 +168,7 @@ fi
 if [ "$MODE" = "baseline" ]; then
   for bin in "$P" "$G" "$E"; do
     if [ ! -x "$bin" ]; then
-      echo "run-contract-fixtures.sh: missing binary: $bin; run make build first" >&2
+      echo "contract-run: missing binary: $bin; run make build first" >&2
       exit 1
     fi
   done
@@ -170,13 +176,13 @@ fi
 
 if [ "$MODE" = "contract" ]; then
   if [ "$COMPONENT" != "parser" ] && [ "$COMPONENT" != "grounder" ] && [ "$COMPONENT" != "all" ]; then
-    echo "run-contract-fixtures.sh: only parser and grounder contract fixtures exist in this slice" >&2
+    echo "contract-run: only parser and grounder contract fixtures exist in this slice" >&2
     exit 1
   fi
   if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
     for bin in "$PC" "$P"; do
       if [ ! -x "$bin" ]; then
-        echo "run-contract-fixtures.sh: missing binary: $bin; run make build-parser first" >&2
+        echo "contract-run: missing binary: $bin; run make build-parser first" >&2
         exit 1
       fi
     done
@@ -184,7 +190,7 @@ if [ "$MODE" = "contract" ]; then
   if [ "$COMPONENT" = "grounder" ] || [ "$COMPONENT" = "all" ]; then
     for bin in "$GC" "$G"; do
       if [ ! -x "$bin" ]; then
-        echo "run-contract-fixtures.sh: missing binary: $bin; run make build-grounder first" >&2
+        echo "contract-run: missing binary: $bin; run make build-grounder first" >&2
         exit 1
       fi
     done
@@ -194,7 +200,7 @@ fi
 WORK="$(mktemp -d)"
 cleanup() {
   if [ "$PRESERVE" -eq 1 ]; then
-    echo "run-contract-fixtures.sh: preserved work directory: $WORK"
+    echo "contract-run: preserved work directory: $WORK"
   else
     rm -rf "$WORK"
   fi
@@ -215,12 +221,12 @@ selected() {
 }
 
 pass() {
-  echo "run-contract-fixtures.sh: PASS: $1"
+  echo "contract-run: PASS: $1"
   PASS_COUNT=$((PASS_COUNT + 1))
 }
 
 fail() {
-  echo "run-contract-fixtures.sh: FAIL: $1" >&2
+  echo "contract-run: FAIL: $1" >&2
   FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
@@ -1051,7 +1057,7 @@ grounder_contract_cpddl_fam_surface_fencing() {
 }
 
 grounder_contract_domain_no_plan() {
-  echo "run-contract-fixtures.sh: grounder-domain-no-plan is not reachable through accepted grounder-only semantics" >&2
+  echo "contract-run: grounder-domain-no-plan is not reachable through accepted grounder-only semantics" >&2
   return 1
 }
 
@@ -1075,21 +1081,21 @@ run_grounder_contract_fixtures() {
 }
 
 if [ "$MODE" = "contract" ]; then
-  echo "run-contract-fixtures.sh: platform=$PLATFORM mode=contract component=$COMPONENT case=$CASE_ID"
+  echo "contract-run: platform=$PLATFORM mode=contract component=$COMPONENT case=$CASE_ID"
   if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
     run_parser_contract_fixtures
   fi
   if [ "$COMPONENT" = "grounder" ] || [ "$COMPONENT" = "all" ]; then
     run_grounder_contract_fixtures
   fi
-  echo "run-contract-fixtures.sh: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed (contract, $COMPONENT, $PLATFORM)"
+  echo "contract-run: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed (contract, $COMPONENT, $PLATFORM)"
   if [ "$FAIL_COUNT" -ne 0 ]; then
     exit 1
   fi
   exit 0
 fi
 
-echo "run-contract-fixtures.sh: platform=$PLATFORM mode=baseline component=$COMPONENT"
+echo "contract-run: platform=$PLATFORM mode=baseline component=$COMPONENT"
 
 if selected parser; then
   run_parser_fixtures
@@ -1104,7 +1110,7 @@ if selected pipeline; then
   run_pipeline_fixtures
 fi
 
-echo "run-contract-fixtures.sh: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed (baseline, $COMPONENT, $PLATFORM)"
+echo "contract-run: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed (baseline, $COMPONENT, $PLATFORM)"
 if [ "$FAIL_COUNT" -ne 0 ]; then
   exit 1
 fi

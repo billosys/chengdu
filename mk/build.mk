@@ -49,7 +49,7 @@ sanitize-runtime:
 build-parser:
 	printf '%b\n' "$(BLUE)Building pandaPIparser...$(RESET)"; \
 	REPO_ROOT="$(CURDIR)"; \
-	. scripts/lib-platform.sh; \
+	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
 	SRC_DIR="$$(prepare_build_source_copy pandaPIparser)"; \
 	DIST_DIR="$$REPO_ROOT/dist/$$PLATFORM"; \
@@ -77,7 +77,7 @@ build-parser:
 build-grounder:
 	printf '%b\n' "$(BLUE)Building pandaPIgrounder...$(RESET)"; \
 	REPO_ROOT="$(CURDIR)"; \
-	. scripts/lib-platform.sh; \
+	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
 	SRC_ROOT="$$(prepare_build_source_copy pandaPIgrounder)"; \
 	CPDDL_DIR="$$SRC_ROOT/cpddl"; \
@@ -109,7 +109,7 @@ build-grounder:
 build-engine:
 	printf '%b\n' "$(BLUE)Building pandaPIengine...$(RESET)"; \
 	REPO_ROOT="$(CURDIR)"; \
-	. scripts/lib-platform.sh; \
+	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
 	SRC_DIR="$$(prepare_build_source_copy pandaPIengine)"; \
 	BUILD_DIR="$$SRC_DIR/build"; \

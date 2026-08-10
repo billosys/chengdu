@@ -67,7 +67,7 @@ append_provenance() {
 
 # provenance_get_block <file> <component> — the provenance block for one
 # component, from "component=<name>" through its trailing "---" line,
-# inclusive. Shared by check-provenance.sh and package-release.sh so
+# inclusive. Shared by tools/provenance/check and tools/release/package so
 # provenance parsing has one implementation.
 provenance_get_block() {
   local file="$1" name="$2"

@@ -27,7 +27,7 @@ package-release:
 	  exit 1; \
 	fi
 	printf '%b\n' "$(BLUE)Packaging release $(TAG)...$(RESET)"
-	./scripts/package-release.sh "$(TAG)"
+	./tools/release/package "$(TAG)"
 	printf '%b\n' "$(GREEN)Release package ready: release/$(RESET)"
 
 .PHONY: publish-release

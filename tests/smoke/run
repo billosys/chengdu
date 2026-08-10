@@ -26,7 +26,7 @@
 #   real="dist/<platform>/pandaPIengine"
 #   cp "$real" "$real.orig"
 #   printf '#!/bin/sh\nexit 3\n' > "$real"; chmod +x "$real"
-#   scripts/smoke-test.sh; echo "exit=$?"   # expect a "solve: expected
+#   make smoke; echo "exit=$?"              # expect a "solve: expected
 #     exit 0 ... got exit 3" FAIL line and overall exit 1, not a bare
 #     bash abort
 #   mv "$real.orig" "$real"                 # restore the real binary
@@ -34,7 +34,10 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: smoke-test.sh [--negative] [--corpus DIR]
+Use Make targets:
+  make smoke
+  make smoke-negative
+  make test-corpus CORPUS_DIR=...
 
   (default)   run the positive gate chain against fixtures/minimal.
   --negative  run the four negative-gate fixtures instead.
@@ -64,7 +67,7 @@ while [ "$#" -gt 0 ]; do
       exit 0
       ;;
     *)
-      echo "smoke-test.sh: unknown argument: $1" >&2
+      echo "smoke-run: unknown argument: $1" >&2
       usage >&2
       exit 1
       ;;
@@ -72,9 +75,9 @@ while [ "$#" -gt 0 ]; do
 done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# shellcheck source=scripts/lib-platform.sh
-. "$SCRIPT_DIR/lib-platform.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=tools/shared/platform
+. "$REPO_ROOT/tools/shared/platform"
 
 PLATFORM="$(detect_platform)"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
@@ -86,7 +89,7 @@ E="$DIST_DIR/pandaPIengine"
 
 for bin in "$P" "$G" "$E"; do
   if [ ! -x "$bin" ]; then
-    echo "smoke-test.sh: missing binary: $bin — run the build scripts first" >&2
+    echo "smoke-run: missing binary: $bin - run make build first" >&2
     exit 1
   fi
 done
@@ -98,12 +101,12 @@ PASS_COUNT=0
 FAIL_COUNT=0
 
 gate_pass() {
-  echo "smoke-test.sh: PASS: $1"
+  echo "smoke-run: PASS: $1"
   PASS_COUNT=$((PASS_COUNT + 1))
 }
 
 gate_fail() {
-  echo "smoke-test.sh: FAIL: $1" >&2
+  echo "smoke-run: FAIL: $1" >&2
   FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
@@ -169,7 +172,7 @@ run_engine() {
   set -e
   if [ "$RC" -eq 137 ]; then
     RC=124
-    echo "smoke-test.sh: engine killed after ${ENGINE_TIMEOUT_SECS}s timeout" >> "$out"
+    echo "smoke-run: engine killed after ${ENGINE_TIMEOUT_SECS}s timeout" >> "$out"
   fi
 }
 
@@ -259,7 +262,7 @@ run_corpus() {
   local prob="$dir/total-order/Transport/pfile01.hddl"
 
   if [ ! -f "$dom" ] || [ ! -f "$prob" ]; then
-    echo "smoke-test.sh: --corpus $dir missing total-order/Transport/{domain,pfile01}.hddl — skipping" >&2
+    echo "smoke-run: --corpus $dir missing total-order/Transport/{domain,pfile01}.hddl — skipping" >&2
     return 0
   fi
 
@@ -293,7 +296,7 @@ run_corpus() {
   fi
 }
 
-echo "smoke-test.sh: platform=$PLATFORM mode=$MODE"
+echo "smoke-run: platform=$PLATFORM mode=$MODE"
 
 case "$MODE" in
   positive)
@@ -307,7 +310,7 @@ case "$MODE" in
     ;;
 esac
 
-echo "smoke-test.sh: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed ($MODE mode, $PLATFORM)"
+echo "smoke-run: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed ($MODE mode, $PLATFORM)"
 
 if [ "$FAIL_COUNT" -gt 0 ]; then
   exit 1

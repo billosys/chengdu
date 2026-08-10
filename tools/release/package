@@ -2,24 +2,24 @@
 # Packages a chengdu release from already-built dist/<platform>/ trees:
 # per-platform tarballs, a SHA256SUMS covering them, an aggregated
 # release-manifest.txt, and rendered release notes. Reuses
-# check-provenance.sh as a pre-package gate, per platform explicitly —
+# provenance-check as a pre-package gate, per platform explicitly -
 # this script may run on a runner that matches neither, one, or both of
 # the platforms it packages, so provenance is never auto-detected here.
 #
-# Usage: package-release.sh TAG
-#   Packages every dist/<platform>/ tree present under dist/ (both in
-#   CI; a subset is fine for local/CDC reproduction). Output lands in
-#   release/, which is removed and recreated on each run.
+# Use: make package-release TAG=vX.Y.Z
+# Packages every dist/<platform>/ tree present under dist/ (both in
+# CI; a subset is fine for local/CDC reproduction). Output lands in
+# release/, which is removed and recreated on each run.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# shellcheck source=scripts/lib-platform.sh
-. "$SCRIPT_DIR/lib-platform.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=tools/shared/platform
+. "$REPO_ROOT/tools/shared/platform"
 
 TAG="${1:-}"
 if [ -z "$TAG" ]; then
-  echo "package-release.sh: usage: package-release.sh TAG" >&2
+  echo "package-release: set TAG, for example: make package-release TAG=v0.3.0" >&2
   exit 1
 fi
 
@@ -40,17 +40,17 @@ done
 PLATFORMS="${PLATFORMS# }"
 
 if [ -z "$PLATFORMS" ]; then
-  echo "package-release.sh: FAIL: no dist/<platform>/provenance.txt found under $DIST_ROOT" >&2
+  echo "package-release: FAIL: no dist/<platform>/provenance.txt found under $DIST_ROOT" >&2
   exit 1
 fi
-echo "package-release.sh: packaging for:$PLATFORMS"
+echo "package-release: packaging for:$PLATFORMS"
 
 # --- pre-package gate: every present platform's provenance must be
 # right, checked explicitly per platform since detection can't be
 # trusted to match the packaging runner. ---
 for p in $PLATFORMS; do
-  echo "package-release.sh: checking provenance for $p"
-  "$SCRIPT_DIR/check-provenance.sh" --platform "$p" "$DIST_ROOT/$p/provenance.txt"
+  echo "package-release: checking provenance for $p"
+  "$REPO_ROOT/tools/provenance/check" --platform "$p" "$DIST_ROOT/$p/provenance.txt"
 done
 
 # --- tarballs: pandapi-<tag>-<platform>.tar.gz, 3 binaries + provenance.txt
@@ -59,7 +59,7 @@ done
 FIXTURES_DIR="$REPO_ROOT/fixtures/minimal"
 for f in domain.hddl problem.hddl; do
   if [ ! -f "$FIXTURES_DIR/$f" ]; then
-    echo "package-release.sh: FAIL: $FIXTURES_DIR/$f missing" >&2
+    echo "package-release: FAIL: $FIXTURES_DIR/$f missing" >&2
     exit 1
   fi
 done
@@ -67,7 +67,7 @@ done
 for p in $PLATFORMS; do
   for bin in pandaPIparser pandaPIgrounder pandaPIengine; do
     if [ ! -x "$DIST_ROOT/$p/$bin" ]; then
-      echo "package-release.sh: FAIL: $DIST_ROOT/$p/$bin missing or not executable" >&2
+      echo "package-release: FAIL: $DIST_ROOT/$p/$bin missing or not executable" >&2
       exit 1
     fi
   done
@@ -79,7 +79,7 @@ for p in $PLATFORMS; do
   cp "$FIXTURES_DIR/domain.hddl" "$FIXTURES_DIR/problem.hddl" "$stage/fixtures/"
   tar czf "$OUT_DIR/$tarball" -C "$stage" pandaPIparser pandaPIgrounder pandaPIengine provenance.txt fixtures
   rm -rf "$stage"
-  echo "package-release.sh: built $tarball (incl. fixtures/)"
+  echo "package-release: built $tarball (incl. fixtures/)"
 done
 
 # --- THIRD-PARTY-LICENSES: assembled from the committed licenses/
@@ -92,7 +92,7 @@ THIRD_PARTY="$OUT_DIR/THIRD-PARTY-LICENSES"
   echo "chengdu THIRD-PARTY-LICENSES"
   echo
   echo "Audit authority: docs/license-audit-v0.2.0.md"
-  echo "Generated from committed licenses/ by scripts/package-release.sh."
+  echo "Generated from committed licenses/ by make package-release."
   echo
 } > "$THIRD_PARTY"
 for entry in \
@@ -109,7 +109,7 @@ do
   file="${rest#*:}"
   path="$LICENSES_DIR/$file"
   if [ ! -f "$path" ]; then
-    echo "package-release.sh: FAIL: $path missing — licenses/ is out of sync with docs/license-audit-v0.2.0.md" >&2
+    echo "package-release: FAIL: $path missing — licenses/ is out of sync with docs/license-audit-v0.2.0.md" >&2
     exit 1
   fi
   {
@@ -121,7 +121,7 @@ do
     echo
   } >> "$THIRD_PARTY"
 done
-echo "package-release.sh: built THIRD-PARTY-LICENSES (6 components)"
+echo "package-release: built THIRD-PARTY-LICENSES (6 components)"
 
 # --- aggregated manifest: tag + chengdu commit + every platform's full provenance ---
 MANIFEST="$OUT_DIR/release-manifest.txt"
@@ -134,14 +134,14 @@ MANIFEST="$OUT_DIR/release-manifest.txt"
     cat "$DIST_ROOT/$p/provenance.txt"
   done
 } > "$MANIFEST"
-echo "package-release.sh: built release-manifest.txt"
+echo "package-release: built release-manifest.txt"
 
 # --- checksums: every asset except the checksum file itself ---
 (
   cd "$OUT_DIR"
   sha256sum -- *.tar.gz release-manifest.txt THIRD-PARTY-LICENSES > SHA256SUMS
 )
-echo "package-release.sh: built SHA256SUMS"
+echo "package-release: built SHA256SUMS"
 
 # --- release notes, rendered from the template ---
 NOTES="$OUT_DIR/notes.md"
@@ -187,7 +187,7 @@ awk -v table="$PROVENANCE_TABLE" '{ if ($0 == "@@PROVENANCE_TABLE@@") print tabl
   "$NOTES" > "$NOTES.tmp" && mv "$NOTES.tmp" "$NOTES"
 awk -v assets="$ASSET_LIST" '{ if ($0 == "@@ASSET_LIST@@") print assets; else print }' \
   "$NOTES" > "$NOTES.tmp" && mv "$NOTES.tmp" "$NOTES"
-echo "package-release.sh: rendered notes.md"
+echo "package-release: rendered notes.md"
 
 # --- prerelease marker: a semver hyphen suffix denotes a pre-release ---
 case "$TAG" in
@@ -199,4 +199,4 @@ case "$TAG" in
     ;;
 esac
 
-echo "package-release.sh: OK: release/ ready for $TAG ($PLATFORMS)"
+echo "package-release: OK: release/ ready for $TAG ($PLATFORMS)"

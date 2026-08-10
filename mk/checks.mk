@@ -31,7 +31,7 @@ actionlint:
 .PHONY: shell-syntax
 shell-syntax:
 	printf '%b\n' "$(BLUE)Checking shell script syntax...$(RESET)"
-	for script in scripts/*.sh; do \
+	for script in $(SHELL_SCRIPTS); do \
 	  bash -n "$$script"; \
 	done
 	printf '%b\n' "$(GREEN)Shell script syntax passed$(RESET)"
@@ -43,7 +43,7 @@ shellcheck:
 	  printf '%b\n' "$(RED)shellcheck not found$(RESET)" >&2; \
 	  exit 1; \
 	fi
-	shellcheck scripts/*.sh
+	shellcheck $(SHELL_SCRIPTS)
 	printf '%b\n' "$(GREEN)shellcheck passed$(RESET)"
 
 .PHONY: static-analysis
@@ -82,7 +82,7 @@ safety-checks: workflow-make-entrypoints-check
 .PHONY: provenance-check
 provenance-check:
 	printf '%b\n' "$(BLUE)Checking provenance...$(RESET)"
-	./scripts/check-provenance.sh
+	./tools/provenance/check
 	printf '%b\n' "$(GREEN)Provenance check passed$(RESET)"
 
 .PHONY: record-min-os

@@ -37,6 +37,7 @@ RUNTIME_BUILD_DIR := build/runtime/$(PLATFORM)
 RUNTIME_SANITIZE_BUILD_DIR := build/runtime-sanitize/$(PLATFORM)
 OWNED_CPP_DIRS := pandapi-runtime/include pandapi-runtime/src pandapi-runtime/tests
 OWNED_CPP_FIND := find $(OWNED_CPP_DIRS) -type f \( -name '*.h' -o -name '*.hpp' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) -print
+SHELL_SCRIPTS := scripts/*.sh tests/contract/run tests/smoke/run tools/release/package tools/provenance/check tools/shared/platform
 
 define banner
 printf '\n'

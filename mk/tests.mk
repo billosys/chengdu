@@ -13,61 +13,61 @@ test-runtime-sanitize: sanitize-runtime
 .PHONY: test-contract-list
 test-contract-list:
 	printf '%b\n' "$(BLUE)Listing baseline contract fixtures...$(RESET)"
-	./scripts/run-contract-fixtures.sh --list
+	./tests/contract/run --list
 
 .PHONY: test-contract
 test-contract: build
 	printf '%b\n' "$(BLUE)Running baseline contract fixtures...$(RESET)"
-	./scripts/run-contract-fixtures.sh --baseline
+	./tests/contract/run --baseline
 	printf '%b\n' "$(GREEN)Baseline contract fixtures passed$(RESET)"
 
 .PHONY: test-contract-parser
 test-contract-parser: build
 	printf '%b\n' "$(BLUE)Running parser contract fixtures...$(RESET)"
-	./scripts/run-contract-fixtures.sh --baseline --component parser
+	./tests/contract/run --baseline --component parser
 	printf '%b\n' "$(GREEN)Parser contract fixtures passed$(RESET)"
 
 .PHONY: test-contract-parser-managed
 test-contract-parser-managed: build-parser
 	printf '%b\n' "$(BLUE)Running managed parser contract fixtures...$(RESET)"
-	./scripts/run-contract-fixtures.sh --contract --component parser
+	./tests/contract/run --contract --component parser
 	printf '%b\n' "$(GREEN)Managed parser contract fixtures passed$(RESET)"
 
 .PHONY: test-contract-grounder
 test-contract-grounder: build
 	printf '%b\n' "$(BLUE)Running grounder contract fixtures...$(RESET)"
-	./scripts/run-contract-fixtures.sh --baseline --component grounder
+	./tests/contract/run --baseline --component grounder
 	printf '%b\n' "$(GREEN)Grounder contract fixtures passed$(RESET)"
 
 .PHONY: test-contract-grounder-managed
 test-contract-grounder-managed: build-grounder
 	printf '%b\n' "$(BLUE)Running managed grounder contract fixtures...$(RESET)"
 	./scripts/install-grounder-adapter.sh "$(DIST_DIR)"
-	./scripts/run-contract-fixtures.sh --contract --component grounder
+	./tests/contract/run --contract --component grounder
 	printf '%b\n' "$(GREEN)Managed grounder contract fixtures passed$(RESET)"
 
 .PHONY: test-contract-engine
 test-contract-engine: build
 	printf '%b\n' "$(BLUE)Running engine contract fixtures...$(RESET)"
-	./scripts/run-contract-fixtures.sh --baseline --component engine
+	./tests/contract/run --baseline --component engine
 	printf '%b\n' "$(GREEN)Engine contract fixtures passed$(RESET)"
 
 .PHONY: test-contract-pipeline
 test-contract-pipeline: build
 	printf '%b\n' "$(BLUE)Running pipeline contract fixtures...$(RESET)"
-	./scripts/run-contract-fixtures.sh --baseline --component pipeline
+	./tests/contract/run --baseline --component pipeline
 	printf '%b\n' "$(GREEN)Pipeline contract fixtures passed$(RESET)"
 
 .PHONY: smoke
 smoke: build
 	printf '%b\n' "$(BLUE)Running positive smoke test...$(RESET)"
-	./scripts/smoke-test.sh
+	./tests/smoke/run
 	printf '%b\n' "$(GREEN)Positive smoke test passed$(RESET)"
 
 .PHONY: smoke-negative
 smoke-negative: build
 	printf '%b\n' "$(BLUE)Running negative smoke test...$(RESET)"
-	./scripts/smoke-test.sh --negative
+	./tests/smoke/run --negative
 	printf '%b\n' "$(GREEN)Negative smoke test passed$(RESET)"
 
 .PHONY: test-smoke
@@ -85,7 +85,7 @@ test-corpus: build
 	  exit 1; \
 	fi
 	printf '%b\n' "$(BLUE)Running optional corpus smoke test: $(CORPUS_DIR)$(RESET)"
-	./scripts/smoke-test.sh --corpus "$(CORPUS_DIR)"
+	./tests/smoke/run --corpus "$(CORPUS_DIR)"
 	printf '%b\n' "$(GREEN)Corpus smoke test passed$(RESET)"
 
 .PHONY: contract-baseline
