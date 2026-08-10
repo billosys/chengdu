@@ -254,14 +254,22 @@ documentation/tutorial, and release-publication work.
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/cc-prompt.md),
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/closing-report.md),
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/cdc-verification.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/cdc-verification.md).
-  Slice04 grounder-contract-adoption is open:
+  Slice04 grounder-contract-adoption is CC-complete with CDC verification
+  pending:
   [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/slice-doc.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/slice-doc.md),
   [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/ledger.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/ledger.md),
-  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md).
-  Slice05 canonical-binary-cutover is open:
+  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md),
+  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/closing-report.md).
+  Slice05 canonical-binary-cutover is closed as deferred and CDC-verified:
   [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/slice-doc.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/slice-doc.md),
   [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/ledger.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/ledger.md),
-  [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/cc-prompt.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/cc-prompt.md).
+  [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/cc-prompt.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/cc-prompt.md),
+  [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/closing-report.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/closing-report.md),
+  [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/cdc-verification.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/cdc-verification.md).
+  Slice06 parser-native-contract-cutover is open:
+  [`arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/slice-doc.md`](arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/slice-doc.md),
+  [`arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/ledger.md`](arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/ledger.md),
+  [`arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/cc-prompt.md`](arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/cc-prompt.md).
 - **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
   evidence and should be planned from Arc05's final conformance and CI/test
   hardening handoff. It owns the remaining local/CI matrix, expanded process
@@ -396,6 +404,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.42 - 2026-08-10.** Recorded Arc05 Slice05 as closed with deferred
+  implementation and opened Arc05 Slice06 parser-native-contract-cutover.
+  Surfaced by: Slice05 stop condition and CDC reproduction. Why: parser and
+  grounder managed behavior still depended on Bash adapters plus raw sidecars;
+  native parser cutover must happen before the parser shim and old parser
+  artifacts can be deleted, with grounder receiving its own following native
+  cutover slice.
 
 - **v1.41 - 2026-08-10.** Inserted Arc05 Slice05
   canonical-binary-cutover and renumbered Arc05 engine/synthesis work after

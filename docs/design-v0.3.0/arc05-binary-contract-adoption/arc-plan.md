@@ -65,9 +65,11 @@ manifests, and publication.
 | slice02 | `contract-fixture-scaffold` | Turn the Arc03 test matrix and Arc04 fixture substrate into repo-level black-box process fixture structure and baseline probes without changing binary behavior. | parser, grounder, engine adoption proof |
 | slice03 | `parser-contract-adoption` | Migrate parser normal HDDL parse behavior to the managed-process contract and add canonical command proof. | grounder pipeline input; first executable contract surface |
 | slice04 | `grounder-contract-adoption` | Migrate grounder normal `.htn` grounding behavior to the managed-process contract while fencing H2 and cpddl/FAM surfaces. | parser-to-grounder composition; engine input |
-| slice05 | `canonical-binary-cutover` | Cut parser and grounder over to canonical `pandapi-parser`/`pandapi-grounder` build artifacts, update active tests/tooling/docs, and delete inherited-name shims. | engine adoption; release/docs inputs |
-| slice06 | `engine-contract-adoption` | Migrate engine normal search behavior to the managed-process contract while fencing interactive, translation, SAT, BDD, and CUDD surfaces. | full primary pipeline behavior |
-| slice07 | `binary-contract-synthesis` | Compose parser, grounder, and engine evidence into the accepted Arc05 conformance report and split handoff for Arc06 CI/test hardening, Arc07 docs/tutorial inputs, and Arc08 release inputs. | project ledger P5; Arcs06-08 planning |
+| slice05 | `canonical-binary-cutover` | Closed as a deferred discovery slice after proving parser/grounder managed behavior still depended on transition shims and raw sidecars. | parser/grounder native remediation |
+| slice06 | `parser-native-contract-cutover` | Replace the parser Bash adapter with a native `pandapi-parser` managed-contract artifact and remove parser old-name artifacts. | grounder native cutover; release/docs inputs |
+| slice07 | `grounder-native-contract-cutover` | Replace the grounder Bash adapter with a native `pandapi-grounder` managed-contract artifact and remove grounder old-name artifacts. | engine adoption; release/docs inputs |
+| slice08 | `engine-contract-adoption` | Migrate engine normal search behavior to the managed-process contract while fencing interactive, translation, SAT, BDD, and CUDD surfaces. | full primary pipeline behavior |
+| slice09 | `binary-contract-synthesis` | Compose parser, grounder, and engine evidence into the accepted Arc05 conformance report and split handoff for Arc06 CI/test hardening, Arc07 docs/tutorial inputs, and Arc08 release inputs. | project ledger P5; Arcs06-08 planning |
 
 ## 4. Dependencies
 
@@ -122,14 +124,23 @@ amendments.
   [`slice03-parser-contract-adoption/cc-prompt.md`](slice03-parser-contract-adoption/cc-prompt.md),
   [`slice03-parser-contract-adoption/closing-report.md`](slice03-parser-contract-adoption/closing-report.md),
   [`slice03-parser-contract-adoption/cdc-verification.md`](slice03-parser-contract-adoption/cdc-verification.md).
-- **slice04 grounder-contract-adoption - open.** Open set:
+- **slice04 grounder-contract-adoption - CC-complete; CDC verification
+  pending.** Slice set:
   [`slice04-grounder-contract-adoption/slice-doc.md`](slice04-grounder-contract-adoption/slice-doc.md),
   [`slice04-grounder-contract-adoption/ledger.md`](slice04-grounder-contract-adoption/ledger.md),
-  [`slice04-grounder-contract-adoption/cc-prompt.md`](slice04-grounder-contract-adoption/cc-prompt.md).
-- **slice05 canonical-binary-cutover - open.** Open set:
+  [`slice04-grounder-contract-adoption/cc-prompt.md`](slice04-grounder-contract-adoption/cc-prompt.md),
+  [`slice04-grounder-contract-adoption/closing-report.md`](slice04-grounder-contract-adoption/closing-report.md).
+- **slice05 canonical-binary-cutover - closed as deferred and
+  CDC-verified.** Slice set:
   [`slice05-canonical-binary-cutover/slice-doc.md`](slice05-canonical-binary-cutover/slice-doc.md),
   [`slice05-canonical-binary-cutover/ledger.md`](slice05-canonical-binary-cutover/ledger.md),
-  [`slice05-canonical-binary-cutover/cc-prompt.md`](slice05-canonical-binary-cutover/cc-prompt.md).
+  [`slice05-canonical-binary-cutover/cc-prompt.md`](slice05-canonical-binary-cutover/cc-prompt.md),
+  [`slice05-canonical-binary-cutover/closing-report.md`](slice05-canonical-binary-cutover/closing-report.md),
+  [`slice05-canonical-binary-cutover/cdc-verification.md`](slice05-canonical-binary-cutover/cdc-verification.md).
+- **slice06 parser-native-contract-cutover - open.** Open set:
+  [`slice06-parser-native-contract-cutover/slice-doc.md`](slice06-parser-native-contract-cutover/slice-doc.md),
+  [`slice06-parser-native-contract-cutover/ledger.md`](slice06-parser-native-contract-cutover/ledger.md),
+  [`slice06-parser-native-contract-cutover/cc-prompt.md`](slice06-parser-native-contract-cutover/cc-prompt.md).
 
 ## 6. Planned implementation surface
 
@@ -138,11 +149,11 @@ Arc05 may touch these implementation surfaces as slices open:
 | Surface | Intended ownership |
 |---------|--------------------|
 | `pandapi-runtime/` | Shared runtime helpers, fixtures, CMake/CTest seams, adapters needed by binary adoption. |
-| `scripts/` | Temporary parser/grounder transition shims only until Slice05 deletes them; no new project-script entrypoints. |
+| `scripts/` | Temporary parser/grounder transition shims only until the owning native cutover deletes them; no new project-script entrypoints. |
 | `.github/workflows/` | CI gates for build/runtime/tooling and later contract fixtures. Release workflows remain Arc08 unless explicitly opened. |
 | `pandaPI/` | Parser, grounder, and engine adoption only in the per-binary slices that own those changes. |
 | `mk/`, `Makefile` | Canonical local and CI entrypoints for build, test, check, actionlint, provenance, package-helper, and release-helper operations. |
-| `tests/`, `fixtures/contract/`, `tools/`, `README.md` | Active parser/grounder surfaces updated to canonical command names in Slice05, with engine left inherited until Slice06. |
+| `tests/`, `fixtures/contract/`, `tools`, `README.md` | Active parser/grounder surfaces updated to canonical command names in the owning native cutover slices, with engine left inherited until Slice08. |
 | `dist/`, `build/`, `release/` | Generated output only; no tracked release-shape changes until Arc08. |
 
 ## 7. Arc ledger
@@ -157,11 +168,12 @@ arc's `closing-report.md`.
 | A3 | The contract fixture scaffold proves product behavior through black-box process fixtures and preserves the distinction between Catch2 seam tests and executable conformance. | reproduced |
 | A4 | Parser normal HDDL parse conforms to the accepted contract through canonical `pandapi-parser`, with positive and negative fixture evidence and no release requirement to preserve inherited parser-command compatibility. | reproduced |
 | A5 | Grounder normal `.htn` grounding conforms to the accepted contract through canonical `pandapi-grounder`, with H2 and cpddl/FAM surfaces fenced and no release requirement to preserve inherited grounder-command compatibility. | reproduced |
-| A6 | Parser and grounder active build, test, fixture, README, provenance, package-helper, and make surfaces use canonical command names only, with inherited-name shims deleted after canonical artifacts pass contract tests. | reproduced |
-| A7 | Engine normal search conforms to the accepted contract through canonical `pandapi-engine`, with interactive, translation, SAT, BDD, and CUDD surfaces fenced and no release requirement to preserve inherited `pandaPIengine` compatibility. | reproduced |
-| A8 | Shared runtime adoption removes or routes duplicate process-policy code without leaking third-party APIs into planner internals or expanding optional surfaces. | reproduced |
-| A9 | Release-shape and wolong fetch/install changes are explicit, documented, and verified for the new `pandapi-*` interface; inherited-name shims do not silently become release surface. | reproduced |
-| A10 | Arcs06-08 can be planned from Arc05 close without silent drops: CI/test hardening, tutorial/docs inputs, release assets, behavior-change table, dependency licensing/NOTICE, test-only exclusion, checksums, manifests, and wolong proof obligations are routed. | reproduced |
+| A6 | Parser active build, test, fixture, provenance, package-helper, and make surfaces use the canonical command only, with parser inherited-name shims and sidecars deleted after native parser contract tests pass. | reproduced |
+| A7 | Grounder active build, test, fixture, provenance, package-helper, and make surfaces use the canonical command only, with grounder inherited-name shims and sidecars deleted after native grounder contract tests pass. | reproduced |
+| A8 | Engine normal search conforms to the accepted contract through canonical `pandapi-engine`, with interactive, translation, SAT, BDD, and CUDD surfaces fenced and no release requirement to preserve inherited `pandaPIengine` compatibility. | reproduced |
+| A9 | Shared runtime adoption removes or routes duplicate process-policy code without leaking third-party APIs into planner internals or expanding optional surfaces. | reproduced |
+| A10 | Release-shape and wolong fetch/install changes are explicit, documented, and verified for the new `pandapi-*` interface; inherited-name shims do not silently become release surface. | reproduced |
+| A11 | Arcs06-08 can be planned from Arc05 close without silent drops: CI/test hardening, tutorial/docs inputs, release assets, behavior-change table, dependency licensing/NOTICE, test-only exclusion, checksums, manifests, and wolong proof obligations are routed. | reproduced |
 
 ## 8. Open questions and risks
 
@@ -177,16 +189,25 @@ arc's `closing-report.md`.
 - **OQ4 - process fixture stdin.** Arc04 Slice05 recorded that the current
   runner is not a general full-duplex large-stdin transport. Arc05 must harden
   it before stdin-heavy fixtures rely on it.
-- **OQ5 - binary rename mechanics resolved.** Build targets should produce the
-  canonical `pandapi-*` binaries directly. Parser/grounder shims may remain
-  only as temporary Arc05 scaffolding until native new-name builds and
-  contract tests exist; after that, tests, make targets, tooling, docs, and
-  README move to the canonical name and the shim is deleted.
+- **OQ5 - binary rename mechanics resolved, implementation split.** Build
+  targets should produce the canonical `pandapi-*` binaries directly.
+  Slice05 proved parser/grounder native contract work must precede full shim
+  deletion. Parser and grounder now receive separate native cutover slices;
+  after each native binary passes contract tests, the owning shim and old-name
+  sidecar are deleted.
 - **OQ6 - generated CLI code.** Existing gengetopt surfaces are inherited.
   Replacing them is not automatically part of Arc05 unless the owning binary
   slice proves the migration is safer than preserving compatibility.
 
 ## 9. Version history
+
+- **v1.10 - 2026-08-10.** Closed Slice05 as a deferred discovery slice and
+  split native cutover into Slice06 parser-native-contract-cutover and planned
+  Slice07 grounder-native-contract-cutover; renumbered engine adoption to
+  Slice08 and synthesis to Slice09. Surfaced by: Slice05 stop condition and
+  CDC reproduction. Why: current managed parser/grounder behavior still lived
+  in Bash adapters over raw sidecars that reject `--status=stderr`, so a
+  no-shim cutover requires per-component native implementation first.
 
 - **v1.9 - 2026-08-10.** Inserted Slice05
   canonical-binary-cutover and renumbered engine adoption to Slice06 and
