@@ -107,7 +107,10 @@ amendments.
   [`slice01-quality-tooling-runway/cc-prompt.md`](slice01-quality-tooling-runway/cc-prompt.md),
   [`slice01-quality-tooling-runway/closing-report.md`](slice01-quality-tooling-runway/closing-report.md),
   [`slice01-quality-tooling-runway/cdc-verification.md`](slice01-quality-tooling-runway/cdc-verification.md).
-  Slice02 `contract-fixture-scaffold` is ready to open.
+- **slice02 contract-fixture-scaffold - open.** Open set:
+  [`slice02-contract-fixture-scaffold/slice-doc.md`](slice02-contract-fixture-scaffold/slice-doc.md),
+  [`slice02-contract-fixture-scaffold/ledger.md`](slice02-contract-fixture-scaffold/ledger.md),
+  [`slice02-contract-fixture-scaffold/cc-prompt.md`](slice02-contract-fixture-scaffold/cc-prompt.md).
 
 ## 6. Planned implementation surface
 
@@ -162,6 +165,10 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.3 - 2026-08-10.** Opened Slice02 contract-fixture-scaffold.
+  Surfaced by: Slice01 CDC verification and the accepted Arc03/Arc04
+  contract-fixture substrate. Why: parser, grounder, and engine adoption need
+  black-box baseline process fixtures before any binary behavior changes.
 - **v1.2 - 2026-08-10.** Marked Slice01 quality-tooling-runway closed and
   CDC-verified after independent review of commit
   `a701b32e9802a171936c5d07ddc4fd75c8f9af13`. Surfaced by: Slice01 CDC
