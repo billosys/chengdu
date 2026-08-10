@@ -107,10 +107,12 @@ amendments.
   [`slice01-quality-tooling-runway/cc-prompt.md`](slice01-quality-tooling-runway/cc-prompt.md),
   [`slice01-quality-tooling-runway/closing-report.md`](slice01-quality-tooling-runway/closing-report.md),
   [`slice01-quality-tooling-runway/cdc-verification.md`](slice01-quality-tooling-runway/cdc-verification.md).
-- **slice02 contract-fixture-scaffold - open.** Open set:
+- **slice02 contract-fixture-scaffold - closed and CDC-verified.** Slice set:
   [`slice02-contract-fixture-scaffold/slice-doc.md`](slice02-contract-fixture-scaffold/slice-doc.md),
   [`slice02-contract-fixture-scaffold/ledger.md`](slice02-contract-fixture-scaffold/ledger.md),
-  [`slice02-contract-fixture-scaffold/cc-prompt.md`](slice02-contract-fixture-scaffold/cc-prompt.md).
+  [`slice02-contract-fixture-scaffold/cc-prompt.md`](slice02-contract-fixture-scaffold/cc-prompt.md),
+  [`slice02-contract-fixture-scaffold/closing-report.md`](slice02-contract-fixture-scaffold/closing-report.md),
+  [`slice02-contract-fixture-scaffold/cdc-verification.md`](slice02-contract-fixture-scaffold/cdc-verification.md).
 
 ## 6. Planned implementation surface
 
@@ -165,6 +167,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.4 - 2026-08-10.** Marked Slice02
+  contract-fixture-scaffold closed and CDC-verified after independent review
+  of implementation commit `836fa434` plus F-2 repair commit `f74a7f7a`.
+  Surfaced by: Slice02 CDC verification. Why: Arc05 now has an accepted
+  repo-level black-box baseline fixture scaffold for parser, grounder, engine,
+  and pipeline behavior before per-binary contract adoption begins.
 - **v1.3 - 2026-08-10.** Opened Slice02 contract-fixture-scaffold.
   Surfaced by: Slice01 CDC verification and the accepted Arc03/Arc04
   contract-fixture substrate. Why: parser, grounder, and engine adoption need
