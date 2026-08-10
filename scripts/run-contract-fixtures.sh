@@ -5,8 +5,8 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage: run-contract-fixtures.sh --baseline [--component parser|grounder|engine|pipeline|all] [--preserve]
-       run-contract-fixtures.sh --contract --component parser [--case CASE] [--preserve]
-       run-contract-fixtures.sh [--baseline|--contract --component parser] --list
+       run-contract-fixtures.sh --contract --component parser|grounder [--case CASE] [--preserve]
+       run-contract-fixtures.sh [--baseline|--contract --component parser|grounder] --list
 
   --baseline   run current inherited-binary baseline fixtures.
   --contract   run managed-process contract fixtures.
@@ -88,6 +88,7 @@ DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 FIXTURES_DIR="$REPO_ROOT/fixtures"
 
 PC="$DIST_DIR/pandapi-parser"
+GC="$DIST_DIR/pandapi-grounder"
 P="$DIST_DIR/pandaPIparser"
 G="$DIST_DIR/pandaPIgrounder"
 E="$DIST_DIR/pandaPIengine"
@@ -107,7 +108,8 @@ EOF
 }
 
 list_contract_fixtures() {
-  cat <<'EOF'
+  if [ "$COMPONENT" = "all" ] || [ "$COMPONENT" = "parser" ]; then
+    cat <<'EOF'
 parser parser-canonical-file-success
 parser parser-canonical-stdout-success
 parser parser-inherited-compat-success
@@ -121,6 +123,25 @@ parser parser-status-stream-legality
 parser parser-color-policy
 parser parser-legacy-surface-fencing
 EOF
+  fi
+  if [ "$COMPONENT" = "all" ] || [ "$COMPONENT" = "grounder" ]; then
+    cat <<'EOF'
+grounder grounder-canonical-file-success
+grounder grounder-canonical-stdout-success
+grounder grounder-inherited-compat-success
+grounder grounder-info-commands
+grounder grounder-cli-usage-errors
+grounder grounder-input-unavailable
+grounder grounder-input-invalid
+grounder grounder-output-unavailable
+grounder grounder-final-status-fields
+grounder grounder-status-stream-legality
+grounder grounder-color-policy
+grounder grounder-h2-surface-fencing
+grounder grounder-cpddl-fam-surface-fencing
+grounder grounder-domain-no-plan
+EOF
+  fi
 }
 
 if [ "$LIST" -eq 1 ]; then
@@ -148,16 +169,26 @@ if [ "$MODE" = "baseline" ]; then
 fi
 
 if [ "$MODE" = "contract" ]; then
-  if [ "$COMPONENT" != "parser" ]; then
-    echo "run-contract-fixtures.sh: only parser contract fixtures exist in this slice" >&2
+  if [ "$COMPONENT" != "parser" ] && [ "$COMPONENT" != "grounder" ] && [ "$COMPONENT" != "all" ]; then
+    echo "run-contract-fixtures.sh: only parser and grounder contract fixtures exist in this slice" >&2
     exit 1
   fi
-  for bin in "$PC" "$P"; do
-    if [ ! -x "$bin" ]; then
-      echo "run-contract-fixtures.sh: missing binary: $bin; run make build-parser first" >&2
-      exit 1
-    fi
-  done
+  if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
+    for bin in "$PC" "$P"; do
+      if [ ! -x "$bin" ]; then
+        echo "run-contract-fixtures.sh: missing binary: $bin; run make build-parser first" >&2
+        exit 1
+      fi
+    done
+  fi
+  if [ "$COMPONENT" = "grounder" ] || [ "$COMPONENT" = "all" ]; then
+    for bin in "$GC" "$G"; do
+      if [ ! -x "$bin" ]; then
+        echo "run-contract-fixtures.sh: missing binary: $bin; run make build-grounder first" >&2
+        exit 1
+      fi
+    done
+  fi
 fi
 
 WORK="$(mktemp -d)"
@@ -369,7 +400,8 @@ expect_status_field() {
 
 expect_final_status() {
   local id="$1" stream="$2" status="$3" exit_code="$4" class="$5" disposition="${6:-supported}"
-  local lines count line
+  local component="${7:-parser}" supported_surface="${8:-normal_parse}" legacy_surface="${9:-parser_legacy_helper}" experimental_surface="${10:-parser_experimental}"
+  local lines count line expected_surface
   lines="$(status_lines "$stream")"
   count="$(printf '%s\n' "$lines" | sed '/^$/d' | wc -l | tr -d ' ')"
   if [ "$count" = "1" ]; then
@@ -379,9 +411,14 @@ expect_final_status() {
     return
   fi
   line="$lines"
+  case "$disposition" in
+    legacy) expected_surface="$legacy_surface" ;;
+    experimental) expected_surface="$experimental_surface" ;;
+    *) expected_surface="$supported_surface" ;;
+  esac
   expect_status_field "$id" "$line" "status" "$status"
-  expect_status_field "$id" "$line" "component" "parser"
-  expect_status_field "$id" "$line" "surface" "$( [ "$disposition" = "legacy" ] && echo parser_legacy_helper || echo normal_parse )"
+  expect_status_field "$id" "$line" "component" "$component"
+  expect_status_field "$id" "$line" "surface" "$expected_surface"
   expect_status_field "$id" "$line" "surface_disposition" "$disposition"
   expect_status_field "$id" "$line" "exit_code" "$exit_code"
   expect_status_field "$id" "$line" "class" "$class"
@@ -413,6 +450,14 @@ contract_case_selected() {
 }
 
 run_parser_contract_case() {
+  local id="$1"
+  shift
+  if contract_case_selected "$id"; then
+    "$@"
+  fi
+}
+
+run_grounder_contract_case() {
   local id="$1"
   shift
   if contract_case_selected "$id"; then
@@ -797,9 +842,246 @@ run_parser_contract_fixtures() {
   run_parser_contract_case "parser-legacy-surface-fencing" parser_contract_legacy_surface_fencing
 }
 
+expect_grounder_final_status() {
+  local id="$1" stream="$2" status="$3" exit_code="$4" class="$5" disposition="${6:-supported}"
+  expect_final_status "$id" "$stream" "$status" "$exit_code" "$class" "$disposition" "grounder" "normal_grounding" "grounder_cpddl_fam" "grounder_h2"
+}
+
+grounder_contract_canonical_file_success() {
+  local id="grounder-canonical-file-success" artifact="$WORK/grounder-canonical-file-success.sas"
+  run_capture "$id" "$GC" --status=stderr --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id" 0
+  expect_artifact_complete "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_grounder_final_status "$id" "stderr" "ok" "0" "success"
+}
+
+grounder_contract_canonical_stdout_success() {
+  local id="grounder-canonical-stdout-success" artifact="$WORK/grounder-canonical-stdout-success.sas"
+  run_capture "$id" "$GC" --status=stderr --output - "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id" 0
+  if [ -s "$OBS_OUT" ]; then
+    pass "$id stdout artifact complete"
+  else
+    fail "$id expected stdout artifact"
+  fi
+  expect_stdout_not_contains "$id" "PANDAPI_STATUS"
+  expect_stdout_not_contains "$id" "Grounding"
+  expect_stdout_not_contains "$id" "pandaPIgrounder"
+  expect_artifact_absent "$id" "$artifact"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout artifact"
+  expect_grounder_final_status "$id" "stderr" "ok" "0" "success"
+}
+
+grounder_contract_inherited_compat_success() {
+  local id="grounder-inherited-compat-success" artifact="$WORK/grounder-inherited-compat-success.sas"
+  run_capture "$id" "$G" --status=stderr "$FIXTURES_DIR/grounder/minimal.htn" "$artifact"
+  expect_exit "$id" 0
+  expect_artifact_complete "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_stderr_not_contains "$id" "deprecation"
+  expect_grounder_final_status "$id" "stderr" "ok" "0" "success"
+
+  local legacy_artifact="$WORK/grounder-inherited-legacy-positional.sas"
+  run_capture "$id-legacy-positional" "$G" "$FIXTURES_DIR/grounder/minimal.htn" "$legacy_artifact"
+  expect_exit "$id legacy positional" 0
+  expect_artifact_complete "$id legacy positional" "$legacy_artifact"
+  expect_final_status_absent "$id legacy positional"
+}
+
+grounder_contract_info_commands() {
+  local id="grounder-info-commands"
+  run_capture "$id-help" "$GC" --help
+  expect_exit "$id help" 0
+  expect_stdout_contains "$id help" "Usage: pandapi-grounder"
+  expect_stdout_contains "$id help" "pandaPIgrounder remains executable"
+  expect_stderr_empty "$id help"
+  expect_no_status_on_stream "$id help" "stdout"
+  expect_no_status_on_stream "$id help" "stderr"
+
+  run_capture "$id-version" "$GC" --version
+  expect_exit "$id version" 0
+  expect_stdout_contains "$id version" "canonical_command=pandapi-grounder"
+  expect_stdout_contains "$id version" "component=grounder"
+  expect_stderr_empty "$id version"
+
+  run_capture "$id-provenance" "$G" --provenance
+  expect_exit "$id provenance" 0
+  expect_stdout_contains "$id provenance" "canonical_command=pandapi-grounder"
+  expect_stdout_contains "$id provenance" "invoked_command=pandaPIgrounder"
+  expect_stdout_contains "$id provenance" "legacy_binary=pandaPIgrounder.legacy"
+  expect_stdout_contains "$id provenance" "dependency_surface_h2=experimental_surface"
+  expect_stdout_contains "$id provenance" "dependency_surface_cpddl_fam=legacy_surface"
+  expect_stderr_empty "$id provenance"
+}
+
+grounder_contract_cli_usage_errors() {
+  local id="grounder-cli-usage-errors" artifact="$WORK/grounder-cli-usage-errors.sas"
+
+  run_capture "$id-missing-args" "$GC" --status=stderr --output "$artifact"
+  expect_exit "$id missing args" 10
+  expect_artifact_absent "$id missing args" "$artifact"
+  expect_grounder_final_status "$id missing args" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-unknown-option" "$GC" --status=stderr --unknown-option "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id unknown option" 10
+  expect_grounder_final_status "$id unknown option" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-malformed-color" "$GC" --status=stderr --color=wat "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id malformed color" 10
+  expect_grounder_final_status "$id malformed color" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-too-many-positionals" "$GC" --status=stderr "$FIXTURES_DIR/grounder/minimal.htn" "$WORK/a.sas" "$WORK/extra.sas"
+  expect_exit "$id too many positionals" 10
+  expect_grounder_final_status "$id too many positionals" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-output-conflict" "$GC" --status=stderr --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn" "$WORK/positional.sas"
+  expect_exit "$id output conflict" 10
+  expect_artifact_absent "$id output conflict" "$artifact"
+  expect_grounder_final_status "$id output conflict" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-status-stdout-artifact" "$GC" --status=stdout --output - "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id status stdout artifact conflict" 10
+  expect_grounder_final_status "$id status stdout artifact conflict" "stdout" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-status-stdout-info" "$GC" --status=stdout --help
+  expect_exit "$id status stdout info conflict" 10
+  expect_grounder_final_status "$id status stdout info conflict" "stdout" "cli_usage_error" "10" "caller_error"
+}
+
+grounder_contract_input_unavailable() {
+  local id="grounder-input-unavailable" artifact="$WORK/grounder-input-unavailable.sas"
+  run_capture "$id-missing-input" "$GC" --status=stderr --output "$artifact" "$WORK/missing.htn"
+  expect_exit "$id missing input" 20
+  expect_artifact_absent "$id missing input" "$artifact"
+  expect_stdout_empty "$id missing input"
+  expect_grounder_final_status "$id missing input" "stderr" "input_unavailable" "20" "caller_error"
+}
+
+grounder_contract_input_invalid() {
+  local id="grounder-input-invalid" artifact="$WORK/grounder-input-invalid.sas"
+  run_capture "$id-malformed" "$GC" --status=stderr --output "$artifact" "$FIXTURES_DIR/grounder/malformed.htn"
+  expect_exit "$id malformed" 22
+  expect_artifact_absent "$id malformed" "$artifact"
+  expect_stdout_empty "$id malformed"
+  expect_grounder_final_status "$id malformed" "stderr" "input_invalid" "22" "input_model_error"
+}
+
+grounder_contract_output_unavailable() {
+  local id="grounder-output-unavailable"
+  run_capture "$id-missing-parent" "$GC" --status=stderr --output "$WORK/no-such-parent/out.sas" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id missing parent" 21
+  expect_stdout_empty "$id missing parent"
+  expect_grounder_final_status "$id missing parent" "stderr" "output_unavailable" "21" "caller_error"
+
+  mkdir -p "$WORK/output-dir"
+  run_capture "$id-output-directory" "$GC" --status=stderr --output "$WORK/output-dir" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id output directory" 21
+  expect_stdout_empty "$id output directory"
+  expect_grounder_final_status "$id output directory" "stderr" "output_unavailable" "21" "caller_error"
+}
+
+grounder_contract_final_status_fields() {
+  local id="grounder-final-status-fields" artifact="$WORK/grounder-final-status-fields.sas"
+  run_capture "$id" "$GC" --status=stderr --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id" 0
+  expect_grounder_final_status "$id" "stderr" "ok" "0" "success"
+  local line
+  line="$(status_lines stderr)"
+  expect_status_field "$id" "$line" "partial_output_policy" "complete"
+  expect_status_field "$id" "$line" "artifact" "file"
+}
+
+grounder_contract_status_stream_legality() {
+  local id="grounder-status-stream-legality" artifact="$WORK/grounder-status-stream-legality.sas"
+  run_capture "$id-file-stderr" "$GC" --status=stderr --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id file stderr" 0
+  expect_grounder_final_status "$id file stderr" "stderr" "ok" "0" "success"
+
+  run_capture "$id-stdout-artifact-stderr" "$GC" --status=stderr --output - "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id stdout artifact stderr" 0
+  expect_grounder_final_status "$id stdout artifact stderr" "stderr" "ok" "0" "success"
+
+  run_capture "$id-file-stdout" "$GC" --status=stdout --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id file stdout" 0
+  expect_grounder_final_status "$id file stdout" "stdout" "ok" "0" "success"
+  expect_no_status_on_stream "$id file stdout" "stderr"
+
+  run_capture "$id-illegal-stdout" "$GC" --status=stdout --output - "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id illegal stdout status" 10
+  expect_grounder_final_status "$id illegal stdout status" "stdout" "cli_usage_error" "10" "caller_error"
+}
+
+grounder_contract_color_policy() {
+  local id="grounder-color-policy" artifact="$WORK/grounder-color-policy.sas"
+  run_capture "$id-no-color" "$GC" --status=stderr --no-color --output "$artifact" "$FIXTURES_DIR/grounder/malformed.htn"
+  expect_exit "$id no-color" 22
+  expect_no_ansi "$id no-color" "$OBS_ERR" "stderr"
+  expect_grounder_final_status "$id no-color" "stderr" "input_invalid" "22" "input_model_error"
+
+  run_capture "$id-no-colour" "$GC" --status=stderr --no-colour --output "$artifact" "$FIXTURES_DIR/grounder/malformed.htn"
+  expect_exit "$id no-colour" 22
+  expect_no_ansi "$id no-colour" "$OBS_ERR" "stderr"
+  expect_grounder_final_status "$id no-colour" "stderr" "input_invalid" "22" "input_model_error"
+
+  NO_COLOR=1 run_capture "$id-no-color-env" "$GC" --status=stderr --output "$artifact" "$FIXTURES_DIR/grounder/malformed.htn"
+  expect_exit "$id NO_COLOR" 22
+  expect_no_ansi "$id NO_COLOR" "$OBS_ERR" "stderr"
+  expect_grounder_final_status "$id NO_COLOR" "stderr" "input_invalid" "22" "input_model_error"
+
+  run_capture "$id-color-always-status" "$GC" --status=stderr --color=always --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id color always status" 10
+  expect_grounder_final_status "$id color always status" "stderr" "cli_usage_error" "10" "caller_error"
+}
+
+grounder_contract_h2_surface_fencing() {
+  local id="grounder-h2-surface-fencing" artifact="$WORK/grounder-h2-surface-fencing.sas"
+  run_capture "$id" "$GC" --status=stderr --h2 --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id" 32
+  expect_artifact_absent "$id" "$artifact"
+  expect_grounder_final_status "$id" "stderr" "experimental_surface" "32" "policy_surface_failure" "experimental"
+}
+
+grounder_contract_cpddl_fam_surface_fencing() {
+  local id="grounder-cpddl-fam-surface-fencing" artifact="$WORK/grounder-cpddl-fam-surface-fencing.sas"
+  run_capture "$id" "$GC" --status=stderr --invariants --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id" 31
+  expect_artifact_absent "$id" "$artifact"
+  expect_grounder_final_status "$id" "stderr" "legacy_surface" "31" "policy_surface_failure" "legacy"
+}
+
+grounder_contract_domain_no_plan() {
+  echo "run-contract-fixtures.sh: grounder-domain-no-plan is not reachable through accepted grounder-only semantics" >&2
+  return 1
+}
+
+run_grounder_contract_fixtures() {
+  run_grounder_contract_case "grounder-canonical-file-success" grounder_contract_canonical_file_success
+  run_grounder_contract_case "grounder-canonical-stdout-success" grounder_contract_canonical_stdout_success
+  run_grounder_contract_case "grounder-inherited-compat-success" grounder_contract_inherited_compat_success
+  run_grounder_contract_case "grounder-info-commands" grounder_contract_info_commands
+  run_grounder_contract_case "grounder-cli-usage-errors" grounder_contract_cli_usage_errors
+  run_grounder_contract_case "grounder-input-unavailable" grounder_contract_input_unavailable
+  run_grounder_contract_case "grounder-input-invalid" grounder_contract_input_invalid
+  run_grounder_contract_case "grounder-output-unavailable" grounder_contract_output_unavailable
+  run_grounder_contract_case "grounder-final-status-fields" grounder_contract_final_status_fields
+  run_grounder_contract_case "grounder-status-stream-legality" grounder_contract_status_stream_legality
+  run_grounder_contract_case "grounder-color-policy" grounder_contract_color_policy
+  run_grounder_contract_case "grounder-h2-surface-fencing" grounder_contract_h2_surface_fencing
+  run_grounder_contract_case "grounder-cpddl-fam-surface-fencing" grounder_contract_cpddl_fam_surface_fencing
+  if [ "$CASE_ID" = "grounder-domain-no-plan" ]; then
+    grounder_contract_domain_no_plan
+  fi
+}
+
 if [ "$MODE" = "contract" ]; then
   echo "run-contract-fixtures.sh: platform=$PLATFORM mode=contract component=$COMPONENT case=$CASE_ID"
-  run_parser_contract_fixtures
+  if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
+    run_parser_contract_fixtures
+  fi
+  if [ "$COMPONENT" = "grounder" ] || [ "$COMPONENT" = "all" ]; then
+    run_grounder_contract_fixtures
+  fi
   echo "run-contract-fixtures.sh: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed (contract, $COMPONENT, $PLATFORM)"
   if [ "$FAIL_COUNT" -ne 0 ]; then
     exit 1

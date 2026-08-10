@@ -40,6 +40,13 @@ test-contract-grounder: build
 	./scripts/run-contract-fixtures.sh --baseline --component grounder
 	printf '%b\n' "$(GREEN)Grounder contract fixtures passed$(RESET)"
 
+.PHONY: test-contract-grounder-managed
+test-contract-grounder-managed: build-grounder
+	printf '%b\n' "$(BLUE)Running managed grounder contract fixtures...$(RESET)"
+	./scripts/install-grounder-adapter.sh "$(DIST_DIR)"
+	./scripts/run-contract-fixtures.sh --contract --component grounder
+	printf '%b\n' "$(GREEN)Managed grounder contract fixtures passed$(RESET)"
+
 .PHONY: test-contract-engine
 test-contract-engine: build
 	printf '%b\n' "$(BLUE)Running engine contract fixtures...$(RESET)"
@@ -87,5 +94,5 @@ contract-baseline: test-contract
 	printf '%b\n' "$(GREEN)contract-baseline alias passed$(RESET)"
 
 .PHONY: test
-test: build test-runtime test-contract test-contract-parser-managed smoke smoke-negative
+test: build test-runtime test-contract test-contract-parser-managed test-contract-grounder-managed smoke smoke-negative
 	printf '%b\n' "$(GREEN)Test suite passed$(RESET)"

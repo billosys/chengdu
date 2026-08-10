@@ -100,9 +100,10 @@ build-grounder:
 	fi; \
 	mkdir -p "$$DIST_DIR"; \
 	cp "$$SRC_ROOT/pandaPIgrounder" "$$DIST_DIR/pandaPIgrounder"; \
+	"$$REPO_ROOT/scripts/install-grounder-adapter.sh" "$$DIST_DIR"; \
 	COMPILER="$$(resolve_compiler_id "$$GROUNDER_CXX")"; \
 	append_provenance "$$DIST_DIR" "pandaPIgrounder" "GROUNDER" "$$COMPILER"; \
-	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandaPIgrounder$(RESET)"
+	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandapi-grounder and $$DIST_DIR/pandaPIgrounder$(RESET)"
 
 .PHONY: build-engine
 build-engine:
