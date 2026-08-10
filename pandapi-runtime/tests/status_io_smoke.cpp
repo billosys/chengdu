@@ -180,8 +180,48 @@ private:
   auto bad_exit = pandapi::runtime::parse_status_record(
     "PANDAPI_STATUS\tstatus=ok\tcomponent=engine\tsurface=normal_search"
     "\tsurface_disposition=supported\texit_code=1\tclass=success");
-  return !bad_exit.has_value()
-    && bad_exit.status().code() == pandapi::runtime::StatusCode::InputInvalid;
+  if (bad_exit.has_value()
+      || bad_exit.status().code() != pandapi::runtime::StatusCode::InputInvalid) {
+    return false;
+  }
+
+  auto non_digit_exit = pandapi::runtime::parse_status_record(
+    "PANDAPI_STATUS\tstatus=ok\tcomponent=engine\tsurface=normal_search"
+    "\tsurface_disposition=supported\texit_code=not_a_number\tclass=success");
+  if (non_digit_exit.has_value()
+      || non_digit_exit.status().code()
+        != pandapi::runtime::StatusCode::InputInvalid) {
+    return false;
+  }
+
+  auto oversized_exit = pandapi::runtime::parse_status_record(
+    "PANDAPI_STATUS\tstatus=ok\tcomponent=engine\tsurface=normal_search"
+    "\tsurface_disposition=supported"
+    "\texit_code=999999999999999999999999999999999999\tclass=success");
+  if (oversized_exit.has_value()
+      || oversized_exit.status().code()
+        != pandapi::runtime::StatusCode::InputInvalid) {
+    return false;
+  }
+
+  auto valid_signal = pandapi::runtime::parse_status_record(
+    "PANDAPI_STATUS\tstatus=signal_terminated\tcomponent=engine"
+    "\tsurface=normal_search\tsurface_disposition=supported\texit_code=143"
+    "\tclass=supervisor_owned_signal_termination\tsignal_number=15");
+  if (!valid_signal.has_value()
+      || valid_signal.value().process_status().signal_number() != 15
+      || pandapi::runtime::exit_code(valid_signal.value().process_status()) != 143) {
+    return false;
+  }
+
+  auto oversized_signal = pandapi::runtime::parse_status_record(
+    "PANDAPI_STATUS\tstatus=signal_terminated\tcomponent=engine"
+    "\tsurface=normal_search\tsurface_disposition=supported\texit_code=143"
+    "\tclass=supervisor_owned_signal_termination"
+    "\tsignal_number=999999999999999999999999999999999999");
+  return !oversized_signal.has_value()
+    && oversized_signal.status().code()
+      == pandapi::runtime::StatusCode::InputInvalid;
 }
 
 [[nodiscard]] bool check_flushing()

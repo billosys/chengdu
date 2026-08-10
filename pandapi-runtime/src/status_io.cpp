@@ -2,10 +2,12 @@
 
 #include <algorithm>
 #include <cctype>
+#include <charconv>
 #include <ostream>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -139,12 +141,21 @@ constexpr std::string_view status_tag = "PANDAPI_STATUS";
     return false;
   }
 
+  const auto has_only_digits = std::all_of(
+    value.begin(),
+    value.end(),
+    [](char character) noexcept { return is_digit(character); });
+  if (!has_only_digits) {
+    return false;
+  }
+
   int result = 0;
-  for (char character : value) {
-    if (!is_digit(character)) {
-      return false;
-    }
-    result = (result * 10) + (character - '0');
+  const auto parse_result = std::from_chars(
+    value.data(),
+    value.data() + value.size(),
+    result);
+  if (parse_result.ec != std::errc{} || parse_result.ptr != value.data() + value.size()) {
+    return false;
   }
 
   parsed = result;
