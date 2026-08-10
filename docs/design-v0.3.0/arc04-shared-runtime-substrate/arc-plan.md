@@ -115,9 +115,14 @@ checks that prove the new substrate is packaged correctly.
   [`slice04-cli-tty-provenance-core/cc-prompt.md`](slice04-cli-tty-provenance-core/cc-prompt.md).
   CDC verification:
   [`slice04-cli-tty-provenance-core/cdc-verification.md`](slice04-cli-tty-provenance-core/cdc-verification.md).
-- **slice05-slice06 - planned, not open.** Slice05 should open only after the
-  CLI/TTY/provenance core is implemented and CDC-verified, so the fixture and
-  seam-test substrate can build on accepted runtime helpers.
+- **slice05 fixture-and-seam-test-substrate - open.** Slice set:
+  [`slice05-fixture-and-seam-test-substrate/slice-doc.md`](slice05-fixture-and-seam-test-substrate/slice-doc.md),
+  [`slice05-fixture-and-seam-test-substrate/ledger.md`](slice05-fixture-and-seam-test-substrate/ledger.md),
+  [`slice05-fixture-and-seam-test-substrate/cc-prompt.md`](slice05-fixture-and-seam-test-substrate/cc-prompt.md).
+- **slice06 - planned, not open.** Slice06 should open only after the
+  fixture and seam-test substrate is implemented and CDC-verified, so
+  integration-readiness work can route accepted harness, dependency, and
+  release-exclusion evidence without guessing.
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -173,6 +178,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.8 - 2026-08-09.** Opened slice05
+  fixture-and-seam-test-substrate. Surfaced by: slice04 CDC verification. Why:
+  Arc04 now has accepted status/result, status I/O, CLI policy, TTY/color, and
+  provenance helpers, so the runtime can add fixture records, normalization,
+  process observation, safe timeout/signal/resource policy, and test-only
+  Catch2 gates before Arc05 begins executable conformance migration.
 - **v1.7 - 2026-08-09.** Marked slice04 cli-tty-provenance-core closed and
   CDC-verified after Iteration 01. Surfaced by: slice04 CDC verification of
   commit `56966f989888f39c20030b0c99ca32c4a5d3f8d8`. Why: Arc04 now has
