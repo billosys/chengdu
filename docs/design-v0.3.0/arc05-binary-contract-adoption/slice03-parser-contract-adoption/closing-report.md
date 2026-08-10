@@ -41,9 +41,10 @@ Grounder, engine, and pipeline behavior remain baseline-only.
   supported product behavior in this slice.
 - Added parser contract fixture records and runner cases while keeping the
   existing baseline fixture mode intact.
-- Added CI coverage directly in the reusable Linux and macOS build jobs by
-  installing the parser adapter after the existing CI target and running
-  `./scripts/run-contract-fixtures.sh --contract --component parser`.
+- Initial CC implementation added direct workflow parser-contract coverage;
+  follow-up commit `1d91a1ae` routed that coverage through `make ci-linux` /
+  `make ci-macos` via `test-contract-parser-managed`, preserving the same
+  parser contract gate while satisfying the make-target CI convention.
 
 ## Verification
 
