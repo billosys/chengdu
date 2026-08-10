@@ -115,10 +115,12 @@ checks that prove the new substrate is packaged correctly.
   [`slice04-cli-tty-provenance-core/cc-prompt.md`](slice04-cli-tty-provenance-core/cc-prompt.md).
   CDC verification:
   [`slice04-cli-tty-provenance-core/cdc-verification.md`](slice04-cli-tty-provenance-core/cdc-verification.md).
-- **slice05 fixture-and-seam-test-substrate - open.** Slice set:
+- **slice05 fixture-and-seam-test-substrate - closed and CDC-verified.** Slice set:
   [`slice05-fixture-and-seam-test-substrate/slice-doc.md`](slice05-fixture-and-seam-test-substrate/slice-doc.md),
   [`slice05-fixture-and-seam-test-substrate/ledger.md`](slice05-fixture-and-seam-test-substrate/ledger.md),
   [`slice05-fixture-and-seam-test-substrate/cc-prompt.md`](slice05-fixture-and-seam-test-substrate/cc-prompt.md).
+  CDC verification:
+  [`slice05-fixture-and-seam-test-substrate/cdc-verification.md`](slice05-fixture-and-seam-test-substrate/cdc-verification.md).
 - **slice06 - planned, not open.** Slice06 should open only after the
   fixture and seam-test substrate is implemented and CDC-verified, so
   integration-readiness work can route accepted harness, dependency, and
@@ -178,6 +180,16 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.9 - 2026-08-09.** Marked slice05
+  fixture-and-seam-test-substrate closed and CDC-verified. Surfaced by:
+  slice05 CDC verification of commit
+  `4741113b744a5b2e7c39c9ee8d16ad0dea7ada56`. Why: Arc04 now has tested
+  fixture records, normalization helpers, process observation, wait-status and
+  signal mapping, safe timeout/resource/signal policy vocabulary, structured
+  comparison, final tagged-status matching, and optional local Catch2 seam
+  integration without binary adoption or release-shape change. Slice06 can
+  synthesize integration readiness and Arc05 handoff constraints from accepted
+  substrate evidence.
 - **v1.8 - 2026-08-09.** Opened slice05
   fixture-and-seam-test-substrate. Surfaced by: slice04 CDC verification. Why:
   Arc04 now has accepted status/result, status I/O, CLI policy, TTY/color, and
