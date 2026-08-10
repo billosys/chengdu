@@ -401,6 +401,7 @@ if [ "$output_path" != "-" ]; then
 fi
 
 work_dir="$(mktemp -d)"
+# shellcheck disable=SC2329 # Invoked by the EXIT trap below.
 cleanup() {
   rm -rf "$work_dir"
 }

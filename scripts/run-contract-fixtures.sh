@@ -278,27 +278,27 @@ expect_stderr_empty() {
 expect_artifact_complete() {
   local id="$1" artifact="$2"
   if [ -s "$artifact" ]; then
-    pass "$id artifact complete: ${artifact#$WORK/}"
+    pass "$id artifact complete: ${artifact#"$WORK"/}"
   else
-    fail "$id expected complete artifact: ${artifact#$WORK/}"
+    fail "$id expected complete artifact: ${artifact#"$WORK"/}"
   fi
 }
 
 expect_artifact_absent() {
   local id="$1" artifact="$2"
   if [ ! -e "$artifact" ]; then
-    pass "$id artifact absent: ${artifact#$WORK/}"
+    pass "$id artifact absent: ${artifact#"$WORK"/}"
   else
-    fail "$id expected absent artifact: ${artifact#$WORK/}"
+    fail "$id expected absent artifact: ${artifact#"$WORK"/}"
   fi
 }
 
 expect_artifact_retained() {
   local id="$1" artifact="$2"
   if [ -s "$artifact" ]; then
-    pass "$id artifact retained after failure: ${artifact#$WORK/}"
+    pass "$id artifact retained after failure: ${artifact#"$WORK"/}"
   else
-    fail "$id expected retained artifact after failure: ${artifact#$WORK/}"
+    fail "$id expected retained artifact after failure: ${artifact#"$WORK"/}"
   fi
 }
 

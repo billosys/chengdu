@@ -28,6 +28,57 @@ actionlint:
 	fi
 	printf '%b\n' "$(GREEN)actionlint passed$(RESET)"
 
+.PHONY: shell-syntax
+shell-syntax:
+	printf '%b\n' "$(BLUE)Checking shell script syntax...$(RESET)"
+	for script in scripts/*.sh; do \
+	  bash -n "$$script"; \
+	done
+	printf '%b\n' "$(GREEN)Shell script syntax passed$(RESET)"
+
+.PHONY: shellcheck
+shellcheck:
+	printf '%b\n' "$(BLUE)Running shellcheck...$(RESET)"
+	if ! command -v shellcheck >/dev/null 2>&1; then \
+	  printf '%b\n' "$(RED)shellcheck not found$(RESET)" >&2; \
+	  exit 1; \
+	fi
+	shellcheck scripts/*.sh
+	printf '%b\n' "$(GREEN)shellcheck passed$(RESET)"
+
+.PHONY: static-analysis
+static-analysis: shell-syntax shellcheck
+	printf '%b\n' "$(GREEN)Static analysis passed$(RESET)"
+
+.PHONY: workflow-make-entrypoints-check
+workflow-make-entrypoints-check:
+	printf '%b\n' "$(BLUE)Checking workflow entrypoints use make...$(RESET)"
+	matches="$$(grep -REn '(\./scripts/|scripts/[^[:space:]"]+\.sh|bash[[:space:]].*actionlint|curl[[:space:]].*actionlint|\./actionlint)' .github/workflows || true)"; \
+	if [ -n "$$matches" ]; then \
+	  printf '%s\n' "$$matches" >&2; \
+	  printf '%b\n' "$(RED)Workflow steps must call make targets instead of project scripts$(RESET)" >&2; \
+	  exit 1; \
+	fi
+	printf '%b\n' "$(GREEN)Workflow entrypoints use make$(RESET)"
+
+.PHONY: safety-checks
+safety-checks: workflow-make-entrypoints-check
+	printf '%b\n' "$(BLUE)Running repository safety checks...$(RESET)"
+	git diff --check
+	nested_git="$$(find pandaPI -name .git -print)"; \
+	if [ -n "$$nested_git" ]; then \
+	  printf '%s\n' "$$nested_git" >&2; \
+	  printf '%b\n' "$(RED)Nested Git metadata found under pandaPI$(RESET)" >&2; \
+	  exit 1; \
+	fi
+	gitlinks="$$(git ls-files -s pandaPI | awk '$$1 == "160000" { print $$4 }')"; \
+	if [ -n "$$gitlinks" ]; then \
+	  printf '%s\n' "$$gitlinks" >&2; \
+	  printf '%b\n' "$(RED)Gitlink entries found under pandaPI$(RESET)" >&2; \
+	  exit 1; \
+	fi
+	printf '%b\n' "$(GREEN)Repository safety checks passed$(RESET)"
+
 .PHONY: provenance-check
 provenance-check:
 	printf '%b\n' "$(BLUE)Checking provenance...$(RESET)"
@@ -39,3 +90,15 @@ record-min-os:
 	printf '%b\n' "$(BLUE)Recording macOS minimum-OS observation...$(RESET)"
 	./scripts/record-min-os.sh
 	printf '%b\n' "$(GREEN)Minimum-OS observation recorded$(RESET)"
+
+.PHONY: record-min-os-if-macos
+record-min-os-if-macos:
+	if [ "$(PLATFORM)" = "macos-arm64" ]; then \
+	  $(MAKE) record-min-os; \
+	else \
+	  printf '%b\n' "$(YELLOW)Skipping macOS minimum-OS observation on $(PLATFORM)$(RESET)"; \
+	fi
+
+.PHONY: check
+check: check-tools actionlint static-analysis format-check safety-checks test record-min-os-if-macos provenance-check
+	printf '%b\n' "$(GREEN)All checks passed$(RESET)"

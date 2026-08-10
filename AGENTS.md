@@ -45,6 +45,15 @@ live in-tree under `pandaPI/` with full upstream history.
   scripts directly. Scripts remain implementation details behind make targets
   and local developer helpers. If a new job needs behavior without a target,
   add the target in the same change before wiring the workflow.
+- **Makefile entrypoint convention (operator override, 2026-08-10):** use the
+  top-level `Makefile` as the entry point for build, test, check, CI, and
+  release operations. Run `make help` for wayfinding. Before committing code
+  changes, run `make check`; if a narrower target is intentionally used
+  instead, report exactly what ran and why `make check` was not used. New CI
+  behavior must reuse an existing `make` target from `Makefile` or `mk/*`, or
+  add one before the workflow calls it. Do not add new documentation or
+  automation that teaches users to call `./scripts/*` directly when a Make
+  target exists.
 - **Commit footer convention (operator override, 2026-08-07):** every future
   assistant-authored commit message includes these trailers:
   `Co-authored-by: Codex <noreply@openai.com>` and

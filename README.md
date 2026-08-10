@@ -171,7 +171,7 @@ publish a GitHub Release — a red build has no path to a published release, by
 construction (the publish job depends on the whole matrix succeeding).
 Publishing is direct (the gates are the approval); switching to a
 draft-then-promote model is a one-line change in
-`scripts/publish-release.sh`. Re-running a tag's workflow after its
+the `make publish-release` target. Re-running a tag's workflow after its
 release already exists fails loudly rather than overwriting anything —
 see the workflow file's header for the exact contract. Every release's
 licensing is backed by an evidence-based linkage audit:

@@ -43,7 +43,7 @@ else
   failed=0
   for file in "${files[@]}"; do
     if ! "$CLANG_FORMAT" "$file" | diff -u "$file" - >/dev/null; then
-      echo "check-format-owned.sh: format drift: ${file#$REPO_ROOT/}" >&2
+      echo "check-format-owned.sh: format drift: ${file#"$REPO_ROOT"/}" >&2
       failed=1
     fi
   done
