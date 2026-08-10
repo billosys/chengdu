@@ -209,6 +209,32 @@ that Arc05 will own. It does not add `pandapi-*` executable entry points,
 wrappers, symlinks, copied binaries, release packaging, or planner behavior
 changes.
 
+## Integration readiness
+
+Arc04 integration readiness leaves the runtime ready for Arc05 planning as an
+inert substrate, not as an executable contract adoption. The current accepted
+surface is:
+
+- `pandapi_runtime` / `pandapi::runtime` as the CMake target for shared runtime
+  helpers;
+- `scripts/build-runtime.sh` for runtime CMake build and CTest execution;
+- `scripts/build-all.sh` for a build-only local probe that runs runtime,
+  parser, grounder, and engine builds in that order;
+- status/result, diagnostics/status I/O, CLI/TTY/provenance, fixture,
+  normalization, and process observation headers under
+  `include/pandapi/runtime/`;
+- smoke and seam tests under `pandapi-runtime/tests/`.
+
+Arc05 still owns parser, grounder, and engine adoption. That includes
+canonical `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine` entry
+points, inherited `pandaPIparser`, `pandaPIgrounder`, and `pandaPIengine`
+compatibility, black-box contract fixtures, and the managed-process behavior
+change from inherited outputs to the accepted Arc03 contract.
+
+Arc06 still owns release shape, wolong proof, license and NOTICE updates,
+test-only dependency exclusion, and CI/release gate evidence. Arc04 performs
+no binary adoption.
+
 ## Arc02 Dependency Gates
 
 Arc02 selected the standard library as the baseline and placed every external
