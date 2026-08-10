@@ -29,13 +29,20 @@ test policy.
 pandapi-runtime/
   CMakeLists.txt
   cmake/
+  include/pandapi/runtime/cli_policy.hpp
+  include/pandapi/runtime/provenance.hpp
   include/pandapi/runtime/result.hpp
   include/pandapi/runtime/runtime.hpp
   include/pandapi/runtime/status.hpp
   include/pandapi/runtime/status_io.hpp
+  include/pandapi/runtime/tty.hpp
+  src/cli_policy.cpp
+  src/provenance.cpp
   src/runtime.cpp
   src/status.cpp
   src/status_io.cpp
+  src/tty.cpp
+  tests/cli_tty_provenance_smoke.cpp
   tests/runtime_smoke.cpp
   tests/status_result_smoke.cpp
   tests/status_io_smoke.cpp
@@ -56,13 +63,12 @@ management before considering third-party dependencies.
 
 Arc03 defines the managed-process contract this runtime will eventually
 support at the parser, grounder, and engine executable boundary. The runtime
-now provides the inert substrate for status/result mapping and
-Diagnostics/status I/O while leaving binary adoption to later Arc04/Arc05
-slices.
+now provides the inert substrate for status/result mapping, Diagnostics/status
+I/O, and CLI/TTY/provenance policy while leaving binary adoption to later
+Arc04/Arc05 slices.
 
-Later Arc04 slices still own TTY/color policy, output finalization,
-provenance/version field assembly, CLI parser wrapper policy, fixture harness
-support, and any approved test-only dependency integration.
+Later Arc04 slices still own output finalization, fixture harness support, and
+any approved test-only dependency integration.
 
 ## Status/result core
 
@@ -114,6 +120,45 @@ This is still no binary adoption: the helper can write and parse
 `PANDAPI_STATUS`, but parser, grounder, and engine do not yet call it, no
 `pandapi-*` wrappers are introduced, and current stdout/stderr behavior is not
 changed.
+
+## CLI/TTY/provenance Core
+
+Slice04 implements standard-library-only helpers for the shared command and
+stream policy that later per-binary work will consume.
+
+- `cli_policy.hpp` defines common CLI policy values for human versus
+  supervised invocation, `--status=stderr|stdout`, `--output` destinations,
+  inherited positional output alias conflicts, and `--help`, `--version`, and
+  `--provenance` informational commands. Validation reports malformed enum
+  values and common option conflicts as `cli_usage_error` / exit `10` through
+  `StatusResult<T>` before any input/model processing.
+- `CommandIdentity` records command identity for canonical `pandapi-parser`,
+  `pandapi-grounder`, and `pandapi-engine` names plus inherited compatibility
+  names `pandaPIparser`, `pandaPIgrounder`, and `pandaPIengine`. Compatibility
+  invocation is identified for version/provenance output, but there is no
+  default deprecation warning and no binary adoption in this slice.
+- `tty.hpp` defines TTY/color policy with injected terminal observations, so
+  tests use an observed terminal value instead of depending on the current
+  shell. `--color=auto`, `--color=always`, `--color=never`, `--no-color`,
+  `--no-colour`, and `NO_COLOR` are represented by `ColorControls`; disabling
+  controls win and disable ANSI everywhere.
+- `allows_color` permits ANSI only for human stderr on a suitable TTY. It
+  rejects ANSI for stdout data artifacts, tagged status records, supervised
+  output, machine output, file output, pipe output, and no-TTY output.
+- `provenance.hpp` defines `ProvenanceRecord` and field-oriented
+  `format_version` / `format_provenance` helpers. Callers supply
+  `canonical_command`, `invoked_command`, `component`, `chengdu_version`,
+  `contract_version`, `upstream_project`, `upstream_commit`, `source_prefix`,
+  `build_commit`, `platform`, `compiler`, `license`, and `NOTICE` fields. The
+  runtime does not shell out to git or infer build metadata, and unknown or
+  placeholder values are omitted when absent or rejected when supplied as
+  placeholder prose so later golden tests see stable field names.
+
+This is a local facade for future CLI11 adoption; CLI11 is still not imported,
+vendored, fetched, discovered with `find_package`, included, or exposed by
+the runtime API. Parser, grounder, and engine command behavior, stdout/stderr,
+exit codes, generated artifacts, release shape, and wolong-facing behavior are
+unchanged.
 
 ## Arc02 Dependency Gates
 
