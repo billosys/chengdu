@@ -196,10 +196,11 @@ closed Arc04 substrate, not from earlier guesses.
   [`arc04-shared-runtime-substrate/slice05-fixture-and-seam-test-substrate/ledger.md`](arc04-shared-runtime-substrate/slice05-fixture-and-seam-test-substrate/ledger.md),
   [`arc04-shared-runtime-substrate/slice05-fixture-and-seam-test-substrate/cc-prompt.md`](arc04-shared-runtime-substrate/slice05-fixture-and-seam-test-substrate/cc-prompt.md),
   [`arc04-shared-runtime-substrate/slice05-fixture-and-seam-test-substrate/cdc-verification.md`](arc04-shared-runtime-substrate/slice05-fixture-and-seam-test-substrate/cdc-verification.md).
-  Slice06 substrate-integration-readiness is open:
+  Slice06 substrate-integration-readiness is closed and CDC-verified:
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/slice-doc.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/slice-doc.md),
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/ledger.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/ledger.md),
-  [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md).
+  [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md),
+  [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md).
 - **arc05-arc06 - roadmap only.** Do not write their detailed arc plans until
   Arc04 closes or explicitly bubbles up a planning dependency.
 

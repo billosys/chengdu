@@ -121,10 +121,12 @@ checks that prove the new substrate is packaged correctly.
   [`slice05-fixture-and-seam-test-substrate/cc-prompt.md`](slice05-fixture-and-seam-test-substrate/cc-prompt.md).
   CDC verification:
   [`slice05-fixture-and-seam-test-substrate/cdc-verification.md`](slice05-fixture-and-seam-test-substrate/cdc-verification.md).
-- **slice06 substrate-integration-readiness - open.** Slice set:
+- **slice06 substrate-integration-readiness - closed and CDC-verified.** Slice set:
   [`slice06-substrate-integration-readiness/slice-doc.md`](slice06-substrate-integration-readiness/slice-doc.md),
   [`slice06-substrate-integration-readiness/ledger.md`](slice06-substrate-integration-readiness/ledger.md),
   [`slice06-substrate-integration-readiness/cc-prompt.md`](slice06-substrate-integration-readiness/cc-prompt.md).
+  CDC verification:
+  [`slice06-substrate-integration-readiness/cdc-verification.md`](slice06-substrate-integration-readiness/cdc-verification.md).
 
 ## 6. Planned Runtime Artifact Paths
 
@@ -180,6 +182,14 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v2.1 - 2026-08-09.** Marked slice06
+  substrate-integration-readiness closed and CDC-verified. Surfaced by:
+  slice06 CDC verification of commit
+  `f5f04a9de0ddc93840d375adb9c993d2c6b65dd9`. Why: Arc04 now has an accepted
+  readiness handoff, inert build-all probe, Arc02 dependency-state map, Arc03
+  coverage map, Arc05 adoption/fixture inputs, Arc06 release/wolong/license
+  obligations, and preserved no-binary-adoption/no-release-change boundaries;
+  Arc04 can proceed to arc-level CDC close.
 - **v2.0 - 2026-08-09.** Opened slice06
   substrate-integration-readiness. Surfaced by: slice05 CDC verification. Why:
   Arc04 now has accepted runtime build, status/result, diagnostics/status I/O,
