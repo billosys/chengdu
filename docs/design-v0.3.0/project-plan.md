@@ -76,6 +76,14 @@ This plan adds the operator's 2026-08-09 scope expansion:
   possible shared sibling libraries/headers, and candidate modern C/C++
   dependencies.
 
+The CI/tooling research note
+[`ci-notes.md`](ci-notes.md) is also an accepted planning input. It does not
+replace Arc05 or Arc06, but it changes the order of work: formatting,
+sanitizer, owned-source build, and runtime CI gates should be put in place at
+the start of Arc05 before the binaries begin changing behavior. Coverage,
+ThreadSanitizer, release-package proof, license/NOTICE proof, and wolong
+migration evidence remain later Arc05 or Arc06 gates.
+
 ## 3. Design posture
 
 0.3.0 should not merely patch the worst exit-code and stdout defects. The
@@ -111,10 +119,9 @@ releases:
 | arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, preserving or explicitly migrating compatibility surfaces. | arc04 |
 | arc06 | `release-hardening` | Prove the new behavior locally and in CI, update docs/release assets/migration notes, and publish `v0.3.0` only after wolong-oriented consumer verification. | arc05 |
 
-Detailed planning is closed through Arc04. Arc05-Arc06 remain roadmap only
-until the operator opens them; Arc05 must be planned from the audit synthesis,
-Arc02 combined library recommendations, the accepted Arc03 managed-process
-contract, and the closed Arc04 substrate, not from earlier guesses.
+Detailed planning is open through Arc05. Arc06 remains roadmap only until
+Arc05 produces executable conformance evidence and a release-hardening
+handoff.
 
 ## 5. Current status
 
@@ -203,9 +210,15 @@ contract, and the closed Arc04 substrate, not from earlier guesses.
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/ledger.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/ledger.md),
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md),
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md).
-- **arc05-arc06 - roadmap only.** Arc05 is now eligible for detailed planning
-  from the accepted Arc04 close when the operator opens it. Arc06 remains
-  downstream of Arc05 adoption evidence.
+- **arc05 - active.** Detailed plan:
+  [`arc05-binary-contract-adoption/arc-plan.md`](arc05-binary-contract-adoption/arc-plan.md).
+  Slice01 quality-tooling-runway is open:
+  [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/slice-doc.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/slice-doc.md),
+  [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/ledger.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/ledger.md),
+  [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/cc-prompt.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/cc-prompt.md).
+- **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
+  evidence and should be planned from Arc05's final conformance and release
+  hardening handoff.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -236,6 +249,33 @@ only the dependency gates accepted by Arc03 and kept held or rejected
 dependencies out of the runtime substrate. Arc05 must adopt accepted helpers
 per binary without expanding optional surfaces. Arc06 must verify license,
 NOTICE, provenance, test-only dependency exclusion, and release-asset shape.
+
+## 5.2 CI and Tooling Findings Carried Forward
+
+The accepted CI/tooling note
+[`ci-notes.md`](ci-notes.md) is load-bearing for Arc05 ordering:
+
+- CMake/CTest remains the C++ test runner for chengdu-owned runtime and seam
+  tests.
+- Catch2 remains optional, local, and test-only; it proves C++ seams, not
+  managed-process conformance.
+- Black-box process fixtures are the executable contract test framework for
+  parser, grounder, and engine behavior.
+- `clang-format` should land before large Arc05 C++ edits and should initially
+  apply to chengdu-owned source and tests, not bulk-reformat vendored
+  upstream code.
+- ASan/UBSan runtime tests should become an early owned-code gate before
+  executable behavior changes.
+- `clang-tidy` and Clang Static Analyzer checks should start with
+  chengdu-owned runtime and adapter/facade code once a reliable
+  `compile_commands.json` path exists.
+- `llvm-cov` coverage should be planned in Arc05 but becomes most meaningful
+  after migrated binaries are exercised by process fixtures.
+- TSan remains a heavier later gate after subprocess, timeout/signal, and
+  stream-draining fixture workloads are representative.
+- Arc06 still owns release-package dry-runs, license/NOTICE checks,
+  test-only dependency exclusion, wolong fetch/install/migration proof,
+  checksums, manifests, and publication gates.
 
 ## 6. Project ledger
 
@@ -285,6 +325,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.32 - 2026-08-10.** Opened Arc05 binary-contract-adoption and Slice01
+  quality-tooling-runway. Surfaced by: Arc04 close plus accepted
+  `ci-notes.md`. Why: the project should put owned-source formatting,
+  sanitizer, runtime/build, and CI runway in place before changing parser,
+  grounder, or engine executable behavior, while keeping coverage, TSan,
+  release packaging, license/NOTICE, and wolong proof routed to later Arc05
+  or Arc06 gates.
 - **v1.31 - 2026-08-09.** Opened Arc04 slice04 cli-tty-provenance-core.
   Surfaced by: Arc04 slice03 CDC verification. Why: the accepted status/result
   and diagnostics/status I/O substrate can now support runtime common CLI
