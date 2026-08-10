@@ -233,10 +233,13 @@ documentation/tutorial, and release-publication work.
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md).
 - **arc05 - active.** Detailed plan:
   [`arc05-binary-contract-adoption/arc-plan.md`](arc05-binary-contract-adoption/arc-plan.md).
-  Slice01 quality-tooling-runway is open:
+  Slice01 quality-tooling-runway is closed and CDC-verified:
   [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/slice-doc.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/slice-doc.md),
   [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/ledger.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/ledger.md),
-  [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/cc-prompt.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/cc-prompt.md).
+  [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/cc-prompt.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/cc-prompt.md),
+  [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/closing-report.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/closing-report.md),
+  [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/cdc-verification.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/cdc-verification.md).
+  Slice02 `contract-fixture-scaffold` is ready to open.
 - **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
   evidence and should be planned from Arc05's final conformance and CI/test
   hardening handoff. It owns the remaining local/CI matrix, expanded process
@@ -369,6 +372,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.34 - 2026-08-10.** Marked Arc05 Slice01
+  quality-tooling-runway closed and CDC-verified. Surfaced by: Slice01 CDC
+  verification of commit `a701b32e9802a171936c5d07ddc4fd75c8f9af13`. Why:
+  Arc05 now has an accepted owned-source format, runtime sanitizer,
+  compile-command, and CI runway before binary behavior adoption begins;
+  Slice02 `contract-fixture-scaffold` can open without a project-roadmap
+  change.
 - **v1.33 - 2026-08-10.** Split the former Arc06 release-hardening bucket
   into Arc06 `ci-and-test-hardening`, Arc07 `pandapi-tutorial-docs`, and
   Arc08 `release-prep-publication`; expanded the project DoD and ledger for

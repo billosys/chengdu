@@ -101,10 +101,13 @@ amendments.
 
 ## 5. Current status
 
-- **slice01 quality-tooling-runway - open.** Slice set:
+- **slice01 quality-tooling-runway - closed and CDC-verified.** Slice set:
   [`slice01-quality-tooling-runway/slice-doc.md`](slice01-quality-tooling-runway/slice-doc.md),
   [`slice01-quality-tooling-runway/ledger.md`](slice01-quality-tooling-runway/ledger.md),
-  [`slice01-quality-tooling-runway/cc-prompt.md`](slice01-quality-tooling-runway/cc-prompt.md).
+  [`slice01-quality-tooling-runway/cc-prompt.md`](slice01-quality-tooling-runway/cc-prompt.md),
+  [`slice01-quality-tooling-runway/closing-report.md`](slice01-quality-tooling-runway/closing-report.md),
+  [`slice01-quality-tooling-runway/cdc-verification.md`](slice01-quality-tooling-runway/cdc-verification.md).
+  Slice02 `contract-fixture-scaffold` is ready to open.
 
 ## 6. Planned implementation surface
 
@@ -159,6 +162,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.2 - 2026-08-10.** Marked Slice01 quality-tooling-runway closed and
+  CDC-verified after independent review of commit
+  `a701b32e9802a171936c5d07ddc4fd75c8f9af13`. Surfaced by: Slice01 CDC
+  verification. Why: the owned-source format gate, runtime sanitizer gate,
+  compile-command runway, CI coverage, and documented coverage/TSan/release
+  deferrals are accepted; Slice02 can open from a verified quality runway.
 - **v1.1 - 2026-08-10.** Updated Arc05 handoff language after the project
   roadmap split the former Arc06 release-hardening bucket into Arc06 CI/test
   hardening, Arc07 tutorial/docs, and Arc08 release publication. Source:
