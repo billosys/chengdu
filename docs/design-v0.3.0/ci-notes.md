@@ -6,8 +6,9 @@ Status: design note
 This note records the current testing, coverage, formatting, static-analysis,
 and sanitizer recommendations for the 0.3.0 managed-process work. It is not an
 implementation plan by itself. Arc05 and Arc06 still own executable
-conformance, CI hardening, release packaging proof, and wolong migration
-evidence.
+conformance and CI hardening. Arc07 owns the tutorial/docs/architecture
+surface that explains the new behavior, and Arc08 owns release packaging proof
+and wolong migration evidence.
 
 ## 1. Summary Recommendation
 
@@ -44,7 +45,8 @@ The current plan state is:
 - Arc02 C++ library research is closed and CDC-verified.
 - Arc03 managed-process contract is closed and CDC-verified.
 - Arc04 shared-runtime substrate is closed and CDC-verified.
-- Arc05 and Arc06 remain roadmap only.
+- Arc05 is active.
+- Arc06, Arc07, and Arc08 remain roadmap only.
 
 Arc02 already selected the relevant dependency posture:
 
@@ -315,7 +317,7 @@ Recommended Chengdu policy:
 
 MemorySanitizer detects uninitialized memory reads, but it is higher friction
 because it works best when all code, including dependencies and the standard
-library path, is instrumented. Hold it unless Arc05/Arc06 finds a specific
+library path, is instrumented. Hold it unless Arc05 or Arc06 finds a specific
 uninitialized-memory defect class that ASan/UBSan and static analysis do not
 cover well enough.
 
@@ -359,9 +361,10 @@ Recommended for nightly or pre-release gates:
 
 - TSan process-observation and child-process tests;
 - coverage aggregation across seam tests and black-box fixtures;
-- release package dry-run;
-- `THIRD-PARTY-LICENSES`, NOTICE, manifest, checksum, and provenance checks;
-- wolong fetch/install/migration verification.
+- release package dry-runs for Arc08;
+- `THIRD-PARTY-LICENSES`, NOTICE, manifest, checksum, and provenance checks
+  for Arc08;
+- wolong fetch/install/migration verification for Arc08.
 
 ## 10. Decision Table
 
@@ -419,4 +422,5 @@ Future slices can turn this note into implementation by adding:
 - `scripts/sanitize-runtime.sh` for ASan/UBSan;
 - a TSan job once the process fixture workload justifies it;
 - Arc05 process fixtures for parser, grounder, and engine conformance;
-- Arc06 release packaging checks proving test-only dependencies are excluded.
+- Arc06 expanded CI/test hardening;
+- Arc08 release packaging checks proving test-only dependencies are excluded.

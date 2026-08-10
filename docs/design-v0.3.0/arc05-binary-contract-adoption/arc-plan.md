@@ -22,9 +22,11 @@ tests as a proxy.
 
 Arc05 is implementation work. It may change parser, grounder, and engine
 behavior only through the accepted contract. It must not expand optional
-inherited surfaces just because a dependency or build path is available. Arc06
-owns release packaging, license/NOTICE proof, wolong verification, release
-notes, checksums, manifests, and publication.
+inherited surfaces just because a dependency or build path is available. Later
+arcs own the downstream gates: Arc06 owns remaining CI/test hardening, Arc07
+owns tutorial/docs/architecture, and Arc08 owns release packaging,
+license/NOTICE proof, wolong verification, release notes, checksums,
+manifests, and publication.
 
 ## 2. Design principles
 
@@ -49,7 +51,8 @@ notes, checksums, manifests, and publication.
    `tl::expected`, and reproc++ enter only through their approved gates.
    Held or rejected dependencies do not re-enter by convenience.
 7. **No release overclaim.** Passing Arc05 means the binaries conform locally
-   and in CI. It does not mean the release package, wolong installation path,
+   and in CI to the scope this arc opens. It does not mean the expanded CI
+   matrix, tutorial/docs set, release package, wolong installation path,
    license files, notices, manifests, or publication gates are complete.
 
 ## 3. Slice breakdown
@@ -61,7 +64,7 @@ notes, checksums, manifests, and publication.
 | slice03 | `parser-contract-adoption` | Migrate parser normal HDDL parse behavior to the managed-process contract and add canonical/inherited command proof. | grounder pipeline input; first executable contract surface |
 | slice04 | `grounder-contract-adoption` | Migrate grounder normal `.htn` grounding behavior to the managed-process contract while fencing H2 and cpddl/FAM surfaces. | parser-to-grounder composition; engine input |
 | slice05 | `engine-contract-adoption` | Migrate engine normal search behavior to the managed-process contract while fencing interactive, translation, SAT, BDD, and CUDD surfaces. | full primary pipeline behavior |
-| slice06 | `binary-contract-synthesis` | Compose parser, grounder, and engine evidence into the accepted Arc05 conformance report and Arc06 release-hardening handoff. | project ledger P5; Arc06 planning |
+| slice06 | `binary-contract-synthesis` | Compose parser, grounder, and engine evidence into the accepted Arc05 conformance report and split handoff for Arc06 CI/test hardening, Arc07 docs/tutorial inputs, and Arc08 release inputs. | project ledger P5; Arcs06-08 planning |
 
 ## 4. Dependencies
 
@@ -85,10 +88,15 @@ notes, checksums, manifests, and publication.
   headers/source hygiene, resource safety, error handling, arithmetic/UB,
   concurrency tools, and standard-library guidance.
 
-**Leaves for arc06:** release-package proof inputs, behavior-change table
-inputs, dependency/license/NOTICE facts for dependencies actually adopted,
-test-only dependency exclusion evidence, CI gate inventory, wolong
-fetch/install/migration evidence requirements, and any remaining release-risk
+**Leaves for later arcs:** Arc06 receives the remaining CI gate inventory,
+expanded process-fixture gaps, coverage and heavier sanitizer/static-analysis
+requirements, and release-readiness evidence needed by later dry-runs. Arc07
+receives the final behavior-change table inputs, CLI examples,
+architecture/dependency facts, and migration notes needed for tutorial and
+README work. Arc08 receives dependency/license/NOTICE facts for dependencies
+actually adopted, test-only dependency exclusion evidence, wolong
+fetch/install/migration evidence requirements, release-asset inputs,
+release-package dry-run obligations, and any remaining release-risk
 amendments.
 
 ## 5. Current status
@@ -105,10 +113,10 @@ Arc05 may touch these implementation surfaces as slices open:
 | Surface | Intended ownership |
 |---------|--------------------|
 | `pandapi-runtime/` | Shared runtime helpers, fixtures, CMake/CTest seams, adapters needed by binary adoption. |
-| `scripts/` | Build, sanitizer, formatting, fixture, and smoke gates. Package/publish scripts remain Arc06 unless explicitly opened. |
-| `.github/workflows/` | CI gates for build/runtime/tooling and later contract fixtures. Release workflows remain Arc06 unless explicitly opened. |
+| `scripts/` | Build, sanitizer, formatting, fixture, and smoke gates. Package/publish scripts remain Arc08 unless explicitly opened. |
+| `.github/workflows/` | CI gates for build/runtime/tooling and later contract fixtures. Release workflows remain Arc08 unless explicitly opened. |
 | `pandaPI/` | Parser, grounder, and engine adoption only in the per-binary slices that own those changes. |
-| `dist/`, `build/`, `release/` | Generated output only; no tracked release-shape changes until Arc06. |
+| `dist/`, `build/`, `release/` | Generated output only; no tracked release-shape changes until Arc08. |
 
 ## 7. Arc ledger
 
@@ -118,14 +126,14 @@ arc's `closing-report.md`.
 | Row | Criterion | Target strength |
 |-----|-----------|-----------------|
 | A1 | Every planned Arc05 slice is closed and CDC-verified, with no missing slice from the breakdown. | reproduced |
-| A2 | The quality/tooling runway lands before binary behavior changes: owned-source formatting, runtime sanitizer proof, runtime/build CI coverage, and explicit deferral of coverage/TSan/release-package gates. | reproduced |
+| A2 | The quality/tooling runway lands before binary behavior changes: owned-source formatting, runtime sanitizer proof, runtime/build CI coverage, and explicit deferral of coverage/TSan gates to Arc06 plus release-package gates to Arc08. | reproduced |
 | A3 | The contract fixture scaffold proves product behavior through black-box process fixtures and preserves the distinction between Catch2 seam tests and executable conformance. | reproduced |
 | A4 | Parser normal HDDL parse conforms to the accepted contract through canonical `pandapi-parser` and inherited `pandaPIparser` entry points, with positive and negative fixture evidence. | reproduced |
 | A5 | Grounder normal `.htn` grounding conforms to the accepted contract through canonical `pandapi-grounder` and inherited `pandaPIgrounder` entry points, with H2 and cpddl/FAM surfaces fenced. | reproduced |
 | A6 | Engine normal search conforms to the accepted contract through canonical `pandapi-engine` and inherited `pandaPIengine` entry points, with interactive, translation, SAT, BDD, and CUDD surfaces fenced. | reproduced |
 | A7 | Shared runtime adoption removes or routes duplicate process-policy code without leaking third-party APIs into planner internals or expanding optional surfaces. | reproduced |
 | A8 | Existing release shape and wolong fetch assumptions are not silently broken; any compatibility transition is explicit and backed by local fixture evidence. | reproduced |
-| A9 | Arc06 can be planned from Arc05 close without silent drops: release assets, CI, behavior-change table, dependency licensing/NOTICE, test-only exclusion, checksums, manifests, and wolong proof obligations are routed. | reproduced |
+| A9 | Arcs06-08 can be planned from Arc05 close without silent drops: CI/test hardening, tutorial/docs inputs, release assets, behavior-change table, dependency licensing/NOTICE, test-only exclusion, checksums, manifests, and wolong proof obligations are routed. | reproduced |
 
 ## 8. Open questions and risks
 
@@ -151,6 +159,12 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.1 - 2026-08-10.** Updated Arc05 handoff language after the project
+  roadmap split the former Arc06 release-hardening bucket into Arc06 CI/test
+  hardening, Arc07 tutorial/docs, and Arc08 release publication. Source:
+  project-plan v1.33. Why: Arc05 closure must route downstream obligations to
+  the right arc instead of handing one overloaded release bucket to the next
+  planner.
 - **v1.0 - 2026-08-10.** Opened Arc05 and slice01
   quality-tooling-runway. Source: Arc04 close, accepted `ci-notes.md`, and
   operator request to put the agreed pre-Arc06 CI/tooling work in place before

@@ -6,7 +6,11 @@
 > command contracts, namespaced binary names, disciplined stdout/stderr,
 > documented exit/status semantics, bounded failure behavior, and source
 > quality high enough that future work happens in a maintainable C/C++
-> monorepo rather than in three inherited islands.
+> monorepo rather than in three inherited islands. The release also establishes
+> a new user-learning surface for the fork: a highly detailed pandaPI 0.3.0
+> tutorial, project workflow guidance, README updates, and architecture
+> documentation that explain the new runtime/CLI shape rather than assuming
+> prior planner or pandaPI experience.
 >
 > Plan-of-record at project scale, per `PROJECT-MANAGEMENT.md` (v2.1).
 > Predecessor: `docs/design-v0.2.0/` (closed 2026-08-09, gate GO). The
@@ -23,7 +27,10 @@ consumer-facing migration guidance. The release provides namespaced
 and every intentional behavior change is documented in a behavior-change
 table. The three binaries can be supervised by another process using pipes
 without regex archaeology, stdout/stderr ambiguity, accidental ANSI leakage,
-or exit-code guessing.
+or exit-code guessing. The release also includes a public tutorial and
+documentation set that can bring a newcomer from first HTN/PDDL/HDDL concepts
+through simple and intermediate pandaPI project workflows, then into the new
+0.3.0 `pandapi-*` CLI surface and architecture.
 
 **Behavioral target:** wolong's supervised-process use case is the acceptance
 anchor. A caller should be able to classify at least solved, unsolvable,
@@ -81,8 +88,20 @@ The CI/tooling research note
 replace Arc05 or Arc06, but it changes the order of work: formatting,
 sanitizer, owned-source build, and runtime CI gates should be put in place at
 the start of Arc05 before the binaries begin changing behavior. Coverage,
-ThreadSanitizer, release-package proof, license/NOTICE proof, and wolong
-migration evidence remain later Arc05 or Arc06 gates.
+ThreadSanitizer, expanded process fixtures, and the remaining test/CI matrix
+belong in later Arc05 or Arc06 gates. Release-package proof, license/NOTICE
+proof, and wolong migration evidence move to Arc08 publication gates.
+
+This plan adds the operator's 2026-08-10 roadmap expansion:
+
+- split the former all-in-one Arc06 release-hardening bucket into three arcs;
+- keep the remaining testing, CI, coverage, sanitizer, and conformance
+  hardening in Arc06;
+- add Arc07 for a pandaPI 0.3.0 tutorial and documentation suite, including
+  HTN/PDDL/HDDL onboarding, project workflow examples, new `pandapi-*` CLI
+  guidance, README updates, and architecture/dependency documentation;
+- reserve Arc08 for release preparation, release-asset verification, wolong
+  migration proof, and publication.
 
 ## 3. Design posture
 
@@ -117,11 +136,13 @@ releases:
 | arc03 | `managed-process-contract` | Produce the accepted design for CLI + supervised-process behavior: command naming, exit/status taxonomy, stdout/stderr/events, buffering, ANSI/TTY, signals/resources, version/provenance, and migration policy. | arc01, arc02 |
 | arc04 | `shared-runtime-substrate` | Introduce the shared C/C++ runtime/build substrate selected by the design, with tests and no behavior changes beyond wiring. | arc03 |
 | arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, preserving or explicitly migrating compatibility surfaces. | arc04 |
-| arc06 | `release-hardening` | Prove the new behavior locally and in CI, update docs/release assets/migration notes, and publish `v0.3.0` only after wolong-oriented consumer verification. | arc05 |
+| arc06 | `ci-and-test-hardening` | Complete the remaining local and CI proof for the new behavior: expanded process fixtures, coverage, heavier sanitizer/static-analysis gates, and pre-release CI evidence. | arc05 |
+| arc07 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06 |
+| arc08 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, and publish `v0.3.0`. | arc06, arc07 |
 
-Detailed planning is open through Arc05. Arc06 remains roadmap only until
-Arc05 produces executable conformance evidence and a release-hardening
-handoff.
+Detailed planning is open through Arc05. Arcs06-08 remain roadmap only until
+Arc05 produces executable conformance evidence and a split handoff for CI,
+documentation/tutorial, and release-publication work.
 
 ## 5. Current status
 
@@ -217,8 +238,20 @@ handoff.
   [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/ledger.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/ledger.md),
   [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/cc-prompt.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/cc-prompt.md).
 - **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
-  evidence and should be planned from Arc05's final conformance and release
-  hardening handoff.
+  evidence and should be planned from Arc05's final conformance and CI/test
+  hardening handoff. It owns the remaining local/CI matrix, expanded process
+  fixtures, coverage, heavier sanitizer/static-analysis gates, and release
+  readiness evidence needed by later release dry-runs.
+- **arc07 - roadmap only.** Arc07 remains downstream of Arc05/Arc06 proof and
+  should create the user-facing pandaPI 0.3.0 tutorial and documentation
+  suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
+  workflow examples, `pandapi-*` CLI guidance, README updates, and
+  architecture/dependency documentation for the new fork shape.
+- **arc08 - roadmap only.** Arc08 remains downstream of Arc06 and Arc07 and
+  owns release preparation and publication: release assets, checksums,
+  manifest/provenance, dependency licensing/NOTICE obligations, test-only
+  dependency exclusion, wolong fetch/install/migration verification, and the
+  actual `v0.3.0` release.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -247,8 +280,10 @@ input to all remaining work:
 Arc03 converted these findings into semantic constraints. Arc04 implemented
 only the dependency gates accepted by Arc03 and kept held or rejected
 dependencies out of the runtime substrate. Arc05 must adopt accepted helpers
-per binary without expanding optional surfaces. Arc06 must verify license,
-NOTICE, provenance, test-only dependency exclusion, and release-asset shape.
+per binary without expanding optional surfaces. Arc06 must prove the expanded
+CI/test surface; Arc07 must explain the accepted dependency and architecture
+choices in user-facing docs; Arc08 must verify license, NOTICE, provenance,
+test-only dependency exclusion, and release-asset shape.
 
 ## 5.2 CI and Tooling Findings Carried Forward
 
@@ -273,9 +308,12 @@ The accepted CI/tooling note
   after migrated binaries are exercised by process fixtures.
 - TSan remains a heavier later gate after subprocess, timeout/signal, and
   stream-draining fixture workloads are representative.
-- Arc06 still owns release-package dry-runs, license/NOTICE checks,
-  test-only dependency exclusion, wolong fetch/install/migration proof,
-  checksums, manifests, and publication gates.
+- Arc06 owns expanded test and CI proof: coverage, ThreadSanitizer, heavier
+  sanitizer/static-analysis gates, and release-readiness evidence needed by
+  later dry-runs.
+- Arc08 owns release-package dry-runs, license/NOTICE checks, test-only
+  dependency exclusion, wolong fetch/install/migration proof, checksums,
+  manifests, and publication gates.
 
 ## 6. Project ledger
 
@@ -289,8 +327,9 @@ per-row in this project's `closing-report.md`.
 | P3 | Arc03 closes with an accepted managed-process design covering CLI ergonomics, supervised-process behavior, binary naming, exit/status semantics, stdout/stderr/event output, buffering, ANSI/TTY, signals/resources, version/provenance, migration policy, and explicit incorporation or deferral of Arc02 dependency findings. | reproduced |
 | P4 | Arc04 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted, with Arc02-selected dependencies entering only through approved facades/pilots. | reproduced |
 | P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract, including namespaced `pandapi-*` entry points or an explicit compatibility transition, without library availability expanding optional inherited surfaces. | reproduced |
-| P6 | The full local and CI gate suite proves positive and negative behavior under both CLI and pipe-supervised invocation; release docs include a behavior-change table, Arc02-driven dependency behavior notes, and wolong migration evidence. | reproduced |
-| P7 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, and the wolong fetch/install/migration path are verified on supported platforms. | reproduced |
+| P6 | Arc06 closes with the full local and CI gate suite proving positive and negative behavior under both CLI and pipe-supervised invocation, including expanded process fixtures, coverage evidence, and heavier sanitizer/static-analysis gates where supported. | reproduced |
+| P7 | Arc07 closes with the pandaPI 0.3.0 tutorial and documentation suite: beginner HTN/PDDL/HDDL onboarding, simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance, README updates, architecture docs, dependency rationale, behavior-change table, and migration notes. | reproduced |
+| P8 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, release docs, and the wolong fetch/install/migration path are verified on supported platforms. | reproduced |
 
 ## 7. Open questions and risks
 
@@ -322,9 +361,22 @@ per-row in this project's `closing-report.md`.
   answer, but each candidate must clear license, supported-platform build,
   static vs vendored packaging, maintenance, and security/update implications.
   Arc02 owns that research before Arc03 turns any dependency into design.
+- **OQ6 - tutorial example selection.** Arc07 must choose examples that are
+  beginner-friendly without being toy-only. The roadmap requirement is fixed:
+  start with HTN/PDDL/HDDL fundamentals, then build from a simple pandaPI
+  project workflow to an intermediate example that exercises the new 0.3.0
+  CLI tools and documented architecture.
 
 ## 8. Version history
 
+- **v1.33 - 2026-08-10.** Split the former Arc06 release-hardening bucket
+  into Arc06 `ci-and-test-hardening`, Arc07 `pandapi-tutorial-docs`, and
+  Arc08 `release-prep-publication`; expanded the project DoD and ledger for
+  the tutorial, README, architecture, dependency, migration, CI, and release
+  proof surfaces. Surfaced by: operator roadmap correction after re-reading
+  the 0.3.0 plan and accepting `ci-notes.md`. Why: 0.3.0's architecture and
+  CLI changes are large enough that CI hardening, newcomer/tutorial docs, and
+  release publication need separate arc-scale composition checks.
 - **v1.32 - 2026-08-10.** Opened Arc05 binary-contract-adoption and Slice01
   quality-tooling-runway. Surfaced by: Arc04 close plus accepted
   `ci-notes.md`. Why: the project should put owned-source formatting,

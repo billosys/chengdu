@@ -4,6 +4,7 @@
 /build/
 /dist/
 /release/
+.worktrees
 
 # Scratch
 *.o
