@@ -17,10 +17,10 @@ jobs:
           fetch-depth: 0
 
       - name: Install actionlint 1.7.12
-        run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+        run: make install-actionlint
 
       - name: Run actionlint
-        run: ./actionlint -color
+        run: make actionlint
 
   build:
     name: build (${{ matrix.os }})
@@ -46,11 +46,6 @@ jobs:
 
       - name: Run Linux CI target
         run: make ci-linux
-
-      - name: Run parser contract fixtures
-        run: |
-          ./scripts/install-parser-adapter.sh dist/linux-x86_64
-          ./scripts/run-contract-fixtures.sh --contract --component parser
 
       - uses: actions/upload-artifact@v7
         with:
@@ -96,11 +91,6 @@ jobs:
 
       - name: Run macOS CI target
         run: make ci-macos
-
-      - name: Run parser contract fixtures
-        run: |
-          ./scripts/install-parser-adapter.sh dist/macos-arm64
-          ./scripts/run-contract-fixtures.sh --contract --component parser
 
       - uses: actions/upload-artifact@v7
         with:

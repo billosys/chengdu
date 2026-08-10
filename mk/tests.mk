@@ -27,6 +27,13 @@ test-contract-parser: build
 	./scripts/run-contract-fixtures.sh --baseline --component parser
 	printf '%b\n' "$(GREEN)Parser contract fixtures passed$(RESET)"
 
+.PHONY: test-contract-parser-managed
+test-contract-parser-managed: build-parser
+	printf '%b\n' "$(BLUE)Running managed parser contract fixtures...$(RESET)"
+	./scripts/install-parser-adapter.sh "$(DIST_DIR)"
+	./scripts/run-contract-fixtures.sh --contract --component parser
+	printf '%b\n' "$(GREEN)Managed parser contract fixtures passed$(RESET)"
+
 .PHONY: test-contract-grounder
 test-contract-grounder: build
 	printf '%b\n' "$(BLUE)Running grounder contract fixtures...$(RESET)"
@@ -80,5 +87,5 @@ contract-baseline: test-contract
 	printf '%b\n' "$(GREEN)contract-baseline alias passed$(RESET)"
 
 .PHONY: test
-test: build test-runtime test-contract smoke smoke-negative
+test: build test-runtime test-contract test-contract-parser-managed smoke smoke-negative
 	printf '%b\n' "$(GREEN)Test suite passed$(RESET)"

@@ -20,6 +20,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make test-runtime-sanitize$(RESET) - Run runtime ASan/UBSan tests"; \
 	printf '%b\n' "  $(YELLOW)make test-contract$(RESET)      - Run all baseline contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-parser$(RESET) - Run parser contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-parser-managed$(RESET) - Run managed parser contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-grounder$(RESET) - Run grounder contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-engine$(RESET) - Run engine contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-pipeline$(RESET) - Run pipeline contract fixtures"; \
@@ -28,6 +29,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make test-corpus CORPUS_DIR=...$(RESET) - Run optional IPC corpus smoke"; \
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)Quality:$(RESET)"; \
+	printf '%b\n' "  $(YELLOW)make actionlint$(RESET)          - Run downloaded actionlint"; \
 	printf '%b\n' "  $(YELLOW)make format-check$(RESET)       - Check owned C++ formatting"; \
 	printf '%b\n' "  $(YELLOW)make format$(RESET)             - Format owned C++ source"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-runtime$(RESET)   - Build and run runtime ASan/UBSan gate"; \
@@ -38,7 +40,13 @@ help:
 	printf '%b\n' "  $(YELLOW)make ci-macos$(RESET)           - Local equivalent of macOS build leg"; \
 	printf '%b\n' "  $(YELLOW)make readme-verbatim$(RESET)    - Build/smoke path documented in README"; \
 	printf '\n'; \
+	printf '%b\n' "$(GREEN)Release:$(RESET)"; \
+	printf '%b\n' "  $(YELLOW)make restore-release-executable-bits$(RESET) - Restore executable bits on release artifacts"; \
+	printf '%b\n' "  $(YELLOW)make package-release TAG=vX.Y.Z$(RESET) - Package release assets"; \
+	printf '%b\n' "  $(YELLOW)make publish-release TAG=vX.Y.Z$(RESET) - Publish packaged release"; \
+	printf '\n'; \
 	printf '%b\n' "$(GREEN)Utilities:$(RESET)"; \
+	printf '%b\n' "  $(YELLOW)make install-actionlint$(RESET) - Download actionlint for workflow linting"; \
 	printf '%b\n' "  $(YELLOW)make check-tools$(RESET)        - Verify required tools"; \
 	printf '%b\n' "  $(YELLOW)make record-min-os$(RESET)      - Append macOS min-OS observation"; \
 	printf '%b\n' "  $(YELLOW)make info$(RESET)               - Show build information"; \

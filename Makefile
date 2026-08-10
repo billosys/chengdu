@@ -9,5 +9,6 @@ include mk/build.mk
 include mk/tests.mk
 include mk/checks.mk
 include mk/ci.mk
+include mk/release.mk
 
 -include build/make/*.d
