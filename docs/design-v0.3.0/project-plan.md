@@ -245,6 +245,10 @@ documentation/tutorial, and release-publication work.
   [`arc05-binary-contract-adoption/slice02-contract-fixture-scaffold/cc-prompt.md`](arc05-binary-contract-adoption/slice02-contract-fixture-scaffold/cc-prompt.md),
   [`arc05-binary-contract-adoption/slice02-contract-fixture-scaffold/closing-report.md`](arc05-binary-contract-adoption/slice02-contract-fixture-scaffold/closing-report.md),
   [`arc05-binary-contract-adoption/slice02-contract-fixture-scaffold/cdc-verification.md`](arc05-binary-contract-adoption/slice02-contract-fixture-scaffold/cdc-verification.md).
+  Slice03 parser-contract-adoption is open:
+  [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/slice-doc.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/slice-doc.md),
+  [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/ledger.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/ledger.md),
+  [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/cc-prompt.md).
 - **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
   evidence and should be planned from Arc05's final conformance and CI/test
   hardening handoff. It owns the remaining local/CI matrix, expanded process
@@ -377,6 +381,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.37 - 2026-08-10.** Opened Arc05 Slice03
+  parser-contract-adoption. Surfaced by: Arc05 Slice02 CDC verification. Why:
+  parser adoption can now begin from the accepted black-box fixture scaffold,
+  making `pandapi-parser` the first executable managed-process contract
+  surface while preserving inherited `pandaPIparser` compatibility.
 - **v1.36 - 2026-08-10.** Marked Arc05 Slice02
   contract-fixture-scaffold closed and CDC-verified after independent review
   of implementation commit `836fa434` plus F-2 repair commit `f74a7f7a`.

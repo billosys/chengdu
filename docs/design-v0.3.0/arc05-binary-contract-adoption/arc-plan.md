@@ -113,6 +113,10 @@ amendments.
   [`slice02-contract-fixture-scaffold/cc-prompt.md`](slice02-contract-fixture-scaffold/cc-prompt.md),
   [`slice02-contract-fixture-scaffold/closing-report.md`](slice02-contract-fixture-scaffold/closing-report.md),
   [`slice02-contract-fixture-scaffold/cdc-verification.md`](slice02-contract-fixture-scaffold/cdc-verification.md).
+- **slice03 parser-contract-adoption - open.** Open set:
+  [`slice03-parser-contract-adoption/slice-doc.md`](slice03-parser-contract-adoption/slice-doc.md),
+  [`slice03-parser-contract-adoption/ledger.md`](slice03-parser-contract-adoption/ledger.md),
+  [`slice03-parser-contract-adoption/cc-prompt.md`](slice03-parser-contract-adoption/cc-prompt.md).
 
 ## 6. Planned implementation surface
 
@@ -167,6 +171,11 @@ arc's `closing-report.md`.
 
 ## 9. Version history
 
+- **v1.5 - 2026-08-10.** Opened Slice03 parser-contract-adoption.
+  Surfaced by: Slice02 CDC verification. Why: parser adoption can now begin
+  from an accepted black-box fixture scaffold and the seeded parser contract
+  target, while grounder and engine remain baseline-only until their owning
+  slices.
 - **v1.4 - 2026-08-10.** Marked Slice02
   contract-fixture-scaffold closed and CDC-verified after independent review
   of implementation commit `836fa434` plus F-2 repair commit `f74a7f7a`.
