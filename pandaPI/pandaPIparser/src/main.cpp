@@ -378,5 +378,5 @@ int main(int argc, char** argv) {
 		}
 		simple_hddl_output(*dout);
 	}
+	return 0;
 }
-

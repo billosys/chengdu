@@ -1,9 +1,8 @@
 # Parser Contract Fixture Records
 
-These records describe executable Arc05 Slice03 parser-contract checks. They
-cover the canonical `pandapi-parser` command and the inherited `pandaPIparser`
-compatibility command, while keeping grounder and engine behavior on the
-baseline fixture path.
+These records describe executable Arc05 parser-contract checks. They cover the
+canonical native `pandapi-parser` command, while keeping grounder and engine
+behavior on their owning fixture paths.
 
 The runner implements these records with:
 
@@ -53,26 +52,15 @@ CI-safe unavailable-output cases.
 - `exit`: `ok` / 0
 - `normalization`: stdout must not contain human prose or `PANDAPI_STATUS`
 
-### parser-inherited-compat-success
-
-- `mode`: `parser-contract`
-- `component`: `parser`
-- `command.argv`: `pandaPIparser --status=stderr DOMAIN.hddl PROBLEM.hddl OUT.htn`
-- `artifact`: `file-backed`, complete `.htn`
-- `stdout.role`: empty
-- `stderr.role`: final status
-- `exit`: `ok` / 0
-- `compatibility`: inherited `pandaPIparser -C DOMAIN.hddl PROBLEM.hddl OUT.htn` remains legacy passthrough with no default deprecation warning
-
 ### parser-info-commands
 
 - `mode`: `parser-contract`
 - `component`: `parser`
-- `command.argv`: `pandapi-parser --help`, `pandapi-parser --version`, `pandaPIparser --provenance`
+- `command.argv`: `pandapi-parser --help`, `pandapi-parser --version`, `pandapi-parser --provenance`
 - `stdout.role`: informational fields
 - `stderr.role`: empty
 - `exit`: `ok` / 0
-- `identity`: output includes `canonical_command=pandapi-parser`; inherited provenance also includes `invoked_command=pandaPIparser`
+- `identity`: output includes `canonical_command=pandapi-parser` and does not advertise a parser legacy sidecar
 
 ### parser-cli-usage-errors
 

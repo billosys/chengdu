@@ -128,7 +128,7 @@ check_component() {
   fi
 }
 
-check_component "pandaPIparser" "PARSER"
+check_component "pandapi-parser" "PARSER"
 check_component "pandaPIgrounder" "GROUNDER"
 check_component "pandaPIengine" "ENGINE"
 

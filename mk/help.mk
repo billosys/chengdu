@@ -10,7 +10,7 @@ help:
 	printf '%b\n' "$(GREEN)Build:$(RESET)"; \
 	printf '%b\n' "  $(YELLOW)make build$(RESET)              - Build runtime, parser, grounder, and engine"; \
 	printf '%b\n' "  $(YELLOW)make build-runtime$(RESET)      - Build chengdu-owned runtime"; \
-	printf '%b\n' "  $(YELLOW)make build-parser$(RESET)       - Build inherited pandaPIparser into dist/"; \
+	printf '%b\n' "  $(YELLOW)make build-parser$(RESET)       - Build pandapi-parser into dist/"; \
 	printf '%b\n' "  $(YELLOW)make build-grounder$(RESET)     - Build inherited pandaPIgrounder into dist/"; \
 	printf '%b\n' "  $(YELLOW)make build-engine$(RESET)       - Build inherited pandaPIengine into dist/"; \
 	printf '\n'; \

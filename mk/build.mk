@@ -46,31 +46,28 @@ sanitize-runtime:
 	printf '%b\n' "$(GREEN)Sanitizer gate passed: $(RUNTIME_SANITIZE_BUILD_DIR)$(RESET)"
 
 .PHONY: build-parser
-build-parser:
-	printf '%b\n' "$(BLUE)Building pandaPIparser...$(RESET)"; \
+build-parser: build-runtime
+	printf '%b\n' "$(BLUE)Building pandapi-parser...$(RESET)"; \
 	REPO_ROOT="$(CURDIR)"; \
 	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
 	SRC_DIR="$$(prepare_build_source_copy pandaPIparser)"; \
 	DIST_DIR="$$REPO_ROOT/dist/$$PLATFORM"; \
 	. "$$REPO_ROOT/vendor.env"; \
-	$(MAKE) -C "$$SRC_DIR"; \
-	if [ ! -x "$$SRC_DIR/pandaPIparser" ]; then \
-	  printf '%b\n' "$(RED)pandaPIparser build did not produce an executable$(RESET)" >&2; \
+	$(MAKE) -C "$$SRC_DIR" \
+	  PANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/pandapi-runtime/include" \
+	  PANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_BUILD_DIR)/libpandapi_runtime.a"; \
+	if [ ! -x "$$SRC_DIR/pandapi-parser" ]; then \
+	  printf '%b\n' "$(RED)pandapi-parser build did not produce an executable$(RESET)" >&2; \
 	  exit 1; \
 	fi; \
 	mkdir -p "$$DIST_DIR"; \
-	if [ -f "$$REPO_ROOT/scripts/pandapi-parser-adapter.sh" ]; then \
-	  cp "$$SRC_DIR/pandaPIparser" "$$DIST_DIR/pandaPIparser.legacy"; \
-	  cp "$$REPO_ROOT/scripts/pandapi-parser-adapter.sh" "$$DIST_DIR/pandapi-parser"; \
-	  cp "$$REPO_ROOT/scripts/pandapi-parser-adapter.sh" "$$DIST_DIR/pandaPIparser"; \
-	  chmod +x "$$DIST_DIR/pandaPIparser.legacy" "$$DIST_DIR/pandapi-parser" "$$DIST_DIR/pandaPIparser"; \
-	else \
-	  cp "$$SRC_DIR/pandaPIparser" "$$DIST_DIR/pandaPIparser"; \
-	  chmod +x "$$DIST_DIR/pandaPIparser"; \
-	fi; \
+	OLD_PARSER="pandaPI""parser"; \
+	rm -f "$$DIST_DIR/$$OLD_PARSER" "$$DIST_DIR/$$OLD_PARSER.legacy"; \
+	cp "$$SRC_DIR/pandapi-parser" "$$DIST_DIR/pandapi-parser"; \
+	chmod +x "$$DIST_DIR/pandapi-parser"; \
 	COMPILER="$$(resolve_compiler_id g++)"; \
-	append_provenance "$$DIST_DIR" "pandaPIparser" "PARSER" "$$COMPILER"; \
+	append_provenance "$$DIST_DIR" "pandapi-parser" "PARSER" "$$COMPILER"; \
 	printf '%b\n' "$(GREEN)Built parser artifacts in $$DIST_DIR$(RESET)"
 
 .PHONY: build-grounder

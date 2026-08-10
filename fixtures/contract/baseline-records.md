@@ -1,8 +1,8 @@
 # Baseline Fixture Records
 
-These records document current inherited behavior for the executable baseline
-gate. They are intentionally not final managed-process contract conformance
-records.
+These records document current executable behavior for the baseline gate. They
+are intentionally not final managed-process contract conformance records except
+where a component's owning contract records provide that evidence.
 
 ```yaml
 - id: parser-success-minimal
@@ -11,7 +11,7 @@ records.
   component: parser
   surface_disposition: supported
   command:
-    argv: ["pandaPIparser", "-C", "$FixtureRoot/minimal/domain.hddl", "$FixtureRoot/minimal/problem.hddl", "$TempRoot/minimal.htn"]
+    argv: ["pandapi-parser", "$FixtureRoot/minimal/domain.hddl", "$FixtureRoot/minimal/problem.hddl", "$TempRoot/minimal.htn"]
   stdin:
     mode: empty
   stdout:
@@ -41,19 +41,19 @@ records.
   component: parser
   surface_disposition: supported
   command:
-    argv: ["pandaPIparser", "-C", "$TempRoot/missing-domain.hddl", "$FixtureRoot/minimal/problem.hddl", "$TempRoot/missing.htn"]
+    argv: ["pandapi-parser", "$TempRoot/missing-domain.hddl", "$FixtureRoot/minimal/problem.hddl", "$TempRoot/missing.htn"]
   stdin:
     mode: empty
   stdout:
-    role: human_diagnostics
+    role: empty
   stderr:
     role: human_diagnostics
   artifact:
     path: "$TempRoot/missing.htn"
     state: absent
   exit:
-    status: input_unavailable_baseline
-    code: 2
+    status: input_unavailable
+    code: 20
   final_status:
     observation: absent
   normalization:
@@ -68,7 +68,7 @@ records.
   component: parser
   surface_disposition: supported
   command:
-    argv: ["pandaPIparser", "-C", "$FixtureRoot/broken-syntax/domain.hddl", "$FixtureRoot/broken-syntax/problem.hddl", "$TempRoot/broken-syntax.htn"]
+    argv: ["pandapi-parser", "$FixtureRoot/broken-syntax/domain.hddl", "$FixtureRoot/broken-syntax/problem.hddl", "$TempRoot/broken-syntax.htn"]
   stdin:
     mode: empty
   stdout:
@@ -79,8 +79,8 @@ records.
     path: "$TempRoot/broken-syntax.htn"
     state: absent
   exit:
-    status: input_invalid_baseline
-    code: 255
+    status: input_invalid
+    code: 22
   final_status:
     observation: absent
   normalization:
@@ -95,7 +95,7 @@ records.
   component: parser
   surface_disposition: supported
   command:
-    argv: ["pandaPIparser", "-C", "$FixtureRoot/broken-reference/domain.hddl", "$FixtureRoot/broken-reference/problem.hddl", "$TempRoot/broken-reference.htn"]
+    argv: ["pandapi-parser", "$FixtureRoot/broken-reference/domain.hddl", "$FixtureRoot/broken-reference/problem.hddl", "$TempRoot/broken-reference.htn"]
   stdin:
     mode: empty
   stdout:
@@ -104,10 +104,10 @@ records.
     role: human_diagnostics
   artifact:
     path: "$TempRoot/broken-reference.htn"
-    state: retained_partial
+    state: absent
   exit:
-    status: input_invalid_baseline_distinct_semantic_error
-    code: 255
+    status: input_invalid
+    code: 22
   final_status:
     observation: absent
   normalization:
@@ -233,7 +233,7 @@ records.
   surface_disposition: supported
   command:
     argv:
-      - ["pandaPIparser", "-C", "$FixtureRoot/minimal/domain.hddl", "$FixtureRoot/minimal/problem.hddl", "$TempRoot/pipeline.htn"]
+      - ["pandapi-parser", "$FixtureRoot/minimal/domain.hddl", "$FixtureRoot/minimal/problem.hddl", "$TempRoot/pipeline.htn"]
       - ["pandaPIgrounder", "$TempRoot/pipeline.htn", "$TempRoot/pipeline.sas"]
       - ["pandaPIengine", "$TempRoot/pipeline.sas"]
   stdin:

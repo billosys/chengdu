@@ -95,9 +95,17 @@ FIXTURES_DIR="$REPO_ROOT/fixtures"
 
 PC="$DIST_DIR/pandapi-parser"
 GC="$DIST_DIR/pandapi-grounder"
-P="$DIST_DIR/pandaPIparser"
 G="$DIST_DIR/pandaPIgrounder"
 E="$DIST_DIR/pandaPIengine"
+
+case "$CASE_ID" in
+  parser_help|parser_version|parser_provenance)
+    CASE_ID="parser-info-commands"
+    ;;
+  parser_legacy_surface|parser_legacy_helper)
+    CASE_ID="parser-legacy-surface-fencing"
+    ;;
+esac
 
 list_baseline_fixtures() {
   cat <<'EOF'
@@ -118,7 +126,6 @@ list_contract_fixtures() {
     cat <<'EOF'
 parser parser-canonical-file-success
 parser parser-canonical-stdout-success
-parser parser-inherited-compat-success
 parser parser-info-commands
 parser parser-cli-usage-errors
 parser parser-input-unavailable
@@ -166,7 +173,7 @@ if [ "$MODE" != "baseline" ] && [ "$MODE" != "contract" ]; then
 fi
 
 if [ "$MODE" = "baseline" ]; then
-  for bin in "$P" "$G" "$E"; do
+  for bin in "$PC" "$G" "$E"; do
     if [ ! -x "$bin" ]; then
       echo "contract-run: missing binary: $bin; run make build first" >&2
       exit 1
@@ -180,12 +187,10 @@ if [ "$MODE" = "contract" ]; then
     exit 1
   fi
   if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
-    for bin in "$PC" "$P"; do
-      if [ ! -x "$bin" ]; then
-        echo "contract-run: missing binary: $bin; run make build-parser first" >&2
-        exit 1
-      fi
-    done
+    if [ ! -x "$PC" ]; then
+      echo "contract-run: missing binary: $PC; run make build-parser first" >&2
+      exit 1
+    fi
   fi
   if [ "$COMPONENT" = "grounder" ] || [ "$COMPONENT" = "all" ]; then
     for bin in "$GC" "$G"; do
@@ -474,7 +479,7 @@ run_grounder_contract_case() {
 prepare_minimal_htn() {
   local htn="$1"
   run_capture "setup-minimal-htn" \
-    "$P" -C "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$htn"
+    "$PC" "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$htn"
   if [ "$OBS_RC" -ne 0 ] || [ ! -s "$htn" ]; then
     fail "setup minimal htn expected parser exit 0 and complete artifact"
     return 1
@@ -498,7 +503,7 @@ prepare_unsolvable_sas() {
   local htn="$WORK/unsolvable.htn"
   local sas="$1"
   run_capture "setup-unsolvable-htn" \
-    "$P" -C "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn"
+    "$PC" "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn"
   if [ "$OBS_RC" -ne 0 ] || [ ! -s "$htn" ]; then
     fail "setup unsolvable htn expected parser exit 0 and complete artifact"
     return 1
@@ -516,34 +521,34 @@ run_parser_fixtures() {
 
   id="parser-success-minimal"
   artifact="$WORK/parser-success-minimal.htn"
-  run_capture "$id" "$P" -C "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$artifact"
+  run_capture "$id" "$PC" "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$artifact"
   expect_exit "$id" 0
   expect_artifact_complete "$id" "$artifact"
   expect_final_status_absent "$id"
 
   id="parser-missing-file"
   artifact="$WORK/parser-missing-file.htn"
-  run_capture "$id" "$P" -C "$WORK/missing-domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$artifact"
-  expect_exit "$id" 2
-  expect_stdout_contains "$id" "I can't open"
+  run_capture "$id" "$PC" "$WORK/missing-domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$artifact"
+  expect_exit "$id" 20
+  expect_stderr_contains "$id" "cannot read domain"
   expect_artifact_absent "$id" "$artifact"
   expect_final_status_absent "$id"
 
   id="parser-broken-syntax"
   artifact="$WORK/parser-broken-syntax.htn"
-  run_capture "$id" "$P" -C "$FIXTURES_DIR/broken-syntax/domain.hddl" "$FIXTURES_DIR/broken-syntax/problem.hddl" "$artifact"
-  expect_exit "$id" 255
-  expect_stderr_contains "$id" "Parse error in file"
+  run_capture "$id" "$PC" "$FIXTURES_DIR/broken-syntax/domain.hddl" "$FIXTURES_DIR/broken-syntax/problem.hddl" "$artifact"
+  expect_exit "$id" 22
+  expect_stderr_contains "$id" "parser input invalid"
   expect_artifact_absent "$id" "$artifact"
   expect_final_status_absent "$id"
 
   id="parser-broken-reference"
   artifact="$WORK/parser-broken-reference.htn"
-  run_capture "$id" "$P" -C "$FIXTURES_DIR/broken-reference/domain.hddl" "$FIXTURES_DIR/broken-reference/problem.hddl" "$artifact"
-  expect_exit "$id" 255
-  expect_stderr_contains "$id" "not declared"
+  run_capture "$id" "$PC" "$FIXTURES_DIR/broken-reference/domain.hddl" "$FIXTURES_DIR/broken-reference/problem.hddl" "$artifact"
+  expect_exit "$id" 22
+  expect_stderr_contains "$id" "parser input invalid"
   expect_stderr_not_contains "$id" "Parse error in file"
-  expect_artifact_retained "$id" "$artifact"
+  expect_artifact_absent "$id" "$artifact"
   expect_final_status_absent "$id"
 }
 
@@ -599,7 +604,7 @@ run_pipeline_fixtures() {
   htn="$WORK/pipeline-minimal.htn"
   sas="$WORK/pipeline-minimal.sas"
 
-  run_capture "$id-parser" "$P" -C "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$htn"
+  run_capture "$id-parser" "$PC" "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$htn"
   expect_exit "$id parser" 0
   expect_artifact_complete "$id parser" "$htn"
   if [ "$OBS_RC" -ne 0 ]; then
@@ -644,28 +649,12 @@ parser_contract_canonical_stdout_success() {
   expect_final_status "$id" "stderr" "ok" "0" "success"
 }
 
-parser_contract_inherited_compat_success() {
-  local id="parser-inherited-compat-success" artifact="$WORK/parser-inherited-compat-success.htn"
-  run_capture "$id" "$P" --status=stderr "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$artifact"
-  expect_exit "$id" 0
-  expect_artifact_complete "$id" "$artifact"
-  expect_stdout_empty "$id"
-  expect_stderr_not_contains "$id" "deprecation"
-  expect_final_status "$id" "stderr" "ok" "0" "success"
-
-  local legacy_artifact="$WORK/parser-inherited-legacy-positional.htn"
-  run_capture "$id-legacy-positional" "$P" -C "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$legacy_artifact"
-  expect_exit "$id legacy positional" 0
-  expect_artifact_complete "$id legacy positional" "$legacy_artifact"
-  expect_final_status_absent "$id legacy positional"
-}
-
 parser_contract_info_commands() {
   local id="parser-info-commands"
   run_capture "$id-help" "$PC" --help
   expect_exit "$id help" 0
   expect_stdout_contains "$id help" "Usage: pandapi-parser"
-  expect_stdout_contains "$id help" "pandaPIparser remains executable"
+  expect_stdout_contains "$id help" "Inherited parser helper modes are not supported"
   expect_stderr_empty "$id help"
   expect_no_status_on_stream "$id help" "stdout"
   expect_no_status_on_stream "$id help" "stderr"
@@ -676,11 +665,12 @@ parser_contract_info_commands() {
   expect_stdout_contains "$id version" "component=parser"
   expect_stderr_empty "$id version"
 
-  run_capture "$id-provenance" "$P" --provenance
+  run_capture "$id-provenance" "$PC" --provenance
   expect_exit "$id provenance" 0
   expect_stdout_contains "$id provenance" "canonical_command=pandapi-parser"
-  expect_stdout_contains "$id provenance" "invoked_command=pandaPIparser"
-  expect_stdout_contains "$id provenance" "legacy_binary=pandaPIparser.legacy"
+  local inherited_parser="pandaPI""parser"
+  expect_stdout_not_contains "$id provenance" "legacy_binary=$inherited_parser"
+  expect_stdout_not_contains "$id provenance" "invoked_command=$inherited_parser"
   expect_stderr_empty "$id provenance"
 }
 
@@ -836,7 +826,6 @@ parser_contract_legacy_surface_fencing() {
 run_parser_contract_fixtures() {
   run_parser_contract_case "parser-canonical-file-success" parser_contract_canonical_file_success
   run_parser_contract_case "parser-canonical-stdout-success" parser_contract_canonical_stdout_success
-  run_parser_contract_case "parser-inherited-compat-success" parser_contract_inherited_compat_success
   run_parser_contract_case "parser-info-commands" parser_contract_info_commands
   run_parser_contract_case "parser-cli-usage-errors" parser_contract_cli_usage_errors
   run_parser_contract_case "parser-input-unavailable" parser_contract_input_unavailable

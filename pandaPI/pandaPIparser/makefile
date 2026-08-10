@@ -2,7 +2,10 @@ CXX=g++
 CWARN=-Wno-unused-parameter
 CERROR=
 
-COMPILEFLAGS=-O3 -pipe -Wall -Wextra -pedantic -std=c++17 -DNDEBUG $(CWARN) $(CERROR)
+PANDAPI_RUNTIME_INCLUDE ?= ../../pandapi-runtime/include
+PANDAPI_RUNTIME_LIB ?=
+
+COMPILEFLAGS=-O3 -pipe -Wall -Wextra -pedantic -std=c++17 -DNDEBUG -I$(PANDAPI_RUNTIME_INCLUDE) $(CWARN) $(CERROR)
 ifneq ($OS(OS), Windows_NT)
      UNAME_S := $(shell uname -s)
      ifeq ($(UNAME_S),Darwin)
@@ -23,10 +26,16 @@ endif
 
 .PHONY = all clean debug setdebug
 
-all: pandaPIparser
+all: pandapi-parser
 
 pandaPIparser: src/hddl-token.o src/hddl.o src/main.o src/sortexpansion.o src/parsetree.o src/util.o src/domain.o src/output.o src/parametersplitting.o src/cwa.o src/typeof.o src/shopWriter.o src/hpdlWriter.o src/hddlWriter.o src/htn2stripsWriter.o src/orderingDecomposition.o src/plan.o src/verify.o src/properties.o src/verification_encoding.o src/cmdline.o
 	${CXX} ${LINKERFLAG} $^ -o pandaPIparser 
+
+pandapi-parser: src/hddl-token.o src/hddl.o src/pandapi_parser_native.o src/main_legacy.o src/sortexpansion.o src/parsetree.o src/util.o src/domain.o src/output.o src/parametersplitting.o src/cwa.o src/typeof.o src/shopWriter.o src/hpdlWriter.o src/hddlWriter.o src/htn2stripsWriter.o src/orderingDecomposition.o src/plan.o src/verify.o src/properties.o src/verification_encoding.o src/cmdline.o
+	${CXX} ${LINKERFLAG} $^ $(PANDAPI_RUNTIME_LIB) -o pandapi-parser
+
+src/main_legacy.o: src/main.cpp src/cmdline.h src/hddl.hpp
+	${CXX} ${COMPILEFLAGS} -Dmain=pandaPIparser_legacy_main -o $@ -c $<
 
 %.o: %.cpp %.hpp src/hddl.hpp
 	${CXX} ${COMPILEFLAGS} -o $@ -c $<
@@ -61,6 +70,7 @@ clean:
 	rm -f src/hddl.cpp
 	rm -f src/hddl.hpp
 	rm -f src/*.o
+	rm -f pandaPIparser pandapi-parser
 
-install: pandaPIparser
-	install pandaPIparser ${DESTDIR}/bin
+install: pandapi-parser
+	install pandapi-parser ${DESTDIR}/bin

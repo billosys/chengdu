@@ -65,7 +65,7 @@ for f in domain.hddl problem.hddl; do
 done
 
 for p in $PLATFORMS; do
-  for bin in pandaPIparser pandaPIgrounder pandaPIengine; do
+  for bin in pandapi-parser pandaPIgrounder pandaPIengine; do
     if [ ! -x "$DIST_ROOT/$p/$bin" ]; then
       echo "package-release: FAIL: $DIST_ROOT/$p/$bin missing or not executable" >&2
       exit 1
@@ -75,9 +75,9 @@ for p in $PLATFORMS; do
   stage="$OUT_DIR/.stage-$p"
   rm -rf "$stage"
   mkdir -p "$stage/fixtures"
-  cp "$DIST_ROOT/$p/pandaPIparser" "$DIST_ROOT/$p/pandaPIgrounder" "$DIST_ROOT/$p/pandaPIengine" "$DIST_ROOT/$p/provenance.txt" "$stage/"
+  cp "$DIST_ROOT/$p/pandapi-parser" "$DIST_ROOT/$p/pandaPIgrounder" "$DIST_ROOT/$p/pandaPIengine" "$DIST_ROOT/$p/provenance.txt" "$stage/"
   cp "$FIXTURES_DIR/domain.hddl" "$FIXTURES_DIR/problem.hddl" "$stage/fixtures/"
-  tar czf "$OUT_DIR/$tarball" -C "$stage" pandaPIparser pandaPIgrounder pandaPIengine provenance.txt fixtures
+  tar czf "$OUT_DIR/$tarball" -C "$stage" pandapi-parser pandaPIgrounder pandaPIengine provenance.txt fixtures
   rm -rf "$stage"
   echo "package-release: built $tarball (incl. fixtures/)"
 done
@@ -151,7 +151,7 @@ COMMIT_SHORT="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
 render_provenance_table() {
   local p comp block chengdu_commit source_prefix upstream_sha import_commit
   for p in $PLATFORMS; do
-    for comp in pandaPIparser pandaPIgrounder pandaPIengine; do
+    for comp in pandapi-parser pandaPIgrounder pandaPIengine; do
       block="$(provenance_get_block "$DIST_ROOT/$p/provenance.txt" "$comp")"
       chengdu_commit="$(provenance_get_field "$block" chengdu_commit)"
       source_prefix="$(provenance_get_field "$block" source_prefix)"
@@ -169,7 +169,7 @@ render_asset_list() {
   local p
   for p in $PLATFORMS; do
     # shellcheck disable=SC2016  # literal markdown backticks; %s placeholders are printf's.
-    printf -- '- `pandapi-%s-%s.tar.gz` - pandaPIparser, pandaPIgrounder, pandaPIengine, provenance.txt, fixtures/ (a minimal HDDL pair for an offline `--verify` smoke)\n' "$TAG" "$p"
+    printf -- '- `pandapi-%s-%s.tar.gz` - pandapi-parser, pandaPIgrounder, pandaPIengine, provenance.txt, fixtures/ (a minimal HDDL pair for offline smoke)\n' "$TAG" "$p"
   done
 }
 

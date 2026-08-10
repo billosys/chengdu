@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Mechanizes PANDA Runbook §5-§6 as executable gates against in-repo
 # fixtures. Two modes:
-#   (default)   the five-gate positive chain on fixtures/minimal —
-#               parse, ground, solve (Status: Solved), convert, verify
-#               (result: true) — with a per-gate PASS summary.
+#   (default)   the three-gate positive chain on fixtures/minimal —
+#               parse, ground, solve (Status: Solved) — with a per-gate
+#               PASS summary.
 #   --negative  four distinct negative outcomes: missing file (parser
-#               exit 2), broken-syntax fixture (exit 255, "Parse error
-#               in file"), broken-reference fixture (exit 255, a
-#               different — semantic — message), and the unsolvable
+#               exit 20), broken-syntax fixture (exit 22),
+#               broken-reference fixture (exit 22), and the unsolvable
 #               fixture (engine exit 2 and "Status: Proven unsolvable",
 #               which must be classified as UNSOLVABLE, never as
 #               success and never as a generic failure).
@@ -83,7 +82,7 @@ PLATFORM="$(detect_platform)"
 DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 FIXTURES_DIR="$REPO_ROOT/fixtures"
 
-P="$DIST_DIR/pandaPIparser"
+P="$DIST_DIR/pandapi-parser"
 G="$DIST_DIR/pandaPIgrounder"
 E="$DIST_DIR/pandaPIengine"
 
@@ -110,11 +109,8 @@ gate_fail() {
   FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
-# strip_ansi <string> — pandaPIparser's --no-colour flag does not
-# reliably suppress ANSI SGR codes on every error path (observed: the
-# syntax-error message stays colored even with -C), which breaks
-# substring matching on split-up text like "Parse\x1b[0merror". Strip
-# unconditionally rather than depend on -C's coverage.
+# strip_ansi <string> — inherited planner diagnostics can include ANSI SGR
+# codes on some paths. Strip unconditionally before matching diagnostics.
 strip_ansi() {
   printf '%s' "$1" | sed $'s/\x1b\\[[0-9;]*m//g'
 }
@@ -178,9 +174,9 @@ run_engine() {
 
 run_positive() {
   local fdir="$FIXTURES_DIR/minimal"
-  local htn="$WORK/dp.htn" sas="$WORK/dp.sas" raw="$WORK/plan.raw" plan="$WORK/plan.txt"
+  local htn="$WORK/dp.htn" sas="$WORK/dp.sas" raw="$WORK/plan.raw"
 
-  run_and_capture "$P" -C "$fdir/domain.hddl" "$fdir/problem.hddl" "$htn"
+  run_and_capture "$P" "$fdir/domain.hddl" "$fdir/problem.hddl" "$htn"
   if [ "$RC" -eq 0 ]; then
     gate_pass "parse (exit 0)"
   else
@@ -200,52 +196,37 @@ run_positive() {
   else
     gate_fail "solve: expected exit 0 + 'Status: Solved', got exit $RC: $(grep 'Status:' "$raw" || echo 'no Status line')"
   fi
-
-  run_and_capture "$P" -c "$raw" "$plan"
-  if [ "$RC" -eq 0 ]; then
-    gate_pass "convert (exit 0)"
-  else
-    gate_fail "convert: expected exit 0, got $RC: $OUT"
-  fi
-
-  run_and_capture "$P" -C --verify "$fdir/domain.hddl" "$fdir/problem.hddl" "$plan"
-  if [ "$RC" -eq 0 ] && printf '%s' "$OUT" | grep -q 'Plan verification result: true'; then
-    gate_pass "verify (exit 0, Plan verification result: true)"
-  else
-    gate_fail "verify: expected exit 0 + 'Plan verification result: true', got exit $RC"
-  fi
 }
 
 run_negative() {
-  # a. missing file -> parser exit 2, "I can't open"
-  run_and_capture "$P" -C "$WORK/does-not-exist.hddl" "$FIXTURES_DIR/minimal/problem.hddl" /dev/null
-  if [ "$RC" -eq 2 ] && printf '%s' "$OUT" | grep -q "I can't open"; then
-    gate_pass "negative: missing file -> exit 2, \"I can't open\""
+  # a. missing file -> parser exit 20, stable managed diagnostic
+  run_and_capture "$P" "$WORK/does-not-exist.hddl" "$FIXTURES_DIR/minimal/problem.hddl" "$WORK/missing.htn"
+  if [ "$RC" -eq 20 ] && printf '%s' "$OUT" | grep -q "cannot read domain"; then
+    gate_pass "negative: missing file -> exit 20, input_unavailable"
   else
-    gate_fail "negative: missing file: expected exit 2 + \"I can't open\", got exit $RC"
+    gate_fail "negative: missing file: expected exit 20 + input_unavailable diagnostic, got exit $RC"
   fi
 
-  # b. broken-syntax -> exit 255, "Parse error in file"
-  run_and_capture "$P" -C "$FIXTURES_DIR/broken-syntax/domain.hddl" "$FIXTURES_DIR/broken-syntax/problem.hddl" /dev/null
-  if [ "$RC" -eq 255 ] && printf '%s' "$OUT" | grep -q "Parse error in file"; then
-    gate_pass "negative: broken-syntax -> exit 255, \"Parse error in file\""
+  # b. broken-syntax -> parser exit 22, stable managed diagnostic
+  run_and_capture "$P" "$FIXTURES_DIR/broken-syntax/domain.hddl" "$FIXTURES_DIR/broken-syntax/problem.hddl" "$WORK/broken-syntax.htn"
+  if [ "$RC" -eq 22 ] && printf '%s' "$OUT" | grep -q "parser input invalid"; then
+    gate_pass "negative: broken-syntax -> exit 22, input_invalid"
   else
-    gate_fail "negative: broken-syntax: expected exit 255 + \"Parse error in file\", got exit $RC"
+    gate_fail "negative: broken-syntax: expected exit 22 + input_invalid diagnostic, got exit $RC"
   fi
 
-  # c. broken-reference -> exit 255, a DIFFERENT (semantic) message —
-  # must not collapse into the same reported reason as broken-syntax.
-  run_and_capture "$P" -C "$FIXTURES_DIR/broken-reference/domain.hddl" "$FIXTURES_DIR/broken-reference/problem.hddl" /dev/null
-  if [ "$RC" -eq 255 ] && printf '%s' "$OUT" | grep -q "not declared" && ! printf '%s' "$OUT" | grep -q "Parse error in file"; then
-    gate_pass "negative: broken-reference -> exit 255, semantic \"not declared\" (distinct from syntax path)"
+  # c. broken-reference -> parser exit 22, stable managed diagnostic
+  run_and_capture "$P" "$FIXTURES_DIR/broken-reference/domain.hddl" "$FIXTURES_DIR/broken-reference/problem.hddl" "$WORK/broken-reference.htn"
+  if [ "$RC" -eq 22 ] && printf '%s' "$OUT" | grep -q "parser input invalid"; then
+    gate_pass "negative: broken-reference -> exit 22, input_invalid"
   else
-    gate_fail "negative: broken-reference: expected exit 255 + \"not declared\" without \"Parse error in file\", got exit $RC"
+    gate_fail "negative: broken-reference: expected exit 22 + input_invalid diagnostic, got exit $RC"
   fi
 
   # d. unsolvable -> engine exit 2 and Status: Proven unsolvable —
   # classified UNSOLVABLE, never success, never a generic failure.
   local htn="$WORK/uns.htn" sas="$WORK/uns.sas" raw="$WORK/uns.raw"
-  if require_step "negative: unsolvable setup (parse)" "$P" -C "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn" \
+  if require_step "negative: unsolvable setup (parse)" "$P" "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn" \
     && require_step "negative: unsolvable setup (ground)" "$G" "$htn" "$sas"; then
     run_engine "$sas" "$raw"
     if [ "$RC" -eq 2 ] && grep -q '^- Status: Proven unsolvable$' "$raw"; then
@@ -266,8 +247,8 @@ run_corpus() {
     return 0
   fi
 
-  local t="$WORK/t.htn" tsas="$WORK/t.sas" tout="$WORK/t.out" tplan="$WORK/t.plan"
-  if ! require_step "corpus: Transport pfile01 setup (parse)" "$P" -C "$dom" "$prob" "$t"; then
+  local t="$WORK/t.htn" tsas="$WORK/t.sas" tout="$WORK/t.out"
+  if ! require_step "corpus: Transport pfile01 setup (parse)" "$P" "$dom" "$prob" "$t"; then
     return 0
   fi
   if ! require_step "corpus: Transport pfile01 setup (ground)" "$G" "$t" "$tsas"; then
@@ -282,18 +263,6 @@ run_corpus() {
     gate_fail "corpus: Transport pfile01 did not solve"
   fi
 
-  run_and_capture "$P" -c "$tout" "$tplan"
-  if [ "$RC" -ne 0 ]; then
-    gate_fail "corpus: Transport pfile01 convert failed: $OUT"
-    return 0
-  fi
-
-  run_and_capture "$P" -C --verify "$dom" "$prob" "$tplan"
-  if [ "$RC" -eq 0 ] && printf '%s' "$OUT" | grep -q 'Plan verification result: true'; then
-    gate_pass "corpus: Transport pfile01 verified"
-  else
-    gate_fail "corpus: Transport pfile01 verify failed, got exit $RC"
-  fi
 }
 
 echo "smoke-run: platform=$PLATFORM mode=$MODE"
