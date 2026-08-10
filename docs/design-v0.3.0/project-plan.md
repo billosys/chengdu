@@ -251,6 +251,10 @@ documentation/tutorial, and release-publication work.
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/cc-prompt.md),
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/closing-report.md),
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/cdc-verification.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/cdc-verification.md).
+  Slice04 grounder-contract-adoption is open:
+  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/slice-doc.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/slice-doc.md),
+  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/ledger.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/ledger.md),
+  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md).
 - **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
   evidence and should be planned from Arc05's final conformance and CI/test
   hardening handoff. It owns the remaining local/CI matrix, expanded process
@@ -382,6 +386,13 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.39 - 2026-08-10.** Opened Arc05 Slice04
+  grounder-contract-adoption. Surfaced by: Arc05 Slice03 CDC verification.
+  Why: accepted parser managed-process evidence and make-targeted CI allow the
+  next binary adoption slice to migrate normal `.htn` grounding through
+  canonical `pandapi-grounder` and inherited `pandaPIgrounder`, while fencing
+  H2 and `cpddl`/FAM and keeping engine behavior baseline-only.
 
 - **v1.38 - 2026-08-10.** Marked Arc05 Slice03
   parser-contract-adoption closed and CDC-verified after independent review

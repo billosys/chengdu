@@ -119,6 +119,10 @@ amendments.
   [`slice03-parser-contract-adoption/cc-prompt.md`](slice03-parser-contract-adoption/cc-prompt.md),
   [`slice03-parser-contract-adoption/closing-report.md`](slice03-parser-contract-adoption/closing-report.md),
   [`slice03-parser-contract-adoption/cdc-verification.md`](slice03-parser-contract-adoption/cdc-verification.md).
+- **slice04 grounder-contract-adoption - open.** Open set:
+  [`slice04-grounder-contract-adoption/slice-doc.md`](slice04-grounder-contract-adoption/slice-doc.md),
+  [`slice04-grounder-contract-adoption/ledger.md`](slice04-grounder-contract-adoption/ledger.md),
+  [`slice04-grounder-contract-adoption/cc-prompt.md`](slice04-grounder-contract-adoption/cc-prompt.md).
 
 ## 6. Planned implementation surface
 
@@ -172,6 +176,12 @@ arc's `closing-report.md`.
   slice proves the migration is safer than preserving compatibility.
 
 ## 9. Version history
+
+- **v1.7 - 2026-08-10.** Opened Slice04 grounder-contract-adoption.
+  Surfaced by: Slice03 CDC verification. Why: parser adoption is accepted and
+  make-targeted CI now reaches the parser contract gate, so grounder can adopt
+  the same managed-process contract next while preserving parser evidence and
+  keeping engine behavior baseline-only.
 
 - **v1.6 - 2026-08-10.** Marked Slice03 parser-contract-adoption closed and
   CDC-verified after independent review of CC implementation commit
