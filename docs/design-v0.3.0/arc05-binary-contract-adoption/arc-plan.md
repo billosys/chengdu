@@ -137,10 +137,17 @@ amendments.
   [`slice05-canonical-binary-cutover/cc-prompt.md`](slice05-canonical-binary-cutover/cc-prompt.md),
   [`slice05-canonical-binary-cutover/closing-report.md`](slice05-canonical-binary-cutover/closing-report.md),
   [`slice05-canonical-binary-cutover/cdc-verification.md`](slice05-canonical-binary-cutover/cdc-verification.md).
-- **slice06 parser-native-contract-cutover - open.** Open set:
+- **slice06 parser-native-contract-cutover - closed and CDC-verified.** Slice
+  set:
   [`slice06-parser-native-contract-cutover/slice-doc.md`](slice06-parser-native-contract-cutover/slice-doc.md),
   [`slice06-parser-native-contract-cutover/ledger.md`](slice06-parser-native-contract-cutover/ledger.md),
-  [`slice06-parser-native-contract-cutover/cc-prompt.md`](slice06-parser-native-contract-cutover/cc-prompt.md).
+  [`slice06-parser-native-contract-cutover/cc-prompt.md`](slice06-parser-native-contract-cutover/cc-prompt.md),
+  [`slice06-parser-native-contract-cutover/closing-report.md`](slice06-parser-native-contract-cutover/closing-report.md),
+  [`slice06-parser-native-contract-cutover/cdc-verification.md`](slice06-parser-native-contract-cutover/cdc-verification.md).
+- **slice07 grounder-native-contract-cutover - open.** Open set:
+  [`slice07-grounder-native-contract-cutover/slice-doc.md`](slice07-grounder-native-contract-cutover/slice-doc.md),
+  [`slice07-grounder-native-contract-cutover/ledger.md`](slice07-grounder-native-contract-cutover/ledger.md),
+  [`slice07-grounder-native-contract-cutover/cc-prompt.md`](slice07-grounder-native-contract-cutover/cc-prompt.md).
 
 ## 6. Planned implementation surface
 
@@ -200,6 +207,14 @@ arc's `closing-report.md`.
   slice proves the migration is safer than preserving compatibility.
 
 ## 9. Version history
+
+- **v1.11 - 2026-08-10.** Marked Slice06
+  parser-native-contract-cutover closed and CDC-verified, and opened Slice07
+  grounder-native-contract-cutover. Surfaced by: CDC reproduction of CC
+  implementation commit `b70b0825`. Why: parser now has a native canonical
+  `pandapi-parser` artifact with parser old-name artifacts deleted, while
+  aggregate builds still show grounder transition shims and old-name artifacts
+  that must be removed in their owning cutover slice.
 
 - **v1.10 - 2026-08-10.** Closed Slice05 as a deferred discovery slice and
   split native cutover into Slice06 parser-native-contract-cutover and planned
