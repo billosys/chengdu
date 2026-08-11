@@ -143,9 +143,9 @@ releases:
 | arc07 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06 |
 | arc08 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, and publish `v0.3.0`. | arc06, arc07 |
 
-Detailed planning is open through Arc05. Arcs06-08 remain roadmap only until
-Arc05 produces executable conformance evidence and a split handoff for CI,
-documentation/tutorial, and release-publication work.
+Detailed planning is open through Arc06. Arcs07-08 remain roadmap only until
+Arc06 produces CI/test hardening evidence and a split handoff for
+documentation/tutorial and release-publication work.
 
 ## 5. Current status
 
@@ -287,11 +287,15 @@ documentation/tutorial, and release-publication work.
   [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/cdc-verification.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/cdc-verification.md).
   Arc05 is closed:
   [`arc05-binary-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/closing-report.md).
-- **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
-  evidence and should be planned from Arc05's final conformance and CI/test
-  hardening handoff. It owns the remaining local/CI matrix, expanded process
-  fixtures, coverage, heavier sanitizer/static-analysis gates, and release
-  readiness evidence needed by later release dry-runs.
+- **arc06 - active.** Detailed plan:
+  [`arc06-ci-and-test-hardening/arc-plan.md`](arc06-ci-and-test-hardening/arc-plan.md).
+  Slice01 fixture-gap-inventory is open:
+  [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/slice-doc.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/slice-doc.md),
+  [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/ledger.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/ledger.md),
+  [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cc-prompt.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cc-prompt.md).
+  Arc06 owns the remaining local/CI matrix, expanded process fixtures,
+  coverage, heavier sanitizer/static-analysis gates, TSan disposition, and
+  release-readiness evidence needed by later release dry-runs.
 - **arc07 - roadmap only.** Arc07 remains downstream of Arc05/Arc06 proof and
   should create the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
@@ -421,6 +425,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.46 - 2026-08-11.** Opened Arc06 `ci-and-test-hardening` with
+  Slice01 fixture-gap-inventory. Surfaced by: Arc05 close and post-Arc05
+  source layout normalization. Why: primary native `pandapi-*` binary
+  conformance is closed locally, so the next project ledger risk is release
+  confidence: fixture coverage gaps, Make/CI proof, coverage evidence,
+  heavier static/sanitizer gates, and TSan disposition before Arc07 docs and
+  Arc08 publication.
 
 - **v1.45 - 2026-08-11.** Closed Arc05
   binary-contract-adoption. Marked Slice04 grounder-contract-adoption
