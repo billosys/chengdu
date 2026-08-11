@@ -96,7 +96,7 @@ record-min-os:
 	fi; \
 	{ \
 	  printf '%s\n' "min-os-macos-arm64:"; \
-	  for bin in pandapi-parser pandaPIgrounder pandaPIengine; do \
+	  for bin in pandapi-parser pandapi-grounder pandaPIengine; do \
 	    path="$$dist_dir/$$bin"; \
 	    if [ ! -x "$$path" ]; then \
 	      printf '%b\n' "$(RED)record-min-os: $$path missing or not executable$(RESET)" >&2; \

@@ -122,13 +122,13 @@ where a component's owning contract records provide that evidence.
   component: grounder
   surface_disposition: supported
   command:
-    argv: ["pandaPIgrounder", "$TempRoot/minimal.htn", "$TempRoot/minimal.sas"]
+    argv: ["pandapi-grounder", "$TempRoot/minimal.htn", "$TempRoot/minimal.sas"]
   stdin:
     mode: empty
   stdout:
-    role: progress
+    role: empty
   stderr:
-    role: human_diagnostics
+    role: empty
   artifact:
     path: "$TempRoot/minimal.sas"
     state: complete
@@ -149,19 +149,19 @@ where a component's owning contract records provide that evidence.
   component: grounder
   surface_disposition: supported
   command:
-    argv: ["pandaPIgrounder", "$TempRoot/missing.htn", "$TempRoot/missing.sas"]
+    argv: ["pandapi-grounder", "$TempRoot/missing.htn", "$TempRoot/missing.sas"]
   stdin:
     mode: empty
   stdout:
-    role: progress
+    role: empty
   stderr:
-    role: human_diagnostics
+    role: stable_managed_diagnostic
   artifact:
     path: "$TempRoot/missing.sas"
     state: absent
   exit:
-    status: input_unavailable_baseline
-    code: 1
+    status: input_unavailable
+    code: 20
   final_status:
     observation: absent
   normalization:
@@ -234,7 +234,7 @@ where a component's owning contract records provide that evidence.
   command:
     argv:
       - ["pandapi-parser", "$FixtureRoot/minimal/domain.hddl", "$FixtureRoot/minimal/problem.hddl", "$TempRoot/pipeline.htn"]
-      - ["pandaPIgrounder", "$TempRoot/pipeline.htn", "$TempRoot/pipeline.sas"]
+      - ["pandapi-grounder", "$TempRoot/pipeline.htn", "$TempRoot/pipeline.sas"]
       - ["pandaPIengine", "$TempRoot/pipeline.sas"]
   stdin:
     mode: empty

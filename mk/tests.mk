@@ -42,7 +42,6 @@ test-contract-grounder: build
 .PHONY: test-contract-grounder-managed
 test-contract-grounder-managed: build-grounder
 	printf '%b\n' "$(BLUE)Running managed grounder contract fixtures...$(RESET)"
-	./scripts/install-grounder-adapter.sh "$(DIST_DIR)"
 	./tests/contract/run --contract --component grounder
 	printf '%b\n' "$(GREEN)Managed grounder contract fixtures passed$(RESET)"
 

@@ -215,4 +215,5 @@ int main (int argc, char * argv[])
 		run_grounding (domain, problem, *outputStream, *outputStream2, config, given_typing_info);
 	}
 
+	return 0;
 }

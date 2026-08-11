@@ -1,9 +1,9 @@
 # Grounder Contract Fixture Records
 
 These records describe executable Arc05 Slice04 grounder-contract checks. They
-cover the canonical `pandapi-grounder` command and the inherited
-`pandaPIgrounder` compatibility command. Parser contract behavior remains
-accepted separately, and engine behavior remains on the baseline fixture path.
+cover the canonical `pandapi-grounder` command. Parser contract behavior
+remains accepted separately, and engine behavior remains on the baseline fixture
+path.
 
 The runner implements these records with:
 
@@ -53,26 +53,15 @@ CI-safe unavailable-output cases.
 - `exit`: `ok` / 0
 - `normalization`: stdout must not contain progress, statistics, ANSI, human prose, or `PANDAPI_STATUS`
 
-### grounder-inherited-compat-success
-
-- `mode`: `grounder-contract`
-- `component`: `grounder`
-- `command.argv`: `pandaPIgrounder --status=stderr INPUT.htn OUT.sas`
-- `artifact`: `file-backed`, complete `.sas`
-- `stdout.role`: empty
-- `stderr.role`: final status
-- `exit`: `ok` / 0
-- `compatibility`: inherited `pandaPIgrounder INPUT.htn OUT.sas` remains raw legacy passthrough with no default deprecation warning
-
 ### grounder-info-commands
 
 - `mode`: `grounder-contract`
 - `component`: `grounder`
-- `command.argv`: `pandapi-grounder --help`, `pandapi-grounder --version`, `pandaPIgrounder --provenance`
+- `command.argv`: `pandapi-grounder --help`, `pandapi-grounder --version`, `pandapi-grounder --provenance`
 - `stdout.role`: informational fields
 - `stderr.role`: empty
 - `exit`: `ok` / 0
-- `identity`: output includes `canonical_command=pandapi-grounder`; inherited provenance also includes `invoked_command=pandaPIgrounder`
+- `identity`: output includes `canonical_command=pandapi-grounder` and does not advertise an old-name grounder sidecar
 - `boundary`: default help states H2 is experimental and cpddl/FAM is legacy, not supported normal grounding
 
 ### grounder-cli-usage-errors

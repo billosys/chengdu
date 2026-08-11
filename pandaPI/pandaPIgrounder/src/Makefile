@@ -31,6 +31,10 @@ CXXFLAGS_LIBS=
 # CFlags for production and for debugging
 CXXFLAGS_GENERAL :=-pipe -Wall -Wextra -pedantic -std=gnu++20 $(CDEFS) $(CWARN) $(CERROR) $(CXXFLAGS_LIBS) -I../cpddl/ -I../cpddl/third-party/boruvka/ 
 
+ifneq ($(PANDAPI_RUNTIME_INCLUDE),)
+	CXXFLAGS_GENERAL := $(CXXFLAGS_GENERAL) -I$(PANDAPI_RUNTIME_INCLUDE)
+endif
+
 ## only append the concepts related flags under macos
 UNAME := $(shell uname)
 ifneq ($(UNAME), Darwin)
@@ -63,13 +67,14 @@ LIBS=
 
 # Files
 HFILES=$(wildcard *.h)
-SRCFILES=$(wildcard *.cpp)
+LEGACY_CPP_SRCFILES=$(filter-out main.cpp pandapi_grounder_native.cpp,$(wildcard *.cpp))
 CSRCFILES=$(filter-out cmdline.c, $(wildcard *.c))
-OBJFILES=$(patsubst %.cpp,%.o,$(SRCFILES))
+OBJFILES=$(patsubst %.cpp,%.o,$(LEGACY_CPP_SRCFILES))
+NATIVE_OBJFILES=main_legacy.o pandapi_grounder_native.o
 COBJFILES=$(patsubst %.c,%.o,$(CSRCFILES)) cmdline.o
 DEPENDENCIES=
-DEPENDENCIES_LD=
-PROGNAME=../pandaPIgrounder
+DEPENDENCIES_LD=$(PANDAPI_RUNTIME_LIB)
+PROGNAME=../pandapi-grounder
 
 H2OBJFILES=../h2-fd-preprocessor/src/axiom.cc.o ../h2-fd-preprocessor/src/causal_graph.cc.o ../h2-fd-preprocessor/src/domain_transition_graph.cc.o ../h2-fd-preprocessor/src/h2_mutexes.cc.o ../h2-fd-preprocessor/src/helper_functions.cc.o ../h2-fd-preprocessor/src/max_dag.cc.o ../h2-fd-preprocessor/src/mutex_group.cc.o ../h2-fd-preprocessor/src/operator.cc.o ../h2-fd-preprocessor/src/scc.cc.o ../h2-fd-preprocessor/src/state.cc.o ../h2-fd-preprocessor/src/successor_generator.cc.o ../h2-fd-preprocessor/src/variable.cc.o ../cpddl/libpddl.a ../cpddl/third-party/boruvka/libboruvka.a
 
@@ -80,8 +85,8 @@ H2OBJFILES=../h2-fd-preprocessor/src/axiom.cc.o ../h2-fd-preprocessor/src/causal
 
 all: $(PROGNAME)
 
-$(PROGNAME): $(OBJFILES) $(COBJFILES) $(H2OBJFILES) $(DEPENDENCIES_LD) 
-	$(LD) $(LDFLAGS) -o $(PROGNAME) $(OBJFILES) $(COBJFILES) $(H2OBJFILES) $(LIBS)
+$(PROGNAME): $(OBJFILES) $(COBJFILES) $(NATIVE_OBJFILES) $(H2OBJFILES) $(DEPENDENCIES_LD)
+	$(LD) $(LDFLAGS) -o $(PROGNAME) $(OBJFILES) $(COBJFILES) $(NATIVE_OBJFILES) $(H2OBJFILES) $(PANDAPI_RUNTIME_LIB) $(LIBS)
 
 # All object files depend on the source file and all header files
 ../h2-fd-preprocessor/src/%.cc.o: ../h2-fd-preprocessor/src/%.cc
@@ -89,6 +94,12 @@ $(PROGNAME): $(OBJFILES) $(COBJFILES) $(H2OBJFILES) $(DEPENDENCIES_LD)
 
 # All object files depend on the source file and all header files
 %.o: %.cpp $(DEPENDENCIES) $(HFILES)
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
+
+main_legacy.o: main.cpp cmdline.h $(DEPENDENCIES) $(HFILES)
+	$(CXX) -c $(CXXFLAGS) -Dmain=pandaPIgrounder_legacy_main -o $@ $<
+
+pandapi_grounder_native.o: pandapi_grounder_native.cpp
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 # All object files depend on the source file and all header files
@@ -101,7 +112,7 @@ cmdline.c cmdline.h: options.ggo
 	gengetopt --include-getopt --default-optional --unamed-opts -i options.ggo
 
 clean:
-	rm -f $(PROGNAME) $(OBJFILES) $(COBJFILES)
+	rm -f $(PROGNAME) ../pandaPIgrounder $(OBJFILES) $(NATIVE_OBJFILES) $(COBJFILES)
 
 # Disable built-in rules; otherwise "make debug" will do weird things since debug.o may exist
 .SUFFIXES:

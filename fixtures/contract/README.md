@@ -5,12 +5,12 @@ fixtures. These fixtures observe executable behavior at the process boundary:
 command name, argv, stdin mode, stdout, stderr, generated artifacts, exit
 status, final status policy, normalization, and safety.
 
-The current executable gate is mixed during Arc05 adoption. Parser fixtures now
-record canonical `pandapi-parser` behavior; grounder and engine fixtures still
-record inherited `pandaPIgrounder` and `pandaPIengine` behavior until their
-owning adoption slices migrate them to the managed-process contract. A passing
-baseline fixture is not a managed-process conformance claim unless the owning
-component's contract fixture records say so.
+The current executable gate is mixed during Arc05 adoption. Parser and grounder
+fixtures now record canonical `pandapi-parser` and `pandapi-grounder` behavior;
+engine fixtures still record inherited `pandaPIengine` behavior until its owning
+adoption slice migrates it to the managed-process contract. A passing baseline
+fixture is not a managed-process conformance claim unless the owning component's
+contract fixture records say so.
 
 ## Fixture Record Shape
 

@@ -71,8 +71,8 @@ build-parser: build-runtime
 	printf '%b\n' "$(GREEN)Built parser artifacts in $$DIST_DIR$(RESET)"
 
 .PHONY: build-grounder
-build-grounder:
-	printf '%b\n' "$(BLUE)Building pandaPIgrounder...$(RESET)"; \
+build-grounder: build-runtime
+	printf '%b\n' "$(BLUE)Building pandapi-grounder...$(RESET)"; \
 	REPO_ROOT="$(CURDIR)"; \
 	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
@@ -90,17 +90,21 @@ build-grounder:
 	printf '%b\n' "$(CYAN)Using CC=$$GROUNDER_CC CXX=$$GROUNDER_CXX$(RESET)"; \
 	( cd "$$CPDDL_DIR" && CC="$$GROUNDER_CC" CXX="$$GROUNDER_CXX" $(MAKE) boruvka opts bliss lpsolve ); \
 	( cd "$$CPDDL_DIR" && CC="$$GROUNDER_CC" CXX="$$GROUNDER_CXX" $(MAKE) ); \
-	( cd "$$SRC_ROOT/src" && $(MAKE) -j CXX="$$GROUNDER_CXX" CC="$$GROUNDER_CC" ); \
-	if [ ! -x "$$SRC_ROOT/pandaPIgrounder" ]; then \
-	  printf '%b\n' "$(RED)pandaPIgrounder build did not produce an executable$(RESET)" >&2; \
+	( cd "$$SRC_ROOT/src" && $(MAKE) -j CXX="$$GROUNDER_CXX" CC="$$GROUNDER_CC" \
+	  PANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/pandapi-runtime/include" \
+	  PANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_BUILD_DIR)/libpandapi_runtime.a" ); \
+	if [ ! -x "$$SRC_ROOT/pandapi-grounder" ]; then \
+	  printf '%b\n' "$(RED)pandapi-grounder build did not produce an executable$(RESET)" >&2; \
 	  exit 1; \
 	fi; \
 	mkdir -p "$$DIST_DIR"; \
-	cp "$$SRC_ROOT/pandaPIgrounder" "$$DIST_DIR/pandaPIgrounder"; \
-	"$$REPO_ROOT/scripts/install-grounder-adapter.sh" "$$DIST_DIR"; \
+	OLD_GROUNDER="pandaPI""grounder"; \
+	rm -f "$$DIST_DIR/$$OLD_GROUNDER" "$$DIST_DIR/$$OLD_GROUNDER.legacy"; \
+	cp "$$SRC_ROOT/pandapi-grounder" "$$DIST_DIR/pandapi-grounder"; \
+	chmod +x "$$DIST_DIR/pandapi-grounder"; \
 	COMPILER="$$(resolve_compiler_id "$$GROUNDER_CXX")"; \
-	append_provenance "$$DIST_DIR" "pandaPIgrounder" "GROUNDER" "$$COMPILER"; \
-	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandapi-grounder and $$DIST_DIR/pandaPIgrounder$(RESET)"
+	append_provenance "$$DIST_DIR" "pandapi-grounder" "GROUNDER" "$$COMPILER"; \
+	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandapi-grounder$(RESET)"
 
 .PHONY: build-engine
 build-engine:

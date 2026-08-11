@@ -85,7 +85,7 @@ make readme-verbatim
 ```
 
 On success, `dist/<platform>/` (`linux-x86_64` or `macos-arm64`) contains
-`pandapi-parser`, `pandaPIgrounder`, `pandaPIengine`, and `provenance.txt`.
+`pandapi-parser`, `pandapi-grounder`, `pandaPIengine`, and `provenance.txt`.
 
 Negative-gate check (missing file, broken syntax, broken reference,
 provably-unsolvable — each a distinct outcome, none collapsed into a

@@ -83,7 +83,7 @@ DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
 FIXTURES_DIR="$REPO_ROOT/fixtures"
 
 P="$DIST_DIR/pandapi-parser"
-G="$DIST_DIR/pandaPIgrounder"
+G="$DIST_DIR/pandapi-grounder"
 E="$DIST_DIR/pandaPIengine"
 
 for bin in "$P" "$G" "$E"; do

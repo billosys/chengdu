@@ -11,7 +11,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make build$(RESET)              - Build runtime, parser, grounder, and engine"; \
 	printf '%b\n' "  $(YELLOW)make build-runtime$(RESET)      - Build chengdu-owned runtime"; \
 	printf '%b\n' "  $(YELLOW)make build-parser$(RESET)       - Build pandapi-parser into dist/"; \
-	printf '%b\n' "  $(YELLOW)make build-grounder$(RESET)     - Build inherited pandaPIgrounder into dist/"; \
+	printf '%b\n' "  $(YELLOW)make build-grounder$(RESET)     - Build pandapi-grounder into dist/"; \
 	printf '%b\n' "  $(YELLOW)make build-engine$(RESET)       - Build inherited pandaPIengine into dist/"; \
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)Tests:$(RESET)"; \
