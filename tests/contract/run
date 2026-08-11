@@ -12,6 +12,7 @@ Use Make targets:
   make test-contract-grounder
   make test-contract-grounder-managed
   make test-contract-engine
+  make test-contract-engine-managed
   make test-contract-pipeline
 
   --baseline   run current inherited-binary baseline fixtures.
@@ -95,7 +96,7 @@ FIXTURES_DIR="$REPO_ROOT/fixtures"
 
 PC="$DIST_DIR/pandapi-parser"
 GC="$DIST_DIR/pandapi-grounder"
-E="$DIST_DIR/pandaPIengine"
+E="$DIST_DIR/pandapi-engine"
 
 case "$CASE_ID" in
   parser_help|parser_version|parser_provenance)
@@ -103,6 +104,9 @@ case "$CASE_ID" in
     ;;
   parser_legacy_surface|parser_legacy_helper)
     CASE_ID="parser-legacy-surface-fencing"
+    ;;
+  engine_help|engine_version|engine_provenance)
+    CASE_ID="engine-info-commands"
     ;;
 esac
 
@@ -153,6 +157,25 @@ grounder grounder-cpddl-fam-surface-fencing
 grounder grounder-domain-no-plan
 EOF
   fi
+  if [ "$COMPONENT" = "all" ] || [ "$COMPONENT" = "engine" ]; then
+    cat <<'EOF'
+engine engine-canonical-file-success
+engine engine-canonical-stdout-success
+engine engine-info-commands
+engine engine-cli-usage-errors
+engine engine-input-unavailable
+engine engine-input-invalid
+engine engine-output-unavailable
+engine engine-final-status-fields
+engine engine-status-stream-legality
+engine engine-color-policy
+engine engine-domain-no-plan
+engine engine-interactive-surface-fencing
+engine engine-translation-surface-fencing
+engine engine-sat-surface-fencing
+engine engine-bdd-cudd-surface-fencing
+EOF
+  fi
 }
 
 if [ "$LIST" -eq 1 ]; then
@@ -180,8 +203,8 @@ if [ "$MODE" = "baseline" ]; then
 fi
 
 if [ "$MODE" = "contract" ]; then
-  if [ "$COMPONENT" != "parser" ] && [ "$COMPONENT" != "grounder" ] && [ "$COMPONENT" != "all" ]; then
-    echo "contract-run: only parser and grounder contract fixtures exist in this slice" >&2
+  if [ "$COMPONENT" != "parser" ] && [ "$COMPONENT" != "grounder" ] && [ "$COMPONENT" != "engine" ] && [ "$COMPONENT" != "all" ]; then
+    echo "contract-run: only parser, grounder, and engine contract fixtures exist in this slice" >&2
     exit 1
   fi
   if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
@@ -193,6 +216,12 @@ if [ "$MODE" = "contract" ]; then
   if [ "$COMPONENT" = "grounder" ] || [ "$COMPONENT" = "all" ]; then
     if [ ! -x "$GC" ]; then
       echo "contract-run: missing binary: $GC; run make build-grounder first" >&2
+      exit 1
+    fi
+  fi
+  if [ "$COMPONENT" = "engine" ] || [ "$COMPONENT" = "all" ]; then
+    if [ ! -x "$E" ]; then
+      echo "contract-run: missing binary: $E; run make build-engine first" >&2
       exit 1
     fi
   fi
@@ -588,8 +617,8 @@ run_engine_fixtures() {
   if prepare_unsolvable_sas "$sas"; then
     run_capture_timeout "$id" "$ENGINE_TIMEOUT_SECS" "$E" "$sas"
     expect_exit "$id" 2
-    expect_stdout_contains "$id" "^- Status: Proven unsolvable$"
-    expect_stderr_empty "$id"
+    expect_stdout_empty "$id"
+    expect_stderr_contains "$id" "search completed with no plan"
     expect_final_status_absent "$id"
   fi
 }
@@ -1048,6 +1077,256 @@ run_grounder_contract_fixtures() {
   fi
 }
 
+run_engine_contract_case() {
+  local id="$1"
+  shift
+  if contract_case_selected "$id"; then
+    "$@"
+  fi
+}
+
+expect_engine_final_status() {
+  local id="$1" stream="$2" status="$3" exit_code="$4" class="$5" disposition="${6:-supported}"
+  local surface="${7:-normal_search}"
+  expect_final_status "$id" "$stream" "$status" "$exit_code" "$class" "$disposition" "engine" "$surface" "engine_interactive" "engine_translation"
+}
+
+engine_contract_canonical_file_success() {
+  local id="engine-canonical-file-success" artifact="$WORK/engine-canonical-file-success.plan"
+  run_capture "$id" "$E" --status=stderr --output "$artifact" "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 0
+  expect_artifact_complete "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_engine_final_status "$id" "stderr" "ok" "0" "success"
+}
+
+engine_contract_canonical_stdout_success() {
+  local id="engine-canonical-stdout-success" artifact="$WORK/engine-canonical-stdout-success.plan"
+  run_capture "$id" "$E" --status=stderr --output - "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 0
+  if [ -s "$OBS_OUT" ]; then
+    pass "$id stdout artifact complete"
+  else
+    fail "$id expected stdout artifact"
+  fi
+  expect_stdout_contains "$id" "^- Status: Solved$"
+  expect_stdout_not_contains "$id" "PANDAPI_STATUS"
+  expect_artifact_absent "$id" "$artifact"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout artifact"
+  expect_engine_final_status "$id" "stderr" "ok" "0" "success"
+}
+
+engine_contract_info_commands() {
+  local id="engine-info-commands"
+  run_capture "$id-help" "$E" --help
+  expect_exit "$id help" 0
+  expect_stdout_contains "$id help" "Usage: pandapi-engine"
+  expect_stdout_contains "$id help" "Interactive is legacy"
+  expect_stdout_contains "$id help" "SAT is unsupported"
+  expect_stderr_empty "$id help"
+  expect_no_status_on_stream "$id help" "stdout"
+  expect_no_status_on_stream "$id help" "stderr"
+
+  run_capture "$id-version" "$E" --version
+  expect_exit "$id version" 0
+  expect_stdout_contains "$id version" "canonical_command=pandapi-engine"
+  expect_stdout_contains "$id version" "component=engine"
+  expect_stderr_empty "$id version"
+
+  run_capture "$id-provenance" "$E" --provenance
+  expect_exit "$id provenance" 0
+  expect_stdout_contains "$id provenance" "canonical_command=pandapi-engine"
+  local inherited_engine="pandaPI""engine"
+  expect_stdout_not_contains "$id provenance" "invoked_command=$inherited_engine"
+  expect_stdout_not_contains "$id provenance" "legacy_binary=$inherited_engine"
+  expect_stdout_contains "$id provenance" "surface_interactive=legacy"
+  expect_stdout_contains "$id provenance" "surface_translation=experimental"
+  expect_stdout_contains "$id provenance" "surface_sat=unsupported"
+  expect_stdout_contains "$id provenance" "surface_bdd_cudd=future"
+  expect_stderr_empty "$id provenance"
+}
+
+engine_contract_cli_usage_errors() {
+  local id="engine-cli-usage-errors" artifact="$WORK/engine-cli-usage-errors.plan"
+
+  run_capture "$id-missing-args" "$E" --status=stderr --output "$artifact"
+  expect_exit "$id missing args" 10
+  expect_artifact_absent "$id missing args" "$artifact"
+  expect_engine_final_status "$id missing args" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-unknown-option" "$E" --status=stderr --unknown-option "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id unknown option" 10
+  expect_engine_final_status "$id unknown option" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-malformed-color" "$E" --status=stderr --color=wat "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id malformed color" 10
+  expect_engine_final_status "$id malformed color" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-too-many-positionals" "$E" --status=stderr "$FIXTURES_DIR/engine/minimal.sas" "$WORK/extra.sas"
+  expect_exit "$id too many positionals" 10
+  expect_engine_final_status "$id too many positionals" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-output-conflict" "$E" --status=stderr --output "$artifact" "$FIXTURES_DIR/engine/minimal.sas" "$WORK/positional.plan"
+  expect_exit "$id output conflict" 10
+  expect_artifact_absent "$id output conflict" "$artifact"
+  expect_engine_final_status "$id output conflict" "stderr" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-status-stdout-artifact" "$E" --status=stdout --output - "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id status stdout artifact conflict" 10
+  expect_engine_final_status "$id status stdout artifact conflict" "stdout" "cli_usage_error" "10" "caller_error"
+
+  run_capture "$id-status-stdout-info" "$E" --status=stdout --help
+  expect_exit "$id status stdout info conflict" 10
+  expect_engine_final_status "$id status stdout info conflict" "stdout" "cli_usage_error" "10" "caller_error"
+}
+
+engine_contract_input_unavailable() {
+  local id="engine-input-unavailable" artifact="$WORK/engine-input-unavailable.plan"
+  run_capture "$id-missing-input" "$E" --status=stderr --output "$artifact" "$WORK/missing.sas"
+  expect_exit "$id missing input" 20
+  expect_artifact_absent "$id missing input" "$artifact"
+  expect_stdout_empty "$id missing input"
+  expect_engine_final_status "$id missing input" "stderr" "input_unavailable" "20" "caller_error"
+}
+
+engine_contract_input_invalid() {
+  local id="engine-input-invalid" artifact="$WORK/engine-input-invalid.plan" malformed="$WORK/malformed.sas"
+  printf '%s\n' 'not a pandaPI engine input' > "$malformed"
+  run_capture "$id-malformed" "$E" --status=stderr --output "$artifact" "$malformed"
+  expect_exit "$id malformed" 22
+  expect_artifact_absent "$id malformed" "$artifact"
+  expect_stdout_empty "$id malformed"
+  expect_engine_final_status "$id malformed" "stderr" "input_invalid" "22" "input_model_error"
+}
+
+engine_contract_output_unavailable() {
+  local id="engine-output-unavailable"
+  run_capture "$id-missing-parent" "$E" --status=stderr --output "$WORK/no-such-parent/out.plan" "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id missing parent" 21
+  expect_stdout_empty "$id missing parent"
+  expect_engine_final_status "$id missing parent" "stderr" "output_unavailable" "21" "caller_error"
+
+  mkdir -p "$WORK/output-dir"
+  run_capture "$id-output-directory" "$E" --status=stderr --output "$WORK/output-dir" "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id output directory" 21
+  expect_stdout_empty "$id output directory"
+  expect_engine_final_status "$id output directory" "stderr" "output_unavailable" "21" "caller_error"
+}
+
+engine_contract_final_status_fields() {
+  local id="engine-final-status-fields" artifact="$WORK/engine-final-status-fields.plan"
+  run_capture "$id" "$E" --status=stderr --output "$artifact" "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 0
+  expect_engine_final_status "$id" "stderr" "ok" "0" "success"
+  local line
+  line="$(status_lines stderr)"
+  expect_status_field "$id" "$line" "partial_output_policy" "complete"
+  expect_status_field "$id" "$line" "artifact" "file"
+  expect_status_field "$id" "$line" "outcome" "solved"
+}
+
+engine_contract_status_stream_legality() {
+  local id="engine-status-stream-legality" artifact="$WORK/engine-status-stream-legality.plan"
+  run_capture "$id-file-stderr" "$E" --status=stderr --output "$artifact" "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id file stderr" 0
+  expect_engine_final_status "$id file stderr" "stderr" "ok" "0" "success"
+
+  run_capture "$id-stdout-artifact-stderr" "$E" --status=stderr --output - "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id stdout artifact stderr" 0
+  expect_engine_final_status "$id stdout artifact stderr" "stderr" "ok" "0" "success"
+
+  run_capture "$id-file-stdout" "$E" --status=stdout --output "$artifact" "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id file stdout" 0
+  expect_engine_final_status "$id file stdout" "stdout" "ok" "0" "success"
+  expect_no_status_on_stream "$id file stdout" "stderr"
+
+  run_capture "$id-illegal-stdout" "$E" --status=stdout --output - "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id illegal stdout status" 10
+  expect_engine_final_status "$id illegal stdout status" "stdout" "cli_usage_error" "10" "caller_error"
+}
+
+engine_contract_color_policy() {
+  local id="engine-color-policy" artifact="$WORK/engine-color-policy.plan" malformed="$WORK/color-malformed.sas"
+  printf '%s\n' 'not a pandaPI engine input' > "$malformed"
+  run_capture "$id-no-color" "$E" --status=stderr --no-color --output "$artifact" "$malformed"
+  expect_exit "$id no-color" 22
+  expect_no_ansi "$id no-color" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id no-color" "stderr" "input_invalid" "22" "input_model_error"
+
+  run_capture "$id-no-colour" "$E" --status=stderr --no-colour --output "$artifact" "$malformed"
+  expect_exit "$id no-colour" 22
+  expect_no_ansi "$id no-colour" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id no-colour" "stderr" "input_invalid" "22" "input_model_error"
+
+  NO_COLOR=1 run_capture "$id-no-color-env" "$E" --status=stderr --output "$artifact" "$malformed"
+  expect_exit "$id NO_COLOR" 22
+  expect_no_ansi "$id NO_COLOR" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id NO_COLOR" "stderr" "input_invalid" "22" "input_model_error"
+
+  run_capture "$id-color-always-status" "$E" --status=stderr --color=always --output "$artifact" "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id color always status" 10
+  expect_engine_final_status "$id color always status" "stderr" "cli_usage_error" "10" "caller_error"
+}
+
+engine_contract_domain_no_plan() {
+  local id="engine-domain-no-plan" artifact="$WORK/engine-domain-no-plan.plan"
+  run_capture "$id" "$E" --status=stderr --output "$artifact" "$FIXTURES_DIR/engine/unsolvable.sas"
+  expect_exit "$id" 2
+  expect_artifact_absent "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_engine_final_status "$id" "stderr" "domain_no_plan" "2" "expected_domain_outcome"
+  local line
+  line="$(status_lines stderr)"
+  expect_status_field "$id" "$line" "partial_output_policy" "absent"
+  expect_status_field "$id" "$line" "outcome" "no_plan"
+}
+
+engine_contract_interactive_surface_fencing() {
+  local id="engine-interactive-surface-fencing"
+  run_capture "$id" "$E" --status=stderr --interactive "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 31
+  expect_engine_final_status "$id" "stderr" "legacy_surface" "31" "policy_surface_failure" "legacy" "engine_interactive"
+}
+
+engine_contract_translation_surface_fencing() {
+  local id="engine-translation-surface-fencing"
+  run_capture "$id" "$E" --status=stderr --translation "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 32
+  expect_engine_final_status "$id" "stderr" "experimental_surface" "32" "policy_surface_failure" "experimental" "engine_translation"
+}
+
+engine_contract_sat_surface_fencing() {
+  local id="engine-sat-surface-fencing"
+  run_capture "$id" "$E" --status=stderr --sat "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 30
+  expect_engine_final_status "$id" "stderr" "unsupported_feature" "30" "policy_surface_failure" "unsupported" "engine_sat"
+}
+
+engine_contract_bdd_cudd_surface_fencing() {
+  local id="engine-bdd-cudd-surface-fencing"
+  run_capture "$id" "$E" --status=stderr --bdd "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 33
+  expect_engine_final_status "$id" "stderr" "future_surface" "33" "policy_surface_failure" "future" "engine_bdd_cudd"
+}
+
+run_engine_contract_fixtures() {
+  run_engine_contract_case "engine-canonical-file-success" engine_contract_canonical_file_success
+  run_engine_contract_case "engine-canonical-stdout-success" engine_contract_canonical_stdout_success
+  run_engine_contract_case "engine-info-commands" engine_contract_info_commands
+  run_engine_contract_case "engine-cli-usage-errors" engine_contract_cli_usage_errors
+  run_engine_contract_case "engine-input-unavailable" engine_contract_input_unavailable
+  run_engine_contract_case "engine-input-invalid" engine_contract_input_invalid
+  run_engine_contract_case "engine-output-unavailable" engine_contract_output_unavailable
+  run_engine_contract_case "engine-final-status-fields" engine_contract_final_status_fields
+  run_engine_contract_case "engine-status-stream-legality" engine_contract_status_stream_legality
+  run_engine_contract_case "engine-color-policy" engine_contract_color_policy
+  run_engine_contract_case "engine-domain-no-plan" engine_contract_domain_no_plan
+  run_engine_contract_case "engine-interactive-surface-fencing" engine_contract_interactive_surface_fencing
+  run_engine_contract_case "engine-translation-surface-fencing" engine_contract_translation_surface_fencing
+  run_engine_contract_case "engine-sat-surface-fencing" engine_contract_sat_surface_fencing
+  run_engine_contract_case "engine-bdd-cudd-surface-fencing" engine_contract_bdd_cudd_surface_fencing
+}
+
 if [ "$MODE" = "contract" ]; then
   echo "contract-run: platform=$PLATFORM mode=contract component=$COMPONENT case=$CASE_ID"
   if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
@@ -1055,6 +1334,9 @@ if [ "$MODE" = "contract" ]; then
   fi
   if [ "$COMPONENT" = "grounder" ] || [ "$COMPONENT" = "all" ]; then
     run_grounder_contract_fixtures
+  fi
+  if [ "$COMPONENT" = "engine" ] || [ "$COMPONENT" = "all" ]; then
+    run_engine_contract_fixtures
   fi
   echo "contract-run: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed (contract, $COMPONENT, $PLATFORM)"
   if [ "$FAIL_COUNT" -ne 0 ]; then

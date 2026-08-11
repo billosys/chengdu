@@ -22,7 +22,7 @@
 # produces a labeled FAIL + nonzero overall exit rather than a silent
 # `set -e` abort with no summary. To reproduce manually, after a normal
 # build:
-#   real="dist/<platform>/pandaPIengine"
+#   real="dist/<platform>/pandapi-engine"
 #   cp "$real" "$real.orig"
 #   printf '#!/bin/sh\nexit 3\n' > "$real"; chmod +x "$real"
 #   make smoke; echo "exit=$?"              # expect a "solve: expected
@@ -84,7 +84,7 @@ FIXTURES_DIR="$REPO_ROOT/fixtures"
 
 P="$DIST_DIR/pandapi-parser"
 G="$DIST_DIR/pandapi-grounder"
-E="$DIST_DIR/pandaPIengine"
+E="$DIST_DIR/pandapi-engine"
 
 for bin in "$P" "$G" "$E"; do
   if [ ! -x "$bin" ]; then
@@ -156,7 +156,7 @@ require_step() {
 ENGINE_TIMEOUT_SECS=60
 run_engine() {
   local sas="$1" out="$2" pid watcher
-  "$E" "$sas" > "$out" 2>&1 &
+  "$E" --status=stderr --output "$out" "$sas" > "$out.stdout" 2> "$out.stderr" &
   pid=$!
   ( sleep "$ENGINE_TIMEOUT_SECS"; kill -9 "$pid" 2>/dev/null ) &
   watcher=$!
@@ -168,7 +168,7 @@ run_engine() {
   set -e
   if [ "$RC" -eq 137 ]; then
     RC=124
-    echo "smoke-run: engine killed after ${ENGINE_TIMEOUT_SECS}s timeout" >> "$out"
+    echo "smoke-run: engine killed after ${ENGINE_TIMEOUT_SECS}s timeout" >> "$out.stderr"
   fi
 }
 
@@ -191,10 +191,10 @@ run_positive() {
   fi
 
   run_engine "$sas" "$raw"
-  if [ "$RC" -eq 0 ] && grep -q '^- Status: Solved$' "$raw"; then
-    gate_pass "solve (exit 0, Status: Solved)"
+  if [ "$RC" -eq 0 ] && grep -q '^- Status: Solved$' "$raw" && grep -q 'PANDAPI_STATUS.*status=ok.*component=engine' "$raw.stderr"; then
+    gate_pass "solve (exit 0, Status: Solved, engine status ok)"
   else
-    gate_fail "solve: expected exit 0 + 'Status: Solved', got exit $RC: $(grep 'Status:' "$raw" || echo 'no Status line')"
+    gate_fail "solve: expected exit 0 + 'Status: Solved' + engine status ok, got exit $RC: $(grep 'Status:' "$raw" || echo 'no Status line')"
   fi
 }
 
@@ -229,10 +229,10 @@ run_negative() {
   if require_step "negative: unsolvable setup (parse)" "$P" "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl" "$htn" \
     && require_step "negative: unsolvable setup (ground)" "$G" "$htn" "$sas"; then
     run_engine "$sas" "$raw"
-    if [ "$RC" -eq 2 ] && grep -q '^- Status: Proven unsolvable$' "$raw"; then
-      gate_pass "negative: unsolvable -> engine exit 2, Status: Proven unsolvable (UNSOLVABLE, not success, not failure)"
+    if [ "$RC" -eq 2 ] && [ ! -e "$raw" ] && grep -q 'PANDAPI_STATUS.*status=domain_no_plan.*component=engine' "$raw.stderr"; then
+      gate_pass "negative: unsolvable -> engine exit 2, domain_no_plan (UNSOLVABLE, not success, not failure)"
     else
-      gate_fail "negative: unsolvable: expected exit 2 + 'Status: Proven unsolvable', got exit $RC: $(grep 'Status:' "$raw" || echo 'no Status line')"
+      gate_fail "negative: unsolvable: expected exit 2 + domain_no_plan status and no plan artifact, got exit $RC"
     fi
   fi
 }
@@ -257,10 +257,10 @@ run_corpus() {
 
   run_engine "$tsas" "$tout"
 
-  if grep -q '^- Status: Solved$' "$tout"; then
-    gate_pass "corpus: Transport pfile01 solved"
+  if grep -q '^- Status: Solved$' "$tout" && grep -q 'PANDAPI_STATUS.*status=ok.*component=engine' "$tout.stderr"; then
+    gate_pass "corpus: Transport pfile01 solved with engine status ok"
   else
-    gate_fail "corpus: Transport pfile01 did not solve"
+    gate_fail "corpus: Transport pfile01 did not solve with engine status ok"
   fi
 
 }

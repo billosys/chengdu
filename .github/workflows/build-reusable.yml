@@ -65,10 +65,10 @@ jobs:
 
       - name: Run --help on the 22.04-built binaries under 24.04 (glibc forward-compat)
         run: |
-          chmod +x dist-22.04/pandapi-parser dist-22.04/pandapi-grounder dist-22.04/pandaPIengine
+          chmod +x dist-22.04/pandapi-parser dist-22.04/pandapi-grounder dist-22.04/pandapi-engine
           dist-22.04/pandapi-parser --help
           dist-22.04/pandapi-grounder --help
-          dist-22.04/pandaPIengine --help
+          dist-22.04/pandapi-engine --help
 
   build-macos:
     name: build (macos-15)
@@ -109,10 +109,10 @@ jobs:
 
       - name: Run --help on the macos-15-built binaries under macos-26 (forward-compat)
         run: |
-          chmod +x dist-macos-15/pandapi-parser dist-macos-15/pandapi-grounder dist-macos-15/pandaPIengine
+          chmod +x dist-macos-15/pandapi-parser dist-macos-15/pandapi-grounder dist-macos-15/pandapi-engine
           dist-macos-15/pandapi-parser --help
           dist-macos-15/pandapi-grounder --help
-          dist-macos-15/pandaPIengine --help
+          dist-macos-15/pandapi-engine --help
 
   readme-verbatim-macos:
     name: readme-verbatim-macos (macos-15)

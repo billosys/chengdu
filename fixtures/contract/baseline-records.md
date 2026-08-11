@@ -176,7 +176,7 @@ where a component's owning contract records provide that evidence.
   component: engine
   surface_disposition: supported
   command:
-    argv: ["pandaPIengine", "$TempRoot/minimal.sas"]
+    argv: ["pandapi-engine", "$TempRoot/minimal.sas"]
   stdin:
     mode: empty
   stdout:
@@ -204,7 +204,7 @@ where a component's owning contract records provide that evidence.
   component: engine
   surface_disposition: supported
   command:
-    argv: ["pandaPIengine", "$TempRoot/unsolvable.sas"]
+    argv: ["pandapi-engine", "$TempRoot/unsolvable.sas"]
   stdin:
     mode: empty
   stdout:
@@ -215,7 +215,7 @@ where a component's owning contract records provide that evidence.
     path: "$TempRoot/engine-unsolvable.raw"
     state: complete
   exit:
-    status: domain_no_plan_baseline
+    status: domain_no_plan
     code: 2
   final_status:
     observation: absent
@@ -235,7 +235,7 @@ where a component's owning contract records provide that evidence.
     argv:
       - ["pandapi-parser", "$FixtureRoot/minimal/domain.hddl", "$FixtureRoot/minimal/problem.hddl", "$TempRoot/pipeline.htn"]
       - ["pandapi-grounder", "$TempRoot/pipeline.htn", "$TempRoot/pipeline.sas"]
-      - ["pandaPIengine", "$TempRoot/pipeline.sas"]
+      - ["pandapi-engine", "$TempRoot/pipeline.sas"]
   stdin:
     mode: empty
   stdout:

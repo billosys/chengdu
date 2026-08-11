@@ -130,7 +130,7 @@ check_component() {
 
 check_component "pandapi-parser" "PARSER"
 check_component "pandapi-grounder" "GROUNDER"
-check_component "pandaPIengine" "ENGINE"
+check_component "pandapi-engine" "ENGINE"
 
 if [ "$FAIL_COUNT" -gt 0 ]; then
   echo "provenance-check: $FAIL_COUNT check(s) failed against $FILE" >&2

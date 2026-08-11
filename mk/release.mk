@@ -12,7 +12,7 @@ restore-release-executable-bits:
 	    printf '%b\n' "$(RED)Missing release artifact directory: $$dist$(RESET)" >&2; \
 	    exit 1; \
 	  fi; \
-	  for bin in pandapi-parser pandapi-grounder pandaPIengine; do \
+	  for bin in pandapi-parser pandapi-grounder pandapi-engine; do \
 	    if [ -f "$$dist/$$bin" ]; then \
 	      chmod +x "$$dist/$$bin"; \
 	    fi; \

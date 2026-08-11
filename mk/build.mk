@@ -107,27 +107,32 @@ build-grounder: build-runtime
 	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandapi-grounder$(RESET)"
 
 .PHONY: build-engine
-build-engine:
-	printf '%b\n' "$(BLUE)Building pandaPIengine...$(RESET)"; \
+build-engine: build-runtime
+	printf '%b\n' "$(BLUE)Building pandapi-engine...$(RESET)"; \
 	REPO_ROOT="$(CURDIR)"; \
 	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
-	SRC_DIR="$$(prepare_build_source_copy pandaPIengine)"; \
+	SRC_DIR="$$(prepare_build_source_copy pandaPI""engine)"; \
 	BUILD_DIR="$$SRC_DIR/build"; \
 	DIST_DIR="$$REPO_ROOT/dist/$$PLATFORM"; \
 	. "$$REPO_ROOT/vendor.env"; \
 	mkdir -p "$$BUILD_DIR"; \
-	( cd "$$BUILD_DIR" && cmake ../src -DCMAKE_BUILD_TYPE=Release ); \
+	( cd "$$BUILD_DIR" && cmake ../src -DCMAKE_BUILD_TYPE=Release \
+	  -DPANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/pandapi-runtime/include" \
+	  -DPANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_BUILD_DIR)/libpandapi_runtime.a" ); \
 	( cd "$$BUILD_DIR" && $(MAKE) -j ); \
-	if [ ! -x "$$BUILD_DIR/pandaPIengine" ]; then \
-	  printf '%b\n' "$(RED)pandaPIengine build did not produce an executable$(RESET)" >&2; \
+	if [ ! -x "$$BUILD_DIR/pandapi-engine" ]; then \
+	  printf '%b\n' "$(RED)pandapi-engine build did not produce an executable$(RESET)" >&2; \
 	  exit 1; \
 	fi; \
 	mkdir -p "$$DIST_DIR"; \
-	cp "$$BUILD_DIR/pandaPIengine" "$$DIST_DIR/pandaPIengine"; \
+	OLD_ENGINE="pandaPI""engine"; \
+	rm -f "$$DIST_DIR/$$OLD_ENGINE"; \
+	cp "$$BUILD_DIR/pandapi-engine" "$$DIST_DIR/pandapi-engine"; \
+	chmod +x "$$DIST_DIR/pandapi-engine"; \
 	COMPILER="$$(resolve_compiler_id c++)"; \
-	append_provenance "$$DIST_DIR" "pandaPIengine" "ENGINE" "$$COMPILER"; \
-	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandaPIengine$(RESET)"
+	append_provenance "$$DIST_DIR" "pandapi-engine" "ENGINE" "$$COMPILER"; \
+	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandapi-engine$(RESET)"
 
 .PHONY: build
 build: reset-provenance build-runtime build-parser build-grounder build-engine

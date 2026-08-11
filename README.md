@@ -41,22 +41,12 @@ shasum -a 256 -c SHA256SUMS --ignore-missing
 tar xzf pandapi-v0.2.0-macos-arm64.tar.gz
 ```
 
-Then make sure everything's working:
-
-```bash
-./pandaPIparser fixtures/domain.hddl fixtures/problem.hddl plan.htn && \
-./pandaPIgrounder plan.htn plan.sas && \
-./pandaPIengine plan.sas > plan.raw && \
-./pandaPIparser -c plan.raw plan.txt && \
-./pandaPIparser --verify fixtures/domain.hddl fixtures/problem.hddl plan.txt
-```
-
-On success, the last line is `Plan verification result: true` and the
-command exits 0. `pandaPIparser`, `pandaPIgrounder`, `pandaPIengine`,
-and `provenance.txt` are now in the current directory. See
-`THIRD-PARTY-LICENSES` (downloadable from the same release) for
-licensing, and `docs/license-audit-v0.2.0.md` for the current audit
-behind it.
+The extracted release contains the planner executables, fixtures,
+`provenance.txt`, and release license files. See `THIRD-PARTY-LICENSES`
+(downloadable from the same release) for licensing, and
+`docs/license-audit-v0.2.0.md` for the current audit behind it. The 0.3.0
+source-build surface below uses the canonical `pandapi-*` command names and
+managed-process contract.
 
 
 ## Build from Source
@@ -85,7 +75,7 @@ make readme-verbatim
 ```
 
 On success, `dist/<platform>/` (`linux-x86_64` or `macos-arm64`) contains
-`pandapi-parser`, `pandapi-grounder`, `pandaPIengine`, and `provenance.txt`.
+`pandapi-parser`, `pandapi-grounder`, `pandapi-engine`, and `provenance.txt`.
 
 Negative-gate check (missing file, broken syntax, broken reference,
 provably-unsolvable — each a distinct outcome, none collapsed into a

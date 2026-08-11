@@ -19,6 +19,8 @@ endif()
 project(pandaPIengine)
 
 find_program(GENGETOPT gengetopt)
+set(PANDAPI_RUNTIME_INCLUDE "" CACHE PATH "pandapi-runtime include directory")
+set(PANDAPI_RUNTIME_LIB "" CACHE FILEPATH "pandapi-runtime static library")
 
 ## required for IBM's CPLEX in order to force it to use newer names for the std headers
 add_definitions(-DIL_STD)
@@ -55,6 +57,9 @@ include_directories("symbolic_search")
 include_directories("heuristics")
 include_directories("intDataStructures")
 include_directories("translation")
+if (PANDAPI_RUNTIME_INCLUDE)
+	include_directories("${PANDAPI_RUNTIME_INCLUDE}")
+endif()
 add_subdirectory(search)
 add_subdirectory(symbolic_search)
 add_subdirectory(heuristics)
@@ -73,18 +78,24 @@ add_custom_command(
 
 
 file(GLOB main_SRC "*.h" "*.cpp" "cmdline.c")
+list(REMOVE_ITEM main_SRC "${CMAKE_CURRENT_SOURCE_DIR}/pandapi_engine_native.cpp")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/SearchEngine.cpp
+	PROPERTIES COMPILE_DEFINITIONS "main=pandaPIengine_legacy_main")
  
 # create the executable
-add_executable (pandaPIengine ${main_SRC} "cmdline.c" "cmdline.h")
-target_compile_options(pandaPIengine PUBLIC ${compiler_flags})
-target_link_options(pandaPIengine PUBLIC ${linker_flags})
+add_executable (pandapi-engine ${main_SRC} "cmdline.c" "cmdline.h" "pandapi_engine_native.cpp")
+target_compile_options(pandapi-engine PUBLIC ${compiler_flags})
+target_link_options(pandapi-engine PUBLIC ${linker_flags})
 
-target_link_libraries(pandaPIengine PUBLIC search)
-target_link_libraries(pandaPIengine PUBLIC symbolic_search)
-target_link_libraries(pandaPIengine PUBLIC heuristics)
-target_link_libraries(pandaPIengine PUBLIC hrc)
-target_link_libraries(pandaPIengine PUBLIC hlm)
-target_link_libraries(pandaPIengine PUBLIC translation)
+target_link_libraries(pandapi-engine PUBLIC search)
+target_link_libraries(pandapi-engine PUBLIC symbolic_search)
+target_link_libraries(pandapi-engine PUBLIC heuristics)
+target_link_libraries(pandapi-engine PUBLIC hrc)
+target_link_libraries(pandapi-engine PUBLIC hlm)
+target_link_libraries(pandapi-engine PUBLIC translation)
+if (PANDAPI_RUNTIME_LIB)
+	target_link_libraries(pandapi-engine PUBLIC "${PANDAPI_RUNTIME_LIB}")
+endif()
 
 if (BDD)
 	### Build Cudd
@@ -98,20 +109,20 @@ if (BDD)
 	)
 	
 	### Link Cudd
-	add_dependencies(pandaPIengine libcudd)
-	target_link_libraries(pandaPIengine PUBLIC ${CMAKE_BINARY_DIR}/libcudd-prefix/src/libcudd-build/cudd/.libs/libcudd.a)
+	add_dependencies(pandapi-engine libcudd)
+	target_link_libraries(pandapi-engine PUBLIC ${CMAKE_BINARY_DIR}/libcudd-prefix/src/libcudd-build/cudd/.libs/libcudd.a)
 endif(BDD)
 
 # if the user has specified a cplex installation he surely wants to use it
 if (CPLEX_SOURCE_DIR)
-	target_link_libraries(pandaPIengine PUBLIC ilpheuristics)
+	target_link_libraries(pandapi-engine PUBLIC ilpheuristics)
 endif (CPLEX_SOURCE_DIR)
 
 if (SAT)
 	add_subdirectory(sat)
 	include_directories("sat")
-	target_link_libraries(pandaPIengine PUBLIC sat)
+	target_link_libraries(pandapi-engine PUBLIC sat)
 endif (SAT)
 
 ## must be added *after* SAT due to the use of the printMemory function, which is currently defined in the SAT module ... this is probably not a good idea.
-target_link_libraries(pandaPIengine PUBLIC intDataStructures)
+target_link_libraries(pandapi-engine PUBLIC intDataStructures)

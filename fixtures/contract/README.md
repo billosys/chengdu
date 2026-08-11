@@ -5,11 +5,9 @@ fixtures. These fixtures observe executable behavior at the process boundary:
 command name, argv, stdin mode, stdout, stderr, generated artifacts, exit
 status, final status policy, normalization, and safety.
 
-The current executable gate is mixed during Arc05 adoption. Parser and grounder
-fixtures now record canonical `pandapi-parser` and `pandapi-grounder` behavior;
-engine fixtures still record inherited `pandaPIengine` behavior until its owning
-adoption slice migrates it to the managed-process contract. A passing baseline
-fixture is not a managed-process conformance claim unless the owning component's
+The current executable gate records canonical `pandapi-parser`,
+`pandapi-grounder`, and `pandapi-engine` behavior. A passing baseline fixture
+is not a managed-process conformance claim unless the owning component's
 contract fixture records say so.
 
 ## Fixture Record Shape
@@ -17,8 +15,9 @@ contract fixture records say so.
 Fixture records use a dependency-free, YAML-like documentation format in
 [`baseline-records.md`](baseline-records.md) and
 [`parser-contract-records.md`](parser-contract-records.md) and
-[`grounder-contract-records.md`](grounder-contract-records.md). The fields
-mirror the accepted Arc04 runtime fixture vocabulary:
+[`grounder-contract-records.md`](grounder-contract-records.md) and
+[`engine-contract-records.md`](engine-contract-records.md). The fields mirror
+the accepted Arc04 runtime fixture vocabulary:
 
 - `id`: stable fixture identifier used by the runner output.
 - `owner`: planning owner, currently Arc05 Slice02 for baseline scaffold rows.
@@ -40,11 +39,10 @@ mirror the accepted Arc04 runtime fixture vocabulary:
 
 ## Baseline Versus Contract
 
-Baseline records describe the current executable surface for components that
-still need baseline coverage. They may include pre-contract exit codes, mixed
-human output, and absent `PANDAPI_STATUS` lines. Grounder and engine adoption
-slices must flip the relevant records or add new `contract-target` records
-when they make managed-process behavior real.
+Baseline records describe the current executable surface for broad smoke-style
+coverage. They may omit final `PANDAPI_STATUS` lines when the selected
+baseline invocation does not enable status output. Per-component contract
+records provide the managed-process conformance evidence.
 
 Contract expectations come from the Arc03 matrix: stable command/argv shape,
 stdout/stderr ownership, output artifact disposition, status/exit mapping,
@@ -90,15 +88,18 @@ Build first, then run:
 
 ```sh
 make build
-./scripts/run-contract-fixtures.sh --baseline
-./scripts/run-contract-fixtures.sh --baseline --component parser
-./scripts/run-contract-fixtures.sh --contract --component parser
-./scripts/run-contract-fixtures.sh --contract --component parser --case parser-canonical-file-success
-./scripts/run-contract-fixtures.sh --contract --component grounder
-./scripts/run-contract-fixtures.sh --contract --component grounder --case grounder-canonical-file-success
-./scripts/run-contract-fixtures.sh --list
-./scripts/run-contract-fixtures.sh --contract --component parser --list
-./scripts/run-contract-fixtures.sh --contract --component grounder --list
+./tests/contract/run --baseline
+./tests/contract/run --baseline --component parser
+./tests/contract/run --contract --component parser
+./tests/contract/run --contract --component parser --case parser-canonical-file-success
+./tests/contract/run --contract --component grounder
+./tests/contract/run --contract --component grounder --case grounder-canonical-file-success
+./tests/contract/run --contract --component engine
+./tests/contract/run --contract --component engine --case engine-canonical-file-success
+./tests/contract/run --list
+./tests/contract/run --contract --component parser --list
+./tests/contract/run --contract --component grounder --list
+./tests/contract/run --contract --component engine --list
 ```
 
 The runner emits labeled PASS/FAIL lines and exits nonzero if any selected

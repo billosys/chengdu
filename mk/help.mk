@@ -12,7 +12,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make build-runtime$(RESET)      - Build chengdu-owned runtime"; \
 	printf '%b\n' "  $(YELLOW)make build-parser$(RESET)       - Build pandapi-parser into dist/"; \
 	printf '%b\n' "  $(YELLOW)make build-grounder$(RESET)     - Build pandapi-grounder into dist/"; \
-	printf '%b\n' "  $(YELLOW)make build-engine$(RESET)       - Build inherited pandaPIengine into dist/"; \
+	printf '%b\n' "  $(YELLOW)make build-engine$(RESET)       - Build pandapi-engine into dist/"; \
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)Tests:$(RESET)"; \
 	printf '%b\n' "  $(YELLOW)make test$(RESET)               - Build and run runtime, contract, and smoke tests"; \
@@ -22,7 +22,9 @@ help:
 	printf '%b\n' "  $(YELLOW)make test-contract-parser$(RESET) - Run parser contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-parser-managed$(RESET) - Run managed parser contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-grounder$(RESET) - Run grounder contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-grounder-managed$(RESET) - Run managed grounder contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-engine$(RESET) - Run engine contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-engine-managed$(RESET) - Run managed engine contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-pipeline$(RESET) - Run pipeline contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make smoke$(RESET)              - Run positive smoke test"; \
 	printf '%b\n' "  $(YELLOW)make smoke-negative$(RESET)     - Run negative smoke test"; \

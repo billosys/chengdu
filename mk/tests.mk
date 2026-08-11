@@ -51,6 +51,12 @@ test-contract-engine: build
 	./tests/contract/run --baseline --component engine
 	printf '%b\n' "$(GREEN)Engine contract fixtures passed$(RESET)"
 
+.PHONY: test-contract-engine-managed
+test-contract-engine-managed: build-engine
+	printf '%b\n' "$(BLUE)Running managed engine contract fixtures...$(RESET)"
+	./tests/contract/run --contract --component engine
+	printf '%b\n' "$(GREEN)Managed engine contract fixtures passed$(RESET)"
+
 .PHONY: test-contract-pipeline
 test-contract-pipeline: build
 	printf '%b\n' "$(BLUE)Running pipeline contract fixtures...$(RESET)"
@@ -92,5 +98,5 @@ contract-baseline: test-contract
 	printf '%b\n' "$(GREEN)contract-baseline alias passed$(RESET)"
 
 .PHONY: test
-test: build test-runtime test-contract test-contract-parser-managed test-contract-grounder-managed smoke smoke-negative
+test: build test-runtime test-contract test-contract-parser-managed test-contract-grounder-managed test-contract-engine-managed smoke smoke-negative
 	printf '%b\n' "$(GREEN)Test suite passed$(RESET)"
