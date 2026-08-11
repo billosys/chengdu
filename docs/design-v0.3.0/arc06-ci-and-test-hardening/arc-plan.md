@@ -98,12 +98,16 @@ deferrals that must be checked before package publication.
   [`slice01-fixture-gap-inventory/cc-prompt.md`](slice01-fixture-gap-inventory/cc-prompt.md),
   [`slice01-fixture-gap-inventory/closing-report.md`](slice01-fixture-gap-inventory/closing-report.md),
   [`slice01-fixture-gap-inventory/cdc-verification.md`](slice01-fixture-gap-inventory/cdc-verification.md).
-- **slice02 process-fixture-expansion - open.** Slice set:
+- **slice02 process-fixture-expansion - closed and CDC-verified.** Slice set:
   [`slice02-process-fixture-expansion/slice-doc.md`](slice02-process-fixture-expansion/slice-doc.md),
   [`slice02-process-fixture-expansion/ledger.md`](slice02-process-fixture-expansion/ledger.md),
-  [`slice02-process-fixture-expansion/cc-prompt.md`](slice02-process-fixture-expansion/cc-prompt.md).
-- **slice03 coverage-gate - planned.** Opens after fixture workload is
-  representative enough that coverage means something.
+  [`slice02-process-fixture-expansion/cc-prompt.md`](slice02-process-fixture-expansion/cc-prompt.md),
+  [`slice02-process-fixture-expansion/closing-report.md`](slice02-process-fixture-expansion/closing-report.md),
+  [`slice02-process-fixture-expansion/cdc-verification.md`](slice02-process-fixture-expansion/cdc-verification.md).
+- **slice03 coverage-gate - open.** Slice set:
+  [`slice03-coverage-gate/slice-doc.md`](slice03-coverage-gate/slice-doc.md),
+  [`slice03-coverage-gate/ledger.md`](slice03-coverage-gate/ledger.md),
+  [`slice03-coverage-gate/cc-prompt.md`](slice03-coverage-gate/cc-prompt.md).
 - **slice04 static-analysis-gate - planned.**
 - **slice05 compiler-warning-burndown - planned.** Opens after static-analysis
   classification can inform the warning inventory and before sanitizer signal
@@ -171,6 +175,16 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.3 - 2026-08-11.** Marked Slice02 process-fixture-expansion closed and
+  CDC-verified, and opened Slice03 coverage-gate. Surfaced by: CDC
+  reproduction of CC commit `89991120` on top of warning-burndown planning
+  commit `ca7cccae`. Why: managed parser, grounder, engine, and pipeline
+  fixtures now reproduce as a representative workload, so coverage can measure
+  owned runtime/process-policy code without pretending inherited planner
+  algorithm coverage is the primary signal. Slice02's closing-report references
+  to later sanitizer/timeout slice numbers are superseded by v1.2's inserted
+  compiler-warning-burndown slice.
 
 - **v1.2 - 2026-08-11.** Inserted Slice05
   compiler-warning-burndown and renumbered binary-sanitizer and TSan synthesis

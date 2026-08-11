@@ -295,10 +295,16 @@ documentation/tutorial and release-publication work.
   [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cc-prompt.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cc-prompt.md),
   [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/closing-report.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/closing-report.md),
   [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cdc-verification.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cdc-verification.md).
-  Slice02 process-fixture-expansion is open:
+  Slice02 process-fixture-expansion is closed and CDC-verified:
   [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/slice-doc.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/slice-doc.md),
   [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/ledger.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/ledger.md),
-  [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md).
+  [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md),
+  [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/closing-report.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/closing-report.md),
+  [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cdc-verification.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cdc-verification.md).
+  Slice03 coverage-gate is open:
+  [`arc06-ci-and-test-hardening/slice03-coverage-gate/slice-doc.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/slice-doc.md),
+  [`arc06-ci-and-test-hardening/slice03-coverage-gate/ledger.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/ledger.md),
+  [`arc06-ci-and-test-hardening/slice03-coverage-gate/cc-prompt.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/cc-prompt.md).
   Arc06 owns the remaining local/CI matrix, expanded process fixtures,
   coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates,
   TSan disposition, and release-readiness evidence needed by later release
@@ -432,6 +438,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.49 - 2026-08-11.** Marked Arc06 Slice02
+  process-fixture-expansion closed and CDC-verified, and opened Arc06 Slice03
+  coverage-gate. Surfaced by: CDC reproduction of CC commit `89991120` on top
+  of warning-burndown planning commit `ca7cccae`. Why: managed parser,
+  grounder, engine, and pipeline fixtures now provide a representative
+  workload for scoped coverage reporting over `pandaPI/runtime` and stable
+  chengdu-owned process-policy/adoption seams.
 
 - **v1.48 - 2026-08-11.** Added explicit Arc06
   compiler-warning-burndown scope before release publication. Surfaced by:
