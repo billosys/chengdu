@@ -60,6 +60,34 @@ large percentage over inherited algorithmic source.
 - Regression proof: the existing Make quality and behavior gates must still
   pass.
 
+## Active Coverage Scope
+
+`make coverage` is the active public entrypoint. It builds `pandaPI/runtime`
+with Clang source-based coverage flags, runs the runtime CTest workload, merges
+profiles with `llvm-profdata`, and writes generated reports under:
+
+- `build/coverage/runtime/<platform>/report/runtime-coverage-summary.txt`
+- `build/coverage/runtime/<platform>/report/runtime-coverage.txt`
+
+The report is owned-runtime evidence. It includes source and tests under
+`pandaPI/runtime/` and excludes generated output, inherited planner source,
+nested third-party source, `build/`, `dist/`, release packaging output,
+historical workbench output, and upstream checkout material from the ownership
+claim. Those excluded paths are not presented as chengdu-owned process-policy
+coverage.
+
+Adoption seam coverage is deferred for `pandapi_parser_native.cpp`,
+`pandapi_grounder_native.cpp`, and `pandapi_engine_native.cpp`. The technical
+reason is that the canonical parser, grounder, and engine builds still compile
+through copied inherited build trees with generated parser/lexer sources,
+nested third-party code, and component-specific Make/CMake flows; collecting
+and merging managed-fixture profiles there would mix owned adoption shims with
+inherited planner volume and generated code in this slice. Re-entry: add
+adoption seam coverage after the native binary build path can instrument those
+owned files directly, collect profiles from managed fixtures under canonical
+`pandapi-*` binaries, and exclude or separately report inherited/generated and
+third-party paths.
+
 ## Exit Criteria
 
 - `make coverage` or the accepted coverage entrypoint passes locally and emits

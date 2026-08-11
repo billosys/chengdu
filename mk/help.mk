@@ -40,6 +40,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make static-analysis$(RESET)    - Run shell syntax and shellcheck gates"; \
 	printf '%b\n' "  $(YELLOW)make safety-checks$(RESET)      - Run repository safety checks"; \
 	printf '%b\n' "  $(YELLOW)make format$(RESET)             - Format owned C++ source"; \
+	printf '%b\n' "  $(YELLOW)make coverage$(RESET)           - Run runtime Clang source coverage"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-runtime$(RESET)   - Build and run runtime ASan/UBSan gate"; \
 	printf '%b\n' "  $(YELLOW)make provenance-check$(RESET)   - Verify dist provenance"; \
 	printf '\n'; \

@@ -251,6 +251,7 @@ Developer gates:
 make format-check
 make build-runtime
 make test-runtime
+make coverage
 make test-runtime-sanitize
 ```
 
@@ -259,6 +260,28 @@ macOS Xcode `xcrun` lookup. `make build-runtime` configures the runtime with
 `CMAKE_EXPORT_COMPILE_COMMANDS=ON`, so the normal generated build tree under
 `build/runtime/<platform>/` contains `compile_commands.json` for future
 `clang-tidy` adoption. `make test-runtime` runs that build tree's CTest suite.
+`make coverage` uses Clang source-based coverage in a dedicated generated
+`build/coverage/runtime/<platform>/` tree. It builds `pandaPI/runtime/`, runs
+the runtime CTest workload, merges profiles with `llvm-profdata`, and writes
+the local reports to
+`build/coverage/runtime/<platform>/report/runtime-coverage-summary.txt` and
+`build/coverage/runtime/<platform>/report/runtime-coverage.txt`. The coverage
+claim is scoped to owned runtime source and tests under `pandaPI/runtime/`.
+Generated output, inherited planner source, nested third-party code, `build/`,
+`dist/`, release output, upstream checkout material, and historical workbench
+output are excluded from the owned-code signal rather than counted as runtime
+process-policy coverage.
+
+Adoption seam coverage for `pandapi_parser_native.cpp`,
+`pandapi_grounder_native.cpp`, and `pandapi_engine_native.cpp` is deferred. The
+canonical parser, grounder, and engine builds still run through copied
+inherited build trees with generated parser/lexer sources, nested third-party
+code, and component-specific Make/CMake flows, so managed-fixture profile
+collection is not isolated enough for this runtime coverage target. Re-entry:
+instrument the canonical `pandapi-*` binary builds so managed fixtures collect
+profiles for the owned native adoption files while inherited/generated and
+third-party paths are excluded or separately reported.
+
 `make test-runtime-sanitize` uses Clang ASan/UBSan flags in a dedicated
 `build/runtime-sanitize/<platform>/` tree, builds only `pandaPI/runtime/`, and
 runs CTest. It does not produce release binaries.
@@ -270,10 +293,7 @@ chengdu-owned adapter/facade code that can consume the runtime
 `compile_commands.json`; Makefile-era parser and grounder source is not forced
 into clang-tidy yet.
 
-Coverage and TSan are also explicit deferrals. Coverage should re-enter after
-Arc05 process fixtures exercise migrated binaries and representative runtime
-adapter paths, so reports measure meaningful owned process-policy coverage
-rather than inherited-source volume. TSan waits for representative subprocess,
+TSan is still an explicit deferral. It waits for representative subprocess,
 timeout/signal, and stream-draining workloads; it should stay separate from
 ASan/UBSan. Arc06 still owns release-package, license/NOTICE, test-only
 exclusion, checksum, manifest, wolong, package, publish, and publication

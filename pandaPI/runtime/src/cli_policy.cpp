@@ -171,9 +171,10 @@ command_identity_for(Component component, std::string invoked_name,
         cli_usage_error_status(component, surface_disposition));
   }
 
-  return StatusResult<CommandIdentity>::success(CommandIdentity{
-      std::string{canonical_command_name(component)}, std::move(invoked_name),
-      is_inherited_command_name(invoked_name)});
+  const bool compatibility_invocation = is_inherited_command_name(invoked_name);
+  return StatusResult<CommandIdentity>::success(
+      CommandIdentity{std::string{canonical_command_name(component)},
+                      std::move(invoked_name), compatibility_invocation});
 }
 
 StatusResult<StatusTarget> parse_status_target(std::string_view value,
