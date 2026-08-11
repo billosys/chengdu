@@ -15,6 +15,11 @@ test-contract-list:
 	printf '%b\n' "$(BLUE)Listing baseline contract fixtures...$(RESET)"
 	./tests/contract/run --list
 
+.PHONY: test-contract-list-managed
+test-contract-list-managed:
+	printf '%b\n' "$(BLUE)Listing managed contract fixtures...$(RESET)"
+	./tests/contract/run --contract --list
+
 .PHONY: test-contract
 test-contract: build
 	printf '%b\n' "$(BLUE)Running baseline contract fixtures...$(RESET)"

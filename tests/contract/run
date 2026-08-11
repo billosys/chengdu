@@ -6,6 +6,7 @@ usage() {
   cat <<'EOF'
 Use Make targets:
   make test-contract-list
+  make test-contract-list-managed
   make test-contract
   make test-contract-parser
   make test-contract-parser-managed

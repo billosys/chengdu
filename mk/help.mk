@@ -18,6 +18,8 @@ help:
 	printf '%b\n' "  $(YELLOW)make test$(RESET)               - Build and run runtime, contract, and smoke tests"; \
 	printf '%b\n' "  $(YELLOW)make test-runtime$(RESET)       - Run chengdu-owned runtime CTest suite"; \
 	printf '%b\n' "  $(YELLOW)make test-runtime-sanitize$(RESET) - Run runtime ASan/UBSan tests"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-list$(RESET) - List baseline contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-list-managed$(RESET) - List managed contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract$(RESET)      - Run all baseline contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-parser$(RESET) - Run parser contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-parser-managed$(RESET) - Run managed parser contract fixtures"; \
