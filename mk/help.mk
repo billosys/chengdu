@@ -28,6 +28,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make test-contract-engine$(RESET) - Run engine contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-engine-managed$(RESET) - Run managed engine contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-pipeline$(RESET) - Run pipeline contract fixtures"; \
+	printf '%b\n' "  $(YELLOW)make test-contract-pipeline-managed$(RESET) - Run managed pipeline contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make smoke$(RESET)              - Run positive smoke test"; \
 	printf '%b\n' "  $(YELLOW)make smoke-negative$(RESET)     - Run negative smoke test"; \
 	printf '%b\n' "  $(YELLOW)make test-corpus CORPUS_DIR=...$(RESET) - Run optional IPC corpus smoke"; \

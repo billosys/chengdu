@@ -7,7 +7,7 @@ behavior on their owning fixture paths.
 The runner implements these records with:
 
 ```sh
-./scripts/run-contract-fixtures.sh --contract --component parser
+make test-contract-parser-managed
 ```
 
 ## Comparison and Safety Policy
@@ -134,3 +134,14 @@ CI-safe unavailable-output cases.
 - `exit`: 31
 - `surface_disposition`: `legacy`
 - `safety`: these helper paths are not expanded into supported product behavior
+
+### parser-supervised-positive
+
+- `mode`: `parser-contract`
+- `component`: `parser`
+- `command.argv`: `pandapi-parser --supervised --status=stderr --output OUT.htn DOMAIN.hddl PROBLEM.hddl`
+- `artifact`: file-backed, complete `.htn`
+- `stdout.role`: empty
+- `stderr.role`: ANSI-free final status plus optional human diagnostics
+- `exit`: `ok` / 0
+- `final_status`: one stderr `PANDAPI_STATUS` record with `status=ok`

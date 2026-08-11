@@ -68,6 +68,12 @@ test-contract-pipeline: build
 	./tests/contract/run --baseline --component pipeline
 	printf '%b\n' "$(GREEN)Pipeline contract fixtures passed$(RESET)"
 
+.PHONY: test-contract-pipeline-managed
+test-contract-pipeline-managed: build
+	printf '%b\n' "$(BLUE)Running managed pipeline contract fixtures...$(RESET)"
+	./tests/contract/run --contract --component pipeline
+	printf '%b\n' "$(GREEN)Managed pipeline contract fixtures passed$(RESET)"
+
 .PHONY: smoke
 smoke: build
 	printf '%b\n' "$(BLUE)Running positive smoke test...$(RESET)"
@@ -103,5 +109,5 @@ contract-baseline: test-contract
 	printf '%b\n' "$(GREEN)contract-baseline alias passed$(RESET)"
 
 .PHONY: test
-test: build test-runtime test-contract test-contract-parser-managed test-contract-grounder-managed test-contract-engine-managed smoke smoke-negative
+test: build test-runtime test-contract test-contract-parser-managed test-contract-grounder-managed test-contract-engine-managed test-contract-pipeline-managed smoke smoke-negative
 	printf '%b\n' "$(GREEN)Test suite passed$(RESET)"

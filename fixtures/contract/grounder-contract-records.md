@@ -8,7 +8,7 @@ path.
 The runner implements these records with:
 
 ```sh
-./scripts/run-contract-fixtures.sh --contract --component grounder
+make test-contract-grounder-managed
 ```
 
 ## Comparison and Safety Policy
@@ -154,3 +154,14 @@ CI-safe unavailable-output cases.
 - `status`: `domain_no_plan`
 - `assessment`: not reachable through accepted grounder-only semantics in this slice
 - `re-entry`: add this fixture only if a later accepted grounder behavior can prove no usable grounded model or reachable goal without relying on engine search
+
+### grounder-supervised-positive
+
+- `mode`: `grounder-contract`
+- `component`: `grounder`
+- `command.argv`: `pandapi-grounder --supervised --status=stderr --output OUT.sas INPUT.htn`
+- `artifact`: file-backed, complete `.sas`
+- `stdout.role`: empty
+- `stderr.role`: ANSI-free final status plus optional human diagnostics
+- `exit`: `ok` / 0
+- `final_status`: one stderr `PANDAPI_STATUS` record with `status=ok`

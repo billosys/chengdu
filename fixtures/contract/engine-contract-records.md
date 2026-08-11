@@ -7,7 +7,7 @@ contract behavior remains accepted separately.
 The runner implements these records with:
 
 ```sh
-./tests/contract/run --contract --component engine
+make test-contract-engine-managed
 ```
 
 ## Comparison and Safety Policy
@@ -188,3 +188,14 @@ CI-safe unavailable-output cases, and a harness timeout around search.
 - `exit`: 33
 - `surface_disposition`: `future`
 - `safety`: BDD/CUDD remains future work and is not built into the supported normal-search surface
+
+### engine-supervised-positive
+
+- `mode`: `engine-contract`
+- `component`: `engine`
+- `command.argv`: `pandapi-engine --supervised --status=stderr --output OUT.plan INPUT.sas`
+- `artifact`: file-backed, complete `.plan`
+- `stdout.role`: empty
+- `stderr.role`: ANSI-free final status plus optional human diagnostics
+- `exit`: `ok` / 0
+- `final_status`: one stderr `PANDAPI_STATUS` record with `status=ok`

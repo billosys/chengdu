@@ -15,6 +15,7 @@ Use Make targets:
   make test-contract-engine
   make test-contract-engine-managed
   make test-contract-pipeline
+  make test-contract-pipeline-managed
 
   --baseline   run current inherited-binary baseline fixtures.
   --contract   run managed-process contract fixtures.
@@ -139,6 +140,7 @@ parser parser-final-status-fields
 parser parser-status-stream-legality
 parser parser-color-policy
 parser parser-legacy-surface-fencing
+parser parser-supervised-positive
 EOF
   fi
   if [ "$COMPONENT" = "all" ] || [ "$COMPONENT" = "grounder" ]; then
@@ -156,6 +158,7 @@ grounder grounder-color-policy
 grounder grounder-h2-surface-fencing
 grounder grounder-cpddl-fam-surface-fencing
 grounder grounder-domain-no-plan
+grounder grounder-supervised-positive
 EOF
   fi
   if [ "$COMPONENT" = "all" ] || [ "$COMPONENT" = "engine" ]; then
@@ -176,6 +179,15 @@ engine engine-interactive-surface-fencing
 engine engine-translation-surface-fencing
 engine engine-sat-surface-fencing
 engine engine-bdd-cudd-surface-fencing
+engine engine-supervised-positive
+EOF
+  fi
+  if [ "$COMPONENT" = "all" ] || [ "$COMPONENT" = "pipeline" ]; then
+    cat <<'EOF'
+pipeline pipeline-managed-file-chain
+pipeline pipeline-parser-stdout-to-grounder
+pipeline pipeline-grounder-stdout-to-engine
+pipeline pipeline-supervised-positive
 EOF
   fi
 }
@@ -205,10 +217,6 @@ if [ "$MODE" = "baseline" ]; then
 fi
 
 if [ "$MODE" = "contract" ]; then
-  if [ "$COMPONENT" != "parser" ] && [ "$COMPONENT" != "grounder" ] && [ "$COMPONENT" != "engine" ] && [ "$COMPONENT" != "all" ]; then
-    echo "contract-run: only parser, grounder, and engine contract fixtures exist in this slice" >&2
-    exit 1
-  fi
   if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
     if [ ! -x "$PC" ]; then
       echo "contract-run: missing binary: $PC; run make build-parser first" >&2
@@ -226,6 +234,14 @@ if [ "$MODE" = "contract" ]; then
       echo "contract-run: missing binary: $E; run make build-engine first" >&2
       exit 1
     fi
+  fi
+  if [ "$COMPONENT" = "pipeline" ]; then
+    for bin in "$PC" "$GC" "$E"; do
+      if [ ! -x "$bin" ]; then
+        echo "contract-run: missing binary: $bin; run make build first" >&2
+        exit 1
+      fi
+    done
   fi
 fi
 
@@ -850,6 +866,17 @@ parser_contract_legacy_surface_fencing() {
   expect_final_status "$id output helper" "stderr" "legacy_surface" "31" "policy_surface_failure" "legacy"
 }
 
+parser_contract_supervised_positive() {
+  local id="parser-supervised-positive" artifact="$WORK/parser-supervised-positive.htn"
+  run_capture "$id" "$PC" --supervised --status=stderr --output "$artifact" "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl"
+  expect_exit "$id" 0
+  expect_artifact_complete "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_final_status "$id" "stderr" "ok" "0" "success"
+}
+
 run_parser_contract_fixtures() {
   run_parser_contract_case "parser-canonical-file-success" parser_contract_canonical_file_success
   run_parser_contract_case "parser-canonical-stdout-success" parser_contract_canonical_stdout_success
@@ -862,6 +889,7 @@ run_parser_contract_fixtures() {
   run_parser_contract_case "parser-status-stream-legality" parser_contract_status_stream_legality
   run_parser_contract_case "parser-color-policy" parser_contract_color_policy
   run_parser_contract_case "parser-legacy-surface-fencing" parser_contract_legacy_surface_fencing
+  run_parser_contract_case "parser-supervised-positive" parser_contract_supervised_positive
 }
 
 expect_grounder_final_status() {
@@ -1061,6 +1089,17 @@ grounder_contract_domain_no_plan() {
   return 1
 }
 
+grounder_contract_supervised_positive() {
+  local id="grounder-supervised-positive" artifact="$WORK/grounder-supervised-positive.sas"
+  run_capture "$id" "$GC" --supervised --status=stderr --output "$artifact" "$FIXTURES_DIR/grounder/minimal.htn"
+  expect_exit "$id" 0
+  expect_artifact_complete "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_grounder_final_status "$id" "stderr" "ok" "0" "success"
+}
+
 run_grounder_contract_fixtures() {
   run_grounder_contract_case "grounder-canonical-file-success" grounder_contract_canonical_file_success
   run_grounder_contract_case "grounder-canonical-stdout-success" grounder_contract_canonical_stdout_success
@@ -1077,6 +1116,7 @@ run_grounder_contract_fixtures() {
   if [ "$CASE_ID" = "grounder-domain-no-plan" ]; then
     grounder_contract_domain_no_plan
   fi
+  run_grounder_contract_case "grounder-supervised-positive" grounder_contract_supervised_positive
 }
 
 run_engine_contract_case() {
@@ -1319,6 +1359,17 @@ engine_contract_bdd_cudd_surface_fencing() {
   expect_engine_final_status "$id" "stderr" "future_surface" "33" "policy_surface_failure" "future" "engine_bdd_cudd"
 }
 
+engine_contract_supervised_positive() {
+  local id="engine-supervised-positive" artifact="$WORK/engine-supervised-positive.plan"
+  run_capture "$id" "$E" --supervised --status=stderr --output "$artifact" "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 0
+  expect_artifact_complete "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id" "stderr" "ok" "0" "success"
+}
+
 run_engine_contract_fixtures() {
   run_engine_contract_case "engine-canonical-file-success" engine_contract_canonical_file_success
   run_engine_contract_case "engine-canonical-stdout-success" engine_contract_canonical_stdout_success
@@ -1336,6 +1387,139 @@ run_engine_contract_fixtures() {
   run_engine_contract_case "engine-translation-surface-fencing" engine_contract_translation_surface_fencing
   run_engine_contract_case "engine-sat-surface-fencing" engine_contract_sat_surface_fencing
   run_engine_contract_case "engine-bdd-cudd-surface-fencing" engine_contract_bdd_cudd_surface_fencing
+  run_engine_contract_case "engine-supervised-positive" engine_contract_supervised_positive
+}
+
+run_pipeline_contract_case() {
+  local id="$1"
+  shift
+  if contract_case_selected "$id"; then
+    "$@"
+  fi
+}
+
+pipeline_contract_managed_file_chain() {
+  local id="pipeline-managed-file-chain"
+  local htn="$WORK/$id.htn" sas="$WORK/$id.sas" plan="$WORK/$id.plan"
+
+  run_capture "$id-parser" "$PC" --status=stderr --output "$htn" "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl"
+  expect_exit "$id parser" 0
+  expect_artifact_complete "$id parser" "$htn"
+  expect_stdout_empty "$id parser"
+  expect_final_status "$id parser" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture "$id-grounder" "$GC" --status=stderr --output "$sas" "$htn"
+  expect_exit "$id grounder" 0
+  expect_artifact_complete "$id grounder" "$sas"
+  expect_stdout_empty "$id grounder"
+  expect_grounder_final_status "$id grounder" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture_timeout "$id-engine" "$ENGINE_TIMEOUT_SECS" "$E" --status=stderr --output "$plan" "$sas"
+  expect_exit "$id engine" 0
+  expect_artifact_complete "$id engine" "$plan"
+  expect_stdout_empty "$id engine"
+  expect_engine_final_status "$id engine" "stderr" "ok" "0" "success"
+}
+
+pipeline_contract_parser_stdout_to_grounder() {
+  local id="pipeline-parser-stdout-to-grounder"
+  local htn="$WORK/$id.htn" sas="$WORK/$id.sas"
+
+  run_capture "$id-parser" "$PC" --status=stderr --output - "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl"
+  expect_exit "$id parser stdout" 0
+  expect_artifact_complete "$id parser stdout" "$OBS_OUT"
+  expect_stdout_not_contains "$id parser stdout" "PANDAPI_STATUS"
+  expect_no_ansi "$id parser stdout" "$OBS_OUT" "stdout artifact"
+  expect_final_status "$id parser stdout" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+  cp "$OBS_OUT" "$htn"
+
+  run_capture "$id-grounder" "$GC" --status=stderr --output "$sas" "$htn"
+  expect_exit "$id grounder" 0
+  expect_artifact_complete "$id grounder" "$sas"
+  expect_stdout_empty "$id grounder"
+  expect_grounder_final_status "$id grounder" "stderr" "ok" "0" "success"
+}
+
+pipeline_contract_grounder_stdout_to_engine() {
+  local id="pipeline-grounder-stdout-to-engine"
+  local htn="$WORK/$id.htn" sas="$WORK/$id.sas" plan="$WORK/$id.plan"
+
+  run_capture "$id-parser" "$PC" --status=stderr --output "$htn" "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl"
+  expect_exit "$id parser" 0
+  expect_artifact_complete "$id parser" "$htn"
+  expect_stdout_empty "$id parser"
+  expect_final_status "$id parser" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture "$id-grounder" "$GC" --status=stderr --output - "$htn"
+  expect_exit "$id grounder stdout" 0
+  expect_artifact_complete "$id grounder stdout" "$OBS_OUT"
+  expect_stdout_not_contains "$id grounder stdout" "PANDAPI_STATUS"
+  expect_no_ansi "$id grounder stdout" "$OBS_OUT" "stdout artifact"
+  expect_grounder_final_status "$id grounder stdout" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+  cp "$OBS_OUT" "$sas"
+
+  run_capture_timeout "$id-engine" "$ENGINE_TIMEOUT_SECS" "$E" --status=stderr --output "$plan" "$sas"
+  expect_exit "$id engine" 0
+  expect_artifact_complete "$id engine" "$plan"
+  expect_stdout_empty "$id engine"
+  expect_engine_final_status "$id engine" "stderr" "ok" "0" "success"
+}
+
+pipeline_contract_supervised_positive() {
+  local id="pipeline-supervised-positive"
+  local htn="$WORK/$id.htn" sas="$WORK/$id.sas" plan="$WORK/$id.plan"
+
+  run_capture "$id-parser" "$PC" --supervised --status=stderr --output "$htn" "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl"
+  expect_exit "$id parser supervised" 0
+  expect_artifact_complete "$id parser supervised" "$htn"
+  expect_stdout_empty "$id parser supervised"
+  expect_no_ansi "$id parser supervised" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id parser supervised" "$OBS_ERR" "stderr"
+  expect_final_status "$id parser supervised" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture "$id-grounder" "$GC" --supervised --status=stderr --output "$sas" "$htn"
+  expect_exit "$id grounder supervised" 0
+  expect_artifact_complete "$id grounder supervised" "$sas"
+  expect_stdout_empty "$id grounder supervised"
+  expect_no_ansi "$id grounder supervised" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id grounder supervised" "$OBS_ERR" "stderr"
+  expect_grounder_final_status "$id grounder supervised" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture_timeout "$id-engine" "$ENGINE_TIMEOUT_SECS" "$E" --supervised --status=stderr --output "$plan" "$sas"
+  expect_exit "$id engine supervised" 0
+  expect_artifact_complete "$id engine supervised" "$plan"
+  expect_stdout_empty "$id engine supervised"
+  expect_no_ansi "$id engine supervised" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id engine supervised" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id engine supervised" "stderr" "ok" "0" "success"
+}
+
+run_pipeline_contract_fixtures() {
+  run_pipeline_contract_case "pipeline-managed-file-chain" pipeline_contract_managed_file_chain
+  run_pipeline_contract_case "pipeline-parser-stdout-to-grounder" pipeline_contract_parser_stdout_to_grounder
+  run_pipeline_contract_case "pipeline-grounder-stdout-to-engine" pipeline_contract_grounder_stdout_to_engine
+  run_pipeline_contract_case "pipeline-supervised-positive" pipeline_contract_supervised_positive
 }
 
 if [ "$MODE" = "contract" ]; then
@@ -1348,6 +1532,9 @@ if [ "$MODE" = "contract" ]; then
   fi
   if [ "$COMPONENT" = "engine" ] || [ "$COMPONENT" = "all" ]; then
     run_engine_contract_fixtures
+  fi
+  if [ "$COMPONENT" = "pipeline" ] || [ "$COMPONENT" = "all" ]; then
+    run_pipeline_contract_fixtures
   fi
   echo "contract-run: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed (contract, $COMPONENT, $PLATFORM)"
   if [ "$FAIL_COUNT" -ne 0 ]; then

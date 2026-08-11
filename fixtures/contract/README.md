@@ -16,8 +16,9 @@ Fixture records use a dependency-free, YAML-like documentation format in
 [`baseline-records.md`](baseline-records.md) and
 [`parser-contract-records.md`](parser-contract-records.md) and
 [`grounder-contract-records.md`](grounder-contract-records.md) and
-[`engine-contract-records.md`](engine-contract-records.md). The fields mirror
-the accepted Arc04 runtime fixture vocabulary:
+[`engine-contract-records.md`](engine-contract-records.md) and
+[`pipeline-contract-records.md`](pipeline-contract-records.md). The fields
+mirror the accepted Arc04 runtime fixture vocabulary:
 
 - `id`: stable fixture identifier used by the runner output.
 - `owner`: planning owner, currently Arc05 Slice02 for baseline scaffold rows.
@@ -88,18 +89,13 @@ Build first, then run:
 
 ```sh
 make build
-./tests/contract/run --baseline
-./tests/contract/run --baseline --component parser
-./tests/contract/run --contract --component parser
-./tests/contract/run --contract --component parser --case parser-canonical-file-success
-./tests/contract/run --contract --component grounder
-./tests/contract/run --contract --component grounder --case grounder-canonical-file-success
-./tests/contract/run --contract --component engine
-./tests/contract/run --contract --component engine --case engine-canonical-file-success
-./tests/contract/run --list
-./tests/contract/run --contract --component parser --list
-./tests/contract/run --contract --component grounder --list
-./tests/contract/run --contract --component engine --list
+make test-contract
+make test-contract-parser-managed
+make test-contract-grounder-managed
+make test-contract-engine-managed
+make test-contract-pipeline-managed
+make test-contract-list
+make test-contract-list-managed
 ```
 
 The runner emits labeled PASS/FAIL lines and exits nonzero if any selected
