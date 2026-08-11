@@ -252,6 +252,7 @@ make format-check
 make build-runtime
 make test-runtime
 make coverage
+make static-analysis-cpp
 make test-runtime-sanitize
 ```
 
@@ -282,16 +283,39 @@ instrument the canonical `pandapi-*` binary builds so managed fixtures collect
 profiles for the owned native adoption files while inherited/generated and
 third-party paths are excluded or separately reported.
 
+`make static-analysis-cpp` configures a Debug runtime build under
+`build/static-analysis/runtime/<platform>/build/` with
+`CMAKE_EXPORT_COMPILE_COMMANDS=ON`, reads that `compile_commands.json`, and
+runs `clang-tidy` over runtime source and test translation units that are
+present in the compile database. The default check family is
+`clang-analyzer-*`, with a header filter that includes
+`pandaPI/runtime/include`, `pandaPI/runtime/src`, and
+`pandaPI/runtime/tests`. The target uses `CLANG_TIDY` if set, then PATH, then
+`xcrun`, then common Homebrew LLVM locations. If `clang-tidy` is unavailable,
+it prints an explicit `SKIP` line with the re-entry condition instead of
+silently succeeding.
+
+The C++ static-analysis gate excludes inherited planner code under
+`pandaPI/parser`, `pandaPI/grounder`, and `pandaPI/engine`; generated
+parser/lexer output; nested third-party source; and generated `build`, `dist`,
+release, upstream, or workbench output from the owned runtime signal.
+Standalone `scan-build` is deferred because the `clang-tidy`
+`clang-analyzer-*` pass already provides the reproducible analyzer signal for
+this slice without duplicate build volume. Re-entry: add a separate Clang
+Static Analyzer target only if Slice05 warning ownership or Slice06 sanitizer
+triage needs a distinct path-sensitive report.
+
+Adoption seam static analysis for `pandapi_parser_native.cpp`,
+`pandapi_grounder_native.cpp`, and `pandapi_engine_native.cpp` is deferred
+until canonical `pandapi-*` builds expose reliable compile commands for those
+owned native files while inherited/generated and third-party paths remain
+excluded or separately classified. No suppressions or `NOLINT` annotations are
+used by the current runtime gate; future suppressions must name the check,
+stay narrow, and include a short rationale.
+
 `make test-runtime-sanitize` uses Clang ASan/UBSan flags in a dedicated
 `build/runtime-sanitize/<platform>/` tree, builds only `pandaPI/runtime/`, and
 runs CTest. It does not produce release binaries.
-
-`clang-tidy` remains deferred behind an installed-toolchain gate because the
-default local environment does not provide `clang-tidy` on `PATH`. The
-intended first scope is the same owned runtime source set and future
-chengdu-owned adapter/facade code that can consume the runtime
-`compile_commands.json`; Makefile-era parser and grounder source is not forced
-into clang-tidy yet.
 
 TSan is still an explicit deferral. It waits for representative subprocess,
 timeout/signal, and stream-draining workloads; it should stay separate from

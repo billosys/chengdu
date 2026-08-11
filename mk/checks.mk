@@ -46,8 +46,59 @@ shellcheck:
 	shellcheck $(SHELL_SCRIPTS)
 	printf '%b\n' "$(GREEN)shellcheck passed$(RESET)"
 
+.PHONY: static-analysis-cpp
+static-analysis-cpp:
+	set -e; \
+	printf '%b\n' "$(BLUE)Running owned C++ static analysis...$(RESET)"; \
+	find_tool() { \
+	  local name="$$1"; \
+	  if command -v "$$name" >/dev/null 2>&1; then \
+	    command -v "$$name"; \
+	    return 0; \
+	  fi; \
+	  if command -v xcrun >/dev/null 2>&1; then \
+	    xcrun --find "$$name" 2>/dev/null || true; \
+	  fi; \
+	  for path in \
+	    "/opt/homebrew/opt/llvm/bin/$$name" \
+	    "/opt/homebrew/opt/llvm@21/bin/$$name" \
+	    "/usr/local/opt/llvm/bin/$$name"; do \
+	    if [ -x "$$path" ]; then \
+	      printf '%s\n' "$$path"; \
+	      return 0; \
+	    fi; \
+	  done; \
+	}; \
+	CLANG_TIDY_BIN="$${CLANG_TIDY:-$$(find_tool clang-tidy)}"; \
+	if [ -z "$$CLANG_TIDY_BIN" ]; then \
+	  printf '%b\n' "$(YELLOW)static-analysis-cpp: SKIP: missing tool clang-tidy; Re-entry: install clang-tidy or set CLANG_TIDY=/path/to/clang-tidy and rerun make static-analysis-cpp$(RESET)"; \
+	  exit 0; \
+	fi; \
+	printf '%b\n' "$(CYAN)Using $$CLANG_TIDY_BIN ($$("$$CLANG_TIDY_BIN" --version | head -1))$(RESET)"; \
+	mkdir -p "$(RUNTIME_STATIC_ANALYSIS_BUILD_DIR)"; \
+	cmake -S "$(RUNTIME_SOURCE_DIR)" -B "$(RUNTIME_STATIC_ANALYSIS_BUILD_DIR)" \
+	  -DCMAKE_BUILD_TYPE=Debug \
+	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON; \
+	compile_db="$(RUNTIME_STATIC_ANALYSIS_BUILD_DIR)/compile_commands.json"; \
+	if [ ! -f "$$compile_db" ]; then \
+	  printf '%b\n' "$(RED)static-analysis-cpp: $$compile_db missing$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	files="$$(sed -nE 's#^[[:space:]]*\"file\": \"([^\"]*pandaPI/runtime/(src|tests)/[^\"]*[.](cpp|cc|cxx))\",?#\1#p' "$$compile_db" | sort -u)"; \
+	if [ -z "$$files" ]; then \
+	  printf '%b\n' "$(RED)static-analysis-cpp: no runtime source or test translation units found in $$compile_db$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	printf '%b\n' "$(CYAN)Checks: $(CLANG_TIDY_CHECKS)$(RESET)"; \
+	printf '%b\n' "$(CYAN)Header filter: $(CLANG_TIDY_HEADER_FILTER)$(RESET)"; \
+	"$$CLANG_TIDY_BIN" -p "$(RUNTIME_STATIC_ANALYSIS_BUILD_DIR)" \
+	  -checks="$(CLANG_TIDY_CHECKS)" \
+	  -header-filter="$(CLANG_TIDY_HEADER_FILTER)" \
+	  $$files; \
+	printf '%b\n' "$(GREEN)Owned C++ static analysis passed$(RESET)"
+
 .PHONY: static-analysis
-static-analysis: shell-syntax shellcheck
+static-analysis: shell-syntax shellcheck static-analysis-cpp
 	printf '%b\n' "$(GREEN)Static analysis passed$(RESET)"
 
 .PHONY: workflow-make-entrypoints-check

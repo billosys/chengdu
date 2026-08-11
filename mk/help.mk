@@ -37,7 +37,8 @@ help:
 	printf '%b\n' "  $(YELLOW)make check$(RESET)               - Run pre-commit lint, static, safety, test, and provenance gates"; \
 	printf '%b\n' "  $(YELLOW)make actionlint$(RESET)          - Run downloaded actionlint"; \
 	printf '%b\n' "  $(YELLOW)make format-check$(RESET)       - Check owned C++ formatting"; \
-	printf '%b\n' "  $(YELLOW)make static-analysis$(RESET)    - Run shell syntax and shellcheck gates"; \
+	printf '%b\n' "  $(YELLOW)make static-analysis$(RESET)    - Run shell and owned C++ static-analysis gates"; \
+	printf '%b\n' "  $(YELLOW)make static-analysis-cpp$(RESET) - Run clang-tidy over owned runtime C++"; \
 	printf '%b\n' "  $(YELLOW)make safety-checks$(RESET)      - Run repository safety checks"; \
 	printf '%b\n' "  $(YELLOW)make format$(RESET)             - Format owned C++ source"; \
 	printf '%b\n' "  $(YELLOW)make coverage$(RESET)           - Run runtime Clang source coverage"; \

@@ -51,6 +51,62 @@ ownership profile as chengdu-owned runtime code.
 - If suppressions are added, they must be narrow, justified, and documented.
 - Existing Make quality and behavior gates must still pass.
 
+## Active Static-Analysis Scope
+
+`make static-analysis-cpp` is the active public C++ static-analysis entrypoint.
+It configures a Debug runtime CMake build with
+`CMAKE_EXPORT_COMPILE_COMMANDS=ON` under
+`build/static-analysis/runtime/<platform>/build/`, reads that
+`compile_commands.json`, and runs `clang-tidy` over the runtime source and test
+translation units that are present in the compile database.
+
+The first blocking check family is `clang-analyzer-*`, invoked through
+`clang-tidy` with a header filter for `pandaPI/runtime/include`,
+`pandaPI/runtime/src`, and `pandaPI/runtime/tests`. This gives a reproducible
+Clang Static Analyzer signal for owned runtime/process-policy code without
+running a separate `scan-build` pass over duplicate build volume. Standalone
+`scan-build` remains deferred; Re-entry: add a separate analyzer target only if
+Slice05 warning ownership or Slice06 sanitizer triage needs a path-sensitive
+report distinct from the `clang-tidy` analyzer checks.
+
+Tool resolution is explicit. The target uses `CLANG_TIDY` if set, then PATH,
+then `xcrun`, then common Homebrew LLVM locations. If `clang-tidy` is still
+unavailable, the target prints a `SKIP` line naming the missing tool and the
+re-entry condition; silent success is not acceptable.
+
+Included paths:
+
+- `pandaPI/runtime/src/*.cpp`
+- `pandaPI/runtime/tests/*.cpp` when each file appears in the compile database
+- headers under `pandaPI/runtime/include/` reached through those translation
+  units
+
+Excluded paths:
+
+- inherited planner source under `pandaPI/parser`, `pandaPI/grounder`, and
+  `pandaPI/engine`
+- generated parser/lexer output
+- nested third-party source such as cpddl, CUDD, bliss, and lpsolve
+- generated `build`, `dist`, release, upstream, and workbench output
+
+Deferred paths:
+
+- adoption seams `pandapi_parser_native.cpp`,
+  `pandapi_grounder_native.cpp`, and `pandapi_engine_native.cpp`
+
+Those adoption seams are deferred because their current compile commands are
+produced through component-specific inherited build trees and copied source
+directories. Re-entry: include them after canonical `pandapi-*` build
+instrumentation can expose reliable compile commands for the owned native
+files while inherited/generated and third-party paths remain excluded or
+separately classified.
+
+No suppressions or `NOLINT` annotations are added in this slice. Future
+suppressions must be narrow, colocated with the finding where practical, name
+the check being suppressed, and carry a short rationale. Broad unowned
+suppressions for inherited/generated/third-party code are not part of this
+owned runtime gate.
+
 ## Exit Criteria
 
 - A contributor can discover and run the static-analysis target from Make.
