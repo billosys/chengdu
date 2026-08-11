@@ -144,10 +144,17 @@ amendments.
   [`slice06-parser-native-contract-cutover/cc-prompt.md`](slice06-parser-native-contract-cutover/cc-prompt.md),
   [`slice06-parser-native-contract-cutover/closing-report.md`](slice06-parser-native-contract-cutover/closing-report.md),
   [`slice06-parser-native-contract-cutover/cdc-verification.md`](slice06-parser-native-contract-cutover/cdc-verification.md).
-- **slice07 grounder-native-contract-cutover - open.** Open set:
+- **slice07 grounder-native-contract-cutover - closed and CDC-verified.**
+  Slice set:
   [`slice07-grounder-native-contract-cutover/slice-doc.md`](slice07-grounder-native-contract-cutover/slice-doc.md),
   [`slice07-grounder-native-contract-cutover/ledger.md`](slice07-grounder-native-contract-cutover/ledger.md),
-  [`slice07-grounder-native-contract-cutover/cc-prompt.md`](slice07-grounder-native-contract-cutover/cc-prompt.md).
+  [`slice07-grounder-native-contract-cutover/cc-prompt.md`](slice07-grounder-native-contract-cutover/cc-prompt.md),
+  [`slice07-grounder-native-contract-cutover/closing-report.md`](slice07-grounder-native-contract-cutover/closing-report.md),
+  [`slice07-grounder-native-contract-cutover/cdc-verification.md`](slice07-grounder-native-contract-cutover/cdc-verification.md).
+- **slice08 engine-contract-adoption - open.** Open set:
+  [`slice08-engine-contract-adoption/slice-doc.md`](slice08-engine-contract-adoption/slice-doc.md),
+  [`slice08-engine-contract-adoption/ledger.md`](slice08-engine-contract-adoption/ledger.md),
+  [`slice08-engine-contract-adoption/cc-prompt.md`](slice08-engine-contract-adoption/cc-prompt.md).
 
 ## 6. Planned implementation surface
 
@@ -207,6 +214,14 @@ arc's `closing-report.md`.
   slice proves the migration is safer than preserving compatibility.
 
 ## 9. Version history
+
+- **v1.12 - 2026-08-10.** Marked Slice07
+  grounder-native-contract-cutover closed and CDC-verified, and opened
+  Slice08 engine-contract-adoption. Surfaced by: CDC reproduction of CC
+  implementation commit `43151b5f`. Why: parser and grounder now both build
+  and test through native canonical `pandapi-*` artifacts with old-name
+  artifacts retired, leaving engine as the final inherited primary binary
+  before Arc05 synthesis.
 
 - **v1.11 - 2026-08-10.** Marked Slice06
   parser-native-contract-cutover closed and CDC-verified, and opened Slice07

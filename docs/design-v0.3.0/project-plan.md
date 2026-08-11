@@ -272,10 +272,16 @@ documentation/tutorial, and release-publication work.
   [`arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/cc-prompt.md`](arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/cc-prompt.md),
   [`arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/closing-report.md`](arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/closing-report.md),
   [`arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/cdc-verification.md`](arc05-binary-contract-adoption/slice06-parser-native-contract-cutover/cdc-verification.md).
-  Slice07 grounder-native-contract-cutover is open:
+  Slice07 grounder-native-contract-cutover is closed and CDC-verified:
   [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/slice-doc.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/slice-doc.md),
   [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/ledger.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/ledger.md),
-  [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cc-prompt.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cc-prompt.md).
+  [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cc-prompt.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cc-prompt.md),
+  [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/closing-report.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/closing-report.md),
+  [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cdc-verification.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cdc-verification.md).
+  Slice08 engine-contract-adoption is open:
+  [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/slice-doc.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/slice-doc.md),
+  [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/ledger.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/ledger.md),
+  [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/cc-prompt.md).
 - **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
   evidence and should be planned from Arc05's final conformance and CI/test
   hardening handoff. It owns the remaining local/CI matrix, expanded process
@@ -410,6 +416,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.44 - 2026-08-10.** Marked Arc05 Slice07
+  grounder-native-contract-cutover closed and CDC-verified, and opened Arc05
+  Slice08 engine-contract-adoption. Surfaced by: CDC reproduction of CC
+  implementation commit `43151b5f`. Why: parser and grounder now both have
+  native canonical managed-process artifacts, leaving inherited
+  `pandaPIengine` as the final primary-binary adoption target before Arc05
+  synthesis.
 
 - **v1.43 - 2026-08-10.** Marked Arc05 Slice06
   parser-native-contract-cutover closed and CDC-verified, and opened Arc05
