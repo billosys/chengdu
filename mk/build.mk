@@ -51,7 +51,7 @@ build-parser: build-runtime
 	REPO_ROOT="$(CURDIR)"; \
 	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
-	SRC_DIR="$$(prepare_build_source_copy pandaPIparser)"; \
+	SRC_DIR="$$(prepare_build_source_copy parser)"; \
 	DIST_DIR="$$REPO_ROOT/dist/$$PLATFORM"; \
 	. "$$REPO_ROOT/vendor.env"; \
 	$(MAKE) -C "$$SRC_DIR" \
@@ -76,7 +76,7 @@ build-grounder: build-runtime
 	REPO_ROOT="$(CURDIR)"; \
 	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
-	SRC_ROOT="$$(prepare_build_source_copy pandaPIgrounder)"; \
+	SRC_ROOT="$$(prepare_build_source_copy grounder)"; \
 	CPDDL_DIR="$$SRC_ROOT/cpddl"; \
 	DIST_DIR="$$REPO_ROOT/dist/$$PLATFORM"; \
 	. "$$REPO_ROOT/vendor.env"; \
@@ -112,7 +112,7 @@ build-engine: build-runtime
 	REPO_ROOT="$(CURDIR)"; \
 	. tools/shared/platform; \
 	PLATFORM="$$(detect_platform)"; \
-	SRC_DIR="$$(prepare_build_source_copy pandaPI""engine)"; \
+	SRC_DIR="$$(prepare_build_source_copy engine)"; \
 	BUILD_DIR="$$SRC_DIR/build"; \
 	DIST_DIR="$$REPO_ROOT/dist/$$PLATFORM"; \
 	. "$$REPO_ROOT/vendor.env"; \

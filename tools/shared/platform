@@ -81,7 +81,7 @@ provenance_get_field() {
   printf '%s\n' "$block" | sed -n "s/^$key=//p"
 }
 
-# prepare_build_source_copy <pandaPI-component> — create and return a
+# prepare_build_source_copy <component-dir> — create and return a
 # disposable source copy used for build-time mutation. The sourcing script
 # must define REPO_ROOT and PLATFORM.
 prepare_build_source_copy() {

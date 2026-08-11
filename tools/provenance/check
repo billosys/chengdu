@@ -77,7 +77,8 @@ expect_field() {
 check_component() {
   local name="$1" metadata="$2"
   local block chengdu_commit source_prefix upstream_url upstream_sha import_commit patches compiler
-  local expected_chengdu expected_prefix expected_url expected_upstream expected_import_ref expected_import
+  local expected_chengdu expected_prefix expected_import_prefix expected_url
+  local expected_upstream expected_import_ref expected_import
 
   block="$(provenance_get_block "$FILE" "$name")"
   if [ -z "$block" ]; then
@@ -99,6 +100,10 @@ check_component() {
 
   expected_chengdu="$(git -C "$REPO_ROOT" rev-parse HEAD)"
   expected_prefix="$(vendor_field "$metadata" PREFIX)"
+  expected_import_prefix="$(vendor_field "$metadata" IMPORT_PREFIX)"
+  if [ -z "$expected_import_prefix" ]; then
+    expected_import_prefix="$expected_prefix"
+  fi
   expected_url="$(vendor_field "$metadata" URL)"
   expected_upstream="$(vendor_field "$metadata" UPSTREAM_SHA)"
   expected_import_ref="$(vendor_field "$metadata" IMPORT_COMMIT)"
@@ -119,8 +124,8 @@ check_component() {
     fail "$name: import_commit is not an ancestor of HEAD: $expected_import"
   fi
 
-  if ! git -C "$REPO_ROOT" cat-file -e "$expected_import:$expected_prefix" 2>/dev/null; then
-    fail "$name: source_prefix was not present at import_commit: $expected_prefix"
+  if ! git -C "$REPO_ROOT" cat-file -e "$expected_import:$expected_import_prefix" 2>/dev/null; then
+    fail "$name: import_prefix was not present at import_commit: $expected_import_prefix"
   fi
 
   if [ -z "$compiler" ]; then
