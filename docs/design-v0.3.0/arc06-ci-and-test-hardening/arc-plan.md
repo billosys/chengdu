@@ -104,11 +104,16 @@ deferrals that must be checked before package publication.
   [`slice02-process-fixture-expansion/cc-prompt.md`](slice02-process-fixture-expansion/cc-prompt.md),
   [`slice02-process-fixture-expansion/closing-report.md`](slice02-process-fixture-expansion/closing-report.md),
   [`slice02-process-fixture-expansion/cdc-verification.md`](slice02-process-fixture-expansion/cdc-verification.md).
-- **slice03 coverage-gate - open.** Slice set:
+- **slice03 coverage-gate - closed and CDC-verified.** Slice set:
   [`slice03-coverage-gate/slice-doc.md`](slice03-coverage-gate/slice-doc.md),
   [`slice03-coverage-gate/ledger.md`](slice03-coverage-gate/ledger.md),
-  [`slice03-coverage-gate/cc-prompt.md`](slice03-coverage-gate/cc-prompt.md).
-- **slice04 static-analysis-gate - planned.**
+  [`slice03-coverage-gate/cc-prompt.md`](slice03-coverage-gate/cc-prompt.md),
+  [`slice03-coverage-gate/closing-report.md`](slice03-coverage-gate/closing-report.md),
+  [`slice03-coverage-gate/cdc-verification.md`](slice03-coverage-gate/cdc-verification.md).
+- **slice04 static-analysis-gate - open.** Slice set:
+  [`slice04-static-analysis-gate/slice-doc.md`](slice04-static-analysis-gate/slice-doc.md),
+  [`slice04-static-analysis-gate/ledger.md`](slice04-static-analysis-gate/ledger.md),
+  [`slice04-static-analysis-gate/cc-prompt.md`](slice04-static-analysis-gate/cc-prompt.md).
 - **slice05 compiler-warning-burndown - planned.** Opens after static-analysis
   classification can inform the warning inventory and before sanitizer signal
   is treated as release-quality.
@@ -175,6 +180,15 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.4 - 2026-08-11.** Marked Slice03 coverage-gate closed and
+  CDC-verified, and opened Slice04 static-analysis-gate. Surfaced by: CDC
+  reproduction of CC commit `dffa6baf`. Why: `make coverage` now produces
+  scoped owned-runtime coverage evidence under `build/coverage/runtime/`, with
+  inherited/generated/third-party exclusions and explicit adoption-seam
+  deferral. The next release-readiness risk is Make-backed C++ static analysis
+  over owned runtime/process-policy code, with toolchain, suppression, and path
+  ownership documented before compiler-warning burndown.
 
 - **v1.3 - 2026-08-11.** Marked Slice02 process-fixture-expansion closed and
   CDC-verified, and opened Slice03 coverage-gate. Surfaced by: CDC

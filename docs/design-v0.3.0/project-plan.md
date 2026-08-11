@@ -301,10 +301,16 @@ documentation/tutorial and release-publication work.
   [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md),
   [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/closing-report.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/closing-report.md),
   [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cdc-verification.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cdc-verification.md).
-  Slice03 coverage-gate is open:
+  Slice03 coverage-gate is closed and CDC-verified:
   [`arc06-ci-and-test-hardening/slice03-coverage-gate/slice-doc.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/slice-doc.md),
   [`arc06-ci-and-test-hardening/slice03-coverage-gate/ledger.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/ledger.md),
-  [`arc06-ci-and-test-hardening/slice03-coverage-gate/cc-prompt.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/cc-prompt.md).
+  [`arc06-ci-and-test-hardening/slice03-coverage-gate/cc-prompt.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/cc-prompt.md),
+  [`arc06-ci-and-test-hardening/slice03-coverage-gate/closing-report.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/closing-report.md),
+  [`arc06-ci-and-test-hardening/slice03-coverage-gate/cdc-verification.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/cdc-verification.md).
+  Slice04 static-analysis-gate is open:
+  [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/slice-doc.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/slice-doc.md),
+  [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/ledger.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/ledger.md),
+  [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/cc-prompt.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/cc-prompt.md).
   Arc06 owns the remaining local/CI matrix, expanded process fixtures,
   coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates,
   TSan disposition, and release-readiness evidence needed by later release
@@ -438,6 +444,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.50 - 2026-08-11.** Marked Arc06 Slice03 coverage-gate closed and
+  CDC-verified, and opened Arc06 Slice04 static-analysis-gate. Surfaced by:
+  CDC reproduction of CC commit `dffa6baf`. Why: `make coverage` now produces
+  scoped owned-runtime coverage reports with documented exclusions, generated
+  report hygiene, and an explicit adoption-seam deferral. Static analysis is
+  the next local/CI hardening layer before compiler-warning burndown and
+  sanitizer ownership are treated as release-quality evidence.
 
 - **v1.49 - 2026-08-11.** Marked Arc06 Slice02
   process-fixture-expansion closed and CDC-verified, and opened Arc06 Slice03
