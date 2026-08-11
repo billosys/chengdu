@@ -289,10 +289,16 @@ documentation/tutorial and release-publication work.
   [`arc05-binary-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/closing-report.md).
 - **arc06 - active.** Detailed plan:
   [`arc06-ci-and-test-hardening/arc-plan.md`](arc06-ci-and-test-hardening/arc-plan.md).
-  Slice01 fixture-gap-inventory is open:
+  Slice01 fixture-gap-inventory is closed and CDC-verified:
   [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/slice-doc.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/slice-doc.md),
   [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/ledger.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/ledger.md),
-  [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cc-prompt.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cc-prompt.md).
+  [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cc-prompt.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cc-prompt.md),
+  [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/closing-report.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/closing-report.md),
+  [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cdc-verification.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/cdc-verification.md).
+  Slice02 process-fixture-expansion is open:
+  [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/slice-doc.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/slice-doc.md),
+  [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/ledger.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/ledger.md),
+  [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md).
   Arc06 owns the remaining local/CI matrix, expanded process fixtures,
   coverage, heavier sanitizer/static-analysis gates, TSan disposition, and
   release-readiness evidence needed by later release dry-runs.
@@ -425,6 +431,13 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.47 - 2026-08-11.** Marked Arc06 Slice01 fixture-gap-inventory closed
+  and CDC-verified, and opened Arc06 Slice02 process-fixture-expansion.
+  Surfaced by: CDC reproduction of CC commit `91cc50b6`. Why: the inventory
+  showed current managed component coverage is strong but managed pipeline
+  fixtures are absent, so Arc06 can now expand representative process fixtures
+  before coverage, sanitizer, static-analysis, and TSan gates.
 
 - **v1.46 - 2026-08-11.** Opened Arc06 `ci-and-test-hardening` with
   Slice01 fixture-gap-inventory. Surfaced by: Arc05 close and post-Arc05

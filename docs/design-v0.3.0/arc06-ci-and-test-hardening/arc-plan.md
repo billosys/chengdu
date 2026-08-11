@@ -88,12 +88,16 @@ deferrals that must be checked before package publication.
 
 ## 5. Current status
 
-- **slice01 fixture-gap-inventory - open.** Slice set:
+- **slice01 fixture-gap-inventory - closed and CDC-verified.** Slice set:
   [`slice01-fixture-gap-inventory/slice-doc.md`](slice01-fixture-gap-inventory/slice-doc.md),
   [`slice01-fixture-gap-inventory/ledger.md`](slice01-fixture-gap-inventory/ledger.md),
-  [`slice01-fixture-gap-inventory/cc-prompt.md`](slice01-fixture-gap-inventory/cc-prompt.md).
-- **slice02 process-fixture-expansion - planned.** Opens after Slice01 maps
-  the missing fixture obligations and chooses the first expansion batch.
+  [`slice01-fixture-gap-inventory/cc-prompt.md`](slice01-fixture-gap-inventory/cc-prompt.md),
+  [`slice01-fixture-gap-inventory/closing-report.md`](slice01-fixture-gap-inventory/closing-report.md),
+  [`slice01-fixture-gap-inventory/cdc-verification.md`](slice01-fixture-gap-inventory/cdc-verification.md).
+- **slice02 process-fixture-expansion - open.** Slice set:
+  [`slice02-process-fixture-expansion/slice-doc.md`](slice02-process-fixture-expansion/slice-doc.md),
+  [`slice02-process-fixture-expansion/ledger.md`](slice02-process-fixture-expansion/ledger.md),
+  [`slice02-process-fixture-expansion/cc-prompt.md`](slice02-process-fixture-expansion/cc-prompt.md).
 - **slice03 coverage-gate - planned.** Opens after fixture workload is
   representative enough that coverage means something.
 - **slice04 static-analysis-gate - planned.**
@@ -158,6 +162,14 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.1 - 2026-08-11.** Marked Slice01 fixture-gap-inventory closed and
+  CDC-verified, and opened Slice02 process-fixture-expansion. Surfaced by:
+  CDC reproduction of CC commit `91cc50b6`. Why: the inventory mapped current
+  baseline and managed fixture coverage, confirmed 40 managed component
+  fixture cases and no managed pipeline cases, and recommended the first
+  fixture-expansion batch before coverage, sanitizer, static-analysis, and
+  TSan work.
 
 - **v1.0 - 2026-08-11.** Opened Arc06 with Slice01
   fixture-gap-inventory. Surfaced by: Arc05 close and post-Arc05 source layout
