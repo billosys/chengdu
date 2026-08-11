@@ -8,8 +8,8 @@
 ## 1. Capability statement
 
 Roadmap line: *Complete the remaining local and CI proof for the new behavior:
-expanded process fixtures, coverage, heavier sanitizer/static-analysis gates,
-and pre-release CI evidence.*
+expanded process fixtures, coverage, compiler-warning cleanup, heavier
+sanitizer/static-analysis gates, and pre-release CI evidence.*
 
 Expanded: this arc turns Arc05's local primary-binary conformance into a
 release-grade quality gate suite. Arc05 proved that `pandapi-parser`,
@@ -19,7 +19,9 @@ proof harder to fool: inventory fixture coverage against the Arc03 matrix,
 expand process fixtures for missing supported and failure-path obligations,
 add coverage evidence for chengdu-owned runtime/process-policy code, add
 heavier static and sanitizer gates where the current toolchains support them,
-and wire the resulting proof through Make-backed local and CI entry points.
+burn down or explicitly disposition inherited C/C++ compiler warnings before
+release, and wire the resulting proof through Make-backed local and CI entry
+points.
 
 Arc06 is not a documentation/tutorial arc and not the release-publication arc.
 Arc07 owns the public tutorial, README, architecture, dependency rationale,
@@ -42,9 +44,10 @@ dependency exclusion, wolong migration proof, and publication.
    runtime/process-policy code and touched adoption seams first. It must not
    create vanity percentages over inherited planner or third-party code.
 5. **Heavier gates graduate honestly.** `clang-tidy`, Clang Static Analyzer,
-   ASan/UBSan-on-binaries, LSan, and TSan may start as local, non-blocking, or
-   platform-limited gates if the toolchain or inherited-source noise requires
-   triage. Blocking status needs evidence and a clean ownership policy.
+   compiler-warning gates, ASan/UBSan-on-binaries, LSan, and TSan may start as
+   local, non-blocking, or platform-limited gates if the toolchain or
+   inherited-source noise requires triage. Blocking status needs evidence and
+   a clean ownership policy.
 6. **No optional-surface expansion.** Adding fixture or sanitizer coverage must
    not promote inherited optional surfaces into supported 0.3.0 behavior.
 7. **No release overclaim.** Passing Arc06 means the local and CI quality gates
@@ -59,8 +62,9 @@ dependency exclusion, wolong migration proof, and publication.
 | slice02 | `process-fixture-expansion` | Add the highest-value missing process fixtures for supported parser, grounder, engine, and pipeline behavior, including supervised pipe/stream cases that are safe in CI. | coverage/sanitizer workload quality; Arc07 examples; Arc08 release confidence |
 | slice03 | `coverage-gate` | Add Clang source-based coverage targets and reporting for `pandaPI/runtime` and chengdu-owned process-policy/adoption seams, with explicit exclusions for generated and inherited third-party code. | CI evidence; release readiness |
 | slice04 | `static-analysis-gate` | Add or graduate `clang-tidy`/Clang Static Analyzer gates for owned C++ source where compile databases are reliable, with written suppression and ownership policy. | pre-release confidence; future cleanup arcs |
-| slice05 | `binary-sanitizer-gates` | Run ASan/UBSan/LSan where supported against runtime and representative `pandapi-*` process fixtures without turning inherited third-party noise into silent failure. | sanitizer confidence; fixture workload validation |
-| slice06 | `tsan-and-ci-synthesis` | Add or explicitly defer TSan based on representative concurrency/process-observation workload, then compose the final local/CI hardening evidence and hand off to Arc07/Arc08. | project ledger P6; Arc07 docs; Arc08 release prep |
+| slice05 | `compiler-warning-burndown` | Inventory current parser, grounder, engine, runtime, generated-code, and nested third-party compiler warnings; fix primary hand-written warnings where low-risk; document suppressions and warning budgets before release. | release confidence; static-analysis ownership; sanitizer signal quality |
+| slice06 | `binary-sanitizer-gates` | Run ASan/UBSan/LSan where supported against runtime and representative `pandapi-*` process fixtures without turning inherited third-party noise into silent failure. | sanitizer confidence; fixture workload validation |
+| slice07 | `tsan-and-ci-synthesis` | Add or explicitly defer TSan based on representative concurrency/process-observation workload, then compose the final local/CI hardening evidence and hand off to Arc07/Arc08. | project ledger P6; Arc07 docs; Arc08 release prep |
 
 ## 4. Dependencies
 
@@ -101,8 +105,11 @@ deferrals that must be checked before package publication.
 - **slice03 coverage-gate - planned.** Opens after fixture workload is
   representative enough that coverage means something.
 - **slice04 static-analysis-gate - planned.**
-- **slice05 binary-sanitizer-gates - planned.**
-- **slice06 tsan-and-ci-synthesis - planned.**
+- **slice05 compiler-warning-burndown - planned.** Opens after static-analysis
+  classification can inform the warning inventory and before sanitizer signal
+  is treated as release-quality.
+- **slice06 binary-sanitizer-gates - planned.**
+- **slice07 tsan-and-ci-synthesis - planned.**
 
 ## 6. Planned implementation surface
 
@@ -113,7 +120,7 @@ Arc06 may touch these surfaces as slices open:
 | `fixtures/contract/` | Fixture records, inventory reports, golden/semantic comparison notes, and gap evidence. |
 | `tests/contract/run`, `tests/smoke/run` | Harness behavior only through Make-backed entry points; process-fixture expansion and observation hardening. |
 | `pandaPI/runtime/` | Runtime tests, coverage instrumentation support, process-observation helpers, and owned C++ quality gates. |
-| `pandaPI/parser`, `pandaPI/grounder`, `pandaPI/engine` | Only narrow testability or instrumentation changes owned by an Arc06 slice; no optional-surface expansion. |
+| `pandaPI/parser`, `pandaPI/grounder`, `pandaPI/engine` | Only narrow testability, instrumentation, or compiler-warning-burndown changes owned by an Arc06 slice; no optional-surface expansion. |
 | `mk/`, `Makefile` | Canonical local and CI targets for fixture listing, coverage, static analysis, sanitizers, and CI aggregates. |
 | `.github/workflows/` | CI jobs that invoke Make targets only. |
 | `docs/design-v0.3.0/arc06-ci-and-test-hardening/` | Arc06 plans, reports, fixture inventory, and closing evidence. |
@@ -135,24 +142,26 @@ arc's `closing-report.md`.
 | A4 | CLI and pipe-supervised invocation are both represented by CI-safe fixture or smoke workloads; the arc does not rely on human CLI smoke alone as process-manager proof. | reproduced |
 | A5 | Coverage evidence exists for chengdu-owned runtime/process-policy and touched adoption seams, with generated, inherited planner, and third-party code excluded or reported separately by policy. | reproduced |
 | A6 | Static-analysis gates run through Make and cover owned C++ source where compile databases are reliable; any unavailable toolchain or inherited-source noise is explicitly dispositioned. | reproduced |
-| A7 | ASan/UBSan/LSan gates run through Make where supported and include representative process-fixture workloads, with ownership triage for inherited or third-party findings. | reproduced |
-| A8 | TSan is either added as a meaningful Make/CI gate over representative concurrency/process-observation workload or explicitly deferred with a concrete re-entry condition. | reproduced |
-| A9 | GitHub Actions and local CI-equivalent targets use Make entry points for every new gate and pass `make actionlint` plus workflow Make-entrypoint safety checks. | reproduced |
-| A10 | Arc06 closes without changing release asset shape, wolong installation path, inherited optional-surface support, or public tutorial/docs scope. | reproduced |
-| A11 | Arc07 and Arc08 can be planned from Arc06 close without silent drops: docs/tutorial evidence, behavior-change inputs, release gate status, coverage/static/sanitizer disposition, and remaining risks are routed. | reproduced |
+| A7 | Compiler warnings from parser, grounder, engine, runtime, generated code, and nested third-party code are inventoried by ownership tier; primary hand-written warnings are fixed or explicitly budgeted; generated and third-party warnings are isolated, suppressed, or routed with release re-entry criteria. | reproduced |
+| A8 | ASan/UBSan/LSan gates run through Make where supported and include representative process-fixture workloads, with ownership triage for inherited or third-party findings. | reproduced |
+| A9 | TSan is either added as a meaningful Make/CI gate over representative concurrency/process-observation workload or explicitly deferred with a concrete re-entry condition. | reproduced |
+| A10 | GitHub Actions and local CI-equivalent targets use Make entry points for every new gate and pass `make actionlint` plus workflow Make-entrypoint safety checks. | reproduced |
+| A11 | Arc06 closes without changing release asset shape, wolong installation path, inherited optional-surface support, or public tutorial/docs scope. | reproduced |
+| A12 | Arc07 and Arc08 can be planned from Arc06 close without silent drops: docs/tutorial evidence, behavior-change inputs, release gate status, coverage/static/sanitizer/warning disposition, and remaining risks are routed. | reproduced |
 
 ## 8. Open questions and risks
 
 - **OQ1 - coverage scope.** The useful first metric is owned runtime and
   process-policy coverage, not inherited planner algorithm coverage. Slice03
   must define exclusions before presenting percentages.
-- **OQ2 - TSan workload.** TSan only finds races that are exercised. Slice06
+- **OQ2 - TSan workload.** TSan only finds races that are exercised. Slice07
   should not add a symbolic TSan job if process-observation concurrency is not
   representative enough.
-- **OQ3 - sanitizer ownership.** ASan/UBSan/LSan findings in chengdu-owned
-  runtime/adoption code should block. Findings in inherited third-party code
-  require explicit triage rather than blanket suppression or accidental
-  promotion to release blockers.
+- **OQ3 - sanitizer and warning ownership.** ASan/UBSan/LSan findings and
+  compiler warnings in chengdu-owned runtime/adoption code should block unless
+  explicitly budgeted. Findings or warnings in inherited generated code and
+  third-party code require explicit triage rather than blanket suppression or
+  accidental promotion to release blockers.
 - **OQ4 - CI time budget.** Expanded fixtures and sanitizer builds can make CI
   noisy or slow. Arc06 should separate always-on gates from scheduled or
   pre-release gates when evidence supports the split.
@@ -162,6 +171,15 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.2 - 2026-08-11.** Inserted Slice05
+  compiler-warning-burndown and renumbered binary-sanitizer and TSan synthesis
+  work to Slice06 and Slice07. Surfaced by: operator release-readiness review
+  after Arc06 Slice02 implementation. Why: Arc01 recorded parser `P-011`,
+  grounder `G-015`, and engine `E-011` compiler-warning debt, but Arc06 only
+  had static-analysis and sanitizer disposition slices. The release needs an
+  explicit warning inventory, burndown, suppression, and budget gate before
+  Arc08 publication.
 
 - **v1.1 - 2026-08-11.** Marked Slice01 fixture-gap-inventory closed and
   CDC-verified, and opened Slice02 process-fixture-expansion. Surfaced by:

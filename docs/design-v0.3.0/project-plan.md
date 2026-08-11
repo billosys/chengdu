@@ -139,7 +139,7 @@ releases:
 | arc03 | `managed-process-contract` | Produce the accepted design for CLI + supervised-process behavior: command naming, exit/status taxonomy, stdout/stderr/events, buffering, ANSI/TTY, signals/resources, version/provenance, and migration policy. | arc01, arc02 |
 | arc04 | `shared-runtime-substrate` | Introduce the shared C/C++ runtime/build substrate selected by the design, with tests and no behavior changes beyond wiring. | arc03 |
 | arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, retiring transition shims after canonical builds pass. | arc04 |
-| arc06 | `ci-and-test-hardening` | Complete the remaining local and CI proof for the new behavior: expanded process fixtures, coverage, heavier sanitizer/static-analysis gates, and pre-release CI evidence. | arc05 |
+| arc06 | `ci-and-test-hardening` | Complete the remaining local and CI proof for the new behavior: expanded process fixtures, coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates, and pre-release CI evidence. | arc05 |
 | arc07 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06 |
 | arc08 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, and publish `v0.3.0`. | arc06, arc07 |
 
@@ -300,8 +300,9 @@ documentation/tutorial and release-publication work.
   [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/ledger.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/ledger.md),
   [`arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md`](arc06-ci-and-test-hardening/slice02-process-fixture-expansion/cc-prompt.md).
   Arc06 owns the remaining local/CI matrix, expanded process fixtures,
-  coverage, heavier sanitizer/static-analysis gates, TSan disposition, and
-  release-readiness evidence needed by later release dry-runs.
+  coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates,
+  TSan disposition, and release-readiness evidence needed by later release
+  dry-runs.
 - **arc07 - roadmap only.** Arc07 remains downstream of Arc05/Arc06 proof and
   should create the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
@@ -387,7 +388,7 @@ per-row in this project's `closing-report.md`.
 | P3 | Arc03 closes with an accepted managed-process design covering CLI ergonomics, supervised-process behavior, binary naming, exit/status semantics, stdout/stderr/event output, buffering, ANSI/TTY, signals/resources, version/provenance, migration policy, and explicit incorporation or deferral of Arc02 dependency findings. | reproduced |
 | P4 | Arc04 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted, with Arc02-selected dependencies entering only through approved facades/pilots. | reproduced |
 | P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract through namespaced `pandapi-*` entry points, with inherited-name shims deleted once native new-name builds and tests exist, without library availability expanding optional inherited surfaces. | reproduced |
-| P6 | Arc06 closes with the full local and CI gate suite proving positive and negative behavior under both CLI and pipe-supervised invocation, including expanded process fixtures, coverage evidence, and heavier sanitizer/static-analysis gates where supported. | reproduced |
+| P6 | Arc06 closes with the full local and CI gate suite proving positive and negative behavior under both CLI and pipe-supervised invocation, including expanded process fixtures, coverage evidence, compiler-warning disposition/burndown, and heavier sanitizer/static-analysis gates where supported. | reproduced |
 | P7 | Arc07 closes with the pandaPI 0.3.0 tutorial and documentation suite: beginner HTN/PDDL/HDDL onboarding, simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance, README updates, architecture docs, dependency rationale, behavior-change table, and migration notes. | reproduced |
 | P8 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, release docs, and the new wolong fetch/install/migration path are verified on supported platforms. | reproduced |
 
@@ -431,6 +432,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.48 - 2026-08-11.** Added explicit Arc06
+  compiler-warning-burndown scope before release publication. Surfaced by:
+  operator release-readiness review during Arc06. Why: Arc01 already recorded
+  warning debt across parser `P-011`, grounder `G-015`, and engine `E-011`,
+  but the roadmap only named static-analysis and sanitizer gates. Arc06 now
+  carries warning inventory, primary-source burndown, suppression/budget
+  policy, and release re-entry routing before Arc08 publication.
 
 - **v1.47 - 2026-08-11.** Marked Arc06 Slice01 fixture-gap-inventory closed
   and CDC-verified, and opened Arc06 Slice02 process-fixture-expansion.
