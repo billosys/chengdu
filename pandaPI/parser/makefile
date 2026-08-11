@@ -2,7 +2,7 @@ CXX=g++
 CWARN=-Wno-unused-parameter
 CERROR=
 
-PANDAPI_RUNTIME_INCLUDE ?= ../../pandapi-runtime/include
+PANDAPI_RUNTIME_INCLUDE ?= ../runtime/include
 PANDAPI_RUNTIME_LIB ?=
 
 COMPILEFLAGS=-O3 -pipe -Wall -Wextra -pedantic -std=c++17 -DNDEBUG -I$(PANDAPI_RUNTIME_INCLUDE) $(CWARN) $(CERROR)

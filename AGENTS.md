@@ -2,8 +2,10 @@
 
 **chengdu**: CI build matrix + binary releases for the PANDA (pandaPI) HTN
 planning toolchain (HDDL). Linux + macOS. Primary consumer: `wolong`.
-As of 0.2.0, chengdu is a **deliberate public fork**: pandaPI sources
-live in-tree under `pandaPI/` with full upstream history.
+As of 0.2.0, chengdu is a **deliberate public fork**: pandaPI product source
+lives in-tree under `pandaPI/`. The `parser/`, `grounder/`, and `engine/`
+source roots preserve upstream history; `runtime/` is chengdu-owned shared
+runtime substrate for the 0.3.0 managed-process rewrite.
 
 - Planning artifacts live under `docs/design-vX.Y.Z/…`, per the
   collaboration framework's `PROJECT-MANAGEMENT.md` (canonical layout;

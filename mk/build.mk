@@ -6,9 +6,14 @@ reset-provenance:
 
 .PHONY: build-runtime
 build-runtime:
+	set -e; \
 	printf '%b\n' "$(BLUE)Building pandapi-runtime for $(PLATFORM)...$(RESET)"; \
+	if [ -f "$(RUNTIME_BUILD_DIR)/CMakeCache.txt" ] && ! grep -F "CMAKE_HOME_DIRECTORY:INTERNAL=$(CURDIR)/$(RUNTIME_SOURCE_DIR)" "$(RUNTIME_BUILD_DIR)/CMakeCache.txt" >/dev/null 2>&1; then \
+	  printf '%b\n' "$(YELLOW)Resetting stale runtime CMake cache for $(RUNTIME_SOURCE_DIR)...$(RESET)"; \
+	  rm -rf "$(RUNTIME_BUILD_DIR)"; \
+	fi; \
 	mkdir -p "$(RUNTIME_BUILD_DIR)"; \
-	cmake -S pandapi-runtime -B "$(RUNTIME_BUILD_DIR)" \
+	cmake -S "$(RUNTIME_SOURCE_DIR)" -B "$(RUNTIME_BUILD_DIR)" \
 	  -DCMAKE_BUILD_TYPE=Release \
 	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON; \
 	cmake --build "$(RUNTIME_BUILD_DIR)" --parallel; \
@@ -16,7 +21,12 @@ build-runtime:
 
 .PHONY: sanitize-runtime
 sanitize-runtime:
+	set -e; \
 	printf '%b\n' "$(BLUE)Running pandapi-runtime sanitizer gate for $(PLATFORM)...$(RESET)"; \
+	if [ -f "$(RUNTIME_SANITIZE_BUILD_DIR)/CMakeCache.txt" ] && ! grep -F "CMAKE_HOME_DIRECTORY:INTERNAL=$(CURDIR)/$(RUNTIME_SOURCE_DIR)" "$(RUNTIME_SANITIZE_BUILD_DIR)/CMakeCache.txt" >/dev/null 2>&1; then \
+	  printf '%b\n' "$(YELLOW)Resetting stale runtime sanitizer CMake cache for $(RUNTIME_SOURCE_DIR)...$(RESET)"; \
+	  rm -rf "$(RUNTIME_SANITIZE_BUILD_DIR)"; \
+	fi; \
 	find_tool() { \
 	  local name="$$1"; \
 	  if command -v "$$name" >/dev/null 2>&1; then \
@@ -34,7 +44,7 @@ sanitize-runtime:
 	fi; \
 	SANITIZER_FLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined"; \
 	mkdir -p "$(RUNTIME_SANITIZE_BUILD_DIR)"; \
-	cmake -S pandapi-runtime -B "$(RUNTIME_SANITIZE_BUILD_DIR)" \
+	cmake -S "$(RUNTIME_SOURCE_DIR)" -B "$(RUNTIME_SANITIZE_BUILD_DIR)" \
 	  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 	  -DCMAKE_CXX_COMPILER="$$CXX_BIN" \
@@ -55,7 +65,7 @@ build-parser: build-runtime
 	DIST_DIR="$$REPO_ROOT/dist/$$PLATFORM"; \
 	. "$$REPO_ROOT/vendor.env"; \
 	$(MAKE) -C "$$SRC_DIR" \
-	  PANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/pandapi-runtime/include" \
+	  PANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/$(RUNTIME_INCLUDE_DIR)" \
 	  PANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_BUILD_DIR)/libpandapi_runtime.a"; \
 	if [ ! -x "$$SRC_DIR/pandapi-parser" ]; then \
 	  printf '%b\n' "$(RED)pandapi-parser build did not produce an executable$(RESET)" >&2; \
@@ -91,7 +101,7 @@ build-grounder: build-runtime
 	( cd "$$CPDDL_DIR" && CC="$$GROUNDER_CC" CXX="$$GROUNDER_CXX" $(MAKE) boruvka opts bliss lpsolve ); \
 	( cd "$$CPDDL_DIR" && CC="$$GROUNDER_CC" CXX="$$GROUNDER_CXX" $(MAKE) ); \
 	( cd "$$SRC_ROOT/src" && $(MAKE) -j CXX="$$GROUNDER_CXX" CC="$$GROUNDER_CC" \
-	  PANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/pandapi-runtime/include" \
+	  PANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/$(RUNTIME_INCLUDE_DIR)" \
 	  PANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_BUILD_DIR)/libpandapi_runtime.a" ); \
 	if [ ! -x "$$SRC_ROOT/pandapi-grounder" ]; then \
 	  printf '%b\n' "$(RED)pandapi-grounder build did not produce an executable$(RESET)" >&2; \
@@ -118,7 +128,7 @@ build-engine: build-runtime
 	. "$$REPO_ROOT/vendor.env"; \
 	mkdir -p "$$BUILD_DIR"; \
 	( cd "$$BUILD_DIR" && cmake ../src -DCMAKE_BUILD_TYPE=Release \
-	  -DPANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/pandapi-runtime/include" \
+	  -DPANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/$(RUNTIME_INCLUDE_DIR)" \
 	  -DPANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_BUILD_DIR)/libpandapi_runtime.a" ); \
 	( cd "$$BUILD_DIR" && $(MAKE) -j ); \
 	if [ ! -x "$$BUILD_DIR/pandapi-engine" ]; then \

@@ -33,9 +33,11 @@ PLATFORM := unsupported
 endif
 
 DIST_DIR := dist/$(PLATFORM)
+RUNTIME_SOURCE_DIR := pandaPI/runtime
+RUNTIME_INCLUDE_DIR := $(RUNTIME_SOURCE_DIR)/include
 RUNTIME_BUILD_DIR := build/runtime/$(PLATFORM)
 RUNTIME_SANITIZE_BUILD_DIR := build/runtime-sanitize/$(PLATFORM)
-OWNED_CPP_DIRS := pandapi-runtime/include pandapi-runtime/src pandapi-runtime/tests
+OWNED_CPP_DIRS := $(RUNTIME_INCLUDE_DIR) $(RUNTIME_SOURCE_DIR)/src $(RUNTIME_SOURCE_DIR)/tests
 OWNED_CPP_FIND := find $(OWNED_CPP_DIRS) -type f \( -name '*.h' -o -name '*.hpp' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) -print
 SHELL_SCRIPTS := $(shell find scripts -type f -name '*.sh' -print) tests/contract/run tests/smoke/run tools/release/package tools/provenance/check tools/shared/platform
 

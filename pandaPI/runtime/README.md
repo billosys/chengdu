@@ -1,9 +1,10 @@
 # pandapi-runtime
 
-`pandapi-runtime/` is the chengdu-owned C++ runtime substrate for the
-`pandapi-*` managed-process work planned in Arc04. It lives outside `pandaPI/`
-so upstream planner history remains separate from chengdu process, build, and
-test policy.
+`pandaPI/runtime/` is the chengdu-owned C++ runtime substrate for the
+`pandapi-*` managed-process work planned in Arc04 and adopted in Arc05. It
+lives beside the forked `parser/`, `grounder/`, and `engine/` source roots so
+the rewritten pandaPI product source has one namespace while preserving the
+upstream history of the inherited components.
 
 ## Scope
 
@@ -26,7 +27,7 @@ test policy.
 ## Source Layout
 
 ```text
-pandapi-runtime/
+pandaPI/runtime/
   CMakeLists.txt
   cmake/
   include/pandapi/runtime/cli_policy.hpp
@@ -59,7 +60,7 @@ pandapi-runtime/
 The current CMake shape produces one static library target,
 `pandapi_runtime`, with an alias target `pandapi::runtime`. The smoke test is a
 small executable registered with CTest. Build output is generated under
-`build/runtime/` by `scripts/build-runtime.sh`.
+`build/runtime/` by `make build-runtime`.
 
 ## C++ Floor
 
@@ -224,7 +225,7 @@ surface is:
 - status/result, diagnostics/status I/O, CLI/TTY/provenance, fixture,
   normalization, and process observation headers under
   `include/pandapi/runtime/`;
-- smoke and seam tests under `pandapi-runtime/tests/`.
+- smoke and seam tests under `pandaPI/runtime/tests/`.
 
 Arc05 still owns parser, grounder, and engine adoption. That includes
 canonical `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine` entry
@@ -241,7 +242,7 @@ no binary adoption.
 Arc05 Slice01 adds the pre-adoption quality runway for chengdu-owned C++
 source. The top-level `.clang-format` is an LLVM-derived C++17 style contract
 applied first to owned runtime headers, sources, and tests under
-`pandapi-runtime/include`, `pandapi-runtime/src`, and `pandapi-runtime/tests`.
+`pandaPI/runtime/include`, `pandaPI/runtime/src`, and `pandaPI/runtime/tests`.
 It deliberately does not bulk-format vendored `pandaPI/` source.
 
 Developer gates:
@@ -259,7 +260,7 @@ macOS Xcode `xcrun` lookup. `make build-runtime` configures the runtime with
 `build/runtime/<platform>/` contains `compile_commands.json` for future
 `clang-tidy` adoption. `make test-runtime` runs that build tree's CTest suite.
 `make test-runtime-sanitize` uses Clang ASan/UBSan flags in a dedicated
-`build/runtime-sanitize/<platform>/` tree, builds only `pandapi-runtime/`, and
+`build/runtime-sanitize/<platform>/` tree, builds only `pandaPI/runtime/`, and
 runs CTest. It does not produce release binaries.
 
 `clang-tidy` remains deferred behind an installed-toolchain gate because the
