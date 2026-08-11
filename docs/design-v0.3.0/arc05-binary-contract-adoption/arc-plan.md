@@ -69,7 +69,7 @@ manifests, and publication.
 | slice06 | `parser-native-contract-cutover` | Replace the parser Bash adapter with a native `pandapi-parser` managed-contract artifact and remove parser old-name artifacts. | grounder native cutover; release/docs inputs |
 | slice07 | `grounder-native-contract-cutover` | Replace the grounder Bash adapter with a native `pandapi-grounder` managed-contract artifact and remove grounder old-name artifacts. | engine adoption; release/docs inputs |
 | slice08 | `engine-contract-adoption` | Migrate engine normal search behavior to the managed-process contract while fencing interactive, translation, SAT, BDD, and CUDD surfaces. | full primary pipeline behavior |
-| slice09 | `binary-contract-synthesis` | Compose parser, grounder, and engine evidence into the accepted Arc05 conformance report and split handoff for Arc06 CI/test hardening, Arc07 docs/tutorial inputs, and Arc08 release inputs. | project ledger P5; Arcs06-08 planning |
+| slice09 | `binary-contract-synthesis` | Satisfied by this arc's closing report: compose parser, grounder, and engine evidence into the accepted Arc05 conformance report and split handoff for Arc06 CI/test hardening, Arc07 docs/tutorial inputs, and Arc08 release inputs. | project ledger P5; Arcs06-08 planning |
 
 ## 4. Dependencies
 
@@ -124,12 +124,13 @@ amendments.
   [`slice03-parser-contract-adoption/cc-prompt.md`](slice03-parser-contract-adoption/cc-prompt.md),
   [`slice03-parser-contract-adoption/closing-report.md`](slice03-parser-contract-adoption/closing-report.md),
   [`slice03-parser-contract-adoption/cdc-verification.md`](slice03-parser-contract-adoption/cdc-verification.md).
-- **slice04 grounder-contract-adoption - CC-complete; CDC verification
-  pending.** Slice set:
+- **slice04 grounder-contract-adoption - closed and CDC-verified by
+  supersession.** Slice set:
   [`slice04-grounder-contract-adoption/slice-doc.md`](slice04-grounder-contract-adoption/slice-doc.md),
   [`slice04-grounder-contract-adoption/ledger.md`](slice04-grounder-contract-adoption/ledger.md),
   [`slice04-grounder-contract-adoption/cc-prompt.md`](slice04-grounder-contract-adoption/cc-prompt.md),
-  [`slice04-grounder-contract-adoption/closing-report.md`](slice04-grounder-contract-adoption/closing-report.md).
+  [`slice04-grounder-contract-adoption/closing-report.md`](slice04-grounder-contract-adoption/closing-report.md),
+  [`slice04-grounder-contract-adoption/cdc-verification.md`](slice04-grounder-contract-adoption/cdc-verification.md).
 - **slice05 canonical-binary-cutover - closed as deferred and
   CDC-verified.** Slice set:
   [`slice05-canonical-binary-cutover/slice-doc.md`](slice05-canonical-binary-cutover/slice-doc.md),
@@ -151,10 +152,16 @@ amendments.
   [`slice07-grounder-native-contract-cutover/cc-prompt.md`](slice07-grounder-native-contract-cutover/cc-prompt.md),
   [`slice07-grounder-native-contract-cutover/closing-report.md`](slice07-grounder-native-contract-cutover/closing-report.md),
   [`slice07-grounder-native-contract-cutover/cdc-verification.md`](slice07-grounder-native-contract-cutover/cdc-verification.md).
-- **slice08 engine-contract-adoption - open.** Open set:
+- **slice08 engine-contract-adoption - closed and CDC-verified.** Slice set:
   [`slice08-engine-contract-adoption/slice-doc.md`](slice08-engine-contract-adoption/slice-doc.md),
   [`slice08-engine-contract-adoption/ledger.md`](slice08-engine-contract-adoption/ledger.md),
-  [`slice08-engine-contract-adoption/cc-prompt.md`](slice08-engine-contract-adoption/cc-prompt.md).
+  [`slice08-engine-contract-adoption/cc-prompt.md`](slice08-engine-contract-adoption/cc-prompt.md),
+  [`slice08-engine-contract-adoption/closing-report.md`](slice08-engine-contract-adoption/closing-report.md),
+  [`slice08-engine-contract-adoption/cdc-verification.md`](slice08-engine-contract-adoption/cdc-verification.md).
+- **slice09 binary-contract-synthesis - satisfied by Arc05 close.** The
+  synthesis scope is represented by
+  [`closing-report.md`](closing-report.md), which composes parser, grounder,
+  and engine evidence and routes downstream work to Arc06, Arc07, and Arc08.
 
 ## 6. Planned implementation surface
 
@@ -214,6 +221,16 @@ arc's `closing-report.md`.
   slice proves the migration is safer than preserving compatibility.
 
 ## 9. Version history
+
+- **v1.13 - 2026-08-11.** Closed Arc05. Marked Slice04
+  grounder-contract-adoption CDC-verified by supersession, marked Slice08
+  engine-contract-adoption closed and CDC-verified after a CDC corrective
+  sentinel-fencing patch, and satisfied Slice09 through the arc closing report.
+  Surfaced by: CDC verification of current native parser/grounder/engine
+  contract evidence and a fresh subagent review of the Slice08 corrective diff.
+  Why: Arc05's primary-binary adoption surface is now canonical
+  `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`; release,
+  tutorial/docs, expanded CI, and wolong proof remain downstream.
 
 - **v1.12 - 2026-08-10.** Marked Slice07
   grounder-native-contract-cutover closed and CDC-verified, and opened

@@ -25,8 +25,6 @@ using pandapi::runtime::StatusCode;
 using pandapi::runtime::StatusRecord;
 using pandapi::runtime::SurfaceDisposition;
 
-constexpr std::string_view hidden_driver = "--pandapi-engine-legacy-driver";
-
 enum class StatusTarget {
   None,
   Stderr,
@@ -440,8 +438,7 @@ void print_provenance()
   }
 }
 
-[[nodiscard]] ChildResult run_legacy_child(const std::string& self,
-                                           const std::string& input,
+[[nodiscard]] ChildResult run_legacy_child(const std::string& input,
                                            const std::string& stdout_path,
                                            const std::string& stderr_path)
 {
@@ -457,15 +454,21 @@ void print_provenance()
       _exit(127);
     }
 
-    std::vector<std::string> args{self, std::string{hidden_driver}, input};
-    std::vector<char*> exec_args;
-    exec_args.reserve(args.size() + 1);
+    std::vector<std::string> args{"pandaPIengine", input};
+    std::vector<char*> legacy_args;
+    legacy_args.reserve(args.size() + 1);
     for (auto& arg : args) {
-      exec_args.push_back(arg.data());
+      legacy_args.push_back(arg.data());
     }
-    exec_args.push_back(nullptr);
-    execvp(self.c_str(), exec_args.data());
-    _exit(127);
+    legacy_args.push_back(nullptr);
+
+    const int rc = pandaPIengine_legacy_main(
+        static_cast<int>(legacy_args.size() - 1), legacy_args.data());
+    std::cout.flush();
+    std::cerr.flush();
+    std::fflush(stdout);
+    std::fflush(stderr);
+    _exit(rc);
   }
 
   int status = 0;
@@ -479,19 +482,6 @@ void print_provenance()
     return ChildResult{128 + WTERMSIG(status), stdout_path, stderr_path};
   }
   return ChildResult{60, stdout_path, stderr_path};
-}
-
-int run_hidden_driver(int argc, char** argv)
-{
-  std::vector<char*> legacy_argv;
-  legacy_argv.reserve(static_cast<std::size_t>(argc));
-  legacy_argv.push_back(argv[0]);
-  for (int i = 2; i < argc; ++i) {
-    legacy_argv.push_back(argv[i]);
-  }
-  legacy_argv.push_back(nullptr);
-  return pandaPIengine_legacy_main(static_cast<int>(legacy_argv.size() - 1),
-                                   legacy_argv.data());
 }
 
 [[nodiscard]] StatusCode classify_legacy_result(const ChildResult& child)
@@ -520,10 +510,6 @@ int run_hidden_driver(int argc, char** argv)
 int main(int argc, char** argv)
 {
   std::ios::sync_with_stdio(false);
-
-  if (argc > 1 && std::string_view{argv[1]} == hidden_driver) {
-    return run_hidden_driver(argc, argv);
-  }
 
   auto options = parse_options(argc, argv);
 
@@ -633,7 +619,7 @@ int main(int argc, char** argv)
 
   const auto legacy_stdout = work.file("stdout.txt");
   const auto legacy_stderr = work.file("stderr.txt");
-  const auto child = run_legacy_child(argv[0], input, legacy_stdout, legacy_stderr);
+  const auto child = run_legacy_child(input, legacy_stdout, legacy_stderr);
   const auto status = classify_legacy_result(child);
 
   if (status == StatusCode::Ok) {

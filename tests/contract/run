@@ -170,6 +170,7 @@ engine engine-final-status-fields
 engine engine-status-stream-legality
 engine engine-color-policy
 engine engine-domain-no-plan
+engine engine-internal-driver-sentinel-fencing
 engine engine-interactive-surface-fencing
 engine engine-translation-surface-fencing
 engine engine-sat-surface-fencing
@@ -1281,6 +1282,14 @@ engine_contract_domain_no_plan() {
   expect_status_field "$id" "$line" "outcome" "no_plan"
 }
 
+engine_contract_internal_driver_sentinel_fencing() {
+  local id="engine-internal-driver-sentinel-fencing"
+  run_capture "$id" "$E" --status=stderr --pandapi-engine-legacy-driver "$FIXTURES_DIR/engine/minimal.sas"
+  expect_exit "$id" 10
+  expect_stdout_empty "$id"
+  expect_engine_final_status "$id" "stderr" "cli_usage_error" "10" "caller_error"
+}
+
 engine_contract_interactive_surface_fencing() {
   local id="engine-interactive-surface-fencing"
   run_capture "$id" "$E" --status=stderr --interactive "$FIXTURES_DIR/engine/minimal.sas"
@@ -1321,6 +1330,7 @@ run_engine_contract_fixtures() {
   run_engine_contract_case "engine-status-stream-legality" engine_contract_status_stream_legality
   run_engine_contract_case "engine-color-policy" engine_contract_color_policy
   run_engine_contract_case "engine-domain-no-plan" engine_contract_domain_no_plan
+  run_engine_contract_case "engine-internal-driver-sentinel-fencing" engine_contract_internal_driver_sentinel_fencing
   run_engine_contract_case "engine-interactive-surface-fencing" engine_contract_interactive_surface_fencing
   run_engine_contract_case "engine-translation-surface-fencing" engine_contract_translation_surface_fencing
   run_engine_contract_case "engine-sat-surface-fencing" engine_contract_sat_surface_fencing

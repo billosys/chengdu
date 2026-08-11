@@ -75,3 +75,18 @@ was added.
 Arc05 now has native managed-process adoption for parser, grounder, and engine.
 The next slice should synthesize the binary-contract adoption results and leave
 release publication acceptance to its owning release arc or slice.
+
+## CDC Corrective Addendum
+
+CDC review found one blocker after CC close: the internal
+`--pandapi-engine-legacy-driver` sentinel was externally reachable and could
+bypass the managed-process contract. Under operator instruction, CDC applied a
+narrow corrective patch that removed the public sentinel branch, runs the
+inherited engine entrypoint directly inside the forked child, and added the
+`engine-internal-driver-sentinel-fencing` fixture.
+
+Post-correction verification passed: focused sentinel fixture 10 passed, 0
+failed; full engine managed contract 299 passed, 0 failed; parser and grounder
+regression contracts 285/0 and 256/0; positive smoke 3/0; negative smoke 4/0;
+`make test`; `make provenance-check`; `make actionlint`; and whitespace checks.
+A fresh subagent review of the corrective diff reported no findings.

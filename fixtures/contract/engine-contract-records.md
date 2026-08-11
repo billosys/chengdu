@@ -138,6 +138,17 @@ CI-safe unavailable-output cases, and a harness timeout around search.
 - `final_status`: includes `partial_output_policy=absent` and `outcome=no_plan`
 - `classification`: no-plan is a completed valid search result, not malformed input, timeout, resource exhaustion, dependency failure, child-process failure, or internal error
 
+### engine-internal-driver-sentinel-fencing
+
+- `mode`: `engine-contract`
+- `component`: `engine`
+- `command.argv`: `pandapi-engine --status=stderr --pandapi-engine-legacy-driver INPUT.sas`
+- `status`: `cli_usage_error`
+- `exit`: 10
+- `stdout.role`: empty
+- `final_status`: exactly one managed `PANDAPI_STATUS` record on stderr
+- `safety`: implementation-internal child-driver mechanics must not become a public unmanaged CLI escape hatch
+
 ### engine-interactive-surface-fencing
 
 - `mode`: `engine-contract`

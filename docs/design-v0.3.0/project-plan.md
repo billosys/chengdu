@@ -234,7 +234,7 @@ documentation/tutorial, and release-publication work.
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/ledger.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/ledger.md),
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cc-prompt.md),
   [`arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md`](arc04-shared-runtime-substrate/slice06-substrate-integration-readiness/cdc-verification.md).
-- **arc05 - active.** Detailed plan:
+- **arc05 - closed.** Detailed plan:
   [`arc05-binary-contract-adoption/arc-plan.md`](arc05-binary-contract-adoption/arc-plan.md).
   Slice01 quality-tooling-runway is closed and CDC-verified:
   [`arc05-binary-contract-adoption/slice01-quality-tooling-runway/slice-doc.md`](arc05-binary-contract-adoption/slice01-quality-tooling-runway/slice-doc.md),
@@ -254,12 +254,13 @@ documentation/tutorial, and release-publication work.
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/cc-prompt.md),
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/closing-report.md),
   [`arc05-binary-contract-adoption/slice03-parser-contract-adoption/cdc-verification.md`](arc05-binary-contract-adoption/slice03-parser-contract-adoption/cdc-verification.md).
-  Slice04 grounder-contract-adoption is CC-complete with CDC verification
-  pending:
+  Slice04 grounder-contract-adoption is closed and CDC-verified by
+  supersession:
   [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/slice-doc.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/slice-doc.md),
   [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/ledger.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/ledger.md),
   [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cc-prompt.md),
-  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/closing-report.md).
+  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/closing-report.md),
+  [`arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cdc-verification.md`](arc05-binary-contract-adoption/slice04-grounder-contract-adoption/cdc-verification.md).
   Slice05 canonical-binary-cutover is closed as deferred and CDC-verified:
   [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/slice-doc.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/slice-doc.md),
   [`arc05-binary-contract-adoption/slice05-canonical-binary-cutover/ledger.md`](arc05-binary-contract-adoption/slice05-canonical-binary-cutover/ledger.md),
@@ -278,10 +279,14 @@ documentation/tutorial, and release-publication work.
   [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cc-prompt.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cc-prompt.md),
   [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/closing-report.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/closing-report.md),
   [`arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cdc-verification.md`](arc05-binary-contract-adoption/slice07-grounder-native-contract-cutover/cdc-verification.md).
-  Slice08 engine-contract-adoption is open:
+  Slice08 engine-contract-adoption is closed and CDC-verified:
   [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/slice-doc.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/slice-doc.md),
   [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/ledger.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/ledger.md),
-  [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/cc-prompt.md).
+  [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/cc-prompt.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/cc-prompt.md),
+  [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/closing-report.md),
+  [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/cdc-verification.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/cdc-verification.md).
+  Arc05 is closed:
+  [`arc05-binary-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/closing-report.md).
 - **arc06 - roadmap only.** Arc06 remains downstream of Arc05 adoption
   evidence and should be planned from Arc05's final conformance and CI/test
   hardening handoff. It owns the remaining local/CI matrix, expanded process
@@ -416,6 +421,17 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.45 - 2026-08-11.** Closed Arc05
+  binary-contract-adoption. Marked Slice04 grounder-contract-adoption
+  CDC-verified by supersession, marked Slice08 engine-contract-adoption closed
+  and CDC-verified after a CDC corrective sentinel-fencing patch, and recorded
+  the Arc05 closing report as Slice09 synthesis. Surfaced by: CDC reproduction
+  of native parser, grounder, and engine managed-contract evidence on
+  `release/0.3.x`. Why: the 0.3.0 local primary binary surface is now
+  canonical `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`, while
+  CI hardening, tutorial/docs, release packaging, and wolong proof remain
+  owned by downstream arcs.
 
 - **v1.44 - 2026-08-10.** Marked Arc05 Slice07
   grounder-native-contract-cutover closed and CDC-verified, and opened Arc05
