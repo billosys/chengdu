@@ -47,3 +47,39 @@ compile-db-first-party: compile-db-parser compile-db-grounder compile-db-engine
 	printf '%b\n' "$(BLUE)Writing first-party compile database summary...$(RESET)"
 	"$(SOURCE_QUALITY_TOOL)" compile-db-summary "$(CURDIR)" "$(PLATFORM)"
 	printf '%b\n' "$(GREEN)First-party compile database summary: $(SOURCE_QUALITY_COMPILE_DB_DIR)/first-party-selected.txt$(RESET)"
+
+.PHONY: source-quality-gate-report
+source-quality-gate-report: source-quality-surface source-quality-profile-map source-quality-naming-check compile-db-first-party
+	printf '%b\n' "$(BLUE)Writing first-party source-quality gate scaffold report...$(RESET)"
+	"$(SOURCE_QUALITY_TOOL)" gate-report "$(CURDIR)" "$(PLATFORM)"
+	printf '%b\n' "$(GREEN)Source-quality gate scaffold report: docs/design-v0.3.0/arc07-source-quality-expansion/source-quality-gate-scaffold.md$(RESET)"
+
+.PHONY: format-check-first-party
+format-check-first-party: source-quality-gate-report format-check
+	printf '%b\n' "$(GREEN)First-party format scaffold passed$(RESET)"
+
+.PHONY: static-analysis-first-party
+static-analysis-first-party: source-quality-gate-report static-analysis-cpp
+	printf '%b\n' "$(GREEN)First-party static-analysis scaffold passed$(RESET)"
+
+.PHONY: coverage-first-party
+coverage-first-party: source-quality-gate-report coverage
+	printf '%b\n' "$(GREEN)First-party coverage scaffold passed$(RESET)"
+
+.PHONY: warning-inventory-first-party
+warning-inventory-first-party: source-quality-gate-report warning-inventory
+	printf '%b\n' "$(GREEN)First-party warning inventory scaffold passed$(RESET)"
+
+.PHONY: generated-warning-triage
+generated-warning-triage: source-quality-gate-report
+	printf '%b\n' "$(BLUE)Writing generated-warning triage scaffold...$(RESET)"
+	"$(SOURCE_QUALITY_TOOL)" generated-warning-triage "$(CURDIR)" "$(PLATFORM)"
+	printf '%b\n' "$(GREEN)Generated-warning triage scaffold: $(SOURCE_QUALITY_DIR)/generated-warning-triage.md$(RESET)"
+
+.PHONY: test-unit
+test-unit: source-quality-gate-report test-runtime
+	printf '%b\n' "$(GREEN)Unit/seam test scaffold passed$(RESET)"
+
+.PHONY: sanitize-first-party
+sanitize-first-party: source-quality-gate-report sanitize-runtime
+	printf '%b\n' "$(GREEN)First-party sanitizer scaffold passed$(RESET)"

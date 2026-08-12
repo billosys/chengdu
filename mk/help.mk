@@ -52,6 +52,14 @@ help:
 	printf '%b\n' "  $(YELLOW)make compile-db-grounder$(RESET) - Generate grounder source-quality compile database"; \
 	printf '%b\n' "  $(YELLOW)make compile-db-engine$(RESET)   - Generate engine source-quality compile database"; \
 	printf '%b\n' "  $(YELLOW)make compile-db-first-party$(RESET) - Generate parser, grounder, and engine compile databases"; \
+	printf '%b\n' "  $(YELLOW)make source-quality-gate-report$(RESET) - Write first-party quality gate scaffold report"; \
+	printf '%b\n' "  $(YELLOW)make format-check-first-party$(RESET) - Run/report first-party format scaffold"; \
+	printf '%b\n' "  $(YELLOW)make static-analysis-first-party$(RESET) - Run/report first-party static-analysis scaffold"; \
+	printf '%b\n' "  $(YELLOW)make coverage-first-party$(RESET) - Run/report first-party coverage scaffold"; \
+	printf '%b\n' "  $(YELLOW)make warning-inventory-first-party$(RESET) - Run/report first-party warning scaffold"; \
+	printf '%b\n' "  $(YELLOW)make generated-warning-triage$(RESET) - Write generated-warning root-cause triage"; \
+	printf '%b\n' "  $(YELLOW)make test-unit$(RESET)           - Run/report unit and seam test scaffold"; \
+	printf '%b\n' "  $(YELLOW)make sanitize-first-party$(RESET) - Run/report first-party sanitizer scaffold"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-runtime$(RESET)   - Build and run runtime ASan/UBSan gate"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-binaries$(RESET)  - Build pandapi-* ASan/UBSan binaries and run managed fixtures"; \
 	printf '%b\n' "  $(YELLOW)make provenance-check$(RESET)   - Verify dist provenance"; \
