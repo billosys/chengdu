@@ -85,10 +85,14 @@ Leaves for later arcs:
   [`slice01-source-classification-inventory/cdc-verification.md`](slice01-source-classification-inventory/cdc-verification.md).
   Source classification report:
   [`source-classification-inventory.md`](source-classification-inventory.md).
-- **slice02 source-layout-and-build-surface-normalization - recommended next,
-  not yet opened.** Slice01 recommends activating Slice02 for selectors,
-  compile databases, profile isolation, generated-code policy, copied-build
-  mapping, and third-party/dependency exclusions before broad gate expansion.
+- **slice02 source-layout-and-build-surface-normalization - open.** Slice set:
+  [`slice02-source-layout-and-build-surface-normalization/slice-doc.md`](slice02-source-layout-and-build-surface-normalization/slice-doc.md),
+  [`slice02-source-layout-and-build-surface-normalization/ledger.md`](slice02-source-layout-and-build-surface-normalization/ledger.md),
+  [`slice02-source-layout-and-build-surface-normalization/cc-prompt.md`](slice02-source-layout-and-build-surface-normalization/cc-prompt.md).
+  Scope: activate Slice01's normalization recommendation for selectors,
+  compile databases, profile/source mapping, generated-code policy,
+  copied-build mapping, and third-party/dependency exclusions before broad
+  gate expansion.
 
 ## 6. Planned Implementation Surface
 
@@ -140,6 +144,11 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.2 - 2026-08-12.** Opened Slice02
+  source-layout-and-build-surface-normalization. Surfaced by: operator
+  acceptance of Slice01's recommendation. Why: first-party quality gate
+  expansion needs Make-backed selectors, compile databases, profile/source
+  mapping, and dependency/generated exclusions before thresholds.
 - **v1.1 - 2026-08-12.** Marked Slice01 source-classification-inventory
   closed and CDC-verified. Surfaced by: Slice01 CDC verification. Why:
   classification evidence accepts source-layout/build-surface normalization as

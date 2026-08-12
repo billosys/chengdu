@@ -366,8 +366,10 @@ documentation/tutorial and release-publication work.
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md),
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/closing-report.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/closing-report.md),
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/cdc-verification.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/cdc-verification.md).
-  Slice02 source-layout/build-surface normalization is recommended next but
-  not yet opened.
+  Slice02 source-layout/build-surface normalization is open:
+  [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/slice-doc.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/slice-doc.md),
+  [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/ledger.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/ledger.md),
+  [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cc-prompt.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cc-prompt.md).
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -520,6 +522,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.58 - 2026-08-12.** Opened Arc07 Slice02
+  source-layout-and-build-surface-normalization. Surfaced by: operator
+  acceptance of Slice01's recommendation. Why: broader first-party quality
+  gates need Make-backed selectors, compile databases, profile/source mapping,
+  and dependency/generated exclusions before thresholds.
 - **v1.57 - 2026-08-12.** Marked Arc07 Slice01
   source-classification-inventory closed and CDC-verified. Surfaced by:
   Slice01 CDC verification. Why: the classification report accepts
