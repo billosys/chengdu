@@ -1,7 +1,7 @@
 # Arc06 Slice05: compiler-warning-burndown Closing Report
 
 Status: CC proposed done
-Implementation commit: `COMMIT_TBD`
+Implementation commit: `fc8b671d`
 
 ## Ledger Walk
 
