@@ -96,11 +96,13 @@ Leaves for later arcs:
   Slice02 delivered Make-backed selectors, compile databases, profile/source
   mapping, generated-code policy, copied-build mapping, and
   third-party/dependency exclusions before broad gate expansion.
-- **slice03 first-party-source-naming-normalization - recommended next.**
-  Inserted by CDC/operator amendment after Slice02 verification. Scope:
-  define and apply the accepted lower snake case naming policy for first-party
-  maintained C/C++ files and directories before quality gate scaffolding
-  relies on the normalized path surface.
+- **slice03 first-party-source-naming-normalization - open.** Slice set:
+  [`slice03-first-party-source-naming-normalization/slice-doc.md`](slice03-first-party-source-naming-normalization/slice-doc.md),
+  [`slice03-first-party-source-naming-normalization/ledger.md`](slice03-first-party-source-naming-normalization/ledger.md),
+  [`slice03-first-party-source-naming-normalization/cc-prompt.md`](slice03-first-party-source-naming-normalization/cc-prompt.md).
+  Scope: define and apply the accepted lower snake case naming policy for
+  first-party maintained C/C++ files and directories before quality gate
+  scaffolding relies on the normalized path surface.
 
 ## 6. Planned Implementation Surface
 
@@ -152,6 +154,11 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.4 - 2026-08-12.** Opened Slice03
+  first-party-source-naming-normalization. Surfaced by: Slice02 CDC
+  verification and operator acceptance of the naming-normalization insertion.
+  Why: first-party source names need one documented, Make-checkable convention
+  before quality gate scaffolding turns paths into enforcement surfaces.
 - **v1.3 - 2026-08-12.** Marked Slice02
   source-layout-and-build-surface-normalization closed and CDC-verified, and
   inserted Slice03 first-party-source-naming-normalization before the quality
