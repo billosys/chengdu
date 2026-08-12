@@ -122,12 +122,16 @@ deferrals that must be checked before package publication.
   [`slice05-compiler-warning-burndown/cc-prompt.md`](slice05-compiler-warning-burndown/cc-prompt.md),
   [`slice05-compiler-warning-burndown/closing-report.md`](slice05-compiler-warning-burndown/closing-report.md),
   [`slice05-compiler-warning-burndown/cdc-verification.md`](slice05-compiler-warning-burndown/cdc-verification.md).
-- **slice06 binary-sanitizer-gates - CC proposed done.** Slice set:
+- **slice06 binary-sanitizer-gates - closed and CDC-verified.** Slice set:
   [`slice06-binary-sanitizer-gates/slice-doc.md`](slice06-binary-sanitizer-gates/slice-doc.md),
   [`slice06-binary-sanitizer-gates/ledger.md`](slice06-binary-sanitizer-gates/ledger.md),
   [`slice06-binary-sanitizer-gates/cc-prompt.md`](slice06-binary-sanitizer-gates/cc-prompt.md),
-  [`slice06-binary-sanitizer-gates/closing-report.md`](slice06-binary-sanitizer-gates/closing-report.md).
-- **slice07 tsan-and-ci-synthesis - planned.**
+  [`slice06-binary-sanitizer-gates/closing-report.md`](slice06-binary-sanitizer-gates/closing-report.md),
+  [`slice06-binary-sanitizer-gates/cdc-verification.md`](slice06-binary-sanitizer-gates/cdc-verification.md).
+- **slice07 tsan-and-ci-synthesis - open.** Slice set:
+  [`slice07-tsan-and-ci-synthesis/slice-doc.md`](slice07-tsan-and-ci-synthesis/slice-doc.md),
+  [`slice07-tsan-and-ci-synthesis/ledger.md`](slice07-tsan-and-ci-synthesis/ledger.md),
+  [`slice07-tsan-and-ci-synthesis/cc-prompt.md`](slice07-tsan-and-ci-synthesis/cc-prompt.md).
 
 ## 6. Planned implementation surface
 
@@ -189,6 +193,14 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.8 - 2026-08-12.** Marked Slice06 binary-sanitizer-gates closed and
+  CDC-verified, and opened Slice07 tsan-and-ci-synthesis. Surfaced by: CDC
+  reproduction of CC commit `95f98412`. Why: `make test-binary-sanitize`
+  now runs ASan/UBSan over an isolated canonical `pandapi-*` sanitizer
+  distribution and the full managed fixture workload, while macOS LSan remains
+  an explicit Linux/toolchain re-entry. The remaining Arc06 work is TSan
+  disposition plus final CI and downstream handoff synthesis.
 
 - **v1.7 - 2026-08-12.** Marked Slice06 binary-sanitizer-gates CC proposed
   done. Surfaced by: CC sanitizer implementation and verification. Why:

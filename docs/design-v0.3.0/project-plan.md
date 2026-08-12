@@ -319,10 +319,16 @@ documentation/tutorial and release-publication work.
   [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cc-prompt.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cc-prompt.md),
   [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/closing-report.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/closing-report.md),
   [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cdc-verification.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cdc-verification.md).
-  Slice06 binary-sanitizer-gates is open:
+  Slice06 binary-sanitizer-gates is closed and CDC-verified:
   [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/slice-doc.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/slice-doc.md),
   [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/ledger.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/ledger.md),
-  [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cc-prompt.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cc-prompt.md).
+  [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cc-prompt.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cc-prompt.md),
+  [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/closing-report.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/closing-report.md),
+  [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cdc-verification.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cdc-verification.md).
+  Slice07 tsan-and-ci-synthesis is open:
+  [`arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/slice-doc.md`](arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/slice-doc.md),
+  [`arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/ledger.md`](arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/ledger.md),
+  [`arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/cc-prompt.md`](arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/cc-prompt.md).
   Arc06 owns the remaining local/CI matrix, expanded process fixtures,
   coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates,
   TSan disposition, and release-readiness evidence needed by later release
@@ -456,6 +462,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.53 - 2026-08-12.** Marked Arc06 Slice06
+  binary-sanitizer-gates closed and CDC-verified, and opened Arc06 Slice07
+  tsan-and-ci-synthesis. Surfaced by: CDC reproduction of CC commit
+  `95f98412`. Why: ASan/UBSan now runs through Make against canonical
+  sanitizer-built `pandapi-*` binaries and representative managed fixtures,
+  while macOS LSan is an explicit Linux/toolchain re-entry. The final Arc06
+  task is TSan disposition and CI/handoff synthesis.
 
 - **v1.52 - 2026-08-12.** Marked Arc06 Slice05
   compiler-warning-burndown closed and CDC-verified, and opened Arc06 Slice06
