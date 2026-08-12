@@ -57,8 +57,8 @@ ambiguity:
 | slice01 | `source-classification-inventory` | Classify every source/build/generated path by source class; map existing gates and gaps; produce recommendations for restructuring, target shape, test framework/dependency posture, and likely slice order. | all later Arc07 work |
 | slice02 | `source-layout-and-build-surface-normalization` | Conditional restructuring slice. Apply only the path/build/compile-database/profile-isolation changes accepted after Slice01 review, so first-party parser/grounder/engine files can be analyzed without third-party/generated noise. | coverage/static-analysis expansion |
 | slice03 | `first-party-source-naming-normalization` | Closed and CDC-verified. Normalized first-party maintained C/C++ file and directory names to the accepted lower snake case policy before gate selectors, compile databases, coverage maps, and static-analysis paths become enforcement surfaces. Excluded third-party, dependency-internal, and generated paths unless a ledger row explicitly accepts them. | stable source-quality selectors |
-| slice04 | `first-party-quality-gate-scaffold` | Add or revise Make-backed aggregate/per-component target scaffolding for first-party format, static analysis, coverage, unit tests, warning policy, and generated-warning triage records without yet forcing unrealistic thresholds. | component quality slices |
-| slice05+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice01/Slice02/Slice03/Slice04 determine the real cut lines. Expected areas include parser first-party source, grounder first-party source, engine first-party source, generated-warning root-cause/generator remediation, Chengdu-owned generators/templates, and shared runtime follow-up. | release readiness |
+| slice04 | `first-party-quality-gate-scaffold` | Closed and CDC-verified. Added Make-backed aggregate scaffold targets and durable status/re-entry evidence for first-party format, static analysis, coverage, unit tests, warning policy, sanitizer policy, optional IPC corpus placement, and generated-warning triage without forcing premature thresholds. | component quality slices |
+| slice05+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice01/Slice02/Slice03/Slice04 determine the real cut lines. Accepted next order starts with engine first-party maintained source, then parser generated-warning/root-cause work, then grounder first-party source and dependency-boundary follow-up as later ledgers accept the scope. | release readiness |
 | final | `source-quality-synthesis` | Compose the final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff. | docs and release prep |
 
 Slice01 is intentionally the only fully-opened slice at arc start. Its report
@@ -115,14 +115,23 @@ Leaves for later arcs:
   Slice03 defined and applied the accepted lower snake case naming policy for
   first-party maintained C/C++ files and directories before quality gate
   scaffolding relies on the normalized path surface.
-- **slice04 first-party-quality-gate-scaffold - open.** Slice04 should add or
-  revise Make-backed gate scaffolding for first-party format, static analysis,
-  coverage, unit/seam tests, warning policy, sanitizer policy, and generated
-  warning triage records before component burndown slices start enforcing or
-  clearing findings. Slice set:
+- **slice04 first-party-quality-gate-scaffold - closed and CDC-verified.**
+  Slice04 added Make-backed gate scaffolding for first-party format, static
+  analysis, coverage, unit/seam tests, warning policy, sanitizer policy,
+  optional IPC corpus placement, and generated warning triage records before
+  component burndown slices start enforcing or clearing findings. Slice set:
   [`slice04-first-party-quality-gate-scaffold/slice-doc.md`](slice04-first-party-quality-gate-scaffold/slice-doc.md),
   [`slice04-first-party-quality-gate-scaffold/ledger.md`](slice04-first-party-quality-gate-scaffold/ledger.md),
-  [`slice04-first-party-quality-gate-scaffold/cc-prompt.md`](slice04-first-party-quality-gate-scaffold/cc-prompt.md).
+  [`slice04-first-party-quality-gate-scaffold/cc-prompt.md`](slice04-first-party-quality-gate-scaffold/cc-prompt.md),
+  [`slice04-first-party-quality-gate-scaffold/closing-report.md`](slice04-first-party-quality-gate-scaffold/closing-report.md),
+  [`slice04-first-party-quality-gate-scaffold/cdc-verification.md`](slice04-first-party-quality-gate-scaffold/cdc-verification.md).
+  Gate scaffold report:
+  [`source-quality-gate-scaffold.md`](source-quality-gate-scaffold.md).
+- **slice05 component-source-quality-burndown - next.** Slice05 should start
+  with engine first-party maintained source because it carries the remaining
+  named primary warning budget and useful seam pressure. Parser
+  generated-warning/root-cause work, then grounder first-party source and
+  dependency-boundary follow-up, should follow in later scoped ledgers.
 
 ## 6. Planned Implementation Surface
 
@@ -178,6 +187,13 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.8 - 2026-08-12.** Marked Slice04
+  first-party-quality-gate-scaffold closed and CDC-verified, and selected
+  engine first-party maintained source as the first Slice05 component
+  burndown. Surfaced by: Slice04 CDC verification. Why: the project now has
+  named Make-backed scaffold targets and durable re-entry evidence for the
+  first-party source-quality gate families, so Arc07 can begin clearing
+  component findings without premature global thresholds.
 - **v1.7 - 2026-08-12.** Opened Slice04
   first-party-quality-gate-scaffold. Surfaced by: Slice03 CDC verification and
   generated-warning policy clarification. Why: first-party source-quality
