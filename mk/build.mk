@@ -55,6 +55,99 @@ sanitize-runtime:
 	( cd "$(RUNTIME_SANITIZE_BUILD_DIR)" && ctest --output-on-failure -C RelWithDebInfo ); \
 	printf '%b\n' "$(GREEN)Sanitizer gate passed: $(RUNTIME_SANITIZE_BUILD_DIR)$(RESET)"
 
+.PHONY: sanitize-binaries
+sanitize-binaries: sanitize-runtime
+	set -e; \
+	printf '%b\n' "$(BLUE)Running binary sanitizer gate for $(PLATFORM)...$(RESET)"; \
+	find_tool() { \
+	  local name="$$1"; \
+	  if command -v "$$name" >/dev/null 2>&1; then \
+	    command -v "$$name"; \
+	    return 0; \
+	  fi; \
+	  if command -v xcrun >/dev/null 2>&1; then \
+	    xcrun --find "$$name" 2>/dev/null || true; \
+	  fi; \
+	}; \
+	CC_BIN="$${CC:-$$(find_tool clang)}"; \
+	CXX_BIN="$${CXX:-$$(find_tool clang++)}"; \
+	if [ -z "$$CC_BIN" ] || [ -z "$$CXX_BIN" ]; then \
+	  printf '%b\n' "$(RED)clang and clang++ are required for ASan/UBSan binary sanitizer builds$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	SANITIZER_FLAGS="$(BINARY_SANITIZER_FLAGS)"; \
+	SANITIZER_LINK_FLAGS="$(BINARY_SANITIZER_LINK_FLAGS)"; \
+	export ASAN_OPTIONS="$(BINARY_SANITIZER_ASAN_OPTIONS)"; \
+	export UBSAN_OPTIONS="$(BINARY_SANITIZER_UBSAN_OPTIONS)"; \
+	printf '%b\n' "$(CYAN)Using CC=$$CC_BIN CXX=$$CXX_BIN$(RESET)"; \
+	printf '%b\n' "$(CYAN)ASan/UBSan flags: $$SANITIZER_FLAGS$(RESET)"; \
+	printf '%b\n' "$(CYAN)LSan: $(BINARY_SANITIZER_LSAN_STATUS)$(RESET)"; \
+	rm -rf "$(BINARY_SANITIZE_DIST_DIR)"; \
+	mkdir -p "$(BINARY_SANITIZE_DIST_DIR)"; \
+	REPO_ROOT="$(CURDIR)"; \
+	. tools/shared/platform; \
+	PLATFORM="$$(detect_platform)"; \
+	. "$$REPO_ROOT/vendor.env"; \
+	PARSER_SRC="$$(prepare_build_source_copy parser)"; \
+	$(MAKE) -C "$$PARSER_SRC" \
+	  CC="$$CC_BIN" \
+	  CXX="$$CXX_BIN" \
+	  CFLAGS="-O1 -g -fno-omit-frame-pointer -DNDEBUG -fsanitize=address,undefined" \
+	  COMPILEFLAGS="-O1 -g -fno-omit-frame-pointer -Wall -Wextra -pedantic -std=c++17 -DNDEBUG -I$$REPO_ROOT/$(RUNTIME_INCLUDE_DIR) -fsanitize=address,undefined -Wno-unused-parameter" \
+	  LINKERFLAG="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -lm" \
+	  PANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/$(RUNTIME_INCLUDE_DIR)" \
+	  PANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_SANITIZE_BUILD_DIR)/libpandapi_runtime.a"; \
+	if [ ! -x "$$PARSER_SRC/pandapi-parser" ]; then \
+	  printf '%b\n' "$(RED)pandapi-parser sanitizer build did not produce an executable$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	cp "$$PARSER_SRC/pandapi-parser" "$(BINARY_SANITIZE_DIST_DIR)/pandapi-parser"; \
+	chmod +x "$(BINARY_SANITIZE_DIST_DIR)/pandapi-parser"; \
+	append_provenance "$(BINARY_SANITIZE_DIST_DIR)" "pandapi-parser" "PARSER" "$$(resolve_compiler_id "$$CXX_BIN")"; \
+	GROUNDER_SRC="$$(prepare_build_source_copy grounder)"; \
+	CPDDL_DIR="$$GROUNDER_SRC/cpddl"; \
+	( cd "$$CPDDL_DIR" && CC="$$CC_BIN" CXX="$$CXX_BIN" CFLAGS="$$SANITIZER_FLAGS" CXXFLAGS="$$SANITIZER_FLAGS" LDFLAGS="$$SANITIZER_LINK_FLAGS" $(MAKE) boruvka opts bliss lpsolve ); \
+	( cd "$$CPDDL_DIR" && CC="$$CC_BIN" CXX="$$CXX_BIN" CFLAGS="$$SANITIZER_FLAGS" CXXFLAGS="$$SANITIZER_FLAGS" LDFLAGS="$$SANITIZER_LINK_FLAGS" $(MAKE) ); \
+	( cd "$$GROUNDER_SRC/src" && $(MAKE) -j \
+	  CXX="$$CXX_BIN" \
+	  CC="$$CC_BIN" \
+	  CXXFLAGS_LIBS="-fsanitize=address,undefined" \
+	  CXXFLAGS_PROD="-O1 -g -fno-omit-frame-pointer -DNDEBUG" \
+	  LDFLAGS_GENERAL="-fsanitize=address,undefined" \
+	  LDFLAGS_PROD="-O1 -g -fno-omit-frame-pointer" \
+	  PANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/$(RUNTIME_INCLUDE_DIR)" \
+	  PANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_SANITIZE_BUILD_DIR)/libpandapi_runtime.a" ); \
+	if [ ! -x "$$GROUNDER_SRC/pandapi-grounder" ]; then \
+	  printf '%b\n' "$(RED)pandapi-grounder sanitizer build did not produce an executable$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	cp "$$GROUNDER_SRC/pandapi-grounder" "$(BINARY_SANITIZE_DIST_DIR)/pandapi-grounder"; \
+	chmod +x "$(BINARY_SANITIZE_DIST_DIR)/pandapi-grounder"; \
+	append_provenance "$(BINARY_SANITIZE_DIST_DIR)" "pandapi-grounder" "GROUNDER" "$$(resolve_compiler_id "$$CXX_BIN")"; \
+	ENGINE_SRC="$$(prepare_build_source_copy engine)"; \
+	ENGINE_BUILD="$$ENGINE_SRC/build-sanitize"; \
+	mkdir -p "$$ENGINE_BUILD"; \
+	( cd "$$ENGINE_BUILD" && cmake ../src \
+	  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+	  -DCMAKE_C_COMPILER="$$CC_BIN" \
+	  -DCMAKE_CXX_COMPILER="$$CXX_BIN" \
+	  -DCMAKE_C_FLAGS="$$SANITIZER_FLAGS" \
+	  -DCMAKE_CXX_FLAGS="$$SANITIZER_FLAGS" \
+	  -DCMAKE_EXE_LINKER_FLAGS="$$SANITIZER_LINK_FLAGS" \
+	  -DCMAKE_SHARED_LINKER_FLAGS="$$SANITIZER_LINK_FLAGS" \
+	  -DPANDAPI_RUNTIME_INCLUDE="$$REPO_ROOT/$(RUNTIME_INCLUDE_DIR)" \
+	  -DPANDAPI_RUNTIME_LIB="$$REPO_ROOT/$(RUNTIME_SANITIZE_BUILD_DIR)/libpandapi_runtime.a" ); \
+	( cd "$$ENGINE_BUILD" && $(MAKE) -j ); \
+	if [ ! -x "$$ENGINE_BUILD/pandapi-engine" ]; then \
+	  printf '%b\n' "$(RED)pandapi-engine sanitizer build did not produce an executable$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	cp "$$ENGINE_BUILD/pandapi-engine" "$(BINARY_SANITIZE_DIST_DIR)/pandapi-engine"; \
+	chmod +x "$(BINARY_SANITIZE_DIST_DIR)/pandapi-engine"; \
+	append_provenance "$(BINARY_SANITIZE_DIST_DIR)" "pandapi-engine" "ENGINE" "$$(resolve_compiler_id "$$CXX_BIN")"; \
+	CHENGDU_CONTRACT_DIST_DIR="$$REPO_ROOT/$(BINARY_SANITIZE_DIST_DIR)" ./tests/contract/run --contract; \
+	printf '%b\n' "$(GREEN)Binary sanitizer gate passed: $(BINARY_SANITIZE_DIST_DIR)$(RESET)"
+
 .PHONY: build-parser
 build-parser: build-runtime
 	printf '%b\n' "$(BLUE)Building pandapi-parser...$(RESET)"; \

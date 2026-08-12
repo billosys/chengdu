@@ -23,6 +23,9 @@ Use Make targets:
   --case       select one contract fixture case.
   --list       list selected fixture IDs.
   --preserve   keep the temporary work directory for debugging.
+
+Environment:
+  CHENGDU_CONTRACT_DIST_DIR overrides dist/<platform> for isolated gates.
 EOF
 }
 
@@ -93,7 +96,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 . "$REPO_ROOT/tools/shared/platform"
 
 PLATFORM="$(detect_platform)"
-DIST_DIR="$REPO_ROOT/dist/$PLATFORM"
+DIST_DIR="${CHENGDU_CONTRACT_DIST_DIR:-$REPO_ROOT/dist/$PLATFORM}"
 FIXTURES_DIR="$REPO_ROOT/fixtures"
 
 PC="$DIST_DIR/pandapi-parser"

@@ -10,6 +10,10 @@ test-runtime: build-runtime
 test-runtime-sanitize: sanitize-runtime
 	printf '%b\n' "$(GREEN)Runtime sanitizer tests passed$(RESET)"
 
+.PHONY: test-binary-sanitize
+test-binary-sanitize: sanitize-binaries
+	printf '%b\n' "$(GREEN)Binary sanitizer tests passed$(RESET)"
+
 .PHONY: test-contract-list
 test-contract-list:
 	printf '%b\n' "$(BLUE)Listing baseline contract fixtures...$(RESET)"

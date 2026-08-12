@@ -37,6 +37,18 @@ RUNTIME_SOURCE_DIR := pandaPI/runtime
 RUNTIME_INCLUDE_DIR := $(RUNTIME_SOURCE_DIR)/include
 RUNTIME_BUILD_DIR := build/runtime/$(PLATFORM)
 RUNTIME_SANITIZE_BUILD_DIR := build/runtime-sanitize/$(PLATFORM)
+BINARY_SANITIZE_DIR := build/binary-sanitize/$(PLATFORM)
+BINARY_SANITIZE_DIST_DIR := $(BINARY_SANITIZE_DIR)/dist
+BINARY_SANITIZER_FLAGS ?= -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined
+BINARY_SANITIZER_LINK_FLAGS ?= -fsanitize=address,undefined
+ifeq ($(UNAME_S),Darwin)
+BINARY_SANITIZER_ASAN_OPTIONS ?= detect_leaks=0:halt_on_error=1:abort_on_error=0
+BINARY_SANITIZER_LSAN_STATUS := SKIP: macOS ASan leak detection is disabled for this gate; Re-entry: run on Linux or another LeakSanitizer-capable toolchain with detect_leaks=1.
+else
+BINARY_SANITIZER_ASAN_OPTIONS ?= detect_leaks=1:halt_on_error=1:abort_on_error=0
+BINARY_SANITIZER_LSAN_STATUS := enabled: LeakSanitizer runs through ASan with detect_leaks=1 on this platform/toolchain.
+endif
+BINARY_SANITIZER_UBSAN_OPTIONS ?= halt_on_error=1:print_stacktrace=1
 RUNTIME_COVERAGE_DIR := build/coverage/runtime/$(PLATFORM)
 RUNTIME_COVERAGE_BUILD_DIR := $(RUNTIME_COVERAGE_DIR)/build
 RUNTIME_COVERAGE_REPORT_DIR := $(RUNTIME_COVERAGE_DIR)/report

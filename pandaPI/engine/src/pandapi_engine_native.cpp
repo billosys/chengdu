@@ -166,6 +166,28 @@ private:
   return false;
 }
 
+[[nodiscard]] bool has_zero_task_model(const std::string& path)
+{
+  std::ifstream in{path};
+  std::string line;
+  while (std::getline(in, line)) {
+    if (line != ";; tasks (primitive and abstract)") {
+      continue;
+    }
+
+    while (std::getline(in, line)) {
+      if (line.empty()) {
+        continue;
+      }
+      int task_count = -1;
+      std::istringstream count{line};
+      count >> task_count;
+      return count.good() || count.eof() ? task_count == 0 : false;
+    }
+  }
+  return false;
+}
+
 [[nodiscard]] bool contains(std::string_view haystack, std::string_view needle)
 {
   return haystack.find(needle) != std::string_view::npos;
@@ -609,6 +631,17 @@ int main(int argc, char** argv)
     finish(options.status_target, StatusCode::OutputUnavailable,
            PartialOutputPolicy::Absent,
            {{"path_role", "output"}, {"operation", "open"}});
+  }
+
+  if (has_zero_task_model(input)) {
+    if (!options.quiet) {
+      std::cerr << "pandapi-engine: search completed with no plan\n";
+    }
+    if (options.output_path != "-") {
+      std::remove(options.output_path.c_str());
+    }
+    finish(options.status_target, StatusCode::DomainNoPlan,
+           PartialOutputPolicy::Absent, {{"outcome", "no_plan"}});
   }
 
   TemporaryDirectory work;

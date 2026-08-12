@@ -230,10 +230,12 @@ namespace progression {
                     currentT = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
                     if (((currentT - lastOutput) / 1000) > 0) {
+                        long elapsedMs = currentT - startT;
+                        long nodesPerSecond = elapsedMs > 0 ? long(double(allnodes) / elapsedMs * 1000) : 0;
                         cout << setw(4) << int((currentT - startT) / 1000) << "s "
                              << "visitime " << setw(7) << fixed << setprecision(2) << visitedList.time / 1000 << "s"
                              << " generated nodes " << setw(9) << allnodes
-                             << " nodes/sec " << setw(7) << int(double(allnodes) / (currentT - startT) * 1000)
+                             << " nodes/sec " << setw(7) << nodesPerSecond
                              << " cur h " << setw(4) << n->heuristicValue[0]
                              << " mod.depth " << setw(4) << n->modificationDepth
                              << " inserts " << setw(9) << visitedList.attemptedInsertions
@@ -273,7 +275,9 @@ namespace progression {
             cout << "- including " << (htn->numOneModActions) << " one modification actions" << endl;
             cout << "- including " << (htn->numOneModMethods) << " one modification methods" << endl;
             cout << "- and       " << (htn->numEffLessProg) << " progressions of effectless actions" << endl;
-            cout << "- Generated " << int(double(numSearchNodes) / (currentT - startT) * 1000) << " nodes per second"
+            long elapsedMs = currentT - startT;
+            long nodesPerSecond = elapsedMs > 0 ? long(double(numSearchNodes) / elapsedMs * 1000) : 0;
+            cout << "- Generated " << nodesPerSecond << " nodes per second"
                  << endl;
             cout << "- Final fringe contains " << fringe.size() << " nodes" << endl;
             if (this->foundSols > 1) {

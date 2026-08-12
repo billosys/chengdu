@@ -122,10 +122,11 @@ deferrals that must be checked before package publication.
   [`slice05-compiler-warning-burndown/cc-prompt.md`](slice05-compiler-warning-burndown/cc-prompt.md),
   [`slice05-compiler-warning-burndown/closing-report.md`](slice05-compiler-warning-burndown/closing-report.md),
   [`slice05-compiler-warning-burndown/cdc-verification.md`](slice05-compiler-warning-burndown/cdc-verification.md).
-- **slice06 binary-sanitizer-gates - open.** Slice set:
+- **slice06 binary-sanitizer-gates - CC proposed done.** Slice set:
   [`slice06-binary-sanitizer-gates/slice-doc.md`](slice06-binary-sanitizer-gates/slice-doc.md),
   [`slice06-binary-sanitizer-gates/ledger.md`](slice06-binary-sanitizer-gates/ledger.md),
-  [`slice06-binary-sanitizer-gates/cc-prompt.md`](slice06-binary-sanitizer-gates/cc-prompt.md).
+  [`slice06-binary-sanitizer-gates/cc-prompt.md`](slice06-binary-sanitizer-gates/cc-prompt.md),
+  [`slice06-binary-sanitizer-gates/closing-report.md`](slice06-binary-sanitizer-gates/closing-report.md).
 - **slice07 tsan-and-ci-synthesis - planned.**
 
 ## 6. Planned implementation surface
@@ -188,6 +189,14 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.7 - 2026-08-12.** Marked Slice06 binary-sanitizer-gates CC proposed
+  done. Surfaced by: CC sanitizer implementation and verification. Why:
+  `make test-binary-sanitize` now builds an isolated ASan/UBSan distribution
+  for `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`, runs managed
+  parser/grounder/engine/pipeline fixtures through that distribution, fixes
+  promoted engine sanitizer findings, and documents macOS LSan as a precise
+  skip with Linux/toolchain re-entry.
 
 - **v1.6 - 2026-08-12.** Marked Slice05 compiler-warning-burndown closed and
   CDC-verified, and opened Slice06 binary-sanitizer-gates. Surfaced by: CDC

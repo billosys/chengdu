@@ -18,6 +18,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make test$(RESET)               - Build and run runtime, contract, and smoke tests"; \
 	printf '%b\n' "  $(YELLOW)make test-runtime$(RESET)       - Run chengdu-owned runtime CTest suite"; \
 	printf '%b\n' "  $(YELLOW)make test-runtime-sanitize$(RESET) - Run runtime ASan/UBSan tests"; \
+	printf '%b\n' "  $(YELLOW)make test-binary-sanitize$(RESET) - Run pandapi-* ASan/UBSan managed fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-list$(RESET) - List baseline contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract-list-managed$(RESET) - List managed contract fixtures"; \
 	printf '%b\n' "  $(YELLOW)make test-contract$(RESET)      - Run all baseline contract fixtures"; \
@@ -44,6 +45,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make format$(RESET)             - Format owned C++ source"; \
 	printf '%b\n' "  $(YELLOW)make coverage$(RESET)           - Run runtime Clang source coverage"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-runtime$(RESET)   - Build and run runtime ASan/UBSan gate"; \
+	printf '%b\n' "  $(YELLOW)make sanitize-binaries$(RESET)  - Build pandapi-* ASan/UBSan binaries and run managed fixtures"; \
 	printf '%b\n' "  $(YELLOW)make provenance-check$(RESET)   - Verify dist provenance"; \
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)CI entrypoints:$(RESET)"; \
