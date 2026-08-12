@@ -110,13 +110,16 @@ deferrals that must be checked before package publication.
   [`slice03-coverage-gate/cc-prompt.md`](slice03-coverage-gate/cc-prompt.md),
   [`slice03-coverage-gate/closing-report.md`](slice03-coverage-gate/closing-report.md),
   [`slice03-coverage-gate/cdc-verification.md`](slice03-coverage-gate/cdc-verification.md).
-- **slice04 static-analysis-gate - open.** Slice set:
+- **slice04 static-analysis-gate - closed and CDC-verified.** Slice set:
   [`slice04-static-analysis-gate/slice-doc.md`](slice04-static-analysis-gate/slice-doc.md),
   [`slice04-static-analysis-gate/ledger.md`](slice04-static-analysis-gate/ledger.md),
-  [`slice04-static-analysis-gate/cc-prompt.md`](slice04-static-analysis-gate/cc-prompt.md).
-- **slice05 compiler-warning-burndown - planned.** Opens after static-analysis
-  classification can inform the warning inventory and before sanitizer signal
-  is treated as release-quality.
+  [`slice04-static-analysis-gate/cc-prompt.md`](slice04-static-analysis-gate/cc-prompt.md),
+  [`slice04-static-analysis-gate/closing-report.md`](slice04-static-analysis-gate/closing-report.md),
+  [`slice04-static-analysis-gate/cdc-verification.md`](slice04-static-analysis-gate/cdc-verification.md).
+- **slice05 compiler-warning-burndown - open.** Slice set:
+  [`slice05-compiler-warning-burndown/slice-doc.md`](slice05-compiler-warning-burndown/slice-doc.md),
+  [`slice05-compiler-warning-burndown/ledger.md`](slice05-compiler-warning-burndown/ledger.md),
+  [`slice05-compiler-warning-burndown/cc-prompt.md`](slice05-compiler-warning-burndown/cc-prompt.md).
 - **slice06 binary-sanitizer-gates - planned.**
 - **slice07 tsan-and-ci-synthesis - planned.**
 
@@ -180,6 +183,15 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.5 - 2026-08-11.** Marked Slice04 static-analysis-gate closed and
+  CDC-verified, and opened Slice05 compiler-warning-burndown. Surfaced by:
+  CDC reproduction of CC commit `04491682`. Why: owned runtime C++ static
+  analysis now runs through Make with a reliable Debug compile database and
+  documented exclusions, while parser, grounder, and engine builds still emit
+  inherited warning debt. Slice05 must inventory, classify, fix, budget, or
+  defer those warnings before sanitizer and release gates treat build signal as
+  release-quality.
 
 - **v1.4 - 2026-08-11.** Marked Slice03 coverage-gate closed and
   CDC-verified, and opened Slice04 static-analysis-gate. Surfaced by: CDC

@@ -307,10 +307,16 @@ documentation/tutorial and release-publication work.
   [`arc06-ci-and-test-hardening/slice03-coverage-gate/cc-prompt.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/cc-prompt.md),
   [`arc06-ci-and-test-hardening/slice03-coverage-gate/closing-report.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/closing-report.md),
   [`arc06-ci-and-test-hardening/slice03-coverage-gate/cdc-verification.md`](arc06-ci-and-test-hardening/slice03-coverage-gate/cdc-verification.md).
-  Slice04 static-analysis-gate is open:
+  Slice04 static-analysis-gate is closed and CDC-verified:
   [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/slice-doc.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/slice-doc.md),
   [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/ledger.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/ledger.md),
-  [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/cc-prompt.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/cc-prompt.md).
+  [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/cc-prompt.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/cc-prompt.md),
+  [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/closing-report.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/closing-report.md),
+  [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/cdc-verification.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/cdc-verification.md).
+  Slice05 compiler-warning-burndown is open:
+  [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/slice-doc.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/slice-doc.md),
+  [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/ledger.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/ledger.md),
+  [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cc-prompt.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cc-prompt.md).
   Arc06 owns the remaining local/CI matrix, expanded process fixtures,
   coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates,
   TSan disposition, and release-readiness evidence needed by later release
@@ -444,6 +450,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.51 - 2026-08-11.** Marked Arc06 Slice04 static-analysis-gate closed and
+  CDC-verified, and opened Arc06 Slice05 compiler-warning-burndown. Surfaced
+  by: CDC reproduction of CC commit `04491682`. Why: Make-backed owned runtime
+  C++ static analysis is now real rather than deferred, while parser,
+  grounder, and engine builds still emit visible inherited warning debt.
+  Warning ownership and release budget must be settled before sanitizer and
+  release-readiness gates depend on clean build signal.
 
 - **v1.50 - 2026-08-11.** Marked Arc06 Slice03 coverage-gate closed and
   CDC-verified, and opened Arc06 Slice04 static-analysis-gate. Surfaced by:

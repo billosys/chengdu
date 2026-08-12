@@ -112,7 +112,7 @@ pipeline fixture set and positive supervised workload.
 | `make provenance-check` | Dist provenance records for built binaries | local and CI through `make ci-linux` and `make ci-macos` |
 | `make actionlint` | GitHub Actions syntax | local and CI lint job |
 | `make format-check` | Owned C++ formatting | local and CI through `make ci-linux` and `make ci-macos` |
-| `make static-analysis` | Shell syntax plus shellcheck | local and CI through Linux aggregate; C++ static analysis deferred |
+| `make static-analysis` | Shell syntax, shellcheck, and owned runtime C++ static analysis aggregate | local; C++ subgate uses explicit missing-tool SKIP when `clang-tidy` is unavailable |
 | `make safety-checks` | Workflow Make-entrypoint check, whitespace, nested Git metadata, gitlinks | local through `make check`; CI coverage is partial |
 | `make sanitize-runtime` | Runtime ASan/UBSan CTest | Linux CI through `make ci-linux`; binary sanitizer fixtures deferred |
 | `make ci-linux` | Linux CI aggregate | CI on ubuntu-22.04 and ubuntu-24.04 |
