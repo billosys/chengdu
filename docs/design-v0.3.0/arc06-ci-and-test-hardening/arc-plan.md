@@ -128,12 +128,13 @@ deferrals that must be checked before package publication.
   [`slice06-binary-sanitizer-gates/cc-prompt.md`](slice06-binary-sanitizer-gates/cc-prompt.md),
   [`slice06-binary-sanitizer-gates/closing-report.md`](slice06-binary-sanitizer-gates/closing-report.md),
   [`slice06-binary-sanitizer-gates/cdc-verification.md`](slice06-binary-sanitizer-gates/cdc-verification.md).
-- **slice07 tsan-and-ci-synthesis - CC proposed done.** Slice set:
+- **slice07 tsan-and-ci-synthesis - closed and CDC-verified.** Slice set:
   [`slice07-tsan-and-ci-synthesis/slice-doc.md`](slice07-tsan-and-ci-synthesis/slice-doc.md),
   [`slice07-tsan-and-ci-synthesis/ledger.md`](slice07-tsan-and-ci-synthesis/ledger.md),
   [`slice07-tsan-and-ci-synthesis/cc-prompt.md`](slice07-tsan-and-ci-synthesis/cc-prompt.md),
-  [`slice07-tsan-and-ci-synthesis/closing-report.md`](slice07-tsan-and-ci-synthesis/closing-report.md).
-  Arc06 is CC proposed done:
+  [`slice07-tsan-and-ci-synthesis/closing-report.md`](slice07-tsan-and-ci-synthesis/closing-report.md),
+  [`slice07-tsan-and-ci-synthesis/cdc-verification.md`](slice07-tsan-and-ci-synthesis/cdc-verification.md).
+  Arc06 is closed and CDC-verified:
   [`closing-report.md`](closing-report.md).
 
 ## 6. Planned implementation surface
@@ -196,6 +197,12 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.10 - 2026-08-12.** Marked Slice07 tsan-and-ci-synthesis closed and
+  CDC-verified, and closed Arc06. Surfaced by: CDC reproduction of CC commit
+  `a4e52a4f`. Why: TSan deferral is workload-based, no symbolic TSan target was
+  added, and CDC reproduced the composed coverage, warning, sanitizer, static
+  analysis, managed fixture, smoke, provenance, workflow, and diff evidence.
 
 - **v1.9 - 2026-08-12.** Marked Slice07 tsan-and-ci-synthesis CC proposed
   done and added the Arc06 closing report. Surfaced by: CC workload review and

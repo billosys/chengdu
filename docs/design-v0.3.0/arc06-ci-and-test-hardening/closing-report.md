@@ -1,11 +1,13 @@
 # Arc06 Closing Report: ci-and-test-hardening
 
-Status: CC proposed done
-Verdict: GO for CDC review
-Implementation commit: this commit
+Status: closed and CDC-verified
+Verdict: GO
+Implementation commit reviewed: `a4e52a4f`
+CDC verification: `slice07-tsan-and-ci-synthesis/cdc-verification.md`
 
-Arc06 can close for CDC review. No Arc06 row is missing from the CC evidence
-set. This is not a release-publication claim: Arc08 still owns package assets,
+Arc06 is closed. CDC reproduced the final Slice07 synthesis gates and the
+arc-level composed evidence; no Arc06 row is missing. This is not a
+release-publication claim: Arc08 still owns package assets,
 checksums, manifests, license/NOTICE proof, test-only dependency exclusion,
 wolong migration proof, and publication.
 
@@ -13,17 +15,17 @@ wolong migration proof, and publication.
 
 | Row | Status | Evidence |
 |-----|--------|----------|
-| A1 | done | Every planned Arc06 slice has a slice directory and closing evidence. Slices01-06 are CDC-verified; Slice07 is CC proposed done in `slice07-tsan-and-ci-synthesis/closing-report.md`. |
+| A1 | done | Every planned Arc06 slice has a slice directory and closing evidence. Slices01-07 are CDC-verified, including `slice07-tsan-and-ci-synthesis/cdc-verification.md`. |
 | A2 | done | `fixture-gap-inventory.md` inventories baseline and managed fixtures, maps Arc03 matrix coverage, and routes remaining gaps to no-op, deferred re-entry, Arc07, or Arc08. |
 | A3 | done | Slice02 CDC verification records managed parser 298/0, grounder 269/0, engine 312/0, and pipeline 129/0 through canonical `pandapi-*` black-box process fixtures. |
 | A4 | done | Slice02 CDC verification records positive `--supervised` fixtures for parser, grounder, engine, and pipeline, plus CI-safe fixture/smoke workloads. |
-| A5 | done | Slice03 CDC verification records `make coverage` over owned `pandaPI/runtime` with 5/0 runtime CTest and 74.09% included line coverage; inherited/generated/third-party and adoption-seam limits are disclosed. |
+| A5 | done | CDC reproduced `make coverage` over owned `pandaPI/runtime` with 5/0 runtime CTest and 74.09% included line coverage; inherited/generated/third-party and adoption-seam limits are disclosed. |
 | A6 | done | Slice04 CDC verification records Make-backed `make static-analysis-cpp` through `clang-tidy`/`clang-analyzer-*` over 14 runtime translation units, with adoption-seam deferral. |
-| A7 | done | Slice05 CDC verification records `make warning-inventory`, 56 warning lines, primary parser/grounder/engine warning burndown where low-risk, and remaining warning budgets by ownership tier. |
-| A8 | done | Slice06 CDC verification records `make test-runtime-sanitize` 5/0 and `make test-binary-sanitize` 1008/0 over isolated ASan/UBSan `pandapi-*` managed fixtures; macOS LSan is a Linux/toolchain Re-entry. |
-| A9 | done | Slice07 defers TSan with concrete workload reason and Re-entry: add a Make-backed ThreadSanitizer target only after supported multithreaded chengdu-owned process observation, concurrent child-process adapter work, or promoted supported planner concurrency exists. |
-| A10 | done | GitHub Actions and CI-equivalent targets invoke Make targets. Slice07 made no workflow changes, and `make safety-checks && make actionlint` passed. |
-| A11 | done | Arc06 stayed out of release asset shape, wolong installation path, unsupported optional-surface support, and public tutorial/docs scope. Slice07 staged boundary check over README, release, release workflow, Arc07, and Arc08 paths passed. |
+| A7 | done | CDC reproduced `make warning-inventory`, 56 warning lines, primary parser/grounder/engine warning burndown where low-risk, and remaining warning budgets by ownership tier. |
+| A8 | done | CDC reproduced `make test-runtime-sanitize` 5/0 and `make test-binary-sanitize` 1008/0 over isolated ASan/UBSan `pandapi-*` managed fixtures; macOS LSan is a Linux/toolchain Re-entry. |
+| A9 | done | Slice07 CDC verification accepts the TSan deferral with concrete workload reason and Re-entry: add a Make-backed ThreadSanitizer target only after supported multithreaded chengdu-owned process observation, concurrent child-process adapter work, or promoted supported planner concurrency exists. |
+| A10 | done | GitHub Actions and CI-equivalent targets invoke Make targets. Slice07 made no workflow changes; CDC reproduced `make safety-checks` and `make actionlint`. |
+| A11 | done | Arc06 stayed out of release asset shape, wolong installation path, unsupported optional-surface support, and public tutorial/docs scope. CDC boundary review over README, release, release workflow, Arc07, and Arc08 paths found no changes in `a4e52a4f`. |
 | A12 | done | `fixture-gap-inventory.md`, Slice07 closing, and this report route Arc07 documentation/tutorial inputs, Arc08 release-prep gates, coverage/static/sanitizer/warning dispositions, LSan, TSan, and remaining risks without silent drops. |
 
 ## Final CI And Local Gate Map
@@ -110,5 +112,4 @@ Arc08 should verify before publication:
 
 ## NO-GO Items
 
-None for Arc06. The next iteration is not required unless CDC rejects a
-Slice07 or Arc06 evidence row.
+None for Arc06. The next iteration is not required.

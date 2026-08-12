@@ -114,7 +114,6 @@ pipeline fixture set and positive supervised workload.
 | `make format-check` | Owned C++ formatting | local and CI through `make ci-linux` and `make ci-macos` |
 | `make static-analysis` | Shell syntax, shellcheck, and owned runtime C++ static analysis aggregate | local; C++ subgate uses explicit missing-tool SKIP when `clang-tidy` is unavailable |
 | `make safety-checks` | Workflow Make-entrypoint check, whitespace, nested Git metadata, gitlinks | local through `make check`; CI coverage is partial |
-| `make sanitize-runtime` | Runtime ASan/UBSan CTest | Linux CI through `make ci-linux`; local macOS supported |
 | `make test-binary-sanitize` | ASan/UBSan over canonical `pandapi-*` managed process fixtures | local; covered by Slice06; candidate scheduled/pre-release CI gate in Slice07 |
 | `make ci-linux` | Linux CI aggregate | CI on ubuntu-22.04 and ubuntu-24.04 |
 | `make ci-macos` | macOS CI aggregate | CI on macos-15 |
