@@ -7,6 +7,7 @@ include mk/help.mk
 include mk/format.mk
 include mk/build.mk
 include mk/coverage.mk
+include mk/source-quality.mk
 include mk/tests.mk
 include mk/checks.mk
 include mk/ci.mk

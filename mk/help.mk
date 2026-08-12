@@ -44,6 +44,12 @@ help:
 	printf '%b\n' "  $(YELLOW)make safety-checks$(RESET)      - Run repository safety checks"; \
 	printf '%b\n' "  $(YELLOW)make format$(RESET)             - Format owned C++ source"; \
 	printf '%b\n' "  $(YELLOW)make coverage$(RESET)           - Run runtime Clang source coverage"; \
+	printf '%b\n' "  $(YELLOW)make source-quality-surface$(RESET) - Write Arc07 source-class selector report"; \
+	printf '%b\n' "  $(YELLOW)make source-quality-profile-map$(RESET) - Write Arc07 source/profile mapping report"; \
+	printf '%b\n' "  $(YELLOW)make compile-db-parser$(RESET)   - Generate parser source-quality compile database"; \
+	printf '%b\n' "  $(YELLOW)make compile-db-grounder$(RESET) - Generate grounder source-quality compile database"; \
+	printf '%b\n' "  $(YELLOW)make compile-db-engine$(RESET)   - Generate engine source-quality compile database"; \
+	printf '%b\n' "  $(YELLOW)make compile-db-first-party$(RESET) - Generate parser, grounder, and engine compile databases"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-runtime$(RESET)   - Build and run runtime ASan/UBSan gate"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-binaries$(RESET)  - Build pandapi-* ASan/UBSan binaries and run managed fixtures"; \
 	printf '%b\n' "  $(YELLOW)make provenance-check$(RESET)   - Verify dist provenance"; \

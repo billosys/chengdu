@@ -1,0 +1,449 @@
+#!/usr/bin/env bash
+# Make-invoked source-quality selector and compile database helper.
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'USAGE'
+usage:
+  tools/source-quality/surface surface <repo-root> <platform>
+  tools/source-quality/surface profile-map <repo-root> <platform>
+  tools/source-quality/surface compile-db <parser|grounder|engine> <repo-root> <platform>
+  tools/source-quality/surface compile-db-summary <repo-root> <platform>
+USAGE
+}
+
+die() {
+  printf '%s\n' "source-quality: $*" >&2
+  exit 1
+}
+
+require_repo() {
+  if [ ! -d "$REPO_ROOT/pandaPI" ]; then
+    die "missing pandaPI source root under $REPO_ROOT"
+  fi
+}
+
+json_escape() {
+  sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+json_string() {
+  printf '%s' "$1" | json_escape
+}
+
+make_out_dir() {
+  mkdir -p "$OUT_DIR"
+}
+
+component_compile_dir() {
+  printf '%s/compile-db/%s' "$OUT_DIR" "$1"
+}
+
+is_first_party_translation_unit() {
+  local component="$1" path="$2"
+  if [ "$component" = "engine" ]; then
+    case "$path" in
+      pandaPI/engine/src/symbolic_search/cudd-3.0.0/*|pandaPI/engine/src/cmdline.c)
+        return 1
+        ;;
+      pandaPI/engine/src/*.cpp)
+        return 0
+        ;;
+    esac
+  fi
+  case "$component:$path" in
+    parser:pandaPI/parser/src/hddl.cpp|\
+    parser:pandaPI/parser/src/hddl-token.cpp|\
+    parser:pandaPI/parser/src/cmdline.c|\
+    grounder:pandaPI/grounder/src/cmdline.c|\
+    grounder:pandaPI/grounder/h2-fd-preprocessor/*|\
+    grounder:pandaPI/grounder/cpddl/*|\
+    engine:pandaPI/engine/src/cmdline.c|\
+    engine:pandaPI/engine/src/symbolic_search/cudd-3.0.0/*)
+      return 1
+      ;;
+    parser:pandaPI/parser/src/*.cpp|\
+    grounder:pandaPI/grounder/src/*.cpp|\
+    grounder:pandaPI/grounder/src/rss.c)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+classify_path() {
+  local path="$1"
+  case "$path" in
+    build/*/source/*)
+      printf '%s' "COPIED_BUILD source map"
+      ;;
+    build/*|dist/*|release/*)
+      printf '%s' "BUILD_OUTPUT generated build output"
+      ;;
+    pandaPI/grounder/cpddl/third-party/*|pandaPI/engine/src/symbolic_search/cudd-3.0.0/*)
+      printf '%s' "THIRD_PARTY vendored third-party"
+      ;;
+    pandaPI/grounder/cpddl/*|pandaPI/grounder/h2-fd-preprocessor/*)
+      printf '%s' "DEPENDENCY dependency-internal"
+      ;;
+    */hddl.y|*/hddl-token.l|*/options.ggo)
+      printf '%s' "GENERATOR first-party generator/template"
+      ;;
+    */cmdline.c|*/cmdline.h|*/hddl.cpp|*/hddl.hpp|*/hddl-token.cpp)
+      printf '%s' "GENERATED generated build output"
+      ;;
+    pandaPI/parser/src/*|pandaPI/grounder/src/*|pandaPI/engine/src/*|pandaPI/runtime/include/*|pandaPI/runtime/src/*|pandaPI/runtime/tests/*)
+      printf '%s' "FIRST_PARTY first-party maintained"
+      ;;
+    *)
+      printf '%s' "OTHER component documentation/data"
+      ;;
+  esac
+}
+
+list_first_party_files() {
+  find "$REPO_ROOT/pandaPI/parser/src" "$REPO_ROOT/pandaPI/grounder/src" \
+    "$REPO_ROOT/pandaPI/engine/src" "$REPO_ROOT/pandaPI/runtime/include" \
+    "$REPO_ROOT/pandaPI/runtime/src" "$REPO_ROOT/pandaPI/runtime/tests" \
+    -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' -o -name '*.hh' -o -name '*.hpp' \) \
+    ! -path '*/cudd-3.0.0/*' \
+    | sed "s#^$REPO_ROOT/##" \
+    | sort
+}
+
+write_surface() {
+  make_out_dir
+  local report="$OUT_DIR/source-quality-surface.md"
+  local tsv="$OUT_DIR/source-quality-surface.tsv"
+  local first_party_count generator_count generated_count third_party_count dependency_count
+
+  first_party_count="$(list_first_party_files | wc -l | tr -d ' ')"
+  generator_count="$(find "$REPO_ROOT/pandaPI/parser/src" "$REPO_ROOT/pandaPI/grounder/src" "$REPO_ROOT/pandaPI/engine/src" -type f \( -name 'hddl.y' -o -name 'hddl-token.l' -o -name 'options.ggo' \) | wc -l | tr -d ' ')"
+  generated_count=8
+  third_party_count="$(find "$REPO_ROOT/pandaPI/grounder/cpddl/third-party" "$REPO_ROOT/pandaPI/engine/src/symbolic_search/cudd-3.0.0" -type f 2>/dev/null | wc -l | tr -d ' ')"
+  dependency_count="$(find "$REPO_ROOT/pandaPI/grounder/cpddl" "$REPO_ROOT/pandaPI/grounder/h2-fd-preprocessor" -type f 2>/dev/null | wc -l | tr -d ' ')"
+
+  {
+    printf '%s\n' "# Source-quality selector surface"
+    printf '\n'
+    printf '%s\n' "platform: $PLATFORM"
+    printf '%s\n' "output_root: build/source-quality/$PLATFORM"
+    printf '%s\n' "SOURCE_QUALITY_ROOT: build/source-quality/$PLATFORM"
+    printf '\n'
+    printf '%s\n' "## Selector classes"
+    printf '\n'
+    printf '%s\n' "| Symbol | Source class | Policy |"
+    printf '%s\n' "|--------|--------------|--------|"
+    printf '%s\n' "| FIRST_PARTY | first-party maintained | Selected for future Arc07 quality gates. |"
+    printf '%s\n' "| GENERATOR | first-party generator/template | Fix generated-output defects at the Chengdu-owned grammar/spec/template when applicable. |"
+    printf '%s\n' "| GENERATED | generated build output | Excluded from first-party selectors unless a later slice accepts committed generated output. |"
+    printf '%s\n' "| THIRD_PARTY | vendored third-party | Excluded from first-party obligations unless a dependency audit accepts the boundary. |"
+    printf '%s\n' "| DEPENDENCY | dependency-internal | Separately reported from first-party maintained files. |"
+    printf '%s\n' "| COPIED_BUILD | copied build artifact | Mapped back to canonical pandaPI/<component> source roots. |"
+    printf '%s\n' "| BUILD_OUTPUT | generated build output | build/, dist/, release/, and CMake/CTest/profile products are evidence, not source. |"
+    printf '\n'
+    printf '%s\n' "## Component first-party maintained roots"
+    printf '\n'
+    printf '%s\n' "- parser: pandaPI/parser/src/*.cpp and *.hpp, excluding cmdline.(c|h), hddl.(cpp|hpp), and hddl-token.cpp"
+    printf '%s\n' "- grounder: pandaPI/grounder/src/*.cpp, *.h, and rss.c, excluding cmdline.(c|h), cpddl, h2-fd-preprocessor, and nested third-party paths"
+    printf '%s\n' "- engine: pandaPI/engine/src first-party *.cpp/*.h trees, excluding pandaPI/engine/src/symbolic_search/cudd-3.0.0"
+    printf '%s\n' "- runtime: pandaPI/runtime/include, pandaPI/runtime/src, and pandaPI/runtime/tests"
+    printf '\n'
+    printf '%s\n' "## Generated and generator/template policy"
+    printf '\n'
+    printf '%s\n' "- Flex: pandaPI/parser/src/hddl-token.l -> pandaPI/parser/src/hddl-token.cpp"
+    printf '%s\n' "- Bison: pandaPI/parser/src/hddl.y -> pandaPI/parser/src/hddl.cpp and pandaPI/parser/src/hddl.hpp"
+    printf '%s\n' "- gengetopt: parser, grounder, and engine options.ggo -> cmdline.c and cmdline.h"
+    printf '\n'
+    printf '%s\n' "## Third-party and dependency exclusions"
+    printf '\n'
+    printf '%s\n' "- cpddl: pandaPI/grounder/cpddl"
+    printf '%s\n' "- H2: pandaPI/grounder/h2-fd-preprocessor"
+    printf '%s\n' "- nested cpddl third-party: pandaPI/grounder/cpddl/third-party"
+    printf '%s\n' "- CUDD: pandaPI/engine/src/symbolic_search/cudd-3.0.0"
+    printf '\n'
+    printf '%s\n' "## Copied build and generated build output"
+    printf '\n'
+    printf '%s\n' "- copied build source pattern: build/$PLATFORM/source and build/\$(PLATFORM)/source"
+    printf '%s\n' "- generated build output roots: build, dist, release"
+    printf '%s\n' "- source map evidence: build/source-quality/$PLATFORM/source-map.tsv"
+    printf '\n'
+    printf '%s\n' "## Counts"
+    printf '\n'
+    printf '%s\n' "| Class | Count |"
+    printf '%s\n' "|-------|-------|"
+    printf '%s\n' "| FIRST_PARTY first-party maintained | $first_party_count |"
+    printf '%s\n' "| GENERATOR first-party generator/template | $generator_count |"
+    printf '%s\n' "| GENERATED generated build output patterns | $generated_count |"
+    printf '%s\n' "| THIRD_PARTY vendored third-party files | $third_party_count |"
+    printf '%s\n' "| DEPENDENCY dependency-internal files | $dependency_count |"
+  } > "$report"
+
+  {
+    printf '%s\n' "path	source_class"
+    list_first_party_files | while IFS= read -r path; do
+      printf '%s\t%s\n' "$path" "$(classify_path "$path")"
+    done
+  } > "$tsv"
+
+  printf '%s\n' "$report"
+}
+
+write_profile_map() {
+  make_out_dir
+  local report="$OUT_DIR/source-quality-profile-map.md"
+  local map="$OUT_DIR/source-map.tsv"
+
+  {
+    printf '%s\n' "component	copied_build_root	canonical_source_root	profile_dir"
+    printf '%s\n' "parser	build/$PLATFORM/source/parser.*	pandaPI/parser	build/source-quality/$PLATFORM/profiles/parser"
+    printf '%s\n' "grounder	build/$PLATFORM/source/grounder.*	pandaPI/grounder	build/source-quality/$PLATFORM/profiles/grounder"
+    printf '%s\n' "engine	build/$PLATFORM/source/engine.*	pandaPI/engine	build/source-quality/$PLATFORM/profiles/engine"
+    printf '%s\n' "runtime	build/runtime/$PLATFORM	pandaPI/runtime	build/source-quality/$PLATFORM/profiles/runtime"
+  } > "$map"
+
+  {
+    printf '%s\n' "# Source-quality profile/source map"
+    printf '\n'
+    printf '%s\n' "platform: $PLATFORM"
+    printf '%s\n' "LLVM_PROFILE_FILE root: build/source-quality/$PLATFORM/profiles/<component>/%m-%p.profraw"
+    printf '\n'
+    printf '%s\n' "Future coverage work should map copied build paths back to canonical pandaPI/ roots before reporting first-party coverage."
+    printf '\n'
+    printf '%s\n' "| Component | Copied/source root | Canonical source root | LLVM_PROFILE_FILE directory |"
+    printf '%s\n' "|-----------|--------------------|-----------------------|-----------------------------|"
+    printf '%s\n' "| parser | build/$PLATFORM/source/parser.* | pandaPI/parser | build/source-quality/$PLATFORM/profiles/parser |"
+    printf '%s\n' "| grounder | build/$PLATFORM/source/grounder.* | pandaPI/grounder | build/source-quality/$PLATFORM/profiles/grounder |"
+    printf '%s\n' "| engine | build/$PLATFORM/source/engine.* | pandaPI/engine | build/source-quality/$PLATFORM/profiles/engine |"
+    printf '%s\n' "| runtime | build/runtime/$PLATFORM | pandaPI/runtime | build/source-quality/$PLATFORM/profiles/runtime |"
+    printf '\n'
+    printf '%s\n' "source-map: build/source-quality/$PLATFORM/source-map.tsv"
+  } > "$report"
+
+  printf '%s\n' "$report"
+}
+
+write_compile_entry() {
+  local file="$1" command="$2" directory="$3" comma="$4"
+  printf '%s\n' "  {"
+  printf '    "directory": "%s",\n' "$(json_string "$directory")"
+  printf '    "command": "%s",\n' "$(json_string "$command")"
+  printf '    "file": "%s"\n' "$(json_string "$file")"
+  if [ "$comma" = "yes" ]; then
+    printf '%s\n' "  },"
+  else
+    printf '%s\n' "  }"
+  fi
+}
+
+write_compile_db_from_list() {
+  local component="$1" db_dir="$2" list="$3" compile_flags="$4" c_compile_flags="$5"
+  local json="$db_dir/compile_commands.json"
+  local first="$db_dir/first-party-selected.txt"
+  local filter="$db_dir/filter-report.md"
+  local tmp total index rel abs ext cmd
+
+  tmp="$db_dir/entries.tmp"
+  mkdir -p "$db_dir"
+  : > "$tmp"
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    abs="$REPO_ROOT/$rel"
+    ext="${rel##*.}"
+    if [ "$ext" = "c" ]; then
+      cmd="cc $c_compile_flags -c $abs -o $db_dir/objects/${rel##*/}.o"
+    else
+      cmd="c++ $compile_flags -c $abs -o $db_dir/objects/${rel##*/}.o"
+    fi
+    printf '%s\t%s\n' "$abs" "$cmd" >> "$tmp"
+  done < "$list"
+
+  total="$(wc -l < "$tmp" | tr -d ' ')"
+  index=0
+  {
+    printf '%s\n' "["
+    while IFS="$(printf '\t')" read -r abs cmd; do
+      index=$((index + 1))
+      if [ "$index" -lt "$total" ]; then
+        write_compile_entry "$abs" "$cmd" "$REPO_ROOT" "yes"
+      else
+        write_compile_entry "$abs" "$cmd" "$REPO_ROOT" "no"
+      fi
+    done < "$tmp"
+    printf '%s\n' "]"
+  } > "$json"
+  rm -f "$tmp"
+
+  {
+    while IFS= read -r rel; do
+      if is_first_party_translation_unit "$component" "$rel"; then
+        printf '%s\n' "$rel"
+      fi
+    done < "$list"
+  } > "$first"
+
+  {
+    printf '%s\n' "# $component compile database filter evidence"
+    printf '\n'
+    printf '%s\n' "compile_commands: compile_commands.json"
+    printf '%s\n' "first-party selected translation units: first-party-selected.txt"
+    printf '%s\n' "selected count: $(wc -l < "$first" | tr -d ' ')"
+    printf '\n'
+    printf '%s\n' "Exclusions encoded for this component:"
+    printf '%s\n' "- GENERATED generated build output: cmdline.(c|h), hddl.(cpp|hpp), hddl-token.cpp"
+    printf '%s\n' "- GENERATOR first-party generator/template: hddl.y, hddl-token.l, options.ggo"
+    printf '%s\n' "- THIRD_PARTY vendored third-party: cpddl/third-party and cudd-3.0.0"
+    printf '%s\n' "- DEPENDENCY dependency-internal: cpddl and h2-fd-preprocessor"
+    printf '%s\n' "- COPIED_BUILD source map: build/$PLATFORM/source and build/\$(PLATFORM)/source"
+    printf '%s\n' "- BUILD_OUTPUT generated build output: build, dist, release"
+  } > "$filter"
+}
+
+parser_compile_db() {
+  local db_dir list
+  db_dir="$(component_compile_dir parser)"
+  list="$db_dir/raw-translation-units.txt"
+  mkdir -p "$db_dir/objects"
+  {
+    find "$REPO_ROOT/pandaPI/parser/src" -maxdepth 1 -type f -name '*.cpp' | sed "s#^$REPO_ROOT/##"
+    printf '%s\n' "pandaPI/parser/src/hddl.cpp"
+    printf '%s\n' "pandaPI/parser/src/hddl-token.cpp"
+    printf '%s\n' "pandaPI/parser/src/cmdline.c"
+  } | sort > "$list"
+  write_compile_db_from_list parser "$db_dir" "$list" "-O3 -pipe -Wall -Wextra -pedantic -std=c++17 -DNDEBUG -IpandaPI/runtime/include -Wno-unused-parameter" "-O3 -pipe -Wall -Wextra -pedantic -DNDEBUG -Wno-unused-parameter"
+}
+
+grounder_compile_db() {
+  local db_dir list
+  db_dir="$(component_compile_dir grounder)"
+  list="$db_dir/raw-translation-units.txt"
+  mkdir -p "$db_dir/objects"
+  {
+    find "$REPO_ROOT/pandaPI/grounder/src" -maxdepth 1 -type f \( -name '*.cpp' -o -name '*.c' \) | sed "s#^$REPO_ROOT/##"
+    printf '%s\n' "pandaPI/grounder/src/cmdline.c"
+    find "$REPO_ROOT/pandaPI/grounder/h2-fd-preprocessor/src" -maxdepth 1 -type f -name '*.cc' | sed "s#^$REPO_ROOT/##"
+  } | sort -u > "$list"
+  write_compile_db_from_list grounder "$db_dir" "$list" "-O3 -pipe -Wall -Wextra -pedantic -std=gnu++20 -DNDEBUG -IpandaPI/runtime/include -IpandaPI/grounder/cpddl -IpandaPI/grounder/cpddl/third-party/boruvka -Wno-unused-parameter -Wno-sign-compare" "-O3 -pipe -Wall -Wextra -pedantic -DNDEBUG -Wno-unused-parameter -Wno-sign-compare"
+}
+
+engine_compile_db() {
+  local db_dir build_dir raw selected filter
+  db_dir="$(component_compile_dir engine)"
+  build_dir="$db_dir/build"
+  raw="$db_dir/compile_commands.json"
+  selected="$db_dir/first-party-selected.txt"
+  filter="$db_dir/filter-report.md"
+  mkdir -p "$build_dir"
+  cmake -S "$REPO_ROOT/pandaPI/engine/src" -B "$build_dir" \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+    -DPANDAPI_RUNTIME_INCLUDE="$REPO_ROOT/pandaPI/runtime/include" >/dev/null
+  cp "$build_dir/compile_commands.json" "$raw"
+  sed -nE 's#^[[:space:]]*"file": "([^"]*pandaPI/engine/src/[^"]*[.](cpp|cc|cxx))",?#\1#p' "$raw" \
+    | sed "s#^$REPO_ROOT/##" \
+    | rg -v 'cudd-3.0.0|cmdline\.c' \
+    | sort -u > "$selected"
+  {
+    printf '%s\n' "# engine compile database filter evidence"
+    printf '\n'
+    printf '%s\n' "compile_commands: compile_commands.json"
+    printf '%s\n' "first-party selected translation units: first-party-selected.txt"
+    printf '%s\n' "selected count: $(wc -l < "$selected" | tr -d ' ')"
+    printf '\n'
+    printf '%s\n' "Exclusions encoded for this component:"
+    printf '%s\n' "- GENERATED generated build output: cmdline.(c|h)"
+    printf '%s\n' "- GENERATOR first-party generator/template: options.ggo"
+    printf '%s\n' "- THIRD_PARTY vendored third-party: pandaPI/engine/src/symbolic_search/cudd-3.0.0"
+    printf '%s\n' "- COPIED_BUILD source map: build/$PLATFORM/source and build/\$(PLATFORM)/source"
+    printf '%s\n' "- BUILD_OUTPUT generated build output: build, dist, release"
+  } > "$filter"
+}
+
+compile_db() {
+  local component="$1"
+  case "$component" in
+    parser)
+      parser_compile_db
+      ;;
+    grounder)
+      grounder_compile_db
+      ;;
+    engine)
+      engine_compile_db
+      ;;
+    *)
+      die "unknown component '$component'"
+      ;;
+  esac
+}
+
+compile_db_summary() {
+  local root component first out
+  root="$OUT_DIR/compile-db"
+  out="$root/first-party-selected.txt"
+  mkdir -p "$root"
+  : > "$out"
+  for component in parser grounder engine; do
+    first="$root/$component/first-party-selected.txt"
+    if [ ! -s "$first" ]; then
+      die "$first missing; run make compile-db-$component"
+    fi
+    sed "s#^#$component	#" "$first" >> "$out"
+  done
+  {
+    printf '%s\n' "# First-party compile database summary"
+    printf '\n'
+    for component in parser grounder engine; do
+      first="$root/$component/first-party-selected.txt"
+      printf '%s\n' "- $component: $(wc -l < "$first" | tr -d ' ') first-party selected translation units"
+    done
+  } > "$root/first-party-filter-report.md"
+}
+
+if [ "$#" -lt 3 ]; then
+  usage
+  exit 2
+fi
+
+COMMAND="$1"
+case "$COMMAND" in
+  surface|profile-map|compile-db-summary)
+    REPO_ROOT="${2%/}"
+    PLATFORM="$3"
+    shift 3
+    ;;
+  compile-db)
+    if [ "$#" -ne 4 ]; then
+      usage
+      exit 2
+    fi
+    COMPONENT="$2"
+    REPO_ROOT="${3%/}"
+    PLATFORM="$4"
+    shift 4
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+OUT_DIR="$REPO_ROOT/build/source-quality/$PLATFORM"
+require_repo
+
+case "$COMMAND" in
+  surface)
+    write_surface
+    ;;
+  profile-map)
+    write_profile_map
+    ;;
+  compile-db)
+    compile_db "$COMPONENT"
+    ;;
+  compile-db-summary)
+    compile_db_summary
+    ;;
+esac

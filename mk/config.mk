@@ -60,11 +60,22 @@ RUNTIME_STATIC_ANALYSIS_BUILD_DIR := $(RUNTIME_STATIC_ANALYSIS_DIR)/build
 WARNING_INVENTORY_DIR := build/warnings/$(PLATFORM)
 WARNING_INVENTORY_LOG := $(WARNING_INVENTORY_DIR)/build.log
 WARNING_INVENTORY_REPORT := $(WARNING_INVENTORY_DIR)/warning-inventory.txt
+SOURCE_QUALITY_DIR := build/source-quality/$(PLATFORM)
+SOURCE_QUALITY_COMPILE_DB_DIR := $(SOURCE_QUALITY_DIR)/compile-db
+SOURCE_QUALITY_TOOL := tools/source-quality/surface
+SOURCE_QUALITY_COPIED_BUILD_ROOT_PATTERN := build/$(PLATFORM)/source
+SOURCE_QUALITY_BUILD_OUTPUT_DIRS := build dist release
+SOURCE_QUALITY_FIRST_PARTY_ROOTS := pandaPI/parser pandaPI/grounder pandaPI/engine pandaPI/runtime
+SOURCE_QUALITY_GENERATOR_PATTERNS := hddl.y hddl-token.l options.ggo
+SOURCE_QUALITY_GENERATED_PATTERNS := cmdline.c cmdline.h hddl.cpp hddl.hpp hddl-token.cpp
+SOURCE_QUALITY_THIRD_PARTY_ROOTS := pandaPI/grounder/cpddl pandaPI/grounder/h2-fd-preprocessor pandaPI/engine/src/symbolic_search/cudd-3.0.0
+SOURCE_QUALITY_DEPENDENCY_ROOTS := pandaPI/grounder/cpddl pandaPI/grounder/h2-fd-preprocessor
+SOURCE_QUALITY_COPIED_BUILD_ROOTS := $(SOURCE_QUALITY_COPIED_BUILD_ROOT_PATTERN)
 CLANG_TIDY_CHECKS ?= -*,clang-analyzer-*
 CLANG_TIDY_HEADER_FILTER ?= (^|.*/)pandaPI/runtime/(include|src|tests)/.*
 OWNED_CPP_DIRS := $(RUNTIME_INCLUDE_DIR) $(RUNTIME_SOURCE_DIR)/src $(RUNTIME_SOURCE_DIR)/tests
 OWNED_CPP_FIND := find $(OWNED_CPP_DIRS) -type f \( -name '*.h' -o -name '*.hpp' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) -print
-SHELL_SCRIPTS := $(shell find scripts -type f -name '*.sh' -print) tests/contract/run tests/smoke/run tools/release/package tools/provenance/check tools/shared/platform
+SHELL_SCRIPTS := $(shell find scripts -type f -name '*.sh' -print) tests/contract/run tests/smoke/run tools/release/package tools/provenance/check tools/shared/platform $(SOURCE_QUALITY_TOOL)
 
 define banner
 printf '\n'
