@@ -86,4 +86,11 @@ coverage:
 	  -ignore-filename-regex="$$ignore_regex" \
 	  -format=text > "$(RUNTIME_COVERAGE_DETAIL)"; \
 	printf '%b\n' "$(GREEN)Coverage summary: $(RUNTIME_COVERAGE_SUMMARY)$(RESET)"; \
-	printf '%b\n' "$(GREEN)Coverage detail:  $(RUNTIME_COVERAGE_DETAIL)$(RESET)"
+	printf '%b\n' "$(GREEN)Coverage detail:  $(RUNTIME_COVERAGE_DETAIL)$(RESET)"; \
+	for summary in "$(RUNTIME_COVERAGE_REPORT_DIR)"/*summary*.txt; do \
+	  if [ ! -f "$$summary" ]; then \
+	    continue; \
+	  fi; \
+	  printf '\n%b\n' "$(CYAN)Coverage report summary: $$summary$(RESET)"; \
+	  cat "$$summary"; \
+	done
