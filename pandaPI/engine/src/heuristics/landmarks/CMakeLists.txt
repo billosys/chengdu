@@ -1,4 +1,4 @@
-file(GLOB hlm_SRC "*.h" "*.cpp" "./lmDataStructures/*.cpp" "./lmDataStructures/*.h" "./lmExtraction/*.cpp" "./lmExtraction/*.h")
+file(GLOB hlm_SRC "*.h" "*.cpp" "./lm_data_structures/*.cpp" "./lm_data_structures/*.h" "./lm_extraction/*.cpp" "./lm_extraction/*.h")
 
 add_library(hlm ${hlm_SRC})
 target_compile_options(hlm PUBLIC ${compiler_flags})

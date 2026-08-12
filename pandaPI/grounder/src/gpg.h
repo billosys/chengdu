@@ -27,7 +27,7 @@
 
 
 #include "debug.h"
-#include "hierarchy-typing.h"
+#include "hierarchy_typing.h"
 #include "model.h"
 #include "rss.h"
 

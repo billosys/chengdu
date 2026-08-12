@@ -28,10 +28,10 @@ endif
 
 all: pandapi-parser
 
-pandaPIparser: src/hddl-token.o src/hddl.o src/main.o src/sortexpansion.o src/parsetree.o src/util.o src/domain.o src/output.o src/parametersplitting.o src/cwa.o src/typeof.o src/shopWriter.o src/hpdlWriter.o src/hddlWriter.o src/htn2stripsWriter.o src/orderingDecomposition.o src/plan.o src/verify.o src/properties.o src/verification_encoding.o src/cmdline.o
+pandaPIparser: src/hddl-token.o src/hddl.o src/main.o src/sortexpansion.o src/parsetree.o src/util.o src/domain.o src/output.o src/parametersplitting.o src/cwa.o src/typeof.o src/shop_writer.o src/hpdl_writer.o src/hddl_writer.o src/htn2strips_writer.o src/ordering_decomposition.o src/plan.o src/verify.o src/properties.o src/verification_encoding.o src/cmdline.o
 	${CXX} ${LINKERFLAG} $^ -o pandaPIparser 
 
-pandapi-parser: src/hddl-token.o src/hddl.o src/pandapi_parser_native.o src/main_legacy.o src/sortexpansion.o src/parsetree.o src/util.o src/domain.o src/output.o src/parametersplitting.o src/cwa.o src/typeof.o src/shopWriter.o src/hpdlWriter.o src/hddlWriter.o src/htn2stripsWriter.o src/orderingDecomposition.o src/plan.o src/verify.o src/properties.o src/verification_encoding.o src/cmdline.o
+pandapi-parser: src/hddl-token.o src/hddl.o src/pandapi_parser_native.o src/main_legacy.o src/sortexpansion.o src/parsetree.o src/util.o src/domain.o src/output.o src/parametersplitting.o src/cwa.o src/typeof.o src/shop_writer.o src/hpdl_writer.o src/hddl_writer.o src/htn2strips_writer.o src/ordering_decomposition.o src/plan.o src/verify.o src/properties.o src/verification_encoding.o src/cmdline.o
 	${CXX} ${LINKERFLAG} $^ $(PANDAPI_RUNTIME_LIB) -o pandapi-parser
 
 src/main_legacy.o: src/main.cpp src/cmdline.h src/hddl.hpp

@@ -2,7 +2,7 @@
 #define partial_order_h_INCLUDED
 
 #include "../flags.h" // defines flags
-#include "../Model.h"
+#include "../model.h"
 #include "pdt.h"
 
 

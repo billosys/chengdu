@@ -1,8 +1,8 @@
 add_subdirectory(landmarks)
-add_subdirectory(rcHeuristics)
+add_subdirectory(rc_heuristics)
 
 if (CPLEX_SOURCE_DIR)
-	add_subdirectory(dofHeuristics)
+	add_subdirectory(dof_heuristics)
 endif (CPLEX_SOURCE_DIR)
 
 file(GLOB heuristics_SRC "*.h" "*.cpp")

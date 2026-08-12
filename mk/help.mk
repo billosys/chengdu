@@ -46,6 +46,8 @@ help:
 	printf '%b\n' "  $(YELLOW)make coverage$(RESET)           - Run runtime Clang source coverage"; \
 	printf '%b\n' "  $(YELLOW)make source-quality-surface$(RESET) - Write Arc07 source-class selector report"; \
 	printf '%b\n' "  $(YELLOW)make source-quality-profile-map$(RESET) - Write Arc07 source/profile mapping report"; \
+	printf '%b\n' "  $(YELLOW)make source-quality-naming-report$(RESET) - Write Arc07 source naming normalization report"; \
+	printf '%b\n' "  $(YELLOW)make source-quality-naming-check$(RESET) - Check first-party source naming policy"; \
 	printf '%b\n' "  $(YELLOW)make compile-db-parser$(RESET)   - Generate parser source-quality compile database"; \
 	printf '%b\n' "  $(YELLOW)make compile-db-grounder$(RESET) - Generate grounder source-quality compile database"; \
 	printf '%b\n' "  $(YELLOW)make compile-db-engine$(RESET)   - Generate engine source-quality compile database"; \

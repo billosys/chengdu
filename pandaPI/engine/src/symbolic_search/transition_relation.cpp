@@ -1,6 +1,6 @@
 #include "transition_relation.h"
 
-#include "../Model.h"
+#include "../model.h"
 
 #include <algorithm>
 #include <cassert>

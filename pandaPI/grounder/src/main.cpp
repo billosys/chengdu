@@ -12,10 +12,10 @@
 #include "main.h"
 #include "debug.h"
 #include "grounding.h"
-#include "hierarchy-typing.h"
+#include "hierarchy_typing.h"
 #include "model.h"
 #include "parser.h"
-#include "givenPlan.h"
+#include "given_plan.h"
 
 
 #include "cmdline.h"

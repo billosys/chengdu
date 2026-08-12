@@ -4,7 +4,7 @@
 #include <ostream>
 #include "main.h"
 #include "model.h"
-#include "givenPlan.h"
+#include "given_plan.h"
 
 
 struct grounding_configuration{

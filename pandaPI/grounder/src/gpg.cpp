@@ -1,7 +1,7 @@
 #include "gpg.h"
 
 #include "postprocessing.h"
-#include "groundedGPG.h"
+#include "grounded_gpg.h"
 
 std::map<int,int> liftedGroundingCount;
 std::map<int,double> stateElementGroundingTime;

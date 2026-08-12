@@ -12,6 +12,18 @@ source-quality-profile-map:
 	"$(SOURCE_QUALITY_TOOL)" profile-map "$(CURDIR)" "$(PLATFORM)"
 	printf '%b\n' "$(GREEN)Source-quality profile map: $(SOURCE_QUALITY_DIR)/source-quality-profile-map.md$(RESET)"
 
+.PHONY: source-quality-naming-report
+source-quality-naming-report:
+	printf '%b\n' "$(BLUE)Writing source-quality naming normalization report...$(RESET)"
+	"$(SOURCE_QUALITY_TOOL)" naming-report "$(CURDIR)" "$(PLATFORM)"
+	printf '%b\n' "$(GREEN)Source-quality naming report: docs/design-v0.3.0/arc07-source-quality-expansion/source-naming-normalization.md$(RESET)"
+
+.PHONY: source-quality-naming-check
+source-quality-naming-check:
+	printf '%b\n' "$(BLUE)Checking first-party source naming policy...$(RESET)"
+	"$(SOURCE_QUALITY_TOOL)" naming-check "$(CURDIR)" "$(PLATFORM)"
+	printf '%b\n' "$(GREEN)Source-quality naming check passed$(RESET)"
+
 .PHONY: compile-db-parser
 compile-db-parser:
 	printf '%b\n' "$(BLUE)Generating parser source-quality compile database...$(RESET)"

@@ -55,7 +55,7 @@ include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/symbolic_search/cudd-3.0.0/cplusp
 include_directories("search")
 include_directories("symbolic_search")
 include_directories("heuristics")
-include_directories("intDataStructures")
+include_directories("int_data_structures")
 include_directories("translation")
 if (PANDAPI_RUNTIME_INCLUDE)
 	include_directories("${PANDAPI_RUNTIME_INCLUDE}")
@@ -63,7 +63,7 @@ endif()
 add_subdirectory(search)
 add_subdirectory(symbolic_search)
 add_subdirectory(heuristics)
-add_subdirectory(intDataStructures)
+add_subdirectory(int_data_structures)
 add_subdirectory(translation)
 
 
@@ -79,7 +79,7 @@ add_custom_command(
 
 file(GLOB main_SRC "*.h" "*.cpp" "cmdline.c")
 list(REMOVE_ITEM main_SRC "${CMAKE_CURRENT_SOURCE_DIR}/pandapi_engine_native.cpp")
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/SearchEngine.cpp
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/search_engine.cpp
 	PROPERTIES COMPILE_DEFINITIONS "main=pandaPIengine_legacy_main")
  
 # create the executable

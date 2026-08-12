@@ -4,7 +4,7 @@
 #include <bitset>
 #include "pdt.h"
 #include "ipasir.h"
-#include "../Util.h"
+#include "../util.h"
 
 void printMemory();
 

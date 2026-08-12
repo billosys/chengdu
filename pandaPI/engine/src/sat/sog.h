@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <fstream>
 #include "../flags.h" // defines flags
-#include "../Model.h"
+#include "../model.h"
 
 struct PDT;
 

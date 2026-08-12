@@ -1,6 +1,6 @@
 #include "sym_variables.h"
 
-#include "../Model.h"
+#include "../model.h"
 
 #include <fstream>
 #include <iostream>

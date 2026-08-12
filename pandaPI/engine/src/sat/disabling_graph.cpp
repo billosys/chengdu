@@ -2,8 +2,8 @@
 #include <queue>
 
 #include "disabling_graph.h"
-#include "../Debug.h"
-#include "../Invariants.h"
+#include "../debug.h"
+#include "../invariants.h"
 
 graph::graph(int num){
 	numVertices = num;

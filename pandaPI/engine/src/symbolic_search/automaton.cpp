@@ -1,5 +1,5 @@
-#include "../Debug.h"
-#include "../Util.h"
+#include "../debug.h"
+#include "../util.h"
 #include "automaton.h"
 #include "sym_variables.h"
 #include "transition_relation.h"

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "../flags.h" // defines flags
-#include "../Model.h"
+#include "../model.h"
 #include "sog.h"
 #include "sat_encoder.h"
 

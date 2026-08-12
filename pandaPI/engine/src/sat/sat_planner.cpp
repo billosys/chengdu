@@ -5,8 +5,8 @@
 #include "state_formula.h"
 #include "disabling_graph.h"
 #include "partial_order.h"
-#include "../Util.h"
-#include "../Invariants.h"
+#include "../util.h"
+#include "../invariants.h"
 #include <cassert>
 #include <thread> 
 #include <chrono>

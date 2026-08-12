@@ -7,7 +7,7 @@
 //#include "Config.h" // defines a configuration
 //#include "Autoconf.h" // sets automatic flags based on the configuration
 
-#include "../Model.h"
+#include "../model.h"
 
 enum sat_pruning{
 	SAT_NONE=0, SAT_FF=1, SAT_H2=2

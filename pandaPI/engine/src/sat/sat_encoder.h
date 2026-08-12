@@ -5,7 +5,7 @@
 #include <vector>
 #include <set>
 #include <string>
-#include "../Debug.h"
+#include "../debug.h"
 
 #define INTPAD 4
 #define PATHPAD 15

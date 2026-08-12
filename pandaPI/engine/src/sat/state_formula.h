@@ -2,7 +2,7 @@
 #define state_formula_h_INCLUDED
 
 #include "../flags.h" // defines flags
-#include "../Model.h"
+#include "../model.h"
 #include "sat_encoder.h"
 #include "pdt.h"
 
