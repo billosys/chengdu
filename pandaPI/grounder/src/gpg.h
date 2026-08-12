@@ -536,7 +536,7 @@ next_action:;
 		std::sort(eligibleSizes.begin(), eligibleSizes.end());
 		// prune 10 largest ones
 		for (int i = 0; i < 1 && eligibleSizes.size() - i - 1 >= 0; i++){
-			int size = std::get<0>(eligibleSizes[eligibleSizes.size() - i - 1]);
+			[[maybe_unused]] int size = std::get<0>(eligibleSizes[eligibleSizes.size() - i - 1]);
 			int a = std::get<1>(eligibleSizes[eligibleSizes.size() - i - 1]);
 			int pre = std::get<2>(eligibleSizes[eligibleSizes.size() - i - 1]);
 			const_cast<GpgPreprocessedDomain<InstanceType> &>(preprocessedDomain).eligibleInitialPreconditionsByAction[a].erase(pre);

@@ -579,7 +579,7 @@ reconstructed_plan extract2From(int curCost, int curDepth,
 			assert(!(cost != -1 && depth >= 0));
 		
 			if (cost != -1) { // depth < 0, indicates additional cost edge
-				int costCarriedByTheEdge = cost;
+				[[maybe_unused]] int costCarriedByTheEdge = cost;
 				
 				DEBUG(pc(mc); std::cout << "\t" << color(YELLOW,"This edge carries additional cost.") << " cost=" << cost << " depth=" << depth << " delta=" << costCarriedByTheEdge << " m=" << appliedMethod << std::endl);
 				assert(-depth-1 == toStackHead);
@@ -1774,4 +1774,3 @@ void build_automaton(Model * htn){
 
 	//std::cout << to_string(htn) << std::endl;
 }
-

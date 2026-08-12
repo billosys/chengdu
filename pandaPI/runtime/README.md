@@ -68,6 +68,16 @@ The runtime uses C++17. New code should prefer standard-library ownership,
 paths, strings, streams, chrono/timeouts, containers, and scoped resource
 management before considering third-party dependencies.
 
+## Compiler Warnings
+
+Arc06 Slice05 treats `pandaPI/runtime` as the owned zero-warning surface.
+`make warning-inventory` builds the runtime before parser, grounder, and
+engine and observed zero runtime compiler warnings on `macos-arm64`. Future
+runtime warnings should be fixed before being budgeted; generated,
+dependency-internal, copied build-tree, or platform/toolchain warning budgets
+do not apply to this owned runtime directory unless a later ledger explicitly
+changes that policy.
+
 ## Arc03 Inputs
 
 Arc03 defines the managed-process contract this runtime will eventually

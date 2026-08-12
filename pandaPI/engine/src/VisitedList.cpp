@@ -16,8 +16,8 @@
 const uint64_t max32BitP = 2147483647ULL;
 const uint64_t over16BitP = 65537ULL;
 const uint64_t tenMillionP = 16777213; // largest prime smaller than 16*1024*1014
-const uint64_t oneMillionP = 1048573; // largest prime smaller than 1024*1014
-const uint64_t tenThousandP = 16381; // largest prime smaller than 1024*16
+[[maybe_unused]] const uint64_t oneMillionP = 1048573; // largest prime smaller than 1024*1014
+[[maybe_unused]] const uint64_t tenThousandP = 16381; // largest prime smaller than 1024*16
 const uint64_t tenThousandthP = 104729; // the 10.000th prime number
 
 

@@ -2536,7 +2536,7 @@ newlyReachedMLMs = new noDelIntSet();
 					stack.push_back(i);
 			}
 			set<int> tReachable;
-			int processedSCCs = 0;
+			[[maybe_unused]] int processedSCCs = 0;
 
 			while (!stack.empty()) {
 				int scc = stack.back();

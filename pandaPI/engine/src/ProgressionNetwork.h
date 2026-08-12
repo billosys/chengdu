@@ -27,7 +27,7 @@ namespace progression {
 
 
 // forward declaration due to cyclic dependency
-struct Model;
+class Model;
 
 
 #ifdef TRACESOLUTION

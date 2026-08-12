@@ -13,7 +13,7 @@ namespace progression {
 class bucketSet {
 private:
 	bool* container;
-	int numSet =0;
+	[[maybe_unused]] int numSet =0;
 	int containersize;
 	int currentSize;
 

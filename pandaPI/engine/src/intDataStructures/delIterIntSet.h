@@ -31,7 +31,7 @@ struct llInt {
 class delIterIntSet {
 private:
 	bool* boolContainer = nullptr;
-	int iterI = -1;
+	[[maybe_unused]] int iterI = -1;
 	int containerSize = -1;
 	int currentSize = -1;
 	llInt* first = nullptr;

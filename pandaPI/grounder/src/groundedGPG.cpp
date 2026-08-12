@@ -141,7 +141,6 @@ std::pair<size_t, size_t> groundedTdg (std::vector<bool> & taskReached, std::vec
 
 	// Number of reached methods/tasks - allows for fast checks whether some methods/tasks were pruned
 	size_t reachedMethodsCount = 0;
-	size_t reachedTasksCount = 0;
 
 	std::queue<int> tasksToBeProcessed;
 
@@ -163,7 +162,6 @@ std::pair<size_t, size_t> groundedTdg (std::vector<bool> & taskReached, std::vec
 				{
 					tasksToBeProcessed.push (addTask);
 					taskReached[addTask] = true;
-					++reachedTasksCount;
 				}
 			}
 		}
@@ -222,7 +220,6 @@ std::pair<size_t, size_t> groundedTdg (std::vector<bool> & taskReached, std::vec
 					{
 						tasksToBeProcessed.push (addFact);
 						taskReached[addFact] = true;
-						++reachedTasksCount;
 					}
 				}
 			}

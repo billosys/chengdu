@@ -1443,7 +1443,7 @@ bool verify_plan(istream & plan, bool useOrderInformation, bool lenientMode, int
 			cout << color(COLOR_YELLOW,"Task with id="+to_string(entry.first)+" has too many arguments. "+ to_string(ps.arguments.size()) + " are given in the plan, but the domain required only " + to_string(domain_task.arguments->vars.size()) + " parameters.") << endl;
 			
 			vector<string> newArgs;
-			for (int iii = 0; iii < domain_task.arguments->vars.size(); iii++){
+			for (size_t iii = 0; iii < domain_task.arguments->vars.size(); iii++){
 			        newArgs.push_back(ps.arguments[iii]);
 			}
 			
@@ -1478,7 +1478,7 @@ bool verify_plan(istream & plan, bool useOrderInformation, bool lenientMode, int
 					transform(lower_param.begin(), lower_param.end(), lower_param.begin(), [](unsigned char c){ if (c == '-') return int('_'); return tolower(c); });
 					
 					for (const auto & s : sorts){
-						for (const string c : s.second){
+					for (const string & c : s.second){
 							string lower_c = c;
 							transform(lower_c.begin(), lower_c.end(), lower_c.begin(), [](unsigned char c){ if (c == '-') return int('_'); return tolower(c); });
 
@@ -1698,4 +1698,3 @@ bool verify_plan(istream & plan, bool useOrderInformation, bool lenientMode, int
 	overallResult &= orderingIsConsistent && linearisation.first.second;
 	return overallResult;
 }
-

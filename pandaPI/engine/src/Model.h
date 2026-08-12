@@ -255,7 +255,7 @@ namespace progression {
         void calcAddToActionMapping();
 
     private:
-			bool first = true;
+			[[maybe_unused]] bool first = true;
 
 			IntUtil iu;
 			StringUtil su;

@@ -39,6 +39,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make format-check$(RESET)       - Check owned C++ formatting"; \
 	printf '%b\n' "  $(YELLOW)make static-analysis$(RESET)    - Run shell and owned C++ static-analysis gates"; \
 	printf '%b\n' "  $(YELLOW)make static-analysis-cpp$(RESET) - Run clang-tidy over owned runtime C++"; \
+	printf '%b\n' "  $(YELLOW)make warning-inventory$(RESET)  - Capture compiler-warning inventory from make build"; \
 	printf '%b\n' "  $(YELLOW)make safety-checks$(RESET)      - Run repository safety checks"; \
 	printf '%b\n' "  $(YELLOW)make format$(RESET)             - Format owned C++ source"; \
 	printf '%b\n' "  $(YELLOW)make coverage$(RESET)           - Run runtime Clang source coverage"; \

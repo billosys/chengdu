@@ -55,7 +55,6 @@ void TransitionRelation::init(progression::Model *model) {
   }
 
   // Add effects to the tBDD
-  int counter = 0;
   for (auto it = effects.rbegin(); it != effects.rend(); ++it) {
     int var = it->first;
     BDD effectBDD = it->second;
@@ -66,7 +65,6 @@ void TransitionRelation::init(progression::Model *model) {
       effectBDD += (effect_conditions[var] * sV->biimp(var));
     }
     tBDD *= effectBDD;
-    counter++;
   }
   if (tBDD.IsZero()) {
     cerr << "Operator is empty: ID " << op_id << endl;

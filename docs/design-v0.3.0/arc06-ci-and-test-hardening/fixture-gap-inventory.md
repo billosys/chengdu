@@ -121,7 +121,7 @@ pipeline fixture set and positive supervised workload.
 | release workflow package/publish targets | Release publication | Arc08; not expanded by Arc06 Slice01 |
 | `make coverage` | Runtime Clang source coverage | local; emits reports under ignored `build/coverage/runtime/<platform>/report/`; adoption seam coverage deferred until managed-fixture profile collection is isolated |
 | `make static-analysis-cpp` | Runtime clang-tidy / Clang Static Analyzer | local; uses `clang-analyzer-*` through `clang-tidy` over the Debug runtime compile database; adoption seam static analysis deferred until owned native compile commands are isolated |
-| compiler-warning inventory/burndown target | warning ownership and release budget | deferred to Arc06 Slice05 |
+| `make warning-inventory` | compiler-warning inventory, warning ownership, and release budget | covered by Slice05; emits generated reports under `build/warnings/<platform>/` and leaves long-term budgets in `slice05-compiler-warning-burndown/warning-inventory.md` |
 | binary sanitizer fixture target | ASan/UBSan/LSan over process fixtures | deferred to Arc06 Slice06 |
 | TSan target | race detection | deferred to Arc06 Slice07 |
 

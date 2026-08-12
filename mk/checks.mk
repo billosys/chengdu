@@ -101,6 +101,39 @@ static-analysis-cpp:
 static-analysis: shell-syntax shellcheck static-analysis-cpp
 	printf '%b\n' "$(GREEN)Static analysis passed$(RESET)"
 
+.PHONY: warning-inventory compiler-warning-inventory warning-burndown
+compiler-warning-inventory warning-burndown: warning-inventory
+
+warning-inventory:
+	set -e; \
+	printf '%b\n' "$(BLUE)Capturing compiler warning inventory...$(RESET)"; \
+	mkdir -p "$(WARNING_INVENTORY_DIR)"; \
+	tmp_log="$(WARNING_INVENTORY_LOG).tmp"; \
+	if $(MAKE) build > "$$tmp_log" 2>&1; then \
+	  build_status=0; \
+	else \
+	  build_status="$$?"; \
+	fi; \
+	mv "$$tmp_log" "$(WARNING_INVENTORY_LOG)"; \
+	{ \
+	  printf '%s\n' "chengdu compiler warning inventory"; \
+	  printf '%s\n' "command: make build"; \
+	  printf '%s\n' "platform: $(PLATFORM)"; \
+	  printf '%s\n' "commit: $(GIT_COMMIT)"; \
+	  printf '%s\n' "log: $(WARNING_INVENTORY_LOG)"; \
+	  printf '%s\n' ""; \
+	  awk '/warning:|warnings generated|ld: warning/ { printf "%d:%s\n", NR, $$0 }' "$(WARNING_INVENTORY_LOG)"; \
+	} > "$(WARNING_INVENTORY_REPORT)"; \
+	warning_count="$$(awk '/warning:/ { count++ } END { print count + 0 }' "$(WARNING_INVENTORY_LOG)")"; \
+	printf '%b\n' "$(CYAN)Warning lines: $$warning_count$(RESET)"; \
+	printf '%b\n' "$(CYAN)Full build log: $(WARNING_INVENTORY_LOG)$(RESET)"; \
+	printf '%b\n' "$(CYAN)Warning inventory: $(WARNING_INVENTORY_REPORT)$(RESET)"; \
+	if [ "$$build_status" -ne 0 ]; then \
+	  printf '%b\n' "$(RED)warning-inventory: build failed; inspect $(WARNING_INVENTORY_LOG)$(RESET)" >&2; \
+	  exit "$$build_status"; \
+	fi; \
+	printf '%b\n' "$(GREEN)Compiler warning inventory captured$(RESET)"
+
 .PHONY: workflow-make-entrypoints-check
 workflow-make-entrypoints-check:
 	printf '%b\n' "$(BLUE)Checking workflow entrypoints use make...$(RESET)"

@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <unistd.h>
 #include <cassert>
+#include <string>
 
 #include "debug.h"
 #include "h2mutexes.h"
@@ -62,7 +63,7 @@ std::tuple<bool,std::vector<std::unordered_set<int>>, std::vector<std::unordered
 		
 		// construct variable
 	    Variable var(size_of_sas_group);
-		var.name = "var" + internal_variables.size();
+		var.name = "var" + std::to_string(internal_variables.size());
 		var.layer = -1;
 
 		int valPos = 0;
@@ -308,7 +309,6 @@ std::tuple<bool,std::vector<std::unordered_set<int>>, std::vector<std::unordered
 	DEBUG(std::cout << "Finished H2 mutex computation" << std::endl);
 
 	// find out which operators and facts were pruned
-	int afterwardsUnprunedFacts = 0;
 	int afterwardsUnprunedActions = 0;
 
 	// set all facts to pruned
@@ -320,7 +320,6 @@ std::tuple<bool,std::vector<std::unordered_set<int>>, std::vector<std::unordered
 			int factID = variableIndex[var][var->values[val]]; // identification via string
 			if (factID < 0) continue; // artificial goal fact or "non-of-those"
 			prunedFacts[factID] = false;
-			afterwardsUnprunedFacts++;
 		}
 	}
 
@@ -413,5 +412,3 @@ std::tuple<bool,std::vector<std::unordered_set<int>>, std::vector<std::unordered
 			h2_mutexes,
 			h2_invariants);
 }
-
-

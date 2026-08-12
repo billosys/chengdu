@@ -857,7 +857,7 @@ void write_grounded_HTN(std::ostream & pout, const Domain & domain, const Proble
 	for (const auto & [tID, _1, _2, _3, _4, instances] : output_actions){
 		GroundedTask & task = reachableTasks[tID];
 
-		for (const std::vector<int> & _cover_assignment : instances){
+		for (size_t instanceIdx = 0; instanceIdx < instances.size(); instanceIdx++){
 			pout << 0 << " ";
 			write_task_name(pout,domain,task);
 			pout << std::endl;

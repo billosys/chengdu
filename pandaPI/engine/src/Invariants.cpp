@@ -46,9 +46,9 @@ void extract_invariants_from_parsed_model(Model * htn){
 	cout << endl << "Extracting invariants from parsed model" << endl;
 	binary_invariants = new unordered_set<int>[2*htn->numStateBits];
 
-	int unusableInvariant = 0;
-	int unusableStrictMutexes = 0;
-	int unusableSASGroups = 0;
+	[[maybe_unused]] int unusableInvariant = 0;
+	[[maybe_unused]] int unusableStrictMutexes = 0;
+	[[maybe_unused]] int unusableSASGroups = 0;
 
 	// go through everything we know and add invariants
 	for (size_t invarN = 0; invarN < htn->numInvariants; invarN++){

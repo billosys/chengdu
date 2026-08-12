@@ -433,7 +433,7 @@ void compress_artificial_primitives(parsed_plan & plan, set<int> prims){
 		} else {
 			// removed a tasks before this one
 			plan.pos_in_primitive_plan[plan.primitive_plan[i]] -= decrement;
-			if (plan.pos_in_primitive_plan[plan.primitive_plan[i]]!= newPrimPlan.size()){
+			if (plan.pos_in_primitive_plan[plan.primitive_plan[i]] != static_cast<int>(newPrimPlan.size())){
 				cout << color(COLOR_RED,"Bug! ...") << endl;
 				exit(1);
 			}
@@ -442,7 +442,7 @@ void compress_artificial_primitives(parsed_plan & plan, set<int> prims){
 	}
 
 
-	if (decrement != prims.size()){
+	if (decrement != static_cast<int>(prims.size())){
 		cout << color(COLOR_RED,"Not all primitives were in the primitive plan ..." + to_string(decrement) + " < " + to_string(prims.size())) << endl;
 		exit(1);
 	}
@@ -665,6 +665,5 @@ void convert_plan(istream & plan, ostream & pout){
 
 	print_plan(converted_plan, pout);	
 }
-
 
 

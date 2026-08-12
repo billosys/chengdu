@@ -104,7 +104,7 @@ public:
         delete factory;
     }
 	
-	string getDescription(){
+	string getDescription() override{
 		return "hhRC2("	+ sasH->getDescription() + ";" +
 			(estimate == estDISTANCE?"distance":(estimate == estCOSTS?"cost":"mixed"))
 		   	+ ";" + (correctTaskCount?"correct count":"") + ")";

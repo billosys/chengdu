@@ -254,9 +254,9 @@ void write_instance_as_HPDL(ostream & dout, ostream & pout){
 	// the one declaring only elementary types will be the last one
 	set<string> sorts_rhs;
 	set<string> sorts_lhs;
-	bool lastSorts = false;
+	[[maybe_unused]] bool sawParentlessSortDefinition = false;
 	for (sort_definition sort_def : sort_definitions){
-		assert(!lastSorts); // only one sort definition without parents
+		assert(!sawParentlessSortDefinition); // only one sort definition without parents
 
 		dout << "   ";
 		for (string sort : sort_def.declared_sorts){
@@ -270,7 +270,7 @@ void write_instance_as_HPDL(ostream & dout, ostream & pout){
 			dout << " - " << output_sort;
 			sorts_rhs.insert(output_sort);
 		} else {
-			lastSorts = true;
+			sawParentlessSortDefinition = true;
 		}
 
 		dout << endl;

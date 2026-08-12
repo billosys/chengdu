@@ -503,7 +503,8 @@ std::tuple<pddl_lifted_mgroups_t,pddl_t*,std::vector<int>> cpddl_compute_FAM_mut
 	limits.max_mgroups = 10000;
 	pddl_lifted_mgroups_t lifted_mgroups;
 	pddlLiftedMGroupsInit(&lifted_mgroups);
-	bor_err_t err = BOR_ERR_INIT;
+	bor_err_t err;
+	borErrInit(&err);
 	if (!config.quietMode)
 		std::cout << "Computing Lifted FAM-Groups [Fiser, AAAI 2020]" << std::endl;
 	pddlLiftedMGroupsInferFAMGroups(pddl, &limits, &lifted_mgroups, &err);
