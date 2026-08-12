@@ -287,7 +287,7 @@ documentation/tutorial and release-publication work.
   [`arc05-binary-contract-adoption/slice08-engine-contract-adoption/cdc-verification.md`](arc05-binary-contract-adoption/slice08-engine-contract-adoption/cdc-verification.md).
   Arc05 is closed:
   [`arc05-binary-contract-adoption/closing-report.md`](arc05-binary-contract-adoption/closing-report.md).
-- **arc06 - active.** Detailed plan:
+- **arc06 - CC proposed done.** Detailed plan:
   [`arc06-ci-and-test-hardening/arc-plan.md`](arc06-ci-and-test-hardening/arc-plan.md).
   Slice01 fixture-gap-inventory is closed and CDC-verified:
   [`arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/slice-doc.md`](arc06-ci-and-test-hardening/slice01-fixture-gap-inventory/slice-doc.md),
@@ -325,14 +325,18 @@ documentation/tutorial and release-publication work.
   [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cc-prompt.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cc-prompt.md),
   [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/closing-report.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/closing-report.md),
   [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cdc-verification.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cdc-verification.md).
-  Slice07 tsan-and-ci-synthesis is open:
+  Slice07 tsan-and-ci-synthesis is CC proposed done:
   [`arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/slice-doc.md`](arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/slice-doc.md),
   [`arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/ledger.md`](arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/ledger.md),
-  [`arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/cc-prompt.md`](arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/cc-prompt.md).
-  Arc06 owns the remaining local/CI matrix, expanded process fixtures,
-  coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates,
-  TSan disposition, and release-readiness evidence needed by later release
-  dry-runs.
+  [`arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/cc-prompt.md`](arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/cc-prompt.md),
+  [`arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/closing-report.md`](arc06-ci-and-test-hardening/slice07-tsan-and-ci-synthesis/closing-report.md).
+  Arc06 closing report:
+  [`arc06-ci-and-test-hardening/closing-report.md`](arc06-ci-and-test-hardening/closing-report.md).
+  Arc06 now has CC evidence for the local/CI matrix, expanded process
+  fixtures, coverage, compiler-warning cleanup, heavier
+  sanitizer/static-analysis gates, TSan disposition, and release-readiness
+  handoff inputs needed by later release dry-runs; CDC verification is still
+  required before independent closure.
 - **arc07 - roadmap only.** Arc07 remains downstream of Arc05/Arc06 proof and
   should create the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
@@ -462,6 +466,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.54 - 2026-08-12.** Marked Arc06 CC proposed done after Slice07
+  tsan-and-ci-synthesis. Surfaced by: CC Slice07 implementation. Why: the
+  final Arc06 slice explicitly defers TSan until a representative supported
+  multithreaded workload exists, records final CI/local/pre-release gate
+  placement, and writes the Arc06 closing report with Arc07 documentation and
+  Arc08 release-prep handoff inputs. CDC verification remains required before
+  independent Arc06 closure.
 
 - **v1.53 - 2026-08-12.** Marked Arc06 Slice06
   binary-sanitizer-gates closed and CDC-verified, and opened Arc06 Slice07

@@ -128,10 +128,13 @@ deferrals that must be checked before package publication.
   [`slice06-binary-sanitizer-gates/cc-prompt.md`](slice06-binary-sanitizer-gates/cc-prompt.md),
   [`slice06-binary-sanitizer-gates/closing-report.md`](slice06-binary-sanitizer-gates/closing-report.md),
   [`slice06-binary-sanitizer-gates/cdc-verification.md`](slice06-binary-sanitizer-gates/cdc-verification.md).
-- **slice07 tsan-and-ci-synthesis - open.** Slice set:
+- **slice07 tsan-and-ci-synthesis - CC proposed done.** Slice set:
   [`slice07-tsan-and-ci-synthesis/slice-doc.md`](slice07-tsan-and-ci-synthesis/slice-doc.md),
   [`slice07-tsan-and-ci-synthesis/ledger.md`](slice07-tsan-and-ci-synthesis/ledger.md),
-  [`slice07-tsan-and-ci-synthesis/cc-prompt.md`](slice07-tsan-and-ci-synthesis/cc-prompt.md).
+  [`slice07-tsan-and-ci-synthesis/cc-prompt.md`](slice07-tsan-and-ci-synthesis/cc-prompt.md),
+  [`slice07-tsan-and-ci-synthesis/closing-report.md`](slice07-tsan-and-ci-synthesis/closing-report.md).
+  Arc06 is CC proposed done:
+  [`closing-report.md`](closing-report.md).
 
 ## 6. Planned implementation surface
 
@@ -193,6 +196,16 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.9 - 2026-08-12.** Marked Slice07 tsan-and-ci-synthesis CC proposed
+  done and added the Arc06 closing report. Surfaced by: CC workload review and
+  CI synthesis. Why: TSan is explicitly deferred because the current supported
+  workload exercises process behavior but not representative multithreaded
+  chengdu-owned code; runtime process observation is a single-threaded
+  fork/pipe/waitpid loop, shell timeouts are outside TSan's shared-memory
+  model, and the only clear in-tree thread primitive path is unsupported SAT.
+  Arc06 can close for CDC review with final local/CI gate placement and
+  Arc07/Arc08 handoff inputs recorded.
 
 - **v1.8 - 2026-08-12.** Marked Slice06 binary-sanitizer-gates closed and
   CDC-verified, and opened Slice07 tsan-and-ci-synthesis. Surfaced by: CDC
