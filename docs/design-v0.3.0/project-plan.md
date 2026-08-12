@@ -119,6 +119,10 @@ This plan adds the operator's 2026-08-12 source-quality correction:
 - generated code from Chengdu-owned generators/templates should be fixed at
   the generator/template, while generated code from third-party skeletons may
   be excluded or suppressed with rationale;
+- generated-warning cleanup must include root-cause and correctness analysis
+  before closure: each warning should be traced to the generated file,
+  generator/template or skeleton, ownership class, reason emitted, semantic
+  correctness impact, chosen remedy, and re-entry condition;
 - vendored third-party/dependency-internal code is excluded from Chengdu
   coverage/static-analysis/unit-test obligations unless a later dependency
   audit explicitly takes ownership of that boundary;
@@ -450,7 +454,8 @@ The accepted CI/tooling note
   parser, grounder, and engine behavior.
 - `clang-format` landed before large Arc05 C++ edits; Arc07 must expand
   formatting policy across first-party maintained source and decide generated
-  output handling by generator ownership.
+  output handling by generator ownership, root cause, correctness impact, and
+  documented remediation path.
 - ASan/UBSan runtime tests should become an early owned-code gate before
   executable behavior changes.
 - `clang-tidy` and Clang Static Analyzer checks started with runtime and
@@ -483,7 +488,7 @@ per-row in this project's `closing-report.md`.
 | P4 | Arc04 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted, with Arc02-selected dependencies entering only through approved facades/pilots. | reproduced |
 | P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract through namespaced `pandapi-*` entry points, with inherited-name shims deleted once native new-name builds and tests exist, without library availability expanding optional inherited surfaces. | reproduced |
 | P6 | Arc06 closes with the full local and CI gate suite proving positive and negative behavior under both CLI and pipe-supervised invocation, including expanded process fixtures, coverage evidence, compiler-warning disposition/burndown, and heavier sanitizer/static-analysis gates where supported. | reproduced |
-| P7 | Arc07 closes with parser, grounder, engine, runtime, and Chengdu-owned generators/templates classified and covered by explicit first-party source-quality policy: formatting, static analysis, coverage, unit/seam tests, warning policy, sanitizer triage, generated-code handling, and third-party exclusions or separately reported evidence. | reproduced |
+| P7 | Arc07 closes with parser, grounder, engine, runtime, and Chengdu-owned generators/templates classified and covered by explicit first-party source-quality policy: formatting, static analysis, coverage, unit/seam tests, warning policy, sanitizer triage, generated-code handling, generated-warning root-cause/correctness triage, and third-party exclusions or separately reported evidence. | reproduced |
 | P8 | Arc08 closes with the pandaPI 0.3.0 tutorial and documentation suite: beginner HTN/PDDL/HDDL onboarding, simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance, README updates, architecture docs, dependency rationale, source-quality posture, behavior-change table, and migration notes. | reproduced |
 | P9 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, source-quality release gates, release docs, and the new wolong fetch/install/migration path are verified on supported platforms. | reproduced |
 
@@ -535,6 +540,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.62 - 2026-08-12.** Made generated-warning root-cause and correctness
+  triage explicit for Arc07. Surfaced by: operator clarification after Arc07
+  Slice03 CDC verification. Why: generated-code warning work must analyze
+  whether generated code is semantically correct and fix Chengdu-owned
+  generators/templates at the source rather than merely suppress emitted
+  warnings.
 - **v1.61 - 2026-08-12.** Marked Arc07 Slice03
   first-party-source-naming-normalization closed and CDC-verified. Surfaced by:
   Slice03 CDC verification. Why: first-party maintained parser, grounder, and

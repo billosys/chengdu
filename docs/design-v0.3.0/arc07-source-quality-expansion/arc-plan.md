@@ -18,7 +18,12 @@ Vendored third-party source, third-party generated output, nested dependency
 internals, and copied build artifacts must be identified, excluded, or reported
 separately. If generated code comes from Chengdu-owned generators or templates,
 the generator/template is the maintenance target; warning or formatting
-problems should be fixed there rather than hidden in generated output.
+problems should be fixed there rather than hidden in generated output. Generated
+warning cleanup must begin with root-cause and correctness analysis: identify
+why the generated code emits the warning, whether the generated code is
+semantically correct, which generator/template/skeleton owns the emitted code,
+and whether the proper remedy is a generator/template fix, an input grammar or
+option change, a compiler-flag boundary, or a documented third-party exclusion.
 
 ## 2. Policy Corrections
 
@@ -40,6 +45,10 @@ ambiguity:
    boundary.
 5. Public integration/contract tests stay focused on accepted APIs and process
    behavior; unit tests may and should exercise internal first-party code.
+6. Generated-warning triage must classify each warning by generated file,
+   generator or skeleton, source-class ownership, root cause, correctness
+   impact, chosen remedy, and re-entry condition before it is closed,
+   suppressed, or deferred.
 
 ## 3. Slice Breakdown
 
@@ -48,8 +57,8 @@ ambiguity:
 | slice01 | `source-classification-inventory` | Classify every source/build/generated path by source class; map existing gates and gaps; produce recommendations for restructuring, target shape, test framework/dependency posture, and likely slice order. | all later Arc07 work |
 | slice02 | `source-layout-and-build-surface-normalization` | Conditional restructuring slice. Apply only the path/build/compile-database/profile-isolation changes accepted after Slice01 review, so first-party parser/grounder/engine files can be analyzed without third-party/generated noise. | coverage/static-analysis expansion |
 | slice03 | `first-party-source-naming-normalization` | Closed and CDC-verified. Normalized first-party maintained C/C++ file and directory names to the accepted lower snake case policy before gate selectors, compile databases, coverage maps, and static-analysis paths become enforcement surfaces. Excluded third-party, dependency-internal, and generated paths unless a ledger row explicitly accepts them. | stable source-quality selectors |
-| slice04 | `first-party-quality-gate-scaffold` | Add or revise Make-backed aggregate/per-component target scaffolding for first-party format, static analysis, coverage, unit tests, and warning policy without yet forcing unrealistic thresholds. | component quality slices |
-| slice05+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice01/Slice02/Slice03/Slice04 determine the real cut lines. Expected areas include parser first-party source, grounder first-party source, engine first-party source, Chengdu-owned generators/templates, and shared runtime follow-up. | release readiness |
+| slice04 | `first-party-quality-gate-scaffold` | Add or revise Make-backed aggregate/per-component target scaffolding for first-party format, static analysis, coverage, unit tests, warning policy, and generated-warning triage records without yet forcing unrealistic thresholds. | component quality slices |
+| slice05+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice01/Slice02/Slice03/Slice04 determine the real cut lines. Expected areas include parser first-party source, grounder first-party source, engine first-party source, generated-warning root-cause/generator remediation, Chengdu-owned generators/templates, and shared runtime follow-up. | release readiness |
 | final | `source-quality-synthesis` | Compose the final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff. | docs and release prep |
 
 Slice01 is intentionally the only fully-opened slice at arc start. Its report
@@ -96,13 +105,21 @@ Leaves for later arcs:
   Slice02 delivered Make-backed selectors, compile databases, profile/source
   mapping, generated-code policy, copied-build mapping, and
   third-party/dependency exclusions before broad gate expansion.
-- **slice03 first-party-source-naming-normalization - open.** Slice set:
+- **slice03 first-party-source-naming-normalization - closed and
+  CDC-verified.** Slice set:
   [`slice03-first-party-source-naming-normalization/slice-doc.md`](slice03-first-party-source-naming-normalization/slice-doc.md),
   [`slice03-first-party-source-naming-normalization/ledger.md`](slice03-first-party-source-naming-normalization/ledger.md),
-  [`slice03-first-party-source-naming-normalization/cc-prompt.md`](slice03-first-party-source-naming-normalization/cc-prompt.md).
-  Scope: define and apply the accepted lower snake case naming policy for
+  [`slice03-first-party-source-naming-normalization/cc-prompt.md`](slice03-first-party-source-naming-normalization/cc-prompt.md),
+  [`slice03-first-party-source-naming-normalization/closing-report.md`](slice03-first-party-source-naming-normalization/closing-report.md),
+  [`slice03-first-party-source-naming-normalization/cdc-verification.md`](slice03-first-party-source-naming-normalization/cdc-verification.md).
+  Slice03 defined and applied the accepted lower snake case naming policy for
   first-party maintained C/C++ files and directories before quality gate
   scaffolding relies on the normalized path surface.
+- **slice04 first-party-quality-gate-scaffold - next.** Slice04 should add or
+  revise Make-backed gate scaffolding for first-party format, static analysis,
+  coverage, unit/seam tests, warning policy, sanitizer policy, and generated
+  warning triage records before component burndown slices start enforcing or
+  clearing findings.
 
 ## 6. Planned Implementation Surface
 
@@ -128,7 +145,7 @@ installation docs, or public tutorial prose except to route handoff evidence.
 | A1 | Every source path under parser, grounder, engine, and runtime is classified as first-party maintained, first-party generated, first-party generator/template, vendored third-party, third-party generated, copied build artifact, generated build output, or other explicitly routed class. | reproduced |
 | A2 | The plan uses source-class language rather than ambiguous "owned runtime versus inherited planner" wording for active quality decisions. | reproduced |
 | A3 | First-party maintained parser, grounder, engine, and runtime code have Make-backed formatting, static-analysis, coverage, unit-test, warning, and sanitizer policy, or explicit release-blocking follow-up rows. | reproduced |
-| A4 | Chengdu-owned generators/templates are identified, and generated-code warnings or formatting problems are routed to generator/template fixes where applicable. | reproduced |
+| A4 | Chengdu-owned generators/templates are identified, and generated-code warnings or formatting problems are triaged by root cause, correctness impact, generator/skeleton ownership, remedy, and re-entry condition before being routed to generator/template fixes or documented third-party exclusions. | reproduced |
 | A5 | Vendored third-party and third-party generated code are excluded from first-party coverage/static-analysis/unit-test obligations or reported separately with rationale. | reproduced |
 | A6 | Public integration/process-contract tests remain scoped to accepted `pandapi-*` behavior while unit/seam tests cover internal first-party code. | reproduced |
 | A7 | Any required source/build restructuring is performed before coverage/static-analysis thresholds rely on the new layout. | reproduced |
@@ -147,13 +164,23 @@ installation docs, or public tutorial prose except to route handoff evidence.
   Catch2 from optional local discovery to a pinned test dependency. Slice01
   should recommend, but not silently implement, that decision.
 - **OQ4 - generated code.** Generated warnings from Chengdu-owned generators
-  should be fixed at the generator/template; generated warnings from
-  third-party skeletons may be excluded or suppressed with rationale.
+  should be fixed at the generator/template after root-cause and correctness
+  analysis. Each generated warning needs a triage record naming the generated
+  file, generator/template or third-party skeleton, ownership class, why the
+  warning is emitted, whether generated semantics are correct, chosen remedy,
+  and re-entry condition. Generated warnings from third-party skeletons may be
+  excluded or suppressed only with rationale.
 - **OQ5 - component sequencing.** Engine, grounder, and parser may not have
   equal testability. Slice01 should recommend the safest component order.
 
 ## 9. Version History
 
+- **v1.6 - 2026-08-12.** Made generated-warning root-cause and correctness
+  triage explicit before Arc07 quality-gate scaffolding and component
+  burndown. Surfaced by: operator clarification after Slice03 CDC
+  verification. Why: generated-warning work must validate whether generated
+  code is correct and fix Chengdu-owned generators/templates at the source,
+  not merely hide emitted warnings.
 - **v1.5 - 2026-08-12.** Marked Slice03
   first-party-source-naming-normalization closed and CDC-verified. Surfaced by:
   Slice03 CDC verification. Why: first-party maintained parser, grounder, and
