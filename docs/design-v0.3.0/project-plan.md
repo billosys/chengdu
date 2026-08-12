@@ -373,14 +373,16 @@ documentation/tutorial and release-publication work.
   [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cc-prompt.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cc-prompt.md),
   [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/closing-report.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/closing-report.md),
   [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cdc-verification.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cdc-verification.md).
-  The next Arc07 slice should be inserted as first-party source naming
-  normalization before the quality gate scaffold, so lower snake case source
-  paths are stable before selector, compile database, coverage, and static
-  analysis gates rely on them.
-  Slice03 first-party source naming normalization is open:
+  Slice03 first-party source naming normalization is closed and CDC-verified:
   [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/slice-doc.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/slice-doc.md),
   [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/ledger.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/ledger.md),
-  [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cc-prompt.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cc-prompt.md).
+  [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cc-prompt.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cc-prompt.md),
+  [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/closing-report.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/closing-report.md),
+  [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cdc-verification.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cdc-verification.md).
+  The next Arc07 slice should be Slice04
+  `first-party-quality-gate-scaffold`, building on the stable lower snake case
+  source paths, selectors, compile database, coverage, and static-analysis
+  surfaces established by Slices02-03.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -533,6 +535,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.61 - 2026-08-12.** Marked Arc07 Slice03
+  first-party-source-naming-normalization closed and CDC-verified. Surfaced by:
+  Slice03 CDC verification. Why: first-party maintained parser, grounder, and
+  engine source names are now normalized and Make-checkable, allowing Slice04
+  first-party-quality-gate-scaffold to open next.
 - **v1.60 - 2026-08-12.** Opened Arc07 Slice03
   first-party-source-naming-normalization. Surfaced by: Slice02 CDC
   verification and operator acceptance of the naming-normalization insertion.
