@@ -61,8 +61,9 @@ the evidence into a managed-process design.
   verifier without a dedicated plan, license review, and build/test scope.
 - No silent break of wolong's fetch/install expectations. Binary renaming and
   interface changes are in scope for 0.3.0 by explicit operator decision on
-  2026-08-10; Arc08 must document and verify the new wolong migration path
-  rather than preserve inherited command compatibility by default.
+  2026-08-10; Arc08 must document the new wolong migration path and Arc09
+  must verify it rather than preserve inherited command compatibility by
+  default.
 
 ## 2. Research basis and absorbed notes
 
@@ -93,9 +94,11 @@ sanitizer, owned-source build, and runtime CI gates should be put in place at
 the start of Arc05 before the binaries begin changing behavior. Coverage,
 ThreadSanitizer, expanded process fixtures, and the remaining test/CI matrix
 belong in later Arc05 or Arc06 gates. Release-package proof, license/NOTICE
-proof, and wolong migration evidence move to Arc08 publication gates.
+proof, and wolong migration evidence now move to Arc09 publication gates after
+the 2026-08-12 source-quality insertion.
 
-This plan adds the operator's 2026-08-10 roadmap expansion:
+This plan added the operator's 2026-08-10 roadmap expansion, later renumbered
+by the 2026-08-12 source-quality correction below:
 
 - split the former all-in-one Arc06 release-hardening bucket into three arcs;
 - keep the remaining testing, CI, coverage, sanitizer, and conformance
@@ -105,6 +108,23 @@ This plan adds the operator's 2026-08-10 roadmap expansion:
   guidance, README updates, and architecture/dependency documentation;
 - reserve Arc08 for release preparation, release-asset verification, wolong
   migration proof, and publication.
+
+This plan adds the operator's 2026-08-12 source-quality correction:
+
+- all in-tree pandaPI product code is Chengdu-owned in the fork/product sense,
+  including parser, grounder, engine, and runtime;
+- first-party maintained source requires formatting, static analysis,
+  coverage, unit-test strategy, warning policy, and sanitizer triage before
+  release;
+- generated code from Chengdu-owned generators/templates should be fixed at
+  the generator/template, while generated code from third-party skeletons may
+  be excluded or suppressed with rationale;
+- vendored third-party/dependency-internal code is excluded from Chengdu
+  coverage/static-analysis/unit-test obligations unless a later dependency
+  audit explicitly takes ownership of that boundary;
+- insert a new Arc07 `source-quality-expansion` before public tutorial/docs
+  and release publication work. The former Arc07 tutorial/docs work becomes
+  Arc08, and the former Arc08 release-prep work becomes Arc09.
 
 ## 3. Design posture
 
@@ -140,11 +160,12 @@ releases:
 | arc04 | `shared-runtime-substrate` | Introduce the shared C/C++ runtime/build substrate selected by the design, with tests and no behavior changes beyond wiring. | arc03 |
 | arc05 | `binary-contract-adoption` | Migrate parser, grounder, and engine onto the shared process contract and namespaced entry points, retiring transition shims after canonical builds pass. | arc04 |
 | arc06 | `ci-and-test-hardening` | Complete the remaining local and CI proof for the new behavior: expanded process fixtures, coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates, and pre-release CI evidence. | arc05 |
-| arc07 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06 |
-| arc08 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, and publish `v0.3.0`. | arc06, arc07 |
+| arc07 | `source-quality-expansion` | Expand first-party source-quality policy and gates across parser, grounder, engine, runtime, and Chengdu-owned generators/templates, while excluding third-party source from first-party obligations. | arc06 |
+| arc08 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06, arc07 |
+| arc09 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, source-quality release gates, and publish `v0.3.0`. | arc06, arc07, arc08 |
 
-Detailed planning is open through Arc06. Arcs07-08 remain roadmap only until
-Arc06 produces CI/test hardening evidence and a split handoff for
+Detailed planning is open through Arc07. Arcs08-09 remain roadmap only until
+Arc07 produces source-quality classification, gates, and a split handoff for
 documentation/tutorial and release-publication work.
 
 ## 5. Current status
@@ -337,16 +358,29 @@ documentation/tutorial and release-publication work.
   process fixtures, coverage, compiler-warning cleanup, heavier
   sanitizer/static-analysis gates, TSan disposition, and release-readiness
   handoff inputs needed by later release dry-runs.
-- **arc07 - roadmap only.** Arc07 remains downstream of Arc05/Arc06 proof and
-  should create the user-facing pandaPI 0.3.0 tutorial and documentation
-  suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
-  workflow examples, `pandapi-*` CLI guidance, README updates, and
-  architecture/dependency documentation for the new fork shape.
-- **arc08 - roadmap only.** Arc08 remains downstream of Arc06 and Arc07 and
-  owns release preparation and publication: release assets, checksums,
-  manifest/provenance, dependency licensing/NOTICE obligations, test-only
-  dependency exclusion, wolong fetch/install/migration verification, and the
-  actual `v0.3.0` release.
+- **arc07 - active.** Detailed plan:
+  [`arc07-source-quality-expansion/arc-plan.md`](arc07-source-quality-expansion/arc-plan.md).
+  Slice01 source-classification-inventory is open:
+  [`arc07-source-quality-expansion/slice01-source-classification-inventory/slice-doc.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/slice-doc.md),
+  [`arc07-source-quality-expansion/slice01-source-classification-inventory/ledger.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/ledger.md),
+  [`arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md).
+  Arc07 classifies and expands first-party source-quality obligations across
+  parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
+  while excluding third-party code from first-party obligations unless a later
+  dependency audit accepts that boundary.
+- **arc08 - roadmap only.** Arc08 remains downstream of Arc05/Arc06/Arc07
+  proof and should create the user-facing pandaPI 0.3.0 tutorial and
+  documentation suite: beginner HTN/PDDL/HDDL material,
+  simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance,
+  README updates, architecture/dependency documentation for the new fork
+  shape, and source-quality policy language that reflects Arc07's final
+  classifications.
+- **arc09 - roadmap only.** Arc09 remains downstream of Arc06, Arc07, and
+  Arc08 and owns release preparation and publication: release assets,
+  checksums, manifest/provenance, dependency licensing/NOTICE obligations,
+  test-only dependency exclusion, source-quality release gate verification,
+  wolong fetch/install/migration verification, and the actual `v0.3.0`
+  release.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -374,31 +408,36 @@ input to all remaining work:
 
 Arc03 converted these findings into semantic constraints. Arc04 implemented
 only the dependency gates accepted by Arc03 and kept held or rejected
-dependencies out of the runtime substrate. Arc05 must adopt accepted helpers
-per binary without expanding optional surfaces. Arc06 must prove the expanded
-CI/test surface; Arc07 must explain the accepted dependency and architecture
-choices in user-facing docs; Arc08 must verify license, NOTICE, provenance,
-test-only dependency exclusion, and release-asset shape.
+dependencies out of the runtime substrate. Arc05 adopted accepted helpers per
+binary without expanding optional surfaces. Arc06 proved the expanded CI/test
+surface. Arc07 must classify first-party versus generated/dependency source
+quality obligations before public docs and release prep. Arc08 must explain
+the accepted dependency, architecture, and source-quality posture in
+user-facing docs; Arc09 must verify license, NOTICE, provenance, test-only
+dependency exclusion, source-quality release gates, and release-asset shape.
 
 ## 5.2 CI and Tooling Findings Carried Forward
 
 The accepted CI/tooling note
 [`ci-notes.md`](ci-notes.md) is load-bearing for Arc05 ordering:
 
-- CMake/CTest remains the C++ test runner for chengdu-owned runtime and seam
-  tests.
-- Catch2 remains optional, local, and test-only; it proves C++ seams, not
-  managed-process conformance.
+- CMake/CTest remains the C++ test runner for first-party runtime and seam
+  tests; Arc07 must decide how parser, grounder, and engine internals enter
+  first-party unit/seam coverage.
+- Catch2 remains optional, local, and test-only until Arc07 revisits whether
+  first-party internal unit tests require a pinned test dependency. It proves
+  C++ seams, not managed-process conformance.
 - Black-box process fixtures are the executable contract test framework for
   parser, grounder, and engine behavior.
-- `clang-format` should land before large Arc05 C++ edits and should initially
-  apply to chengdu-owned source and tests, not bulk-reformat vendored
-  upstream code.
+- `clang-format` landed before large Arc05 C++ edits; Arc07 must expand
+  formatting policy across first-party maintained source and decide generated
+  output handling by generator ownership.
 - ASan/UBSan runtime tests should become an early owned-code gate before
   executable behavior changes.
-- `clang-tidy` and Clang Static Analyzer checks should start with
-  chengdu-owned runtime and adapter/facade code once a reliable
-  `compile_commands.json` path exists.
+- `clang-tidy` and Clang Static Analyzer checks started with runtime and
+  adapter/facade code; Arc07 must expand them across first-party parser,
+  grounder, and engine code once compile databases isolate first-party files
+  from generated and third-party noise.
 - `llvm-cov` coverage should be planned in Arc05 but becomes most meaningful
   after migrated binaries are exercised by process fixtures.
 - TSan remains a heavier later gate after subprocess, timeout/signal, and
@@ -406,7 +445,9 @@ The accepted CI/tooling note
 - Arc06 owns expanded test and CI proof: coverage, ThreadSanitizer, heavier
   sanitizer/static-analysis gates, and release-readiness evidence needed by
   later dry-runs.
-- Arc08 owns release-package dry-runs, license/NOTICE checks, test-only
+- Arc07 owns first-party source-quality classification and expansion before
+  tutorial/docs and release work.
+- Arc09 owns release-package dry-runs, license/NOTICE checks, test-only
   dependency exclusion, wolong fetch/install/migration proof, checksums,
   manifests, and publication gates.
 
@@ -423,8 +464,9 @@ per-row in this project's `closing-report.md`.
 | P4 | Arc04 closes with any shared runtime/build substrate implemented, tested, and limited to the design-approved surface; duplicate process-policy code is routed through the shared substrate where adopted, with Arc02-selected dependencies entering only through approved facades/pilots. | reproduced |
 | P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract through namespaced `pandapi-*` entry points, with inherited-name shims deleted once native new-name builds and tests exist, without library availability expanding optional inherited surfaces. | reproduced |
 | P6 | Arc06 closes with the full local and CI gate suite proving positive and negative behavior under both CLI and pipe-supervised invocation, including expanded process fixtures, coverage evidence, compiler-warning disposition/burndown, and heavier sanitizer/static-analysis gates where supported. | reproduced |
-| P7 | Arc07 closes with the pandaPI 0.3.0 tutorial and documentation suite: beginner HTN/PDDL/HDDL onboarding, simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance, README updates, architecture docs, dependency rationale, behavior-change table, and migration notes. | reproduced |
-| P8 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, release docs, and the new wolong fetch/install/migration path are verified on supported platforms. | reproduced |
+| P7 | Arc07 closes with parser, grounder, engine, runtime, and Chengdu-owned generators/templates classified and covered by explicit first-party source-quality policy: formatting, static analysis, coverage, unit/seam tests, warning policy, sanitizer triage, generated-code handling, and third-party exclusions or separately reported evidence. | reproduced |
+| P8 | Arc08 closes with the pandaPI 0.3.0 tutorial and documentation suite: beginner HTN/PDDL/HDDL onboarding, simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance, README updates, architecture docs, dependency rationale, source-quality posture, behavior-change table, and migration notes. | reproduced |
+| P9 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, source-quality release gates, release docs, and the new wolong fetch/install/migration path are verified on supported platforms. | reproduced |
 
 ## 7. Open questions and risks
 
@@ -433,9 +475,9 @@ per-row in this project's `closing-report.md`.
   `v0.3.0` is a breaking interface/behavior release with canonical
   `pandapi-*` names. Inherited `pandaPI*` command compatibility is not a
   release requirement; temporary shims should be deleted after the owning
-  binary builds and passes tests under its new name. Arc07/Arc08 must carry
-  migration notes, release-package updates, and wolong verification for the
-  new interface.
+  binary builds and passes tests under its new name. Arc08 must carry
+  migration notes, and Arc09 must carry release-package updates and wolong
+  verification for the new interface.
 - **OQ2 - report home resolved.** Arc01 audit reports are durable design
   evidence, not transient workbench output. The report home is
   `docs/design-v0.3.0/arc01-vendored-source-audit/audit-results-pandapi-*.md`
@@ -459,13 +501,29 @@ per-row in this project's `closing-report.md`.
   answer, but each candidate must clear license, supported-platform build,
   static vs vendored packaging, maintenance, and security/update implications.
   Arc02 owns that research before Arc03 turns any dependency into design.
-- **OQ6 - tutorial example selection.** Arc07 must choose examples that are
+- **OQ6 - tutorial example selection.** Arc08 must choose examples that are
   beginner-friendly without being toy-only. The roadmap requirement is fixed:
   start with HTN/PDDL/HDDL fundamentals, then build from a simple pandaPI
   project workflow to an intermediate example that exercises the new 0.3.0
   CLI tools and documented architecture.
+- **OQ7 - first-party source-quality scope.** Arc07 must classify parser,
+  grounder, engine, runtime, generated source, generators/templates,
+  dependency-internal source, third-party generated output, and copied build
+  artifacts before expanding coverage/static-analysis/format/unit-test gates.
+  The release policy is fixed: first-party maintained code is in scope;
+  third-party source is excluded or separately reported unless a dependency
+  audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.56 - 2026-08-12.** Inserted Arc07 `source-quality-expansion`, opened
+  Slice01 source-classification-inventory, and renumbered tutorial/docs to
+  Arc08 and release-prep/publication to Arc09. Surfaced by: operator policy
+  correction after Arc06 closure. Why: all in-tree pandaPI product code is
+  Chengdu-owned in the fork/product sense, and first-party parser, grounder,
+  engine, runtime, and Chengdu-owned generators/templates need explicit
+  formatting, static-analysis, coverage, unit/seam-test, warning, sanitizer,
+  generated-code, and third-party-exclusion policy before release.
 
 - **v1.55 - 2026-08-12.** Marked Arc06 Slice07 tsan-and-ci-synthesis closed
   and CDC-verified, and closed Arc06. Surfaced by: CDC reproduction of CC

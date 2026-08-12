@@ -23,11 +23,13 @@ burn down or explicitly disposition inherited C/C++ compiler warnings before
 release, and wire the resulting proof through Make-backed local and CI entry
 points.
 
-Arc06 is not a documentation/tutorial arc and not the release-publication arc.
-Arc07 owns the public tutorial, README, architecture, dependency rationale,
-behavior-change table, and migration prose. Arc08 owns release asset shape,
-checksums, manifests, package dry-runs, license/NOTICE proof, test-only
-dependency exclusion, wolong migration proof, and publication.
+Arc06 is not a source-quality expansion arc, not a documentation/tutorial arc,
+and not the release-publication arc. Arc07 owns first-party source-quality
+classification and expansion. Arc08 owns the public tutorial, README,
+architecture, dependency rationale, behavior-change table, and migration
+prose. Arc09 owns release asset shape, checksums, manifests, package dry-runs,
+license/NOTICE proof, test-only dependency exclusion, wolong migration proof,
+and publication.
 
 ## 2. Design principles
 
@@ -59,12 +61,12 @@ dependency exclusion, wolong migration proof, and publication.
 | Slice | Slug | Scope (one line) | Load-bearing for |
 |-------|------|------------------|------------------|
 | slice01 | `fixture-gap-inventory` | Inventory current baseline/managed fixtures, Make/CI gates, and Arc03 matrix gaps; add missing Make list targets if needed, with no binary behavior change. | all fixture expansion and CI hardening |
-| slice02 | `process-fixture-expansion` | Add the highest-value missing process fixtures for supported parser, grounder, engine, and pipeline behavior, including supervised pipe/stream cases that are safe in CI. | coverage/sanitizer workload quality; Arc07 examples; Arc08 release confidence |
+| slice02 | `process-fixture-expansion` | Add the highest-value missing process fixtures for supported parser, grounder, engine, and pipeline behavior, including supervised pipe/stream cases that are safe in CI. | coverage/sanitizer workload quality; Arc08 examples; Arc09 release confidence |
 | slice03 | `coverage-gate` | Add Clang source-based coverage targets and reporting for `pandaPI/runtime` and chengdu-owned process-policy/adoption seams, with explicit exclusions for generated and inherited third-party code. | CI evidence; release readiness |
 | slice04 | `static-analysis-gate` | Add or graduate `clang-tidy`/Clang Static Analyzer gates for owned C++ source where compile databases are reliable, with written suppression and ownership policy. | pre-release confidence; future cleanup arcs |
 | slice05 | `compiler-warning-burndown` | Inventory current parser, grounder, engine, runtime, generated-code, and nested third-party compiler warnings; fix primary hand-written warnings where low-risk; document suppressions and warning budgets before release. | release confidence; static-analysis ownership; sanitizer signal quality |
 | slice06 | `binary-sanitizer-gates` | Run ASan/UBSan/LSan where supported against runtime and representative `pandapi-*` process fixtures without turning inherited third-party noise into silent failure. | sanitizer confidence; fixture workload validation |
-| slice07 | `tsan-and-ci-synthesis` | Add or explicitly defer TSan based on representative concurrency/process-observation workload, then compose the final local/CI hardening evidence and hand off to Arc07/Arc08. | project ledger P6; Arc07 docs; Arc08 release prep |
+| slice07 | `tsan-and-ci-synthesis` | Add or explicitly defer TSan based on representative concurrency/process-observation workload, then compose the final local/CI hardening evidence and hand off to Arc07/Arc08/Arc09. | project ledger P6; Arc07 source quality; Arc08 docs; Arc09 release prep |
 
 ## 4. Dependencies
 
@@ -84,11 +86,14 @@ dependency exclusion, wolong migration proof, and publication.
   build, test, check, CI, and release operations; new CI jobs call Make
   targets, not project scripts.
 
-**Leaves for later arcs:** Arc07 receives the final behavior-change evidence,
-CLI examples, known fixture boundaries, and architecture/dependency facts it
-needs for public docs. Arc08 receives CI-hardening evidence, coverage/static
-analysis/sanitizer disposition, pre-release gate status, and any release-risk
-deferrals that must be checked before package publication.
+**Leaves for later arcs:** Arc07 receives source-quality evidence,
+coverage/static-analysis/sanitizer/warning dispositions, and source-class
+ambiguities that need expansion before release. Arc08 receives final
+behavior-change evidence, CLI examples, known fixture boundaries, and
+architecture/dependency facts it needs for public docs. Arc09 receives
+CI-hardening evidence, source-quality gate status, pre-release gate status,
+and any release-risk deferrals that must be checked before package
+publication.
 
 ## 5. Current status
 
@@ -163,7 +168,7 @@ arc's `closing-report.md`.
 | Row | Criterion | Target strength |
 |-----|-----------|-----------------|
 | A1 | Every planned Arc06 slice is closed and CDC-verified, with no missing slice from the breakdown. | reproduced |
-| A2 | Current baseline and managed process fixtures are inventoried against the Arc03 matrix, with every missing/deferred obligation routed to an Arc06 slice, Arc07 docs, Arc08 release prep, or a no-op rationale. | reproduced |
+| A2 | Current baseline and managed process fixtures are inventoried against the Arc03 matrix, with every missing/deferred obligation routed to an Arc06 slice, Arc07 source-quality expansion, Arc08 docs, Arc09 release prep, or a no-op rationale. | reproduced |
 | A3 | Expanded fixtures prove supported parser, grounder, engine, and pipeline behavior through black-box process observations under canonical `pandapi-*` commands, including positive and negative paths. | reproduced |
 | A4 | CLI and pipe-supervised invocation are both represented by CI-safe fixture or smoke workloads; the arc does not rely on human CLI smoke alone as process-manager proof. | reproduced |
 | A5 | Coverage evidence exists for chengdu-owned runtime/process-policy and touched adoption seams, with generated, inherited planner, and third-party code excluded or reported separately by policy. | reproduced |
@@ -173,7 +178,7 @@ arc's `closing-report.md`.
 | A9 | TSan is either added as a meaningful Make/CI gate over representative concurrency/process-observation workload or explicitly deferred with a concrete re-entry condition. | reproduced |
 | A10 | GitHub Actions and local CI-equivalent targets use Make entry points for every new gate and pass `make actionlint` plus workflow Make-entrypoint safety checks. | reproduced |
 | A11 | Arc06 closes without changing release asset shape, wolong installation path, inherited optional-surface support, or public tutorial/docs scope. | reproduced |
-| A12 | Arc07 and Arc08 can be planned from Arc06 close without silent drops: docs/tutorial evidence, behavior-change inputs, release gate status, coverage/static/sanitizer/warning disposition, and remaining risks are routed. | reproduced |
+| A12 | Arc07, Arc08, and Arc09 can be planned from Arc06 close without silent drops: source-quality inputs, docs/tutorial evidence, behavior-change inputs, release gate status, coverage/static/sanitizer/warning disposition, and remaining risks are routed. | reproduced |
 
 ## 8. Open questions and risks
 
