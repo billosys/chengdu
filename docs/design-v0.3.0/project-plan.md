@@ -360,10 +360,14 @@ documentation/tutorial and release-publication work.
   handoff inputs needed by later release dry-runs.
 - **arc07 - active.** Detailed plan:
   [`arc07-source-quality-expansion/arc-plan.md`](arc07-source-quality-expansion/arc-plan.md).
-  Slice01 source-classification-inventory is open:
+  Slice01 source-classification-inventory is closed and CDC-verified:
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/slice-doc.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/slice-doc.md),
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/ledger.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/ledger.md),
-  [`arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md).
+  [`arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md),
+  [`arc07-source-quality-expansion/slice01-source-classification-inventory/closing-report.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/closing-report.md),
+  [`arc07-source-quality-expansion/slice01-source-classification-inventory/cdc-verification.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/cdc-verification.md).
+  Slice02 source-layout/build-surface normalization is recommended next but
+  not yet opened.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -516,6 +520,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.57 - 2026-08-12.** Marked Arc07 Slice01
+  source-classification-inventory closed and CDC-verified. Surfaced by:
+  Slice01 CDC verification. Why: the classification report accepts
+  source-layout/build-surface normalization as the recommended next work before
+  broader first-party quality gate expansion.
 - **v1.56 - 2026-08-12.** Inserted Arc07 `source-quality-expansion`, opened
   Slice01 source-classification-inventory, and renumbered tutorial/docs to
   Arc08 and release-prep/publication to Arc09. Surfaced by: operator policy

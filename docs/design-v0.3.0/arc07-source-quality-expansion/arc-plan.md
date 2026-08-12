@@ -76,10 +76,19 @@ Leaves for later arcs:
 
 ## 5. Current Status
 
-- **slice01 source-classification-inventory - open.** Slice set:
+- **slice01 source-classification-inventory - closed and CDC-verified.**
+  Slice set:
   [`slice01-source-classification-inventory/slice-doc.md`](slice01-source-classification-inventory/slice-doc.md),
   [`slice01-source-classification-inventory/ledger.md`](slice01-source-classification-inventory/ledger.md),
-  [`slice01-source-classification-inventory/cc-prompt.md`](slice01-source-classification-inventory/cc-prompt.md).
+  [`slice01-source-classification-inventory/cc-prompt.md`](slice01-source-classification-inventory/cc-prompt.md),
+  [`slice01-source-classification-inventory/closing-report.md`](slice01-source-classification-inventory/closing-report.md),
+  [`slice01-source-classification-inventory/cdc-verification.md`](slice01-source-classification-inventory/cdc-verification.md).
+  Source classification report:
+  [`source-classification-inventory.md`](source-classification-inventory.md).
+- **slice02 source-layout-and-build-surface-normalization - recommended next,
+  not yet opened.** Slice01 recommends activating Slice02 for selectors,
+  compile databases, profile isolation, generated-code policy, copied-build
+  mapping, and third-party/dependency exclusions before broad gate expansion.
 
 ## 6. Planned Implementation Surface
 
@@ -131,6 +140,10 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.1 - 2026-08-12.** Marked Slice01 source-classification-inventory
+  closed and CDC-verified. Surfaced by: Slice01 CDC verification. Why:
+  classification evidence accepts source-layout/build-surface normalization as
+  the next work before first-party quality gates expand.
 - **v1.0 - 2026-08-12.** Opened Arc07 source-quality-expansion and Slice01
   source-classification-inventory. Surfaced by: operator correction after
   Arc06 close. Why: all in-tree pandaPI product code is Chengdu-owned in the
