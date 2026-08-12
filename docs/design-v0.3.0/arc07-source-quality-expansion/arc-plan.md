@@ -47,8 +47,9 @@ ambiguity:
 |-------|------|-------|------------------|
 | slice01 | `source-classification-inventory` | Classify every source/build/generated path by source class; map existing gates and gaps; produce recommendations for restructuring, target shape, test framework/dependency posture, and likely slice order. | all later Arc07 work |
 | slice02 | `source-layout-and-build-surface-normalization` | Conditional restructuring slice. Apply only the path/build/compile-database/profile-isolation changes accepted after Slice01 review, so first-party parser/grounder/engine files can be analyzed without third-party/generated noise. | coverage/static-analysis expansion |
-| slice03 | `first-party-quality-gate-scaffold` | Add or revise Make-backed aggregate/per-component target scaffolding for first-party format, static analysis, coverage, unit tests, and warning policy without yet forcing unrealistic thresholds. | component quality slices |
-| slice04+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice01/Slice02/Slice03 determine the real cut lines. Expected areas include parser first-party source, grounder first-party source, engine first-party source, Chengdu-owned generators/templates, and shared runtime follow-up. | release readiness |
+| slice03 | `first-party-source-naming-normalization` | Normalize first-party maintained C/C++ file and directory names to the accepted lower snake case policy before gate selectors, compile databases, coverage maps, and static-analysis paths become enforcement surfaces. Exclude third-party, dependency-internal, and generated paths unless a ledger row explicitly accepts them. | stable source-quality selectors |
+| slice04 | `first-party-quality-gate-scaffold` | Add or revise Make-backed aggregate/per-component target scaffolding for first-party format, static analysis, coverage, unit tests, and warning policy without yet forcing unrealistic thresholds. | component quality slices |
+| slice05+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice01/Slice02/Slice03/Slice04 determine the real cut lines. Expected areas include parser first-party source, grounder first-party source, engine first-party source, Chengdu-owned generators/templates, and shared runtime follow-up. | release readiness |
 | final | `source-quality-synthesis` | Compose the final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff. | docs and release prep |
 
 Slice01 is intentionally the only fully-opened slice at arc start. Its report
@@ -85,14 +86,21 @@ Leaves for later arcs:
   [`slice01-source-classification-inventory/cdc-verification.md`](slice01-source-classification-inventory/cdc-verification.md).
   Source classification report:
   [`source-classification-inventory.md`](source-classification-inventory.md).
-- **slice02 source-layout-and-build-surface-normalization - open.** Slice set:
+- **slice02 source-layout-and-build-surface-normalization - closed and
+  CDC-verified.** Slice set:
   [`slice02-source-layout-and-build-surface-normalization/slice-doc.md`](slice02-source-layout-and-build-surface-normalization/slice-doc.md),
   [`slice02-source-layout-and-build-surface-normalization/ledger.md`](slice02-source-layout-and-build-surface-normalization/ledger.md),
-  [`slice02-source-layout-and-build-surface-normalization/cc-prompt.md`](slice02-source-layout-and-build-surface-normalization/cc-prompt.md).
-  Scope: activate Slice01's normalization recommendation for selectors,
-  compile databases, profile/source mapping, generated-code policy,
-  copied-build mapping, and third-party/dependency exclusions before broad
-  gate expansion.
+  [`slice02-source-layout-and-build-surface-normalization/cc-prompt.md`](slice02-source-layout-and-build-surface-normalization/cc-prompt.md),
+  [`slice02-source-layout-and-build-surface-normalization/closing-report.md`](slice02-source-layout-and-build-surface-normalization/closing-report.md),
+  [`slice02-source-layout-and-build-surface-normalization/cdc-verification.md`](slice02-source-layout-and-build-surface-normalization/cdc-verification.md).
+  Slice02 delivered Make-backed selectors, compile databases, profile/source
+  mapping, generated-code policy, copied-build mapping, and
+  third-party/dependency exclusions before broad gate expansion.
+- **slice03 first-party-source-naming-normalization - recommended next.**
+  Inserted by CDC/operator amendment after Slice02 verification. Scope:
+  define and apply the accepted lower snake case naming policy for first-party
+  maintained C/C++ files and directories before quality gate scaffolding
+  relies on the normalized path surface.
 
 ## 6. Planned Implementation Surface
 
@@ -144,6 +152,13 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.3 - 2026-08-12.** Marked Slice02
+  source-layout-and-build-surface-normalization closed and CDC-verified, and
+  inserted Slice03 first-party-source-naming-normalization before the quality
+  gate scaffold. Surfaced by: Slice02 CDC verification plus operator naming
+  policy discussion. Why: first-party path names should be normalized before
+  Arc07 gate selectors, compile databases, profile maps, static-analysis
+  paths, and coverage surfaces become enforcement anchors.
 - **v1.2 - 2026-08-12.** Opened Slice02
   source-layout-and-build-surface-normalization. Surfaced by: operator
   acceptance of Slice01's recommendation. Why: first-party quality gate

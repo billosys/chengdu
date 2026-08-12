@@ -366,10 +366,17 @@ documentation/tutorial and release-publication work.
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/cc-prompt.md),
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/closing-report.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/closing-report.md),
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/cdc-verification.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/cdc-verification.md).
-  Slice02 source-layout/build-surface normalization is open:
+  Slice02 source-layout/build-surface normalization is closed and
+  CDC-verified:
   [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/slice-doc.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/slice-doc.md),
   [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/ledger.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/ledger.md),
-  [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cc-prompt.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cc-prompt.md).
+  [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cc-prompt.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cc-prompt.md),
+  [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/closing-report.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/closing-report.md),
+  [`arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cdc-verification.md`](arc07-source-quality-expansion/slice02-source-layout-and-build-surface-normalization/cdc-verification.md).
+  The next Arc07 slice should be inserted as first-party source naming
+  normalization before the quality gate scaffold, so lower snake case source
+  paths are stable before selector, compile database, coverage, and static
+  analysis gates rely on them.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -522,6 +529,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.59 - 2026-08-12.** Marked Arc07 Slice02
+  source-layout-and-build-surface-normalization closed and CDC-verified, and
+  inserted first-party source naming normalization before the quality gate
+  scaffold. Surfaced by: Slice02 CDC verification plus operator naming policy
+  discussion. Why: first-party C/C++ file and directory paths should be
+  normalized to lower snake case before Arc07 selectors, compile databases,
+  coverage maps, and static-analysis paths become enforcement anchors.
 - **v1.58 - 2026-08-12.** Opened Arc07 Slice02
   source-layout-and-build-surface-normalization. Surfaced by: operator
   acceptance of Slice01's recommendation. Why: broader first-party quality
