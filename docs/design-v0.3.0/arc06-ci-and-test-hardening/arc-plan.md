@@ -116,11 +116,16 @@ deferrals that must be checked before package publication.
   [`slice04-static-analysis-gate/cc-prompt.md`](slice04-static-analysis-gate/cc-prompt.md),
   [`slice04-static-analysis-gate/closing-report.md`](slice04-static-analysis-gate/closing-report.md),
   [`slice04-static-analysis-gate/cdc-verification.md`](slice04-static-analysis-gate/cdc-verification.md).
-- **slice05 compiler-warning-burndown - open.** Slice set:
+- **slice05 compiler-warning-burndown - closed and CDC-verified.** Slice set:
   [`slice05-compiler-warning-burndown/slice-doc.md`](slice05-compiler-warning-burndown/slice-doc.md),
   [`slice05-compiler-warning-burndown/ledger.md`](slice05-compiler-warning-burndown/ledger.md),
-  [`slice05-compiler-warning-burndown/cc-prompt.md`](slice05-compiler-warning-burndown/cc-prompt.md).
-- **slice06 binary-sanitizer-gates - planned.**
+  [`slice05-compiler-warning-burndown/cc-prompt.md`](slice05-compiler-warning-burndown/cc-prompt.md),
+  [`slice05-compiler-warning-burndown/closing-report.md`](slice05-compiler-warning-burndown/closing-report.md),
+  [`slice05-compiler-warning-burndown/cdc-verification.md`](slice05-compiler-warning-burndown/cdc-verification.md).
+- **slice06 binary-sanitizer-gates - open.** Slice set:
+  [`slice06-binary-sanitizer-gates/slice-doc.md`](slice06-binary-sanitizer-gates/slice-doc.md),
+  [`slice06-binary-sanitizer-gates/ledger.md`](slice06-binary-sanitizer-gates/ledger.md),
+  [`slice06-binary-sanitizer-gates/cc-prompt.md`](slice06-binary-sanitizer-gates/cc-prompt.md).
 - **slice07 tsan-and-ci-synthesis - planned.**
 
 ## 6. Planned implementation surface
@@ -183,6 +188,14 @@ arc's `closing-report.md`.
   paths; Arc06 implementation must use the current tree.
 
 ## 9. Version history
+
+- **v1.6 - 2026-08-12.** Marked Slice05 compiler-warning-burndown closed and
+  CDC-verified, and opened Slice06 binary-sanitizer-gates. Surfaced by: CDC
+  reproduction of CC commits `fc8b671d` and `85a396ff`. Why: warning classes
+  are now inventoried by ownership tier, low-risk primary warnings were burned
+  down, and remaining warning budgets are specific enough for ASan/UBSan/LSan
+  findings to be triaged honestly against canonical `pandapi-*` process
+  fixtures.
 
 - **v1.5 - 2026-08-11.** Marked Slice04 static-analysis-gate closed and
   CDC-verified, and opened Slice05 compiler-warning-burndown. Surfaced by:

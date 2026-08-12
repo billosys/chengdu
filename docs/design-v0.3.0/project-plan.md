@@ -313,10 +313,16 @@ documentation/tutorial and release-publication work.
   [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/cc-prompt.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/cc-prompt.md),
   [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/closing-report.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/closing-report.md),
   [`arc06-ci-and-test-hardening/slice04-static-analysis-gate/cdc-verification.md`](arc06-ci-and-test-hardening/slice04-static-analysis-gate/cdc-verification.md).
-  Slice05 compiler-warning-burndown is open:
+  Slice05 compiler-warning-burndown is closed and CDC-verified:
   [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/slice-doc.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/slice-doc.md),
   [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/ledger.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/ledger.md),
-  [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cc-prompt.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cc-prompt.md).
+  [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cc-prompt.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cc-prompt.md),
+  [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/closing-report.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/closing-report.md),
+  [`arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cdc-verification.md`](arc06-ci-and-test-hardening/slice05-compiler-warning-burndown/cdc-verification.md).
+  Slice06 binary-sanitizer-gates is open:
+  [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/slice-doc.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/slice-doc.md),
+  [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/ledger.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/ledger.md),
+  [`arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cc-prompt.md`](arc06-ci-and-test-hardening/slice06-binary-sanitizer-gates/cc-prompt.md).
   Arc06 owns the remaining local/CI matrix, expanded process fixtures,
   coverage, compiler-warning cleanup, heavier sanitizer/static-analysis gates,
   TSan disposition, and release-readiness evidence needed by later release
@@ -450,6 +456,14 @@ per-row in this project's `closing-report.md`.
   CLI tools and documented architecture.
 
 ## 8. Version history
+
+- **v1.52 - 2026-08-12.** Marked Arc06 Slice05
+  compiler-warning-burndown closed and CDC-verified, and opened Arc06 Slice06
+  binary-sanitizer-gates. Surfaced by: CDC reproduction of CC commits
+  `fc8b671d` and `85a396ff`. Why: parser, grounder, engine, runtime,
+  generated, and nested dependency warning classes are now inventoried by
+  ownership tier, with low-risk primary warnings fixed and remaining budgets
+  explicit enough for sanitizer gates to provide release-quality signal.
 
 - **v1.51 - 2026-08-11.** Marked Arc06 Slice04 static-analysis-gate closed and
   CDC-verified, and opened Arc06 Slice05 compiler-warning-burndown. Surfaced
