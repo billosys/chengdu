@@ -383,10 +383,12 @@ documentation/tutorial and release-publication work.
   [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cc-prompt.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cc-prompt.md),
   [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/closing-report.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/closing-report.md),
   [`arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cdc-verification.md`](arc07-source-quality-expansion/slice03-first-party-source-naming-normalization/cdc-verification.md).
-  The next Arc07 slice should be Slice04
-  `first-party-quality-gate-scaffold`, building on the stable lower snake case
-  source paths, selectors, compile database, coverage, and static-analysis
-  surfaces established by Slices02-03.
+  Slice04 `first-party-quality-gate-scaffold` is open, building on the stable
+  lower snake case source paths, selectors, compile database, coverage, and
+  static-analysis surfaces established by Slices02-03:
+  [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/slice-doc.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/slice-doc.md),
+  [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/ledger.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/ledger.md),
+  [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cc-prompt.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cc-prompt.md).
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -540,6 +542,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.63 - 2026-08-12.** Opened Arc07 Slice04
+  first-party-quality-gate-scaffold. Surfaced by: Slice03 CDC verification and
+  generated-warning policy clarification. Why: later component burndown slices
+  need named Make-backed gate families, durable status/re-entry reports,
+  generated-warning triage records, and optional IPC corpus placement before
+  enforcing first-party quality findings.
 - **v1.62 - 2026-08-12.** Made generated-warning root-cause and correctness
   triage explicit for Arc07. Surfaced by: operator clarification after Arc07
   Slice03 CDC verification. Why: generated-code warning work must analyze

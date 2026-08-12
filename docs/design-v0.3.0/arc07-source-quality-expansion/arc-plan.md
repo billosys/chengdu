@@ -115,11 +115,14 @@ Leaves for later arcs:
   Slice03 defined and applied the accepted lower snake case naming policy for
   first-party maintained C/C++ files and directories before quality gate
   scaffolding relies on the normalized path surface.
-- **slice04 first-party-quality-gate-scaffold - next.** Slice04 should add or
+- **slice04 first-party-quality-gate-scaffold - open.** Slice04 should add or
   revise Make-backed gate scaffolding for first-party format, static analysis,
   coverage, unit/seam tests, warning policy, sanitizer policy, and generated
   warning triage records before component burndown slices start enforcing or
-  clearing findings.
+  clearing findings. Slice set:
+  [`slice04-first-party-quality-gate-scaffold/slice-doc.md`](slice04-first-party-quality-gate-scaffold/slice-doc.md),
+  [`slice04-first-party-quality-gate-scaffold/ledger.md`](slice04-first-party-quality-gate-scaffold/ledger.md),
+  [`slice04-first-party-quality-gate-scaffold/cc-prompt.md`](slice04-first-party-quality-gate-scaffold/cc-prompt.md).
 
 ## 6. Planned Implementation Surface
 
@@ -175,6 +178,12 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.7 - 2026-08-12.** Opened Slice04
+  first-party-quality-gate-scaffold. Surfaced by: Slice03 CDC verification and
+  generated-warning policy clarification. Why: first-party source-quality
+  component burndown needs named Make gate families, durable status/re-entry
+  reports, generated-warning triage records, and optional IPC corpus placement
+  before later slices begin enforcing or clearing findings.
 - **v1.6 - 2026-08-12.** Made generated-warning root-cause and correctness
   triage explicit before Arc07 quality-gate scaffolding and component
   burndown. Surfaced by: operator clarification after Slice03 CDC
