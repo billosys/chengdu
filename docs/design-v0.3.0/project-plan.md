@@ -391,12 +391,14 @@ documentation/tutorial and release-publication work.
   [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cc-prompt.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cc-prompt.md),
   [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/closing-report.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/closing-report.md),
   [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cdc-verification.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cdc-verification.md).
-  Slice05 engine-first-party-quality-burndown is open as the first component
-  source-quality burndown:
+  Slice05 engine-first-party-quality-burndown is closed and CDC-verified as
+  the first component source-quality burndown:
   [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/slice-doc.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/slice-doc.md),
   [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/ledger.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/ledger.md),
-  [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cc-prompt.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cc-prompt.md).
-  Slice05 starts with engine first-party maintained source before parser
+  [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cc-prompt.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cc-prompt.md),
+  [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/closing-report.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/closing-report.md),
+  [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cdc-verification.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cdc-verification.md).
+  Slice05 established the engine component target pattern before parser
   generated-warning/root-cause work and later grounder/dependency follow-up.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
@@ -551,6 +553,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.66 - 2026-08-12.** Marked Arc07 Slice05
+  engine-first-party-quality-burndown closed and CDC-verified. Surfaced by:
+  Slice05 CDC verification. Why: engine first-party source now has executable
+  component source-quality targets, seam evidence for the primary warning
+  burndown, sanitizer/coverage/warning baselines, and managed-contract
+  regression proof, so Arc07 can move next to parser generated-warning
+  root-cause analysis.
 - **v1.65 - 2026-08-12.** Opened Arc07 Slice05
   engine-first-party-quality-burndown. Surfaced by: Slice04 CDC verification.
   Why: Arc07 can now move from scaffold to the first component burndown,

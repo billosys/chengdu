@@ -58,7 +58,7 @@ ambiguity:
 | slice02 | `source-layout-and-build-surface-normalization` | Conditional restructuring slice. Apply only the path/build/compile-database/profile-isolation changes accepted after Slice01 review, so first-party parser/grounder/engine files can be analyzed without third-party/generated noise. | coverage/static-analysis expansion |
 | slice03 | `first-party-source-naming-normalization` | Closed and CDC-verified. Normalized first-party maintained C/C++ file and directory names to the accepted lower snake case policy before gate selectors, compile databases, coverage maps, and static-analysis paths become enforcement surfaces. Excluded third-party, dependency-internal, and generated paths unless a ledger row explicitly accepts them. | stable source-quality selectors |
 | slice04 | `first-party-quality-gate-scaffold` | Closed and CDC-verified. Added Make-backed aggregate scaffold targets and durable status/re-entry evidence for first-party format, static analysis, coverage, unit tests, warning policy, sanitizer policy, optional IPC corpus placement, and generated-warning triage without forcing premature thresholds. | component quality slices |
-| slice05 | `engine-first-party-quality-burndown` | Open. Convert Slice04 engine report-backed rows into Make-backed executable engine component gates; add the focused `visited_list` seam needed to burn down the primary engine warning; classify or fix duplicate link-library warning noise; preserve CUDD/generated/copy/build-output exclusions and public behavior. | parser/grounder component burndown |
+| slice05 | `engine-first-party-quality-burndown` | Closed and CDC-verified. Converted Slice04 engine report-backed rows into Make-backed executable engine component gates; added focused `visited_list` seam evidence; closed the primary engine warning and duplicate link-library noise; preserved CUDD/generated/copy/build-output exclusions and public behavior. | parser/grounder component burndown |
 | slice06+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice05 determines the engine target pattern. Expected next order is parser generated-warning/root-cause work, then grounder first-party source and dependency-boundary follow-up as later ledgers accept the scope. | release readiness |
 | final | `source-quality-synthesis` | Compose the final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff. | docs and release prep |
 
@@ -128,17 +128,22 @@ Leaves for later arcs:
   [`slice04-first-party-quality-gate-scaffold/cdc-verification.md`](slice04-first-party-quality-gate-scaffold/cdc-verification.md).
   Gate scaffold report:
   [`source-quality-gate-scaffold.md`](source-quality-gate-scaffold.md).
-- **slice05 engine-first-party-quality-burndown - open.** Slice05 converts
-  Slice04 engine report-backed rows into Make-backed executable engine
-  component gates, adds focused seam evidence for the `visited_list` payload
-  representation, burns down the primary engine warning budget or stops for
-  amendment,
-  and fixes or classifies duplicate link-library warning noise. Slice set:
+- **slice05 engine-first-party-quality-burndown - closed and
+  CDC-verified.** Slice05 converted Slice04 engine report-backed rows into
+  Make-backed executable engine component gates, added focused seam evidence
+  for the `visited_list` payload representation, closed the primary engine
+  warning budget, and eliminated duplicate link-library warning noise without
+  changing public behavior. `format-check-engine` and
+  `static-analysis-engine` are accepted as reported baselines, not strict
+  zero-drift or zero-finding gates. Slice set:
   [`slice05-engine-first-party-quality-burndown/slice-doc.md`](slice05-engine-first-party-quality-burndown/slice-doc.md),
   [`slice05-engine-first-party-quality-burndown/ledger.md`](slice05-engine-first-party-quality-burndown/ledger.md),
-  [`slice05-engine-first-party-quality-burndown/cc-prompt.md`](slice05-engine-first-party-quality-burndown/cc-prompt.md).
-  Parser generated-warning/root-cause work and grounder first-party source
-  follow in later scoped ledgers after Slice05 reports the engine pattern.
+  [`slice05-engine-first-party-quality-burndown/cc-prompt.md`](slice05-engine-first-party-quality-burndown/cc-prompt.md),
+  [`slice05-engine-first-party-quality-burndown/closing-report.md`](slice05-engine-first-party-quality-burndown/closing-report.md),
+  [`slice05-engine-first-party-quality-burndown/cdc-verification.md`](slice05-engine-first-party-quality-burndown/cdc-verification.md).
+  Parser generated-warning/root-cause work is the recommended next scoped
+  ledger; grounder first-party source and dependency-boundary follow-up remain
+  later Arc07 work.
 
 ## 6. Planned Implementation Surface
 
@@ -194,6 +199,14 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.10 - 2026-08-12.** Marked Slice05
+  engine-first-party-quality-burndown closed and CDC-verified, and selected
+  parser generated-warning/root-cause work as the next scoped ledger. Surfaced
+  by: Slice05 CDC verification. Why: Arc07 now has an executable engine target
+  pattern with source-class fences, seam evidence, sanitizer/coverage/warning
+  baselines, and public contract regression proof, so the remaining generated
+  warning budget can move to parser root-cause analysis without pretending the
+  engine baselines are strict global thresholds.
 - **v1.9 - 2026-08-12.** Opened Slice05
   engine-first-party-quality-burndown. Surfaced by: Slice04 CDC verification.
   Why: the source-quality scaffold selected engine as the first component
