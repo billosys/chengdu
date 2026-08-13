@@ -58,7 +58,8 @@ ambiguity:
 | slice02 | `source-layout-and-build-surface-normalization` | Conditional restructuring slice. Apply only the path/build/compile-database/profile-isolation changes accepted after Slice01 review, so first-party parser/grounder/engine files can be analyzed without third-party/generated noise. | coverage/static-analysis expansion |
 | slice03 | `first-party-source-naming-normalization` | Closed and CDC-verified. Normalized first-party maintained C/C++ file and directory names to the accepted lower snake case policy before gate selectors, compile databases, coverage maps, and static-analysis paths become enforcement surfaces. Excluded third-party, dependency-internal, and generated paths unless a ledger row explicitly accepts them. | stable source-quality selectors |
 | slice04 | `first-party-quality-gate-scaffold` | Closed and CDC-verified. Added Make-backed aggregate scaffold targets and durable status/re-entry evidence for first-party format, static analysis, coverage, unit tests, warning policy, sanitizer policy, optional IPC corpus placement, and generated-warning triage without forcing premature thresholds. | component quality slices |
-| slice05+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice01/Slice02/Slice03/Slice04 determine the real cut lines. Accepted next order starts with engine first-party maintained source, then parser generated-warning/root-cause work, then grounder first-party source and dependency-boundary follow-up as later ledgers accept the scope. | release readiness |
+| slice05 | `engine-first-party-quality-burndown` | Open. Convert Slice04 engine report-backed rows into Make-backed executable engine component gates; add the focused `visited_list` seam needed to burn down the primary engine warning; classify or fix duplicate link-library warning noise; preserve CUDD/generated/copy/build-output exclusions and public behavior. | parser/grounder component burndown |
+| slice06+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice05 determines the engine target pattern. Expected next order is parser generated-warning/root-cause work, then grounder first-party source and dependency-boundary follow-up as later ledgers accept the scope. | release readiness |
 | final | `source-quality-synthesis` | Compose the final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff. | docs and release prep |
 
 Slice01 is intentionally the only fully-opened slice at arc start. Its report
@@ -127,11 +128,17 @@ Leaves for later arcs:
   [`slice04-first-party-quality-gate-scaffold/cdc-verification.md`](slice04-first-party-quality-gate-scaffold/cdc-verification.md).
   Gate scaffold report:
   [`source-quality-gate-scaffold.md`](source-quality-gate-scaffold.md).
-- **slice05 component-source-quality-burndown - next.** Slice05 should start
-  with engine first-party maintained source because it carries the remaining
-  named primary warning budget and useful seam pressure. Parser
-  generated-warning/root-cause work, then grounder first-party source and
-  dependency-boundary follow-up, should follow in later scoped ledgers.
+- **slice05 engine-first-party-quality-burndown - open.** Slice05 converts
+  Slice04 engine report-backed rows into Make-backed executable engine
+  component gates, adds focused seam evidence for the `visited_list` payload
+  representation, burns down the primary engine warning budget or stops for
+  amendment,
+  and fixes or classifies duplicate link-library warning noise. Slice set:
+  [`slice05-engine-first-party-quality-burndown/slice-doc.md`](slice05-engine-first-party-quality-burndown/slice-doc.md),
+  [`slice05-engine-first-party-quality-burndown/ledger.md`](slice05-engine-first-party-quality-burndown/ledger.md),
+  [`slice05-engine-first-party-quality-burndown/cc-prompt.md`](slice05-engine-first-party-quality-burndown/cc-prompt.md).
+  Parser generated-warning/root-cause work and grounder first-party source
+  follow in later scoped ledgers after Slice05 reports the engine pattern.
 
 ## 6. Planned Implementation Surface
 
@@ -187,6 +194,12 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.9 - 2026-08-12.** Opened Slice05
+  engine-first-party-quality-burndown. Surfaced by: Slice04 CDC verification.
+  Why: the source-quality scaffold selected engine as the first component
+  burndown because its remaining primary warning budget is narrow, risk-bearing,
+  and tied to internal seam evidence needed before stronger engine gates can be
+  made executable.
 - **v1.8 - 2026-08-12.** Marked Slice04
   first-party-quality-gate-scaffold closed and CDC-verified, and selected
   engine first-party maintained source as the first Slice05 component

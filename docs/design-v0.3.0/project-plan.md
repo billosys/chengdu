@@ -391,8 +391,12 @@ documentation/tutorial and release-publication work.
   [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cc-prompt.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cc-prompt.md),
   [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/closing-report.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/closing-report.md),
   [`arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cdc-verification.md`](arc07-source-quality-expansion/slice04-first-party-quality-gate-scaffold/cdc-verification.md).
-  Slice05 should open next as the first component source-quality burndown,
-  starting with engine first-party maintained source before parser
+  Slice05 engine-first-party-quality-burndown is open as the first component
+  source-quality burndown:
+  [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/slice-doc.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/slice-doc.md),
+  [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/ledger.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/ledger.md),
+  [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cc-prompt.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cc-prompt.md).
+  Slice05 starts with engine first-party maintained source before parser
   generated-warning/root-cause work and later grounder/dependency follow-up.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
@@ -547,6 +551,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.65 - 2026-08-12.** Opened Arc07 Slice05
+  engine-first-party-quality-burndown. Surfaced by: Slice04 CDC verification.
+  Why: Arc07 can now move from scaffold to the first component burndown,
+  starting with engine first-party maintained source, focused `visited_list`
+  seam evidence, primary warning cleanup, and executable engine component gate
+  targets.
 - **v1.64 - 2026-08-12.** Marked Arc07 Slice04
   first-party-quality-gate-scaffold closed and CDC-verified, and selected
   engine first-party maintained source as the first Slice05 component
