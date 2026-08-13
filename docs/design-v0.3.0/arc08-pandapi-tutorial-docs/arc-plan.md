@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice01 closed and CDC-verified; Slice02 next
+Status: active; Slice02 htn-hddl-onboarding open
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -98,6 +98,15 @@ Leaves for Arc09:
   [`slice01-docs-information-architecture/cdc-verification.md`](slice01-docs-information-architecture/cdc-verification.md).
   The blueprint confirmed `docs/pandapi-0.3.0/` as the public docs home and
   recommended no structural slice breakdown change.
+- **slice02 htn-hddl-onboarding - open.** Slice set:
+  [`slice02-htn-hddl-onboarding/slice-doc.md`](slice02-htn-hddl-onboarding/slice-doc.md),
+  [`slice02-htn-hddl-onboarding/ledger.md`](slice02-htn-hddl-onboarding/ledger.md),
+  [`slice02-htn-hddl-onboarding/cc-prompt.md`](slice02-htn-hddl-onboarding/cc-prompt.md).
+  This slice writes
+  `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md`, teaches beginner
+  HTN/PDDL/HDDL concepts through `fixtures/minimal`, verifies the first parser
+  command, and resolves whether the minimal fixture is enough before Slice03
+  writes the full workflow.
 
 ## 6. Planned Documentation Surface
 
@@ -151,6 +160,11 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.3 - 2026-08-13.** Opened Slice02 htn-hddl-onboarding. Surfaced by:
+  Slice01 CDC verification and the accepted documentation blueprint. Why:
+  Arc08 can now begin public docs writing with the beginner concept page,
+  using `fixtures/minimal`, canonical `pandapi-*` names, and an explicit
+  fixture-adequacy decision before Slice03's workflow tutorial.
 - **v1.2 - 2026-08-13.** Marked Slice01 docs-information-architecture closed
   and CDC-verified. Surfaced by: Slice01 CDC verification. Why: CDC reproduced
   the F-1 through F-13 ledger evidence, accepted `docs/pandapi-0.3.0/` as the
