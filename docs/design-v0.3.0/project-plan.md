@@ -400,13 +400,17 @@ documentation/tutorial and release-publication work.
   [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cdc-verification.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cdc-verification.md).
   Slice05 established the engine component target pattern before parser
   generated-warning/root-cause work and later grounder/dependency follow-up.
-  Slice06 parser-generated-warning-root-cause is open:
+  Slice06 parser-generated-warning-root-cause is closed and CDC-verified:
   [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/slice-doc.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/slice-doc.md),
   [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/ledger.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/ledger.md),
-  [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/cc-prompt.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/cc-prompt.md).
-  Slice06 makes parser generated-warning evidence component-specific, targets
-  Flex scanner helper warnings through the owned scanner input if safe, and
-  dispositions parser gengetopt output without migrating to CLI11.
+  [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/cc-prompt.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/cc-prompt.md),
+  [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/closing-report.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/closing-report.md),
+  [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/cdc-verification.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/cdc-verification.md).
+  Slice06 made parser generated-warning evidence component-specific, closed
+  Flex scanner helper warnings through the owned scanner input, and
+  dispositioned parser gengetopt output without migrating to CLI11. Grounder
+  first-party source and dependency-boundary follow-up is the recommended next
+  scoped Arc07 ledger.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -560,6 +564,14 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.68 - 2026-08-13.** Marked Arc07 Slice06
+  parser-generated-warning-root-cause closed and CDC-verified. Surfaced by:
+  CDC reproduction of CC commit `39c46101`. Why: parser Flex helper warnings
+  are fixed at the scanner input without hand-editing generated output,
+  parser and pipeline managed contracts still pass, first-party warning
+  inventory dropped to 52 warning lines, and parser gengetopt/CLI11 work is
+  preserved as separate re-entry while Arc07 moves toward grounder
+  first-party/dependency-boundary follow-up.
 - **v1.67 - 2026-08-13.** Opened Arc07 Slice06
   parser-generated-warning-root-cause. Surfaced by: Slice05 CDC verification.
   Why: Arc07 can now move from the engine component target pattern to the
