@@ -1,6 +1,6 @@
 # Arc07 Plan: source-quality-expansion
 
-Status: active
+Status: CC proposed done; awaiting CDC verification
 Opened: 2026-08-12
 
 ## 1. Capability
@@ -61,7 +61,7 @@ ambiguity:
 | slice05 | `engine-first-party-quality-burndown` | Closed and CDC-verified. Converted Slice04 engine report-backed rows into Make-backed executable engine component gates; added focused `visited_list` seam evidence; closed the primary engine warning and duplicate link-library noise; preserved CUDD/generated/copy/build-output exclusions and public behavior. | parser/grounder component burndown |
 | slice06 | `parser-generated-warning-root-cause` | Closed and CDC-verified. Made parser generated-warning evidence component-specific, root-caused Flex scanner helper warnings, fixed them through the owned scanner input, and dispositioned parser gengetopt output without CLI11 migration or public behavior change. | parser/grounder component burndown |
 | slice07 | `grounder-source-quality-boundary` | Closed and CDC-verified. Converted grounder scaffold rows into Make-backed component gates; made the first-party/dependency boundary executable; resolved `rss.c` as first-party maintained copied-origin source with warnings fixed; kept cpddl, H2, nested third-party, generated, copied-build, and build-output surfaces separately reported. | release readiness |
-| slice08 | `source-quality-synthesis` | Open. Compose the final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff; propose Arc07 closure only if the completed slices honestly satisfy A1-A9. | docs and release prep |
+| slice08 | `source-quality-synthesis` | CC proposed done. Composed final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff; proposed Arc07 closure because completed slices honestly satisfy A1-A9. | docs and release prep |
 | slice09+ | `component-source-quality-burndown` | Future re-entry work after synthesis. Expected later work may include parser maintained-source burndown, parser/grounder gengetopt and CLI11 replacement, stricter generated-code policy, dependency audits where accepted, coverage floors, or warning/static-analysis thresholds. | release readiness |
 
 Slice01 is intentionally the only fully-opened slice at arc start. Its report
@@ -177,15 +177,21 @@ Leaves for later arcs:
   [`slice07-grounder-source-quality-boundary/closing-report.md`](slice07-grounder-source-quality-boundary/closing-report.md),
   [`slice07-grounder-source-quality-boundary/cdc-verification.md`](slice07-grounder-source-quality-boundary/cdc-verification.md).
   Source-quality synthesis is the recommended next scoped ledger.
-- **slice08 source-quality-synthesis - open.** Slice08 composes the completed
-  Arc07 source-quality evidence, reconciles arc ledger rows A1-A9, classifies
+- **slice08 source-quality-synthesis - CC proposed done; awaiting CDC
+  verification.** Slice08 composes the completed Arc07 source-quality
+  evidence, reconciles arc ledger rows A1-A9 as satisfied, classifies
   remaining work as release blockers, measured baselines, accepted
   deferred/post-0.3.0 budgets, or out-of-first-party-scope dependency
-  boundaries, and proposes Arc07 closure only if the evidence honestly
+  boundaries, and proposes Arc07 closure because the evidence honestly
   composes. Slice set:
   [`slice08-source-quality-synthesis/slice-doc.md`](slice08-source-quality-synthesis/slice-doc.md),
   [`slice08-source-quality-synthesis/ledger.md`](slice08-source-quality-synthesis/ledger.md),
-  [`slice08-source-quality-synthesis/cc-prompt.md`](slice08-source-quality-synthesis/cc-prompt.md).
+  [`slice08-source-quality-synthesis/cc-prompt.md`](slice08-source-quality-synthesis/cc-prompt.md),
+  [`slice08-source-quality-synthesis/closing-report.md`](slice08-source-quality-synthesis/closing-report.md).
+  Final synthesis:
+  [`source-quality-synthesis.md`](source-quality-synthesis.md).
+  Arc closing report:
+  [`closing-report.md`](closing-report.md).
 
 ## 6. Planned Implementation Surface
 
@@ -241,6 +247,12 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.16 - 2026-08-13.** Marked Slice08 source-quality-synthesis
+  CC proposed done and marked Arc07 CC proposed done pending CDC verification.
+  Surfaced by: Slice08 synthesis and closing report. Why: A1-A9 compose
+  honestly; strict release evidence, measured baselines, deferred/post-0.3.0
+  budgets, out-of-first-party-scope dependency boundaries, and Arc08/Arc09
+  handoffs are now explicit without implementation-scope expansion.
 - **v1.15 - 2026-08-13.** Opened Slice08
   source-quality-synthesis. Surfaced by: Slice07 CDC verification and
   closing-report bubble-up. Why: runtime, engine, parser generated-warning,

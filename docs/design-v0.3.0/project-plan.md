@@ -362,7 +362,7 @@ documentation/tutorial and release-publication work.
   process fixtures, coverage, compiler-warning cleanup, heavier
   sanitizer/static-analysis gates, TSan disposition, and release-readiness
   handoff inputs needed by later release dry-runs.
-- **arc07 - active.** Detailed plan:
+- **arc07 - CC proposed done; awaiting CDC verification.** Detailed plan:
   [`arc07-source-quality-expansion/arc-plan.md`](arc07-source-quality-expansion/arc-plan.md).
   Slice01 source-classification-inventory is closed and CDC-verified:
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/slice-doc.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/slice-doc.md),
@@ -422,13 +422,19 @@ documentation/tutorial and release-publication work.
   resolved `rss.c` as first-party maintained copied-origin source with
   warnings fixed, and preserved managed grounder/pipeline behavior.
   Source-quality synthesis is the recommended next scoped Arc07 ledger.
-  Slice08 source-quality-synthesis is open:
+  Slice08 source-quality-synthesis is CC proposed done, awaiting CDC
+  verification:
   [`arc07-source-quality-expansion/slice08-source-quality-synthesis/slice-doc.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/slice-doc.md),
   [`arc07-source-quality-expansion/slice08-source-quality-synthesis/ledger.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/ledger.md),
-  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/cc-prompt.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/cc-prompt.md).
+  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/cc-prompt.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/cc-prompt.md),
+  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/closing-report.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/closing-report.md).
   Slice08 composes the completed Arc07 source-quality evidence, reconciles
-  the arc ledger A1-A9, classifies remaining work by release posture, and
-  proposes Arc07 closure only if the evidence honestly composes.
+  the arc ledger A1-A9 as satisfied, classifies remaining work by release
+  posture, and proposes Arc07 closure because the evidence honestly composes.
+  Arc07 synthesis:
+  [`arc07-source-quality-expansion/source-quality-synthesis.md`](arc07-source-quality-expansion/source-quality-synthesis.md).
+  Arc07 closing report:
+  [`arc07-source-quality-expansion/closing-report.md`](arc07-source-quality-expansion/closing-report.md).
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -582,6 +588,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.72 - 2026-08-13.** Marked Arc07
+  source-quality-expansion CC proposed done, awaiting CDC verification.
+  Surfaced by: Arc07 Slice08 source-quality-synthesis. Why: Slice08 composes
+  A1-A9, separates strict release evidence from measured baselines and
+  deferred/post-0.3.0 budgets, preserves dependency boundaries, and gives
+  Arc08/Arc09 concrete handoff responsibilities without changing public docs,
+  release tooling, CI, Make/tooling, or implementation source.
 - **v1.71 - 2026-08-13.** Opened Arc07 Slice08
   source-quality-synthesis. Surfaced by: Arc07 Slice07 CDC verification and
   closing-report bubble-up. Why: the completed Arc07 source-quality slices now
