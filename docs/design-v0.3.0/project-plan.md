@@ -168,9 +168,9 @@ releases:
 | arc08 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06, arc07 |
 | arc09 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, source-quality release gates, and publish `v0.3.0`. | arc06, arc07, arc08 |
 
-Detailed planning is open through Arc07. Arcs08-09 remain roadmap only until
-Arc07 produces source-quality classification, gates, and a split handoff for
-documentation/tutorial and release-publication work.
+Detailed planning is closed through Arc07. Arcs08-09 remain roadmap only until
+Arc08 opens; Arc07 now provides source-quality classification, gates, and a
+split handoff for documentation/tutorial and release-publication work.
 
 ## 5. Current status
 
@@ -362,7 +362,7 @@ documentation/tutorial and release-publication work.
   process fixtures, coverage, compiler-warning cleanup, heavier
   sanitizer/static-analysis gates, TSan disposition, and release-readiness
   handoff inputs needed by later release dry-runs.
-- **arc07 - CC proposed done; awaiting CDC verification.** Detailed plan:
+- **arc07 - closed and CDC-verified.** Detailed plan:
   [`arc07-source-quality-expansion/arc-plan.md`](arc07-source-quality-expansion/arc-plan.md).
   Slice01 source-classification-inventory is closed and CDC-verified:
   [`arc07-source-quality-expansion/slice01-source-classification-inventory/slice-doc.md`](arc07-source-quality-expansion/slice01-source-classification-inventory/slice-doc.md),
@@ -422,20 +422,20 @@ documentation/tutorial and release-publication work.
   resolved `rss.c` as first-party maintained copied-origin source with
   warnings fixed, and preserved managed grounder/pipeline behavior.
   Source-quality synthesis is the recommended next scoped Arc07 ledger.
-  Slice08 source-quality-synthesis is CC proposed done, awaiting CDC
-  verification:
+  Slice08 source-quality-synthesis is closed and CDC-verified:
   [`arc07-source-quality-expansion/slice08-source-quality-synthesis/slice-doc.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/slice-doc.md),
   [`arc07-source-quality-expansion/slice08-source-quality-synthesis/ledger.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/ledger.md),
   [`arc07-source-quality-expansion/slice08-source-quality-synthesis/cc-prompt.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/cc-prompt.md),
-  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/closing-report.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/closing-report.md).
+  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/closing-report.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/closing-report.md),
+  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/cdc-verification.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/cdc-verification.md).
   Slice08 composes the completed Arc07 source-quality evidence, reconciles
   the arc ledger A1-A9 as satisfied, classifies remaining work by release
-  posture, and proposes Arc07 closure because the evidence honestly composes.
+  posture, and closes Arc07 because the evidence honestly composes.
   Arc07 synthesis:
   [`arc07-source-quality-expansion/source-quality-synthesis.md`](arc07-source-quality-expansion/source-quality-synthesis.md).
   Arc07 closing report:
   [`arc07-source-quality-expansion/closing-report.md`](arc07-source-quality-expansion/closing-report.md).
-  Arc07 classifies and expands first-party source-quality obligations across
+  Arc07 independently closes first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
@@ -481,7 +481,7 @@ Arc03 converted these findings into semantic constraints. Arc04 implemented
 only the dependency gates accepted by Arc03 and kept held or rejected
 dependencies out of the runtime substrate. Arc05 adopted accepted helpers per
 binary without expanding optional surfaces. Arc06 proved the expanded CI/test
-surface. Arc07 must classify first-party versus generated/dependency source
+surface. Arc07 classified first-party versus generated/dependency source
 quality obligations before public docs and release prep. Arc08 must explain
 the accepted dependency, architecture, and source-quality posture in
 user-facing docs; Arc09 must verify license, NOTICE, provenance, test-only
@@ -588,6 +588,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.73 - 2026-08-13.** Marked Arc07 Slice08 source-quality-synthesis
+  closed and CDC-verified, and closed Arc07. Surfaced by: Slice08 CDC
+  verification. Why: CDC reproduced the source-quality, generated/warning,
+  coverage, unit/seam, sanitizer, component static/format baseline, full
+  behavior, provenance, whitespace, boundary, and A1-A9 arc-composition
+  evidence. Arc08 may now open from the verified source-quality synthesis, and
+  Arc09 has explicit release-prep gate handoffs.
 - **v1.72 - 2026-08-13.** Marked Arc07
   source-quality-expansion CC proposed done, awaiting CDC verification.
   Surfaced by: Arc07 Slice08 source-quality-synthesis. Why: Slice08 composes

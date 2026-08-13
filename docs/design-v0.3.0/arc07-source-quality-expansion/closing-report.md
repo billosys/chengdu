@@ -1,12 +1,15 @@
 # Arc07 Closing Report: source-quality-expansion
 
-Status: CC proposed done
+Status: closed and CDC-verified
+Verdict: GO
+Implementation commit reviewed: `f7837f8e`
+CDC verification: `slice08-source-quality-synthesis/cdc-verification.md`
 Platform evidence: macos-arm64
 
 ## Summary
 
-Arc07 is proposed done. Slices01-07 are closed and CDC-verified; Slice08
-composes their evidence in
+Arc07 is closed. Slices01-08 are closed and CDC-verified; Slice08 composes
+their evidence in
 [`source-quality-synthesis.md`](source-quality-synthesis.md). The arc corrects
 the runtime-only framing by classifying parser, grounder, engine, runtime, and
 Chengdu-owned generators/templates as first-party obligations by source class,
@@ -31,7 +34,7 @@ TSan work to explicit re-entry.
 | Slice05 | closed and CDC-verified | Engine component targets, visited_list seam, warning closure, and reported baselines. |
 | Slice06 | closed and CDC-verified | Parser Flex generated-warning root cause and scanner-input fix; gengetopt re-entry preserved. |
 | Slice07 | closed and CDC-verified | Grounder component targets, `rss.c` copied-origin disposition, topsort seam, and dependency-boundary evidence. |
-| Slice08 | CC proposed done | Final synthesis, release posture, Arc08/Arc09 handoff, and this arc close report. |
+| Slice08 | closed and CDC-verified | Final synthesis, release posture, Arc08/Arc09 handoff, and this arc close report. |
 
 ## Arc Ledger Walk
 
@@ -78,7 +81,7 @@ directly.
 
 ## Bubble-up to the project
 
-Arc07 can be marked CC proposed done, awaiting CDC verification. Arc08 may use
+Arc07 can be marked closed and CDC-verified. Arc08 may use
 the synthesis for public tutorial/docs language, especially source-class
 posture, canonical `pandapi-*` behavior, generated-code policy, and dependency
 boundaries. Arc09 may use it for release-prep gate selection, but should not
