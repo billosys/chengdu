@@ -439,7 +439,8 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice03 first-project-workflow open.** Detailed plan:
+- **arc08 - active; Slice03 first-project-workflow CC proposed done, awaiting
+  CDC verification.** Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md),
@@ -455,10 +456,12 @@ handoff.
   [`../tutorial/htn-hddl-onboarding.md`](../tutorial/htn-hddl-onboarding.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cdc-verification.md).
-  Slice03 first-project-workflow is open:
+  Slice03 first-project-workflow has CC close evidence:
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md),
-  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md).
+  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md),
+  [`../tutorial/first-project-workflow.md`](../tutorial/first-project-workflow.md),
+  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, `pandapi-*` CLI guidance, README updates,
@@ -606,6 +609,14 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.81 - 2026-08-13.** Marked Arc08 Slice03 first-project-workflow CC
+  proposed done, awaiting CDC verification. Surfaced by:
+  `docs/tutorial/first-project-workflow.md` and the Slice03 closing report.
+  Why: the first runnable workflow now builds local binaries, parses
+  `fixtures/minimal` to `.htn`, grounds it to `.sas`, solves it to a plan
+  artifact, verifies rerun hygiene, compares valid no-plan behavior with
+  `fixtures/unsolvable`, and preserves managed-process, CLI reference,
+  README, and release-publication scope for later slices.
 - **v1.80 - 2026-08-13.** Opened Arc08 Slice03 first-project-workflow.
   Surfaced by: Slice02 CDC verification and operator docs-home correction.
   Why: the beginner tutorial now lives in `docs/tutorial/`, so the workflow
