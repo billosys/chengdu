@@ -168,9 +168,9 @@ releases:
 | arc08 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06, arc07 |
 | arc09 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, source-quality release gates, and publish `v0.3.0`. | arc06, arc07, arc08 |
 
-Detailed planning is closed through Arc07. Arcs08-09 remain roadmap only until
-Arc08 opens; Arc07 now provides source-quality classification, gates, and a
-split handoff for documentation/tutorial and release-publication work.
+Detailed planning is open through Arc08. Arc09 remains roadmap only until
+Arc08 produces the public tutorial/docs suite and release-prep documentation
+handoff.
 
 ## 5. Current status
 
@@ -439,13 +439,17 @@ split handoff for documentation/tutorial and release-publication work.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - roadmap only.** Arc08 remains downstream of Arc05/Arc06/Arc07
-  proof and should create the user-facing pandaPI 0.3.0 tutorial and
-  documentation suite: beginner HTN/PDDL/HDDL material,
-  simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance,
-  README updates, architecture/dependency documentation for the new fork
-  shape, and source-quality policy language that reflects Arc07's final
-  classifications.
+- **arc08 - active; Slice01 open.** Detailed plan:
+  [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
+  Slice01 docs-information-architecture is open:
+  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md),
+  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/ledger.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/ledger.md),
+  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cc-prompt.md).
+  Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
+  suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
+  workflow examples, `pandapi-*` CLI guidance, README updates,
+  architecture/dependency documentation for the new fork shape, and
+  source-quality policy language that reflects Arc07's final classifications.
 - **arc09 - roadmap only.** Arc09 remains downstream of Arc06, Arc07, and
   Arc08 and owns release preparation and publication: release assets,
   checksums, manifest/provenance, dependency licensing/NOTICE obligations,
@@ -588,6 +592,11 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.74 - 2026-08-13.** Opened Arc08 `pandapi-tutorial-docs` with Slice01
+  docs-information-architecture. Surfaced by: Arc07 CDC-verified close and
+  project roadmap. Why: source-quality, managed-process, fixture, and
+  canonical binary evidence now compose, so user-facing tutorial/docs work can
+  begin from verified inputs while Arc09 release publication remains separate.
 - **v1.73 - 2026-08-13.** Marked Arc07 Slice08 source-quality-synthesis
   closed and CDC-verified, and closed Arc07. Surfaced by: Slice08 CDC
   verification. Why: CDC reproduced the source-quality, generated/warning,

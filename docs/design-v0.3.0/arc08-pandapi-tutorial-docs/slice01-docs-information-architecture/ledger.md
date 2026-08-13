@@ -1,0 +1,26 @@
+# Arc08 Slice01 Ledger: docs-information-architecture
+
+| Row | Criterion | Verify command | Strength | Parent | Status | Evidence | Notes |
+|-----|-----------|----------------|----------|--------|--------|----------|-------|
+| F-1 | `documentation-blueprint.md` exists in the Arc08 directory and states the documentation suite goal in user-facing terms. | `test -f docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md && rg -n -- "pandaPI 0\\.3\\.0|tutorial|documentation suite|reader|journey" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md` | serious | A1 | open | | |
+| F-2 | The blueprint defines at least four audiences/reader journeys: beginner concepts, CLI workflow, managed-process integration, and maintainer/release architecture posture. | `rg -n -- "beginner|HTN|PDDL|HDDL|CLI|managed-process|supervised|maintainer|release|architecture" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md` | correctness-grade | A1/A2/A3/A4/A6 | open | | |
+| F-3 | The blueprint proposes a public docs file map and explicitly names the preferred public docs home. | `rg -n -- "docs/pandapi-0\\.3\\.0|public docs home|file map|page map|README|index|tutorial|reference|migration|architecture" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md` | correctness-grade | A1/A7 | open | | |
+| F-4 | The blueprint inventories source/evidence inputs from Arc03, Arc05, Arc06, Arc07, README, fixtures, and Make targets. | `rg -n -- "Arc03|Arc05|Arc06|Arc07|README|fixtures|Make|make test|make smoke|source-quality|managed-process contract" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md` | serious | A1/A8 | open | | |
+| F-5 | The blueprint selects existing examples/fixtures for beginner and intermediate docs and records any example gaps as later-slice work. | `rg -n -- "fixtures/minimal|fixtures/unsolvable|broken-syntax|broken-reference|example gap|later slice|beginner example|intermediate example" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md` | correctness-grade | A2/A3/A8 | open | | |
+| F-6 | The blueprint records the 0.3.0 command-name policy: public examples use canonical `pandapi-*`; inherited `pandaPI*` names are historical migration context only, not compatibility guarantees. | `rg -n -- "pandapi-parser|pandapi-grounder|pandapi-engine|pandaPI\\*|historical|migration context|not.*compatibility|0\\.2\\.0|0\\.3\\.0" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md` | correctness-grade | A5 | open | | |
+| F-7 | The blueprint defines documentation voice/style rules that favor clear, runnable, kind-to-attention technical writing. | `rg -n -- "voice|style|clear|runnable|precise|reader|attention|conceptual|command block" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md` | serious | A1 | open | | |
+| F-8 | The blueprint routes README, behavior-change table, architecture/dependency/source-quality docs, managed-process docs, and wolong migration guidance to later Arc08 or Arc09 work. | `rg -n -- "README|behavior-change|architecture|dependency|source-quality|managed-process|wolong|Arc09|Slice02|Slice03|Slice04|Slice05|Slice06|Slice07" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md` | correctness-grade | A4/A5/A6/A7/A9 | open | | |
+| F-9 | Arc08 `arc-plan.md` exists, marks Slice01 open, contains A1-A10, and points to the Slice01 open set. | `rg -n -- "Status: active|slice01|docs-information-architecture|A1|A2|A3|A4|A5|A6|A7|A8|A9|A10|slice-doc.md|ledger.md|cc-prompt.md" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/arc-plan.md` | correctness-grade | project management | open | | |
+| F-10 | Project plan marks Arc08 active/open and records a Version History entry for opening Arc08. | `rg -n -- "arc08 - active|Arc08.*opened|v1\\.74|docs-information-architecture|pandapi-tutorial-docs" docs/design-v0.3.0/project-plan.md` | serious | project management | open | | |
+| F-11 | The slice stays inside docs-planning scope: no README, release, CI, Make, fixture, implementation, package, license bundle, or wolong surfaces are changed. | `set -e; if git diff --cached --name-only -- README.md release .github Makefile mk fixtures tests tools pandaPI licenses | rg .; then exit 1; fi` | serious | boundary | open | | |
+| F-12 | Whitespace checks pass after staging. | `git diff --check && git diff --cached --check` | serious | no regression | open | | |
+| F-13 | The closing report walks F-1 through F-13 and includes Bubble-up to Arc08 stating whether the slice breakdown changed. | `rg -n -- "F-1|F-2|F-3|F-4|F-5|F-6|F-7|F-8|F-9|F-10|F-11|F-12|F-13|Bubble-up to Arc08|slice breakdown" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md` | correctness-grade | project management | open | | |
+
+## Ledger Notes
+
+- This slice plans the docs architecture; it does not write the full public
+  docs suite.
+- Any change to public docs home, slice ordering, or example strategy must
+  update `arc-plan.md` before Slice02 opens.
+- Treat stale inherited-name compatibility language in older design docs as
+  historical input only. The current project-plan policy governs public docs.
