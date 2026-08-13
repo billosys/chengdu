@@ -439,8 +439,9 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice04 managed-process-workflow open; Slice03
-  first-project-workflow CC proposed done, awaiting CDC verification.**
+- **arc08 - active; Slice04 managed-process-workflow CC proposed done,
+  awaiting CDC verification; Slice03 first-project-workflow CC proposed done,
+  awaiting CDC verification.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -463,10 +464,12 @@ handoff.
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md),
   [`../tutorial/02-first-project-workflow.md`](../tutorial/02-first-project-workflow.md),
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md).
-  Slice04 managed-process-workflow is open:
+  Slice04 managed-process-workflow has CC close evidence:
   [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/slice-doc.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/ledger.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/ledger.md),
-  [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cc-prompt.md).
+  [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cc-prompt.md),
+  [`../managed-process.md`](../managed-process.md),
+  [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, `pandapi-*` CLI guidance, README updates,
@@ -614,6 +617,15 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.83 - 2026-08-13.** Marked Arc08 Slice04
+  managed-process-workflow CC proposed done, awaiting CDC verification.
+  Surfaced by: `docs/managed-process.md` and the Slice04 closing report.
+  Why: the managed-process guide now teaches `--supervised`, status stream
+  selection, stdout/stderr ownership, final `PANDAPI_STATUS`, status/exit
+  classification, ANSI/color behavior, valid no-plan, invalid input, and
+  stdout conflict handling through verified `./bin/pandapi-*` examples while
+  preserving Slice05, README, Arc09 release-publication, and implementation
+  scope.
 - **v1.82 - 2026-08-13.** Opened Arc08 Slice04
   managed-process-workflow. Surfaced by: Slice03 workflow handoff and the
   accepted documentation blueprint. Why: the first CLI workflow now proves

@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice04 managed-process-workflow open; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
+Status: active; Slice04 managed-process-workflow CC proposed done, awaiting CDC verification; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -123,15 +123,18 @@ Leaves for Arc09:
   `fixtures/unsolvable`, resolves that no intermediate fixture beyond
   `fixtures/unsolvable` is needed, and keeps managed-process details for
   Slice04.
-- **slice04 managed-process-workflow - open.** Slice set:
+- **slice04 managed-process-workflow - CC proposed done, awaiting CDC
+  verification.** Slice set:
   [`slice04-managed-process-workflow/slice-doc.md`](slice04-managed-process-workflow/slice-doc.md),
   [`slice04-managed-process-workflow/ledger.md`](slice04-managed-process-workflow/ledger.md),
-  [`slice04-managed-process-workflow/cc-prompt.md`](slice04-managed-process-workflow/cc-prompt.md).
-  This slice will write `docs/managed-process.md`, teach supervised/process
+  [`slice04-managed-process-workflow/cc-prompt.md`](slice04-managed-process-workflow/cc-prompt.md),
+  [`../managed-process.md`](../managed-process.md),
+  [`slice04-managed-process-workflow/closing-report.md`](slice04-managed-process-workflow/closing-report.md).
+  This slice writes `docs/managed-process.md`, teaches supervised/process
   integration with `--supervised`, `--status`, stdout/stderr ownership, final
   `PANDAPI_STATUS`, status/exit classification, ANSI/color behavior, and
-  negative outcomes, while keeping CLI reference and migration details for
-  Slice05.
+  negative outcomes, verifies managed parser, grounder, engine, and pipeline
+  contract gates, and keeps CLI reference and migration details for Slice05.
 
 ## 6. Planned Documentation Surface
 
@@ -185,6 +188,13 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.9 - 2026-08-13.** Marked Slice04 managed-process-workflow CC proposed
+  done. Surfaced by: public managed-process guide, Slice04 ledger, and
+  Slice04 closing report. Why: the guide now teaches supervised execution,
+  status stream selection, stdout/stderr ownership, final `PANDAPI_STATUS`,
+  status/exit classification, ANSI/color behavior, no-plan, invalid input,
+  and stdout conflict examples through `./bin/pandapi-*`, while preserving
+  Slice05, README, and Arc09 release-publication scope.
 - **v1.8 - 2026-08-13.** Opened Slice04 managed-process-workflow. Surfaced by:
   Slice03 workflow handoff and the accepted documentation blueprint. Why:
   the simple CLI workflow now verifies parse -> ground -> solve and no-plan
