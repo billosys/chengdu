@@ -83,6 +83,286 @@ generated-warning-triage-parser:
 	printf '%b\n' "$(GREEN)Parser generated-warning report: docs/design-v0.3.0/arc07-source-quality-expansion/parser-generated-warning-root-cause.md$(RESET)"
 	printf '%b\n' "$(GREEN)Parser generated-warning evidence: $(SOURCE_QUALITY_DIR)/generated-warning-triage-parser.md$(RESET)"
 
+.PHONY: format-check-grounder
+format-check-grounder: source-quality-profile-map source-quality-naming-check
+	set -e; \
+	printf '%b\n' "$(BLUE)Checking grounder first-party format baseline...$(RESET)"; \
+	$(resolve_clang_format); \
+	mkdir -p "$(SOURCE_QUALITY_DIR)"; \
+	files="$(SOURCE_QUALITY_DIR)/format-check-grounder-files.txt"; \
+	drift="$(SOURCE_QUALITY_DIR)/format-check-grounder-drift.txt"; \
+	find "$(GROUNDER_SOURCE_DIR)" "$(GROUNDER_TEST_DIR)" -type f \( -name '*.h' -o -name '*.hpp' -o -name '*.cc' -o -name '*.cpp' -o -name '*.c' -o -name '*.cxx' \) \
+	  ! -name 'cmdline.c' \
+	  ! -name 'cmdline.h' \
+	  -print | sort > "$$files"; \
+	: > "$$drift"; \
+	while IFS= read -r file; do \
+	  [ -n "$$file" ] || continue; \
+	  tmp="$$(mktemp)"; \
+	  "$$CLANG_FORMAT_BIN" "$$file" > "$$tmp"; \
+	  if ! cmp -s "$$file" "$$tmp"; then \
+	    printf '%s\n' "$$file" >> "$$drift"; \
+	  fi; \
+	  rm -f "$$tmp"; \
+	done < "$$files"; \
+	file_count="$$(wc -l < "$$files" | tr -d ' ')"; \
+	drift_count="$$(wc -l < "$$drift" | tr -d ' ')"; \
+	{ \
+	  printf '%s\n' "# format-check-grounder evidence"; \
+	  printf '%s\n' ""; \
+	  printf '%s\n' "Target: format-check-grounder"; \
+	  printf '%s\n' "Component: grounder"; \
+	  printf '%s\n' "Source class: first-party maintained, including rss.c copied-origin RSS utility."; \
+	  printf '%s\n' "Selector: $(GROUNDER_SOURCE_DIR) and $(GROUNDER_TEST_DIR), excluding generated cmdline.c/cmdline.h, cpddl, h2-fd-preprocessor, third-party, copied build roots, and BUILD_OUTPUT roots."; \
+	  printf '%s\n' "Tool: $$CLANG_FORMAT_VERSION"; \
+	  printf '%s\n' "Files checked: $$file_count"; \
+	  printf '%s\n' "Current baseline drift entries: $$drift_count"; \
+	  printf '%s\n' "Evidence files: $$files and $$drift"; \
+	  printf '%s\n' "Policy: executable baseline check; re-entry converts recorded drift to strict formatting once a grounder formatting burndown is accepted."; \
+	} > "$(GROUNDER_FORMAT_REPORT)"; \
+	if [ "$$drift_count" -eq 0 ]; then \
+	  printf '%b\n' "$(GREEN)Grounder format baseline has no drift$(RESET)"; \
+	else \
+	  printf '%b\n' "$(YELLOW)Grounder format baseline recorded $$drift_count drift entries: $$drift$(RESET)"; \
+	fi; \
+	printf '%b\n' "$(GREEN)Grounder format report: $(GROUNDER_FORMAT_REPORT)$(RESET)"
+
+.PHONY: static-analysis-grounder
+static-analysis-grounder: compile-db-grounder source-quality-profile-map source-quality-naming-check
+	set -e; \
+	printf '%b\n' "$(BLUE)Running grounder first-party static-analysis baseline...$(RESET)"; \
+	find_tool() { \
+	  local name="$$1"; \
+	  if command -v "$$name" >/dev/null 2>&1; then command -v "$$name"; return 0; fi; \
+	  if command -v xcrun >/dev/null 2>&1; then xcrun --find "$$name" 2>/dev/null || true; fi; \
+	  for path in "/opt/homebrew/opt/llvm/bin/$$name" "/opt/homebrew/opt/llvm@21/bin/$$name" "/usr/local/opt/llvm/bin/$$name"; do \
+	    if [ -x "$$path" ]; then printf '%s\n' "$$path"; return 0; fi; \
+	  done; \
+	}; \
+	mkdir -p "$(GROUNDER_STATIC_ANALYSIS_DIR)" "$(SOURCE_QUALITY_DIR)"; \
+	CLANG_TIDY_BIN="$${CLANG_TIDY:-$$(find_tool clang-tidy)}"; \
+	report_md="$(SOURCE_QUALITY_DIR)/static-analysis-grounder.md"; \
+	if [ -z "$$CLANG_TIDY_BIN" ]; then \
+	  { \
+	    printf '%s\n' "# static-analysis-grounder evidence"; \
+	    printf '%s\n' ""; \
+	    printf '%s\n' "Target: static-analysis-grounder"; \
+	    printf '%s\n' "Status: SKIP, clang-tidy not found."; \
+	    printf '%s\n' "Checks: $(CLANG_TIDY_CHECKS), including clang-analyzer."; \
+	    printf '%s\n' "Input: compile-db-grounder first-party selected grounder translation units; generated cmdline output, cpddl, h2-fd-preprocessor, third-party, copied build roots, and BUILD_OUTPUT roots are excluded."; \
+	    printf '%s\n' "Re-entry: install clang-tidy or set CLANG_TIDY=/path/to/clang-tidy and rerun make static-analysis-grounder."; \
+	  } > "$$report_md"; \
+	  printf '%b\n' "$(YELLOW)static-analysis-grounder: SKIP: missing clang-tidy$(RESET)"; \
+	  exit 0; \
+	fi; \
+	files="$$(sed "s#^#$(CURDIR)/#" "$(SOURCE_QUALITY_COMPILE_DB_DIR)/grounder/first-party-selected.txt")"; \
+	if [ -z "$$files" ]; then \
+	  printf '%b\n' "$(RED)static-analysis-grounder: no grounder first-party selected files found$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	tmp="$(GROUNDER_STATIC_ANALYSIS_REPORT).tmp"; \
+	if "$$CLANG_TIDY_BIN" -p "$(SOURCE_QUALITY_COMPILE_DB_DIR)/grounder" \
+	  -checks="$(CLANG_TIDY_CHECKS)" \
+	  -header-filter='(^|.*/)pandaPI/grounder/src/.*' \
+	  $$files > "$$tmp" 2>&1; then \
+	  tidy_status=0; \
+	else \
+	  tidy_status="$$?"; \
+	fi; \
+	mv "$$tmp" "$(GROUNDER_STATIC_ANALYSIS_REPORT)"; \
+	finding_count="$$(awk '/warning:|error:/ { count++ } END { print count + 0 }' "$(GROUNDER_STATIC_ANALYSIS_REPORT)")"; \
+	{ \
+	  printf '%s\n' "# static-analysis-grounder evidence"; \
+	  printf '%s\n' ""; \
+	  printf '%s\n' "Target: static-analysis-grounder"; \
+	  printf '%s\n' "Tool: $$("$$CLANG_TIDY_BIN" --version | head -1)"; \
+	  printf '%s\n' "Checks: $(CLANG_TIDY_CHECKS), including clang-analyzer."; \
+	  printf '%s\n' "Input: compile-db-grounder first-party selected grounder translation units."; \
+	  printf '%s\n' "Selector policy: generated cmdline output, cpddl, h2-fd-preprocessor, third-party, copied build roots, and BUILD_OUTPUT roots are excluded."; \
+	  printf '%s\n' "Generated header policy: gengetopt cmdline.h and cpddl/boruvka config/template headers are generated under build/source-quality for analysis only; generated output is not committed or first-party maintained."; \
+	  printf '%s\n' "clang-tidy exit status: $$tidy_status"; \
+	  printf '%s\n' "Reported finding lines: $$finding_count"; \
+	  printf '%s\n' "Raw report: $(GROUNDER_STATIC_ANALYSIS_REPORT)"; \
+	  printf '%s\n' "Policy: executable reported baseline; re-entry decides which analyzer findings become strict grounder release blockers."; \
+	} > "$$report_md"; \
+	if [ "$$tidy_status" -eq 0 ]; then \
+	  printf '%b\n' "$(GREEN)Grounder static-analysis baseline completed with no clang-tidy errors$(RESET)"; \
+	else \
+	  printf '%b\n' "$(YELLOW)Grounder static-analysis baseline reported clang-tidy status $$tidy_status: $(GROUNDER_STATIC_ANALYSIS_REPORT)$(RESET)"; \
+	fi
+
+.PHONY: test-unit-grounder
+test-unit-grounder: source-quality-profile-map source-quality-naming-check
+	set -e; \
+	printf '%b\n' "$(BLUE)Running grounder unit seam tests...$(RESET)"; \
+	mkdir -p "$(GROUNDER_UNIT_BUILD_DIR)" "$(SOURCE_QUALITY_DIR)"; \
+	exe="$(GROUNDER_UNIT_BUILD_DIR)/grounder_top_sort_seam_test"; \
+	"$${CXX:-c++}" -std=gnu++20 -Wall -Wextra -pedantic -O0 -g \
+	  -I"$(GROUNDER_SOURCE_DIR)" \
+	  "$(GROUNDER_TEST_DIR)/top_sort_seam_test.cpp" \
+	  "$(GROUNDER_SOURCE_DIR)/util.cpp" \
+	  -o "$$exe"; \
+	"$$exe"; \
+	{ \
+	  printf '%s\n' "# test-unit-grounder evidence"; \
+	  printf '%s\n' ""; \
+	  printf '%s\n' "Target: test-unit-grounder"; \
+	  printf '%s\n' "Scope: grounder first-party unit seam."; \
+	  printf '%s\n' "Seam: util.cpp topsort dependency ordering contract."; \
+	  printf '%s\n' "Harness: direct compiled seam test at $(GROUNDER_TEST_DIR)/top_sort_seam_test.cpp."; \
+	  printf '%s\n' "CTest: not required for this smallest grounder seam."; \
+	  printf '%s\n' "Catch2: not required for this smallest grounder seam."; \
+	  printf '%s\n' "Contract boundary: managed process fixtures remain black-box evidence, not this unit seam."; \
+	} > "$(GROUNDER_TEST_UNIT_REPORT)"; \
+	printf '%b\n' "$(GREEN)Grounder unit seam report: $(GROUNDER_TEST_UNIT_REPORT)$(RESET)"
+
+.PHONY: coverage-grounder
+coverage-grounder: source-quality-profile-map source-quality-naming-check
+	set -e; \
+	printf '%b\n' "$(BLUE)Running grounder topsort seam coverage for $(PLATFORM)...$(RESET)"; \
+	find_tool() { \
+	  local name="$$1"; \
+	  if command -v "$$name" >/dev/null 2>&1; then command -v "$$name"; return 0; fi; \
+	  if command -v xcrun >/dev/null 2>&1; then xcrun --find "$$name" 2>/dev/null || true; fi; \
+	}; \
+	CXX_BIN="$${CXX:-$$(find_tool clang++)}"; \
+	LLVM_PROFDATA_BIN="$${LLVM_PROFDATA:-$$(find_tool llvm-profdata)}"; \
+	LLVM_COV_BIN="$${LLVM_COV:-$$(find_tool llvm-cov)}"; \
+	if [ -z "$$CXX_BIN" ] || [ -z "$$LLVM_PROFDATA_BIN" ] || [ -z "$$LLVM_COV_BIN" ]; then \
+	  printf '%b\n' "$(RED)coverage-grounder: clang++, llvm-profdata, and llvm-cov are required$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	mkdir -p "$(GROUNDER_COVERAGE_BUILD_DIR)" "$(GROUNDER_COVERAGE_REPORT_DIR)" "$(SOURCE_QUALITY_DIR)"; \
+	exe="$(GROUNDER_COVERAGE_BUILD_DIR)/grounder_top_sort_seam_test"; \
+	COVERAGE_FLAGS="-O0 -g -fprofile-instr-generate -fcoverage-mapping"; \
+	"$$CXX_BIN" -std=gnu++20 -Wall -Wextra -pedantic $$COVERAGE_FLAGS \
+	  -I"$(GROUNDER_SOURCE_DIR)" \
+	  "$(GROUNDER_TEST_DIR)/top_sort_seam_test.cpp" \
+	  "$(GROUNDER_SOURCE_DIR)/util.cpp" \
+	  -o "$$exe"; \
+	PROFILE_DIR="$$(mktemp -d "$(CURDIR)/$(GROUNDER_COVERAGE_DIR)/profiles.XXXXXX")"; \
+	LLVM_PROFILE_FILE="$$PROFILE_DIR/%m-%p.profraw" "$$exe"; \
+	PROFILE_LIST="$(GROUNDER_COVERAGE_DIR)/profiles.txt"; \
+	find "$$PROFILE_DIR" -name '*.profraw' -print | sort > "$$PROFILE_LIST"; \
+	if [ ! -s "$$PROFILE_LIST" ]; then \
+	  printf '%b\n' "$(RED)coverage-grounder: no .profraw files were produced by grounder seam test$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	"$$LLVM_PROFDATA_BIN" merge -sparse --input-files="$$PROFILE_LIST" -o "$(GROUNDER_COVERAGE_PROFDATA)"; \
+	ignore_regex='(^|/)(build|dist|release)(/|$$)|(^|/)pandaPI/grounder/(cpddl|h2-fd-preprocessor)(/|$$)|(^|/)pandaPI/grounder/src/cmdline\.(c|h)$$'; \
+	"$$LLVM_COV_BIN" report "$$exe" \
+	  -instr-profile="$(GROUNDER_COVERAGE_PROFDATA)" \
+	  -ignore-filename-regex="$$ignore_regex" > "$(GROUNDER_COVERAGE_SUMMARY)"; \
+	"$$LLVM_COV_BIN" show "$$exe" \
+	  -instr-profile="$(GROUNDER_COVERAGE_PROFDATA)" \
+	  -ignore-filename-regex="$$ignore_regex" \
+	  -format=text > "$(GROUNDER_COVERAGE_DETAIL)"; \
+	{ \
+	  printf '%s\n' "# coverage-grounder evidence"; \
+	  printf '%s\n' ""; \
+	  printf '%s\n' "Target: coverage-grounder"; \
+	  printf '%s\n' "Scope: grounder first-party topsort unit seam baseline."; \
+	  printf '%s\n' "Profile map: source-quality-profile-map maps copied build roots back to canonical source."; \
+	  printf '%s\n' "Source class policy: first-party maintained grounder source only; generated cmdline output, cpddl, h2-fd-preprocessor, third-party, copied roots, dependency, dist, release, and BUILD_OUTPUT roots are excluded."; \
+	  printf '%s\n' "Summary: $(GROUNDER_COVERAGE_SUMMARY)"; \
+	  printf '%s\n' "Detail: $(GROUNDER_COVERAGE_DETAIL)"; \
+	  printf '%s\n' "Policy: measured baseline only; no release floor."; \
+	} > "$(SOURCE_QUALITY_DIR)/coverage-grounder.md"; \
+	printf '%b\n' "$(GREEN)Grounder coverage summary: $(GROUNDER_COVERAGE_SUMMARY)$(RESET)"; \
+	cat "$(GROUNDER_COVERAGE_SUMMARY)"
+
+.PHONY: warning-inventory-grounder
+warning-inventory-grounder: source-quality-profile-map source-quality-naming-check
+	set -e; \
+	printf '%b\n' "$(BLUE)Capturing grounder compiler warning inventory...$(RESET)"; \
+	mkdir -p "$(WARNING_INVENTORY_DIR)" "$(SOURCE_QUALITY_DIR)"; \
+	tmp_log="$(WARNING_INVENTORY_DIR)/grounder-build.log.tmp"; \
+	grounder_log="$(WARNING_INVENTORY_DIR)/grounder-build.log"; \
+	grounder_inventory="$(WARNING_INVENTORY_DIR)/grounder-warning-inventory.txt"; \
+	if $(MAKE) build-grounder > "$$tmp_log" 2>&1; then \
+	  build_status=0; \
+	else \
+	  build_status="$$?"; \
+	fi; \
+	mv "$$tmp_log" "$$grounder_log"; \
+	{ \
+	  printf '%s\n' "chengdu grounder compiler warning inventory"; \
+	  printf '%s\n' "command: make build-grounder"; \
+	  printf '%s\n' "platform: $(PLATFORM)"; \
+	  printf '%s\n' "commit: $(GIT_COMMIT)"; \
+	  printf '%s\n' "log: $$grounder_log"; \
+	  printf '%s\n' ""; \
+	  awk '/warning:|warnings generated|ld: warning/ { printf "%d:%s\n", NR, $$0 }' "$$grounder_log"; \
+	} > "$$grounder_inventory"; \
+	first_party_matches="$$(rg -n -- 'src/(conditional_effects|debug|duplicate|fam_mutexes|given_plan|gpg|grounded_gpg|grounding|h2_mutexes|hierarchy_typing|lifted_gpg|main|model|naive_grounding|output|pandapi_grounder_native|parser|postprocessing|rss|sasinvariants|sasplus|util)\\.(cpp|c):.*warning:' "$$grounder_inventory" || true)"; \
+	first_party_count="$$(printf '%s\n' "$$first_party_matches" | sed '/^$$/d' | wc -l | tr -d ' ')"; \
+	rss_status="closed: rss.c first-party maintained copied-origin RSS utility has no remaining warning"; \
+	if rg -n -- 'src/rss\\.c:.*warning:|rss\\.c.*warning:' "$$grounder_inventory" >/dev/null 2>&1; then \
+	  rss_status="blocked: rss.c first-party maintained warning remains"; \
+	fi; \
+	dependency_count="$$(rg -n -- 'mergesort\\.c|tasks\\.c|task-pool\\.c|fifo-sem\\.c|ring_queue\\.c|opts\\.(c|h)|test2?\\.c|lp_|rss\\.c|h2_mutexes\\.cc|warnings generated|-O9' "$$grounder_inventory" | wc -l | tr -d ' ' || true)"; \
+	{ \
+	  printf '%s\n' "# warning-inventory-grounder evidence"; \
+	  printf '%s\n' ""; \
+	  printf '%s\n' "Target: warning-inventory-grounder"; \
+	  printf '%s\n' "Scope: grounder warning inventory with source-class routing."; \
+	  printf '%s\n' "Input command: make build-grounder"; \
+	  printf '%s\n' "Inventory: $$grounder_inventory"; \
+	  printf '%s\n' "First-party maintained warning count: $$first_party_count"; \
+	  printf '%s\n' "RSS chosen disposition: first-party maintained copied-origin RSS utility; $$rss_status."; \
+	  printf '%s\n' "Generated cmdline disposition: cmdline.c and cmdline.h are generated from options.ggo through gengetopt; managed native grounder behavior owns process-contract evidence."; \
+	  printf '%s\n' "Dependency warning classes: cpddl, boruvka, opts, lpsolve, h2-fd-preprocessor, third-party, copied, and BUILD_OUTPUT paths remain separately reported; observed dependency-class evidence lines: $$dependency_count."; \
+	  printf '%s\n' "Re-entry: dependency audit, supported FAM/H2 decision, strict generated-code policy, or first-party warning recurrence."; \
+	} > "$(GROUNDER_WARNING_REPORT)"; \
+	cat "$$grounder_inventory"; \
+	if [ "$$build_status" -ne 0 ]; then \
+	  printf '%b\n' "$(RED)warning-inventory-grounder: build failed; inspect $$grounder_log$(RESET)" >&2; \
+	  exit "$$build_status"; \
+	fi; \
+	if [ "$$first_party_count" -ne 0 ]; then \
+	  printf '%s\n' "$$first_party_matches" >&2; \
+	  printf '%b\n' "$(RED)warning-inventory-grounder: first-party grounder warnings remain$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	printf '%b\n' "$(GREEN)Grounder warning inventory report: $(GROUNDER_WARNING_REPORT)$(RESET)"
+
+.PHONY: sanitize-grounder
+sanitize-grounder: source-quality-profile-map source-quality-naming-check
+	set -e; \
+	printf '%b\n' "$(BLUE)Running grounder sanitizer seam tests...$(RESET)"; \
+	find_tool() { \
+	  local name="$$1"; \
+	  if command -v "$$name" >/dev/null 2>&1; then command -v "$$name"; return 0; fi; \
+	  if command -v xcrun >/dev/null 2>&1; then xcrun --find "$$name" 2>/dev/null || true; fi; \
+	}; \
+	CXX_BIN="$${CXX:-$$(find_tool clang++)}"; \
+	if [ -z "$$CXX_BIN" ]; then \
+	  printf '%b\n' "$(RED)sanitize-grounder: clang++ is required for ASan/UBSan$(RESET)" >&2; \
+	  exit 1; \
+	fi; \
+	mkdir -p "$(GROUNDER_SANITIZE_BUILD_DIR)" "$(SOURCE_QUALITY_DIR)"; \
+	exe="$(GROUNDER_SANITIZE_BUILD_DIR)/grounder_top_sort_seam_test"; \
+	"$$CXX_BIN" -std=gnu++20 -Wall -Wextra -pedantic $(BINARY_SANITIZER_FLAGS) \
+	  -I"$(GROUNDER_SOURCE_DIR)" \
+	  "$(GROUNDER_TEST_DIR)/top_sort_seam_test.cpp" \
+	  "$(GROUNDER_SOURCE_DIR)/util.cpp" \
+	  $(BINARY_SANITIZER_LINK_FLAGS) \
+	  -o "$$exe"; \
+	ASAN_OPTIONS="$(BINARY_SANITIZER_ASAN_OPTIONS)" UBSAN_OPTIONS="$(BINARY_SANITIZER_UBSAN_OPTIONS)" "$$exe"; \
+	{ \
+	  printf '%s\n' "# sanitize-grounder evidence"; \
+	  printf '%s\n' ""; \
+	  printf '%s\n' "Target: sanitize-grounder"; \
+	  printf '%s\n' "Scope: grounder first-party topsort unit seam under ASan/UBSan."; \
+	  printf '%s\n' "ASan: enabled through $(BINARY_SANITIZER_FLAGS)."; \
+	  printf '%s\n' "UBSan: enabled through $(BINARY_SANITIZER_FLAGS)."; \
+	  printf '%s\n' "LSan: $(BINARY_SANITIZER_LSAN_STATUS)"; \
+	  printf '%s\n' "TSan: re-entry only; no accepted grounder concurrency workload in this source-quality slice."; \
+	  printf '%s\n' "Binary/source class policy: managed binary sanitizer findings still map copied paths back to first-party, generated, dependency, h2-fd-preprocessor, cpddl, third-party, copied, or BUILD_OUTPUT classes before ownership is assigned."; \
+	  printf '%s\n' "Re-entry: ASan, UBSan, LSan, TSan, binary, source class, copied, dependency, or third-party finding in grounder evidence."; \
+	} > "$(GROUNDER_SANITIZE_REPORT)"; \
+	printf '%b\n' "$(GREEN)Grounder sanitizer report: $(GROUNDER_SANITIZE_REPORT)$(RESET)"
+
 .PHONY: test-unit
 test-unit: source-quality-gate-report test-runtime
 	printf '%b\n' "$(GREEN)Unit/seam test scaffold passed$(RESET)"

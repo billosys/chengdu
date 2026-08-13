@@ -53,6 +53,12 @@ help:
 	printf '%b\n' "  $(YELLOW)make compile-db-engine$(RESET)   - Generate engine source-quality compile database"; \
 	printf '%b\n' "  $(YELLOW)make compile-db-first-party$(RESET) - Generate parser, grounder, and engine compile databases"; \
 	printf '%b\n' "  $(YELLOW)make source-quality-gate-report$(RESET) - Write first-party quality gate scaffold report"; \
+	printf '%b\n' "  $(YELLOW)make format-check-grounder$(RESET) - Run/report grounder first-party format baseline"; \
+	printf '%b\n' "  $(YELLOW)make static-analysis-grounder$(RESET) - Run/report grounder first-party clang-tidy baseline"; \
+	printf '%b\n' "  $(YELLOW)make coverage-grounder$(RESET)     - Run/report grounder seam coverage baseline"; \
+	printf '%b\n' "  $(YELLOW)make warning-inventory-grounder$(RESET) - Run/report grounder compiler-warning inventory"; \
+	printf '%b\n' "  $(YELLOW)make test-unit-grounder$(RESET)    - Run grounder unit/seam tests"; \
+	printf '%b\n' "  $(YELLOW)make sanitize-grounder$(RESET)     - Run grounder ASan/UBSan seam tests"; \
 	printf '%b\n' "  $(YELLOW)make format-check-engine$(RESET) - Run/report engine first-party format baseline"; \
 	printf '%b\n' "  $(YELLOW)make static-analysis-engine$(RESET) - Run/report engine first-party clang-tidy baseline"; \
 	printf '%b\n' "  $(YELLOW)make coverage-engine$(RESET)      - Run/report engine visited_list seam coverage"; \

@@ -1,6 +1,6 @@
 # Arc07 Slice07: grounder-source-quality-boundary
 
-Status: open
+Status: CC proposed done
 Opened: 2026-08-13
 
 ## Goal
