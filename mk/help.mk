@@ -8,7 +8,7 @@ help:
 	printf '%b\n' "$(CYAN)============================================================$(RESET)"; \
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)Build:$(RESET)"; \
-	printf '%b\n' "  $(YELLOW)make build$(RESET)              - Build runtime, parser, grounder, and engine"; \
+	printf '%b\n' "  $(YELLOW)make build$(RESET)              - Build runtime, parser, grounder, and engine; populate bin/"; \
 	printf '%b\n' "  $(YELLOW)make build-runtime$(RESET)      - Build chengdu-owned runtime"; \
 	printf '%b\n' "  $(YELLOW)make build-parser$(RESET)       - Build pandapi-parser into dist/"; \
 	printf '%b\n' "  $(YELLOW)make build-grounder$(RESET)     - Build pandapi-grounder into dist/"; \
@@ -110,6 +110,7 @@ info:
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)Paths:$(RESET)"; \
 	printf '%s\n' "  Dist Dir:   $(DIST_DIR)/"; \
+	printf '%s\n' "  Bin Dir:    $(BIN_DIR)/"; \
 	printf '%s\n' "  Runtime:    $(RUNTIME_BUILD_DIR)/"; \
 	printf '%s\n' "  Workspace:  $$(pwd)"; \
 	printf '\n'; \

@@ -1,4 +1,7 @@
-# Build targets for the runtime and inherited pandaPI binaries.
+# Build targets for the runtime and pandaPI binaries.
+
+$(BIN_DIR):
+	mkdir -p "$(BIN_DIR)"
 
 .PHONY: reset-provenance
 reset-provenance:
@@ -237,6 +240,19 @@ build-engine: build-runtime
 	append_provenance "$$DIST_DIR" "pandapi-engine" "ENGINE" "$$COMPILER"; \
 	printf '%b\n' "$(GREEN)Built $$DIST_DIR/pandapi-engine$(RESET)"
 
+.PHONY: sync-bin
+sync-bin: $(BIN_DIR)
+	set -e; \
+	for name in pandapi-parser pandapi-grounder pandapi-engine; do \
+	  if [ ! -x "$(DIST_DIR)/$$name" ]; then \
+	    printf '%b\n' "$(RED)$(DIST_DIR)/$$name is missing or not executable$(RESET)" >&2; \
+	    exit 1; \
+	  fi; \
+	  cp "$(DIST_DIR)/$$name" "$(BIN_DIR)/$$name"; \
+	  chmod +x "$(BIN_DIR)/$$name"; \
+	done; \
+	printf '%b\n' "$(GREEN)Local binaries available in $(BIN_DIR)$(RESET)"
+
 .PHONY: build
-build: reset-provenance build-runtime build-parser build-grounder build-engine
-	printf '%b\n' "$(GREEN)Build complete: $(DIST_DIR)$(RESET)"
+build: reset-provenance $(BIN_DIR) build-runtime build-parser build-grounder build-engine sync-bin
+	printf '%b\n' "$(GREEN)Build complete: $(DIST_DIR) and $(BIN_DIR)$(RESET)"

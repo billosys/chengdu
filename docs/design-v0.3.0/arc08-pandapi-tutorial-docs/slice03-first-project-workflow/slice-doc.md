@@ -7,7 +7,7 @@ Opened: 2026-08-13
 
 Write the first hands-on pandaPI workflow tutorial:
 
-- `docs/tutorial/first-project-workflow.md`
+- `docs/tutorial/02-first-project-workflow.md`
 
 This page should take the reader from the Slice02 concepts into a runnable
 parse -> ground -> solve workflow using checked-in fixtures and canonical
@@ -16,11 +16,11 @@ README, and release-prep docs a verified happy-path workflow to point at.
 
 ## In Scope
 
-- Create `docs/tutorial/first-project-workflow.md`.
+- Create `docs/tutorial/02-first-project-workflow.md`.
 - Use `fixtures/minimal/domain.hddl` and `fixtures/minimal/problem.hddl` for
   the happy path.
-- Build or locate the local platform binaries through documented commands that
-  work for macOS arm64 and Linux x86_64.
+- Build the canonical local binaries through `make build` and use the
+  `./bin/pandapi-*` commands in examples.
 - Teach the workflow in runnable steps:
   - create a temporary workspace;
   - run `pandapi-parser` to produce a `.htn` artifact;
@@ -84,7 +84,7 @@ closing report must state which constituent checks were run and why aggregate
 
 ## Exit Criteria
 
-- `docs/tutorial/first-project-workflow.md` exists.
+- `docs/tutorial/02-first-project-workflow.md` exists.
 - The page teaches a runnable parse -> ground -> solve workflow using
   `fixtures/minimal`.
 - The page verifies generated `.htn`, `.sas`, and plan artifacts in a temporary

@@ -5,7 +5,7 @@ Status: CC proposed done, awaiting CDC verification.
 ## Scope
 
 Slice03 created the first runnable public workflow tutorial at
-`docs/tutorial/first-project-workflow.md` and updated Arc08/project planning
+`docs/tutorial/02-first-project-workflow.md` and updated Arc08/project planning
 status. It did not touch README, release/package/publish surfaces, `.github/`,
 Makefile or `mk/`, tests, tools, parser/grounder/engine/runtime source,
 managed-process guide, CLI reference, migration page, architecture page, docs
@@ -23,7 +23,7 @@ fixture only if they need to teach a different behavior.
 
 | Row | Result | Evidence |
 |-----|--------|----------|
-| F-1 | done | `docs/tutorial/first-project-workflow.md` exists and introduces a first project workflow for pandaPI 0.3.0. |
+| F-1 | done | `docs/tutorial/02-first-project-workflow.md` exists and introduces a first project workflow for pandaPI 0.3.0. |
 | F-2 | done | The page builds on HTN/HDDL concepts and uses `fixtures/minimal`, `project-work`, `ship-the-spec`, `produce`, `draft`, and `review`. |
 | F-3 | done | The page includes a local binary setup that builds canonical commands into `./bin/` with `make build`. |
 | F-4 | done | The parser section uses `pandapi-parser`, `--output`, `minimal.htn`, `.htn`, parser artifact, and the minimal domain/problem files. |
@@ -49,21 +49,21 @@ fixture only if they need to teach a different behavior.
 Commands run:
 
 ```sh
-test -f docs/tutorial/first-project-workflow.md && rg -n -- "first project|workflow|parse|ground|solve|pandaPI 0\\.3\\.0|tutorial" docs/tutorial/first-project-workflow.md
-rg -n -- "HTN|HDDL|domain\\.hddl|problem\\.hddl|fixtures/minimal|project-work|ship-the-spec|produce|draft|review" docs/tutorial/first-project-workflow.md
-rg -n -- "local binaries|\\./bin|make build" docs/tutorial/first-project-workflow.md
-rg -n -- "pandapi-parser|--output|minimal\\.htn|\\.htn|parser artifact|fixtures/minimal/domain\\.hddl|fixtures/minimal/problem\\.hddl" docs/tutorial/first-project-workflow.md
-rg -n -- "pandapi-grounder|--output|minimal\\.sas|\\.sas|grounded|grounder artifact|minimal\\.htn" docs/tutorial/first-project-workflow.md
-rg -n -- "pandapi-engine|--output|minimal\\.plan|plan artifact|plan found|solution|minimal\\.sas" docs/tutorial/first-project-workflow.md
+test -f docs/tutorial/02-first-project-workflow.md && rg -n -- "first project|workflow|parse|ground|solve|pandaPI 0\\.3\\.0|tutorial" docs/tutorial/02-first-project-workflow.md
+rg -n -- "HTN|HDDL|domain\\.hddl|problem\\.hddl|fixtures/minimal|project-work|ship-the-spec|produce|draft|review" docs/tutorial/02-first-project-workflow.md
+rg -n -- "local binaries|\\./bin|make build" docs/tutorial/02-first-project-workflow.md
+rg -n -- "pandapi-parser|--output|minimal\\.htn|\\.htn|parser artifact|fixtures/minimal/domain\\.hddl|fixtures/minimal/problem\\.hddl" docs/tutorial/02-first-project-workflow.md
+rg -n -- "pandapi-grounder|--output|minimal\\.sas|\\.sas|grounded|grounder artifact|minimal\\.htn" docs/tutorial/02-first-project-workflow.md
+rg -n -- "pandapi-engine|--output|minimal\\.plan|plan artifact|plan found|solution|minimal\\.sas" docs/tutorial/02-first-project-workflow.md
 set -e; make build; tmp="$(mktemp -d)"; ./bin/pandapi-parser --status=stderr --output "$tmp/minimal.htn" fixtures/minimal/domain.hddl fixtures/minimal/problem.hddl; test -s "$tmp/minimal.htn"; ./bin/pandapi-grounder --status=stderr --output "$tmp/minimal.sas" "$tmp/minimal.htn"; test -s "$tmp/minimal.sas"; ./bin/pandapi-engine --status=stderr --output "$tmp/minimal.plan" "$tmp/minimal.sas"; test -s "$tmp/minimal.plan"
-rg -n -- "inspect|cat|head|test -s|temporary|mktemp|rerun|delete|replace|generated artifact|do not edit|checked-in fixtures" docs/tutorial/first-project-workflow.md
-rg -n -- "fixtures/unsolvable|unsolvable|no-plan|no plan|domain_no_plan|valid input|outcome|exit code|2" docs/tutorial/first-project-workflow.md
+rg -n -- "inspect|cat|head|test -s|temporary|mktemp|rerun|delete|replace|generated artifact|do not edit|checked-in fixtures" docs/tutorial/02-first-project-workflow.md
+rg -n -- "fixtures/unsolvable|unsolvable|no-plan|no plan|domain_no_plan|valid input|outcome|exit code|2" docs/tutorial/02-first-project-workflow.md
 set -e; make build; tmp="$(mktemp -d)"; ./bin/pandapi-parser --status=stderr --output "$tmp/unsolvable.htn" fixtures/unsolvable/domain.hddl fixtures/unsolvable/problem.hddl; ./bin/pandapi-grounder --status=stderr --output "$tmp/unsolvable.sas" "$tmp/unsolvable.htn"; set +e; ./bin/pandapi-engine --status=stderr --output "$tmp/unsolvable.plan" "$tmp/unsolvable.sas" >"$tmp/unsolvable.stdout" 2>"$tmp/unsolvable.stderr"; code="$?"; set -e; test "$code" -eq 2; rg -q -- "status=domain_no_plan|exit_code=2" "$tmp/unsolvable.stderr"
-rg -n -- "intermediate fixture|fixtures/unsolvable|enough for workflow|no new fixture|new fixture|fixture decision|checked-in" docs/tutorial/first-project-workflow.md docs/design-v0.3.0/arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md
+rg -n -- "intermediate fixture|fixtures/unsolvable|enough for workflow|no new fixture|new fixture|fixture decision|checked-in" docs/tutorial/02-first-project-workflow.md docs/design-v0.3.0/arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md
 make test-contract-pipeline-managed
 make smoke && make smoke-negative
-set -e; rg -n -- "pandapi-parser|pandapi-grounder|pandapi-engine" docs/tutorial/first-project-workflow.md; if rg -n -- "pandaPIparser|pandaPIgrounder|pandaPIengine|pandaPI\\*" docs/tutorial/first-project-workflow.md; then exit 1; fi
-set -e; if rg -n -- "Arc08|Slice03|CDC|CC|ledger|closing report|project-plan|arc-plan" docs/tutorial/first-project-workflow.md; then exit 1; fi
+set -e; rg -n -- "pandapi-parser|pandapi-grounder|pandapi-engine" docs/tutorial/02-first-project-workflow.md; if rg -n -- "pandaPIparser|pandaPIgrounder|pandaPIengine|pandaPI\\*" docs/tutorial/02-first-project-workflow.md; then exit 1; fi
+set -e; if rg -n -- "Arc08|Slice03|CDC|CC|ledger|closing report|project-plan|arc-plan" docs/tutorial/02-first-project-workflow.md; then exit 1; fi
 rg -n -- "slice03|first-project-workflow|slice-doc.md|ledger.md|cc-prompt.md|A1|A2|A3|A4|A5|A6|A7|A8|A9|A10" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/arc-plan.md
 rg -n -- "arc08 - active|Slice03|first-project-workflow|pandapi-tutorial-docs|Arc09|release preparation|publication" docs/design-v0.3.0/project-plan.md
 set -e; if git diff --cached --name-only -- README.md release .github Makefile mk tests tools pandaPI licenses | rg .; then exit 1; fi

@@ -8,7 +8,7 @@ You are implementing Arc08 Slice03 for chengdu 0.3.0 on `release/0.3.x`.
 2. `docs/design-v0.3.0/project-plan.md`
 3. `docs/design-v0.3.0/arc08-pandapi-tutorial-docs/arc-plan.md`
 4. `docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md`
-5. `docs/tutorial/htn-hddl-onboarding.md`
+5. `docs/tutorial/01-htn-hddl-onboarding.md`
 6. `docs/design-v0.3.0/arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md`
 7. `docs/design-v0.3.0/arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md`
 8. `fixtures/minimal/domain.hddl`
@@ -25,7 +25,7 @@ softening it.
 
 Write the first runnable workflow tutorial:
 
-- `docs/tutorial/first-project-workflow.md`
+- `docs/tutorial/02-first-project-workflow.md`
 
 This page should pick up after the onboarding page. The reader should parse
 `fixtures/minimal`, ground the parser artifact, solve the grounded artifact,
@@ -41,7 +41,7 @@ inspect the generated files, rerun safely, and then compare with
   - tutorial pages under `docs/tutorial/`;
   - planning/evidence artifacts under `docs/design-v0.3.0/`.
 - Explain and verify:
-  - platform binary setup for macOS arm64 and Linux x86_64;
+  - local binary setup using `make build` and `./bin/pandapi-*`;
   - parser command producing `.htn`;
   - grounder command producing `.sas`;
   - engine command producing a plan artifact;

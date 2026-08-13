@@ -33,6 +33,7 @@ PLATFORM := unsupported
 endif
 
 DIST_DIR := dist/$(PLATFORM)
+BIN_DIR ?= bin
 RUNTIME_SOURCE_DIR := pandaPI/runtime
 RUNTIME_INCLUDE_DIR := $(RUNTIME_SOURCE_DIR)/include
 RUNTIME_BUILD_DIR := build/runtime/$(PLATFORM)

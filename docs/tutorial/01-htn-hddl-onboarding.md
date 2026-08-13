@@ -1,13 +1,12 @@
 # HTN and HDDL Onboarding for pandaPI 0.3.0
 
-This beginner tutorial introduces the planning ideas behind pandaPI 0.3.0
-before you run the full toolchain. You will see how a small HDDL example
-describes work, how pandaPI reads it, and what kinds of artifacts the three
-commands produce.
+This beginner tutorial introduces the planning ideas behind pandaPI before you
+run the full toolchain. You will see how a small HDDL example describes work,
+how pandaPI reads it, and what kinds of artifacts the three commands produce.
 
 ## The Shape of HTN Planning
 
-HTN means Hierarchical Task Network. Instead of asking a planner to choose
+HTN stands for Hierarchical Task Network. Instead of asking a planner to choose
 from a flat list of actions, an HTN model starts with tasks and explains how
 larger tasks can be decomposed into smaller work.
 
@@ -73,21 +72,14 @@ complete parse, ground, and solve workflow comes next.
 
 ## Produce the First Artifact
 
-Run this command from the repository root. It selects the local binary
-directory for macOS arm64 or Linux x86_64, builds the parser, writes a `.htn`
-artifact into a temporary directory, and checks that the artifact is non-empty.
+Run this command from the repository root. It builds the local binaries, writes
+a `.htn` artifact into a temporary directory, and checks that the artifact is
+non-empty.
 
 ```sh
-platform=unsupported
-case "$(uname -s)-$(uname -m)" in
-  Darwin-arm64) platform=macos-arm64 ;;
-  Linux-x86_64) platform=linux-x86_64 ;;
-esac
-test "$platform" != unsupported
-
-make build-parser
+make build
 tmp="$(mktemp -d)"
-"dist/$platform/pandapi-parser" \
+./bin/pandapi-parser \
   --status=stderr \
   --output "$tmp/minimal.htn" \
   fixtures/minimal/domain.hddl \

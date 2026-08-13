@@ -103,11 +103,11 @@ Leaves for Arc09:
   [`slice02-htn-hddl-onboarding/slice-doc.md`](slice02-htn-hddl-onboarding/slice-doc.md),
   [`slice02-htn-hddl-onboarding/ledger.md`](slice02-htn-hddl-onboarding/ledger.md),
   [`slice02-htn-hddl-onboarding/cc-prompt.md`](slice02-htn-hddl-onboarding/cc-prompt.md),
-  [`../../tutorial/htn-hddl-onboarding.md`](../../tutorial/htn-hddl-onboarding.md),
+  [`../../tutorial/01-htn-hddl-onboarding.md`](../../tutorial/01-htn-hddl-onboarding.md),
   [`slice02-htn-hddl-onboarding/closing-report.md`](slice02-htn-hddl-onboarding/closing-report.md),
   [`slice02-htn-hddl-onboarding/cdc-verification.md`](slice02-htn-hddl-onboarding/cdc-verification.md).
   This slice writes
-  `docs/tutorial/htn-hddl-onboarding.md`, teaches beginner
+  `docs/tutorial/01-htn-hddl-onboarding.md`, teaches beginner
   HTN/PDDL/HDDL concepts through `fixtures/minimal`, verifies the first parser
   command, and resolves that the minimal fixture is enough before Slice03
   writes the full workflow.
@@ -116,9 +116,9 @@ Leaves for Arc09:
   [`slice03-first-project-workflow/slice-doc.md`](slice03-first-project-workflow/slice-doc.md),
   [`slice03-first-project-workflow/ledger.md`](slice03-first-project-workflow/ledger.md),
   [`slice03-first-project-workflow/cc-prompt.md`](slice03-first-project-workflow/cc-prompt.md),
-  [`../../tutorial/first-project-workflow.md`](../../tutorial/first-project-workflow.md),
+  [`../../tutorial/02-first-project-workflow.md`](../../tutorial/02-first-project-workflow.md),
   [`slice03-first-project-workflow/closing-report.md`](slice03-first-project-workflow/closing-report.md).
-  This slice writes `docs/tutorial/first-project-workflow.md`, verifies the
+  This slice writes `docs/tutorial/02-first-project-workflow.md`, verifies the
   parse -> ground -> solve workflow with `fixtures/minimal`, compares it with
   `fixtures/unsolvable`, resolves that no intermediate fixture beyond
   `fixtures/unsolvable` is needed, and keeps managed-process details for
@@ -185,7 +185,7 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 - **v1.6 - 2026-08-13.** Opened Slice03 first-project-workflow. Surfaced by:
   Slice02 CDC verification and operator docs-home correction. Why: the
   beginner concept page is now in `docs/tutorial/`, so the next page should
-  use `docs/tutorial/first-project-workflow.md` and verify the full
+  use `docs/tutorial/02-first-project-workflow.md` and verify the full
   parse -> ground -> solve workflow without pulling managed-process or README
   scope forward.
 - **v1.5 - 2026-08-13.** Corrected the public docs home and marked Slice02

@@ -74,8 +74,9 @@ brew install gcc make cmake flex bison gengetopt zip
 make readme-verbatim
 ```
 
-On success, `dist/<platform>/` (`linux-x86_64` or `macos-arm64`) contains
-`pandapi-parser`, `pandapi-grounder`, `pandapi-engine`, and `provenance.txt`.
+On success, `./bin/` contains `pandapi-parser`, `pandapi-grounder`, and
+`pandapi-engine` for local use. Build provenance is recorded for CI and release
+packaging.
 
 Negative-gate check (missing file, broken syntax, broken reference,
 provably-unsolvable — each a distinct outcome, none collapsed into a
@@ -129,8 +130,8 @@ across the full support matrix:
 Every build leg runs the same top-level Makefile entrypoints used locally:
 Linux runs `make ci-linux`; macOS runs `make ci-macos`. Those targets run
 format checks, build, run `make test`, validate provenance, and upload the
-resulting `dist/<platform>/` (including `provenance.txt`) as a workflow
-artifact per runner. `make test` covers the runtime CTest suite, baseline
+platform build output, including `provenance.txt`, as a workflow artifact per
+runner. `make test` covers the runtime CTest suite, baseline
 contract fixtures, and positive and negative smoke tests. `make
 provenance-check` fails the run if any
 component's `chengdu_commit`, `source_prefix`, import identity,

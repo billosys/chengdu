@@ -14,10 +14,10 @@ report, Arc08 plan, project plan, and the operator correction that public
 project documentation belongs under `docs/` with tutorial pages under
 `docs/tutorial/`.
 
-The delivered page was moved from the initial
-`docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md` location to:
+The delivered page was moved from the initial `docs/pandapi-0.3.0/tutorial/`
+location to:
 
-- `docs/tutorial/htn-hddl-onboarding.md`
+- `docs/tutorial/01-htn-hddl-onboarding.md`
 
 The correction preserves the public page content and updates the Arc08
 blueprint, Slice02 evidence commands, Arc08 plan, and project plan so future
@@ -33,7 +33,7 @@ path:
   `fixtures/minimal`, explains the pipeline, describes solved/no-plan
   outcomes, and records that the minimal fixture is enough.
 - F-8: the documented canonical parser command was verified locally. It built
-  `pandapi-parser`, produced a non-empty `.htn` artifact from
+  the local `./bin/pandapi-parser`, produced a non-empty `.htn` artifact from
   `fixtures/minimal/domain.hddl` and `fixtures/minimal/problem.hddl`, and left
   the generated artifact outside the repository.
 - F-9: `make test-contract-parser-managed` passed.
@@ -71,7 +71,7 @@ at `docs/`, tutorials are rooted at `docs/tutorial/`, and
 Slice02 closes A2. Arc08 remains active, and Slice03
 `first-project-workflow` should use:
 
-- `docs/tutorial/first-project-workflow.md`
+- `docs/tutorial/02-first-project-workflow.md`
 
 Slice03 should continue from the same minimal fixture for the happy-path
 workflow, then introduce `fixtures/unsolvable` only after the parse -> ground

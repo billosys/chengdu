@@ -453,14 +453,14 @@ handoff.
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/slice-doc.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/ledger.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/ledger.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cc-prompt.md),
-  [`../tutorial/htn-hddl-onboarding.md`](../tutorial/htn-hddl-onboarding.md),
+  [`../tutorial/01-htn-hddl-onboarding.md`](../tutorial/01-htn-hddl-onboarding.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cdc-verification.md).
   Slice03 first-project-workflow has CC close evidence:
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md),
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md),
-  [`../tutorial/first-project-workflow.md`](../tutorial/first-project-workflow.md),
+  [`../tutorial/02-first-project-workflow.md`](../tutorial/02-first-project-workflow.md),
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
@@ -611,7 +611,7 @@ per-row in this project's `closing-report.md`.
 
 - **v1.81 - 2026-08-13.** Marked Arc08 Slice03 first-project-workflow CC
   proposed done, awaiting CDC verification. Surfaced by:
-  `docs/tutorial/first-project-workflow.md` and the Slice03 closing report.
+  `docs/tutorial/02-first-project-workflow.md` and the Slice03 closing report.
   Why: the first runnable workflow now builds local binaries, parses
   `fixtures/minimal` to `.htn`, grounds it to `.sas`, solves it to a plan
   artifact, verifies rerun hygiene, compares valid no-plan behavior with
@@ -620,7 +620,7 @@ per-row in this project's `closing-report.md`.
 - **v1.80 - 2026-08-13.** Opened Arc08 Slice03 first-project-workflow.
   Surfaced by: Slice02 CDC verification and operator docs-home correction.
   Why: the beginner tutorial now lives in `docs/tutorial/`, so the workflow
-  tutorial can open at `docs/tutorial/first-project-workflow.md` and verify
+  tutorial can open at `docs/tutorial/02-first-project-workflow.md` and verify
   the parse -> ground -> solve path while keeping managed-process, CLI
   reference, README, and release-publication work in later slices.
 - **v1.79 - 2026-08-13.** Corrected the Arc08 public docs home and marked
@@ -631,7 +631,7 @@ per-row in this project's `closing-report.md`.
   artifact tree.
 - **v1.78 - 2026-08-13.** Marked Arc08 Slice02 htn-hddl-onboarding CC
   proposed done, awaiting CDC verification. Surfaced by:
-  `docs/tutorial/htn-hddl-onboarding.md` and the Slice02
+  `docs/tutorial/01-htn-hddl-onboarding.md` and the Slice02
   closing report. Why: the beginner public tutorial now explains HTN,
   PDDL/HDDL domain/problem roles, `fixtures/minimal`, the three-stage
   artifact pipeline, solved versus no-plan outcomes, and one verified

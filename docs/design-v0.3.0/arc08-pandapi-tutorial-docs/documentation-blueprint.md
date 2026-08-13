@@ -14,8 +14,8 @@ under `docs/design-v0.3.0/`.
 
 | Reader | Journey | First useful page | Success condition |
 |--------|---------|-------------------|-------------------|
-| Beginner concept learner | Learn what HTN planning is, how PDDL/HDDL input relates to pandaPI, and why the pipeline has parser, grounder, and engine stages. | `docs/tutorial/htn-hddl-onboarding.md` | The reader can explain domain/problem input, `.htn`, `.sas`, plan output, solved, and no-plan outcomes before seeing dense flags. |
-| CLI workflow user | Run a simple parse -> ground -> solve workflow with `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`. | `docs/tutorial/first-project-workflow.md` | The reader can build, run checked-in examples, inspect artifacts, and repeat the workflow locally. |
+| Beginner concept learner | Learn what HTN planning is, how PDDL/HDDL input relates to pandaPI, and why the pipeline has parser, grounder, and engine stages. | `docs/tutorial/01-htn-hddl-onboarding.md` | The reader can explain domain/problem input, `.htn`, `.sas`, plan output, solved, and no-plan outcomes before seeing dense flags. |
+| CLI workflow user | Run a simple parse -> ground -> solve workflow with `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`. | `docs/tutorial/02-first-project-workflow.md` | The reader can build, run checked-in examples, inspect artifacts, and repeat the workflow locally. |
 | Managed-process integrator | Integrate supervised process execution using `--supervised`, `--status`, stdout/stderr ownership, exit codes, and final `PANDAPI_STATUS`. | `docs/managed-process.md` | The reader can classify outcomes from exit code and tagged status fields, not human diagnostic prose. |
 | Maintainer/release architecture reader | Understand the 0.3.0 fork shape, source-quality posture, dependency boundaries, Make gates, and Arc09 release handoff. | `docs/architecture.md` | The reader knows what is supported, what remains deferred, and which release claims still require Arc09 proof. |
 
@@ -31,8 +31,8 @@ Recommended file map and page map:
 | Path | Owner slice | Purpose |
 |------|-------------|---------|
 | `docs/index.md` | Slice07 README entrypoint refresh or Slice08 synthesis if anchors settle later | Public docs landing page with links to tutorial, reference, migration, managed-process, and architecture pages. |
-| `docs/tutorial/htn-hddl-onboarding.md` | Slice02 | Beginner tutorial for HTN, PDDL, HDDL, pipeline concepts, artifacts, solved/no-plan language, and `fixtures/minimal`. |
-| `docs/tutorial/first-project-workflow.md` | Slice03 | Runnable CLI tutorial using checked-in fixtures and canonical `pandapi-*` commands. |
+| `docs/tutorial/01-htn-hddl-onboarding.md` | Slice02 | Beginner tutorial for HTN, PDDL, HDDL, pipeline concepts, artifacts, solved/no-plan language, and `fixtures/minimal`. |
+| `docs/tutorial/02-first-project-workflow.md` | Slice03 | Runnable CLI tutorial using checked-in fixtures and canonical `pandapi-*` commands. |
 | `docs/managed-process.md` | Slice04 | Supervised integration guide for stdout, stderr, `--supervised`, `--status`, `PANDAPI_STATUS`, exit/status taxonomy, color/TTY, and negative outcomes. |
 | `docs/reference/cli.md` | Slice05 | Command reference for `pandapi-parser`, `pandapi-grounder`, `pandapi-engine`, common options, statuses, and supported surfaces. |
 | `docs/migration.md` | Slice05 | 0.2.0 -> 0.3.0 behavior-change table and migration guidance. |

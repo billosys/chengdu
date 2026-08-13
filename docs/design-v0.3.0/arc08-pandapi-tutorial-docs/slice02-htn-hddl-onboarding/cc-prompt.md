@@ -22,7 +22,7 @@ softening it.
 
 Write the beginner concept chapter:
 
-- `docs/tutorial/htn-hddl-onboarding.md`
+- `docs/tutorial/01-htn-hddl-onboarding.md`
 
 This page is for a reader who may not know HTN planning, PDDL/HDDL, or
 pandaPI. Teach the concepts before the full command workflow. Use
@@ -45,9 +45,9 @@ parse -> ground -> solve workflow to Slice03.
     `pandapi-grounder` -> `.sas`,
     `pandapi-engine` -> plan/no-plan outcome;
   - solved versus no-plan outcomes in beginner terms.
-- Include one runnable parser command. Make it portable across the supported
-  local platforms by selecting `dist/macos-arm64` or `dist/linux-x86_64` from
-  `uname`, or use an equally runnable local pattern.
+- Include one runnable parser command. Use `make build` and the local
+  `./bin/pandapi-parser` path so readers do not need to select platform
+  staging directories by hand.
 - Decide whether the minimal fixture is enough for beginner onboarding. If it
   is enough, state that decision in the closing report. If not, add the
   smallest checked-in fixture needed and verify it.

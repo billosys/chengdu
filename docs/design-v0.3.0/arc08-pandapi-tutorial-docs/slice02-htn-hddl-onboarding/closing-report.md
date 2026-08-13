@@ -6,7 +6,7 @@ Status: CC proposed done, awaiting CDC verification.
 
 Slice02 created the beginner onboarding page, and the post-report path
 correction moved it to the accepted public tutorial path:
-`docs/tutorial/htn-hddl-onboarding.md`. The slice also updated Arc08/project
+`docs/tutorial/01-htn-hddl-onboarding.md`. The slice also updated Arc08/project
 planning status. It did not touch README, release/package/publish surfaces,
 `.github/`, Makefile or `mk/`, tests, tools, parser/grounder/engine/runtime
 source, managed-process guide, CLI reference, migration page, architecture
@@ -32,7 +32,7 @@ new checked-in fixture.
 | F-5 | done | Page explains the `pandapi-parser` -> `pandapi-grounder` -> `pandapi-engine` pipeline and `.htn`, `.sas`, plan artifact, and artifact roles without becoming the full workflow tutorial. |
 | F-6 | done | Page explains solved, solution, plan found, no-plan, no plan, unsolvable, and outcome language in beginner terms. |
 | F-7 | done | Public page and this closing report state the minimal fixture is enough for onboarding; no new fixture was added. |
-| F-8 | done | Ledger parser command passed: `make build-parser` succeeded and `dist/macos-arm64/pandapi-parser --status=stderr --output "$tmp/minimal.htn" fixtures/minimal/domain.hddl fixtures/minimal/problem.hddl` produced a non-empty `.htn` artifact. |
+| F-8 | done | Ledger parser command passed after the local binary path correction: `make build` succeeded and `./bin/pandapi-parser --status=stderr --output "$tmp/minimal.htn" fixtures/minimal/domain.hddl fixtures/minimal/problem.hddl` produced a non-empty `.htn` artifact. |
 | F-9 | done | `make test-contract-parser-managed` passed after the command wording was settled. |
 | F-10 | done | Public page uses canonical `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`; inherited command-name grep returned no matches. |
 | F-11 | done | Internal planning vocabulary grep returned no matches in the public page. |
@@ -43,26 +43,26 @@ new checked-in fixture.
 | F-16 | done | This report walks F-1 through F-16 and includes Bubble-up to Arc08 with the Slice03 fixture/workflow adjustment. |
 
 Post-report correction: the page path was corrected from the initial
-`docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md` placement to
-`docs/tutorial/htn-hddl-onboarding.md` by operator decision. The verification
-commands below use the corrected path.
+the initial `docs/pandapi-0.3.0/tutorial/` placement to the current numbered
+`docs/tutorial/01-htn-hddl-onboarding.md` path by operator decision. The
+verification commands below use the corrected path.
 
 ## Verification
 
 Commands run:
 
 ```sh
-test -f docs/tutorial/htn-hddl-onboarding.md && rg -n -- "pandaPI 0\\.3\\.0|beginner|tutorial|HTN|HDDL|planning" docs/tutorial/htn-hddl-onboarding.md
-rg -n -- "Hierarchical Task Network|HTN|task|method|action|decompose|decomposition|primitive|ordered subtask|ordered-subtasks" docs/tutorial/htn-hddl-onboarding.md
-rg -n -- "HDDL|PDDL|domain|problem|objects|initial state|:init|:htn|task network|domain\\.hddl|problem\\.hddl" docs/tutorial/htn-hddl-onboarding.md
-rg -n -- "fixtures/minimal|domain\\.hddl|problem\\.hddl|project-work|ship-the-spec|produce|draft|review|ccdp-v03" docs/tutorial/htn-hddl-onboarding.md
-rg -n -- "pandapi-parser|pandapi-grounder|pandapi-engine|parser|grounder|engine|\\.htn|\\.sas|plan artifact|pipeline|artifact" docs/tutorial/htn-hddl-onboarding.md
-rg -n -- "solved|solution|plan found|no-plan|no plan|unsolvable|domain_no_plan|outcome" docs/tutorial/htn-hddl-onboarding.md
-rg -n -- "minimal fixture|beginner fixture|small enough|enough for onboarding|new fixture|fixture decision|checked-in" docs/tutorial/htn-hddl-onboarding.md docs/design-v0.3.0/arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md
-set -e; rg -n -- "pandapi-parser|--status=stderr|--output|fixtures/minimal/domain\\.hddl|fixtures/minimal/problem\\.hddl|\\.htn" docs/tutorial/htn-hddl-onboarding.md; platform=unsupported; case "$(uname -s)-$(uname -m)" in Darwin-arm64) platform=macos-arm64 ;; Linux-x86_64) platform=linux-x86_64 ;; esac; test "$platform" != unsupported; make build-parser; tmp="$(mktemp -d)"; "dist/$platform/pandapi-parser" --status=stderr --output "$tmp/minimal.htn" fixtures/minimal/domain.hddl fixtures/minimal/problem.hddl; test -s "$tmp/minimal.htn"
+test -f docs/tutorial/01-htn-hddl-onboarding.md && rg -n -- "pandaPI 0\\.3\\.0|beginner|tutorial|HTN|HDDL|planning" docs/tutorial/01-htn-hddl-onboarding.md
+rg -n -- "Hierarchical Task Network|HTN|task|method|action|decompose|decomposition|primitive|ordered subtask|ordered-subtasks" docs/tutorial/01-htn-hddl-onboarding.md
+rg -n -- "HDDL|PDDL|domain|problem|objects|initial state|:init|:htn|task network|domain\\.hddl|problem\\.hddl" docs/tutorial/01-htn-hddl-onboarding.md
+rg -n -- "fixtures/minimal|domain\\.hddl|problem\\.hddl|project-work|ship-the-spec|produce|draft|review|ccdp-v03" docs/tutorial/01-htn-hddl-onboarding.md
+rg -n -- "pandapi-parser|pandapi-grounder|pandapi-engine|parser|grounder|engine|\\.htn|\\.sas|plan artifact|pipeline|artifact" docs/tutorial/01-htn-hddl-onboarding.md
+rg -n -- "solved|solution|plan found|no-plan|no plan|unsolvable|domain_no_plan|outcome" docs/tutorial/01-htn-hddl-onboarding.md
+rg -n -- "minimal fixture|beginner fixture|small enough|enough for onboarding|new fixture|fixture decision|checked-in" docs/tutorial/01-htn-hddl-onboarding.md docs/design-v0.3.0/arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md
+set -e; rg -n -- "pandapi-parser|--status=stderr|--output|fixtures/minimal/domain\\.hddl|fixtures/minimal/problem\\.hddl|\\.htn|make build|\\./bin/pandapi-parser" docs/tutorial/01-htn-hddl-onboarding.md; make build; tmp="$(mktemp -d)"; ./bin/pandapi-parser --status=stderr --output "$tmp/minimal.htn" fixtures/minimal/domain.hddl fixtures/minimal/problem.hddl; test -s "$tmp/minimal.htn"
 make test-contract-parser-managed
-set -e; rg -n -- "pandapi-parser|pandapi-grounder|pandapi-engine" docs/tutorial/htn-hddl-onboarding.md; if rg -n -- "pandaPIparser|pandaPIgrounder|pandaPIengine|pandaPI\\*" docs/tutorial/htn-hddl-onboarding.md; then exit 1; fi
-set -e; if rg -n -- "Arc08|Slice02|CDC|CC|ledger|closing report|project-plan|arc-plan" docs/tutorial/htn-hddl-onboarding.md; then exit 1; fi
+set -e; rg -n -- "pandapi-parser|pandapi-grounder|pandapi-engine" docs/tutorial/01-htn-hddl-onboarding.md; if rg -n -- "pandaPIparser|pandaPIgrounder|pandaPIengine|pandaPI\\*" docs/tutorial/01-htn-hddl-onboarding.md; then exit 1; fi
+set -e; if rg -n -- "Arc08|Slice02|CDC|CC|ledger|closing report|project-plan|arc-plan" docs/tutorial/01-htn-hddl-onboarding.md; then exit 1; fi
 rg -n -- "slice02|htn-hddl-onboarding|slice-doc.md|ledger.md|cc-prompt.md|A1|A2|A3|A4|A5|A6|A7|A8|A9|A10" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/arc-plan.md
 rg -n -- "arc08 - active|Slice02|htn-hddl-onboarding|pandapi-tutorial-docs|Arc09|release preparation|publication" docs/design-v0.3.0/project-plan.md
 set -e; if git diff --cached --name-only -- README.md release .github Makefile mk tests tools pandaPI licenses | rg .; then exit 1; fi
