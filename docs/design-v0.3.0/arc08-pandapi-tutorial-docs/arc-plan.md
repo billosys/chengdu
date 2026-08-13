@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
+Status: active; Slice04 managed-process-workflow open; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -123,6 +123,15 @@ Leaves for Arc09:
   `fixtures/unsolvable`, resolves that no intermediate fixture beyond
   `fixtures/unsolvable` is needed, and keeps managed-process details for
   Slice04.
+- **slice04 managed-process-workflow - open.** Slice set:
+  [`slice04-managed-process-workflow/slice-doc.md`](slice04-managed-process-workflow/slice-doc.md),
+  [`slice04-managed-process-workflow/ledger.md`](slice04-managed-process-workflow/ledger.md),
+  [`slice04-managed-process-workflow/cc-prompt.md`](slice04-managed-process-workflow/cc-prompt.md).
+  This slice will write `docs/managed-process.md`, teach supervised/process
+  integration with `--supervised`, `--status`, stdout/stderr ownership, final
+  `PANDAPI_STATUS`, status/exit classification, ANSI/color behavior, and
+  negative outcomes, while keeping CLI reference and migration details for
+  Slice05.
 
 ## 6. Planned Documentation Surface
 
@@ -176,6 +185,12 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.8 - 2026-08-13.** Opened Slice04 managed-process-workflow. Surfaced by:
+  Slice03 workflow handoff and the accepted documentation blueprint. Why:
+  the simple CLI workflow now verifies parse -> ground -> solve and no-plan
+  behavior with `./bin/pandapi-*`, so Arc08 can teach the supervised
+  process-manager contract without pulling CLI reference, migration, README,
+  release-publication, or implementation scope forward.
 - **v1.7 - 2026-08-13.** Marked Slice03 first-project-workflow CC proposed
   done. Surfaced by: public workflow tutorial, Slice03 ledger, and Slice03
   closing report. Why: the first runnable workflow now verifies parse ->
