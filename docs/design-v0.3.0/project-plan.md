@@ -411,14 +411,17 @@ documentation/tutorial and release-publication work.
   dispositioned parser gengetopt output without migrating to CLI11. Grounder
   first-party source and dependency-boundary follow-up is the recommended next
   scoped Arc07 ledger.
-  Slice07 grounder-source-quality-boundary is open:
+  Slice07 grounder-source-quality-boundary is closed and CDC-verified:
   [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/slice-doc.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/slice-doc.md),
   [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/ledger.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/ledger.md),
-  [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/cc-prompt.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/cc-prompt.md).
-  Slice07 should convert grounder source-quality scaffold rows into honest
-  component targets, make the first-party/dependency boundary executable,
-  resolve the `rss.c` classification ambiguity, and preserve managed
-  grounder/pipeline behavior.
+  [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/cc-prompt.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/cc-prompt.md),
+  [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/closing-report.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/closing-report.md),
+  [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/cdc-verification.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/cdc-verification.md).
+  Slice07 converted grounder source-quality scaffold rows into honest
+  component targets, made the first-party/dependency boundary executable,
+  resolved `rss.c` as first-party maintained copied-origin source with
+  warnings fixed, and preserved managed grounder/pipeline behavior.
+  Source-quality synthesis is the recommended next scoped Arc07 ledger.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -572,6 +575,14 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.70 - 2026-08-13.** Marked Arc07 Slice07
+  grounder-source-quality-boundary closed and CDC-verified. Surfaced by:
+  Slice07 CDC verification. Why: grounder now has Make-backed source-quality
+  targets, explicit first-party/dependency selection, first-party warning
+  count 0, `rss.c` warning closure, direct topsort seam/unit and ASan/UBSan
+  evidence, managed grounder/pipeline regression proof, and separately routed
+  cpddl/H2/nested third-party/generated/copied/build-output budgets. Arc07
+  source-quality synthesis is the recommended next scoped ledger.
 - **v1.69 - 2026-08-13.** Opened Arc07 Slice07
   grounder-source-quality-boundary. Surfaced by: Slice06 CDC verification.
   Why: parser generated scanner warnings are now closed, so Arc07 moves to

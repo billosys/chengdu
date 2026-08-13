@@ -60,8 +60,8 @@ ambiguity:
 | slice04 | `first-party-quality-gate-scaffold` | Closed and CDC-verified. Added Make-backed aggregate scaffold targets and durable status/re-entry evidence for first-party format, static analysis, coverage, unit tests, warning policy, sanitizer policy, optional IPC corpus placement, and generated-warning triage without forcing premature thresholds. | component quality slices |
 | slice05 | `engine-first-party-quality-burndown` | Closed and CDC-verified. Converted Slice04 engine report-backed rows into Make-backed executable engine component gates; added focused `visited_list` seam evidence; closed the primary engine warning and duplicate link-library noise; preserved CUDD/generated/copy/build-output exclusions and public behavior. | parser/grounder component burndown |
 | slice06 | `parser-generated-warning-root-cause` | Closed and CDC-verified. Made parser generated-warning evidence component-specific, root-caused Flex scanner helper warnings, fixed them through the owned scanner input, and dispositioned parser gengetopt output without CLI11 migration or public behavior change. | parser/grounder component burndown |
-| slice07 | `grounder-source-quality-boundary` | Open. Convert grounder scaffold rows into honest grounder component gates; make the first-party/dependency boundary executable; resolve the `rss.c` warning/classification ambiguity; keep cpddl, H2, nested third-party, generated, copied-build, and build-output surfaces separately reported unless an audit accepts ownership. | release readiness |
-| slice08+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice07. Expected later work is parser maintained-source burndown, parser/grounder gengetopt and CLI11 replacement, stricter generated-code policy, dependency audits where accepted, or Arc07 synthesis as Slice07 bubble-up selects. | release readiness |
+| slice07 | `grounder-source-quality-boundary` | Closed and CDC-verified. Converted grounder scaffold rows into Make-backed component gates; made the first-party/dependency boundary executable; resolved `rss.c` as first-party maintained copied-origin source with warnings fixed; kept cpddl, H2, nested third-party, generated, copied-build, and build-output surfaces separately reported. | release readiness |
+| slice08+ | `component-source-quality-burndown` | Future re-entry work after synthesis. Expected later work may include parser maintained-source burndown, parser/grounder gengetopt and CLI11 replacement, stricter generated-code policy, dependency audits where accepted, coverage floors, or warning/static-analysis thresholds. | release readiness |
 | final | `source-quality-synthesis` | Compose the final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff. | docs and release prep |
 
 Slice01 is intentionally the only fully-opened slice at arc start. Its report
@@ -163,16 +163,20 @@ Leaves for later arcs:
   CLI11 migration, and stricter generated-code policy remain separate re-entry
   work. Grounder first-party source and dependency-boundary follow-up is the
   recommended next scoped ledger.
-- **slice07 grounder-source-quality-boundary - open.** Slice07 converts the
-  grounder report-backed scaffold into Make-backed component source-quality
-  targets and makes the first-party/dependency boundary executable before
-  stricter grounder claims are made. It must resolve the `rss.c`
-  classification ambiguity, keep cpddl/H2/nested third-party/generated/copied
+- **slice07 grounder-source-quality-boundary - closed and CDC-verified.**
+  Slice07 converted the grounder report-backed scaffold into Make-backed
+  component source-quality targets and made the first-party/dependency
+  boundary executable before stricter grounder claims are made. It resolved
+  `rss.c` as first-party maintained copied-origin source, fixed its
+  strict-prototype warnings, kept cpddl/H2/nested third-party/generated/copied
   surfaces separately reported unless a dependency audit accepts ownership,
-  and preserve managed grounder/pipeline behavior. Slice set:
+  and preserved managed grounder/pipeline behavior. Slice set:
   [`slice07-grounder-source-quality-boundary/slice-doc.md`](slice07-grounder-source-quality-boundary/slice-doc.md),
   [`slice07-grounder-source-quality-boundary/ledger.md`](slice07-grounder-source-quality-boundary/ledger.md),
-  [`slice07-grounder-source-quality-boundary/cc-prompt.md`](slice07-grounder-source-quality-boundary/cc-prompt.md).
+  [`slice07-grounder-source-quality-boundary/cc-prompt.md`](slice07-grounder-source-quality-boundary/cc-prompt.md),
+  [`slice07-grounder-source-quality-boundary/closing-report.md`](slice07-grounder-source-quality-boundary/closing-report.md),
+  [`slice07-grounder-source-quality-boundary/cdc-verification.md`](slice07-grounder-source-quality-boundary/cdc-verification.md).
+  Source-quality synthesis is the recommended next scoped ledger.
 
 ## 6. Planned Implementation Surface
 
@@ -228,6 +232,15 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.14 - 2026-08-13.** Marked Slice07
+  grounder-source-quality-boundary closed and CDC-verified, and selected
+  source-quality synthesis as the next scoped ledger. Surfaced by: Slice07
+  CDC verification. Why: grounder now has Make-backed component source-quality
+  targets, first-party maintained warning count 0, `rss.c` resolved and
+  warning-clean, direct topsort seam evidence, ASan/UBSan seam evidence, and
+  managed grounder/pipeline regression proof while cpddl, H2, nested
+  third-party, generated, copied-build, and build-output classes remain
+  separately routed.
 - **v1.13 - 2026-08-13.** Opened Slice07
   grounder-source-quality-boundary. Surfaced by: Slice06 CDC verification.
   Why: parser generated Flex warnings are closed, leaving grounder as the
