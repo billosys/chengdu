@@ -223,14 +223,14 @@ extern "C" {
  * Returns ID of the added option.
  */
 int optsAdd(const char *long_name, char short_name,
-            uint32_t type, void *set, void (*callback)());
+            uint32_t type, void *set, void (*callback)(void));
 
 /**
  * Same as {optsAdd()} but has additional parameter {desc} where can be
  * passed string description of the option
  */
 int optsAddDesc(const char *long_name, char short_name,
-                uint32_t type, void *set, void (*callback)(),
+                uint32_t type, void *set, void (*callback)(void),
                 const char *desc);
 
 /**

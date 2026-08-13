@@ -51,7 +51,7 @@ static void invalidOptErr(const opt_t *opt);
 static const char *strelend(const char *str);
 
 int optsAdd(const char *long_name, char short_name,
-            uint32_t type, void *set, void (*callback)())
+            uint32_t type, void *set, void (*callback)(void))
 {
     size_t i;
 
@@ -82,7 +82,7 @@ int optsAdd(const char *long_name, char short_name,
 }
 
 int optsAddDesc(const char *long_name, char short_name,
-                uint32_t type, void *set, void (*callback)(),
+                uint32_t type, void *set, void (*callback)(void),
                 const char *desc)
 {
     int id, desclen;

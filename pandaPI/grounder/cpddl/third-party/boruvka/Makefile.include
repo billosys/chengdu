@@ -33,6 +33,10 @@ SYSTEM = $(shell uname)
 SYSTEM_CXXFLAGS =
 SYSTEM_LDFLAGS =
 
+ifeq '$(SYSTEM)' 'Darwin'
+  CFLAGS += -Wno-deprecated-declarations
+endif
+
 ifeq '$(SYSTEM)' 'FreeBSD'
   SYSTEM_CXXFLAGS = -Wno-long-long
   SED ?= gsed

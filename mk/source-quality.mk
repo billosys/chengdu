@@ -311,7 +311,7 @@ warning-inventory-grounder: source-quality-profile-map source-quality-naming-che
 	  printf '%s\n' "First-party maintained warning count: $$first_party_count"; \
 	  printf '%s\n' "RSS chosen disposition: first-party maintained copied-origin RSS utility; $$rss_status."; \
 	  printf '%s\n' "Generated cmdline disposition: cmdline.c and cmdline.h are generated from options.ggo through gengetopt; managed native grounder behavior owns process-contract evidence."; \
-	  printf '%s\n' "Dependency warning classes: cpddl, boruvka, opts, lpsolve, h2-fd-preprocessor, third-party, copied, and BUILD_OUTPUT paths remain separately reported; observed dependency-class evidence lines: $$dependency_count."; \
+	  printf '%s\n' "Dependency warning classes: cpddl, boruvka, opts, lpsolve, h2-fd-preprocessor, third-party, copied, and BUILD_OUTPUT paths are routed separately if present; observed dependency-class evidence lines: $$dependency_count."; \
 	  printf '%s\n' "Re-entry: dependency audit, supported FAM/H2 decision, strict generated-code policy, or first-party warning recurrence."; \
 	} > "$(GROUNDER_WARNING_REPORT)"; \
 	cat "$$grounder_inventory"; \

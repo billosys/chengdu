@@ -108,7 +108,7 @@ third-party: boruvka opts bliss
 third-party-clean: boruvka-clean opts-clean bliss-clean
 
 boruvka: third-party/boruvka/Makefile
-	$(MAKE) $(_BOR_MAKE_DEF) -C third-party/boruvka all
+	$(MAKE) $(_BOR_MAKE_DEF) NOPEDANTIC=yes -C third-party/boruvka all
 boruvka-clean:
 	$(MAKE) -C third-party/boruvka clean
 third-party/boruvka/Makefile:

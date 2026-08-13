@@ -8,6 +8,9 @@ CFLAGS += -DYY_NEVER_INTERACTIVE
 CFLAGS += -DPARSER_LP
 CFLAGS += -DINVERSE_ACTIVE=INVERSE_LUSOL
 CFLAGS += -DRoleIsExternalInvEngine
+ifeq ($(shell uname -s),Darwin)
+CFLAGS += -Wno-parentheses-equality
+endif
 
 OBJS  = lp_MDO.o
 OBJS += shared/commonlib.o

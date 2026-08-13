@@ -90,7 +90,7 @@ $(PROGNAME): $(OBJFILES) $(COBJFILES) $(NATIVE_OBJFILES) $(H2OBJFILES) $(DEPENDE
 
 # All object files depend on the source file and all header files
 ../h2-fd-preprocessor/src/%.cc.o: ../h2-fd-preprocessor/src/%.cc
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) -Wno-unused-but-set-variable -o $@ $<
 
 # All object files depend on the source file and all header files
 %.o: %.cpp $(DEPENDENCIES) $(HFILES)
