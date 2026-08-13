@@ -2,6 +2,7 @@
 #define PANDAPIENGINE_VISITEDLIST_H
 
 #include <stdint.h>
+#include <cstdint>
 #include "../progression_network.h"
 #include <unordered_map>
 #include "../int_data_structures/hash_table.h"
@@ -13,6 +14,22 @@ const int number_of_bits_for_task_count = 3;
 const int max_task_count = (1 << (1 << number_of_bits_for_task_count)) - 1;
 
 using namespace progression;
+
+namespace visited_list_payload {
+
+inline void* encode_cost(int cost) {
+	return reinterpret_cast<void*>(static_cast<std::intptr_t>(cost));
+}
+
+inline int decode_cost(void* payload) {
+	return static_cast<int>(reinterpret_cast<std::intptr_t>(payload));
+}
+
+inline void* known_marker() {
+	return encode_cost(1);
+}
+
+}
 
 struct VisitedList{
 	VisitedList(Model *m, bool _noVisitedCheck, bool _noReOpening, bool _taskHash, bool _taskSequenceHash, bool _topologicalOrdering, bool _orderPairs, bool _layers, bool _allowGIcheck, bool _allowedToUseParallelSequences);

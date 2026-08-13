@@ -17,6 +17,7 @@ if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
 endif()
 
 project(pandaPIengine)
+enable_testing()
 
 find_program(GENGETOPT gengetopt)
 set(PANDAPI_RUNTIME_INCLUDE "" CACHE PATH "pandapi-runtime include directory")
@@ -89,8 +90,6 @@ target_link_options(pandapi-engine PUBLIC ${linker_flags})
 
 target_link_libraries(pandapi-engine PUBLIC search)
 target_link_libraries(pandapi-engine PUBLIC symbolic_search)
-target_link_libraries(pandapi-engine PUBLIC heuristics)
-target_link_libraries(pandapi-engine PUBLIC hrc)
 target_link_libraries(pandapi-engine PUBLIC hlm)
 target_link_libraries(pandapi-engine PUBLIC translation)
 if (PANDAPI_RUNTIME_LIB)
@@ -126,3 +125,7 @@ endif (SAT)
 
 ## must be added *after* SAT due to the use of the printMemory function, which is currently defined in the SAT module ... this is probably not a good idea.
 target_link_libraries(pandapi-engine PUBLIC intDataStructures)
+
+add_executable(pandapi_engine_visited_list_payload_test tests/visited_list_payload_test.cpp)
+target_compile_options(pandapi_engine_visited_list_payload_test PRIVATE ${compiler_flags})
+add_test(NAME pandapi_engine_visited_list_payload COMMAND pandapi_engine_visited_list_payload_test)

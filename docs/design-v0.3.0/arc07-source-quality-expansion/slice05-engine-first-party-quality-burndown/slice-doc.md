@@ -1,6 +1,6 @@
 # Arc07 Slice05: engine-first-party-quality-burndown
 
-Status: open
+Status: CC proposed done
 Opened: 2026-08-12
 
 ## Goal

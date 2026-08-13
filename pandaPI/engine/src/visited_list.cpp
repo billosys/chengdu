@@ -539,16 +539,16 @@ bool VisitedList::insertVisi(searchNode *n) {
 		bool returnValue = *payload == nullptr;
 
 		if (noReopening){
-			*payload = (void*) 1; // know the hash is known
+			*payload = visited_list_payload::known_marker(); // know the hash is known
 		} else {
 			int costOfInsertedNode = n->fValue + 1; // add 1 to distinguish f=0 from no search node at all.
-			int costInTree = *(int*)payload;
+			int costInTree = visited_list_payload::decode_cost(*payload);
 
 			if (costInTree > costOfInsertedNode) // re-opening of the node
 				returnValue = true;
 
 			if (returnValue)
-				*payload = (void*) costOfInsertedNode; // now the hash is known at the given cost
+				*payload = visited_list_payload::encode_cost(costOfInsertedNode); // now the hash is known at the given cost
 		}
 		
 		std::clock_t after = std::clock();
