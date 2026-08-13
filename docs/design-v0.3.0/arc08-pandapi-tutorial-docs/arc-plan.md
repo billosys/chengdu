@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice02 htn-hddl-onboarding open
+Status: active; Slice02 htn-hddl-onboarding CC proposed done, awaiting CDC verification
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -98,14 +98,17 @@ Leaves for Arc09:
   [`slice01-docs-information-architecture/cdc-verification.md`](slice01-docs-information-architecture/cdc-verification.md).
   The blueprint confirmed `docs/pandapi-0.3.0/` as the public docs home and
   recommended no structural slice breakdown change.
-- **slice02 htn-hddl-onboarding - open.** Slice set:
+- **slice02 htn-hddl-onboarding - CC proposed done, awaiting CDC
+  verification.** Slice set:
   [`slice02-htn-hddl-onboarding/slice-doc.md`](slice02-htn-hddl-onboarding/slice-doc.md),
   [`slice02-htn-hddl-onboarding/ledger.md`](slice02-htn-hddl-onboarding/ledger.md),
-  [`slice02-htn-hddl-onboarding/cc-prompt.md`](slice02-htn-hddl-onboarding/cc-prompt.md).
+  [`slice02-htn-hddl-onboarding/cc-prompt.md`](slice02-htn-hddl-onboarding/cc-prompt.md),
+  [`../../pandapi-0.3.0/tutorial/htn-hddl-onboarding.md`](../../pandapi-0.3.0/tutorial/htn-hddl-onboarding.md),
+  [`slice02-htn-hddl-onboarding/closing-report.md`](slice02-htn-hddl-onboarding/closing-report.md).
   This slice writes
   `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md`, teaches beginner
   HTN/PDDL/HDDL concepts through `fixtures/minimal`, verifies the first parser
-  command, and resolves whether the minimal fixture is enough before Slice03
+  command, and resolves that the minimal fixture is enough before Slice03
   writes the full workflow.
 
 ## 6. Planned Documentation Surface
@@ -160,6 +163,11 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.4 - 2026-08-13.** Marked Slice02 htn-hddl-onboarding CC proposed
+  done. Surfaced by: public onboarding page, Slice02 ledger, and Slice02
+  closing report. Why: the beginner concept page now teaches HTN/PDDL/HDDL,
+  maps `fixtures/minimal` to domain/problem concepts, verifies one parser
+  command, and records that no new beginner fixture is needed before Slice03.
 - **v1.3 - 2026-08-13.** Opened Slice02 htn-hddl-onboarding. Surfaced by:
   Slice01 CDC verification and the accepted documentation blueprint. Why:
   Arc08 can now begin public docs writing with the beginner concept page,

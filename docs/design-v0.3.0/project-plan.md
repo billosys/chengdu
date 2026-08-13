@@ -439,7 +439,8 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice02 htn-hddl-onboarding open.** Detailed plan:
+- **arc08 - active; Slice02 htn-hddl-onboarding CC proposed done, awaiting
+  CDC verification.** Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md),
@@ -448,10 +449,12 @@ handoff.
   [`arc08-pandapi-tutorial-docs/documentation-blueprint.md`](arc08-pandapi-tutorial-docs/documentation-blueprint.md),
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md),
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cdc-verification.md).
-  Slice02 htn-hddl-onboarding is open:
+  Slice02 htn-hddl-onboarding has CC close evidence:
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/slice-doc.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/ledger.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/ledger.md),
-  [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cc-prompt.md).
+  [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cc-prompt.md),
+  [`../pandapi-0.3.0/tutorial/htn-hddl-onboarding.md`](../pandapi-0.3.0/tutorial/htn-hddl-onboarding.md),
+  [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, `pandapi-*` CLI guidance, README updates,
@@ -599,6 +602,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.78 - 2026-08-13.** Marked Arc08 Slice02 htn-hddl-onboarding CC
+  proposed done, awaiting CDC verification. Surfaced by:
+  `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md` and the Slice02
+  closing report. Why: the beginner public tutorial now explains HTN,
+  PDDL/HDDL domain/problem roles, `fixtures/minimal`, the three-stage
+  artifact pipeline, solved versus no-plan outcomes, and one verified
+  canonical parser command before Slice03 writes the full workflow.
 - **v1.77 - 2026-08-13.** Opened Arc08 Slice02 htn-hddl-onboarding. Surfaced
   by: Slice01 CDC verification and the accepted documentation blueprint. Why:
   the docs architecture is now verified, so Arc08 can start public tutorial
