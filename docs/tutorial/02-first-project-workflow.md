@@ -1,8 +1,12 @@
 # First Project Workflow for pandaPI 0.3.0
 
-This tutorial runs the first complete pandaPI 0.3.0 workflow: parse an HDDL
-project, ground it, solve it, inspect the generated artifacts, and compare the
-happy path with a valid no-plan case.
+This tutorial runs a complete pandaPI workflow:
+
+1. parse an HDDL project
+2. ground it (translate from abstract to concrete, expand variables, etc.)
+3. solve it
+4. inspect the generated artifacts, and
+5. compare the happy path with a valid no-plan case.
 
 It builds on the HTN and HDDL onboarding page. The happy path uses
 `fixtures/minimal`, the `project-work` domain, the `ship-the-spec` problem,
