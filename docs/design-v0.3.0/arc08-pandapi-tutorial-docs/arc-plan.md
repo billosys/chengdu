@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice04 managed-process-workflow CC proposed done, awaiting CDC verification; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
+Status: active; Slice05 real-world-htn-modelling-tutorial planned next; Slice04 managed-process-workflow CC proposed done, awaiting CDC verification; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -52,10 +52,12 @@ those release assets understandable once Arc09 proves and publishes them.
 | slice02 | `htn-hddl-onboarding` | Write the beginner concept chapter covering HTN planning, PDDL/HDDL roles, pandaPI's three-stage pipeline, artifacts, and the minimal checked-in example. | workflow tutorial |
 | slice03 | `first-project-workflow` | Write the simple hands-on workflow: parse, ground, solve, inspect artifacts, rerun, and understand solved versus no-plan outcomes using checked-in fixtures. | CLI reference, README |
 | slice04 | `managed-process-workflow` | Write the supervised/process-manager workflow: `--supervised`, `--status`, stdout/stderr ownership, final `PANDAPI_STATUS`, exit/status taxonomy, pipeline composition, and negative outcomes. | migration and wolong docs |
-| slice05 | `cli-reference-and-migration` | Write the command reference and behavior-change/migration table for canonical `pandapi-*` names, common options, statuses, unsupported/legacy/future surfaces, and 0.2.0 -> 0.3.0 migration. | README and release prep |
-| slice06 | `architecture-and-source-quality-docs` | Write architecture, dependency, source-quality, generated-code, and third-party-boundary docs from Arc02 and Arc07 without turning measured baselines into public guarantees. | README and release prep |
-| slice07 | `readme-entrypoint-refresh` | Update top-level README as the public entry point into the tutorial/docs suite, keeping release-install wording honest about Arc09-owned publication proof and preserving `make readme-verbatim`. | arc synthesis |
-| slice08 | `docs-synthesis` | Verify the docs suite composes, links are valid, examples run, README points to the right material, Arc09 handoffs are explicit, and Arc08 can close. | Arc09 release prep |
+| slice05 | `real-world-htn-modelling-tutorial` | Write the modelling bridge from a real-world software feature request to an HTN model: scope the planning question, identify objects, facts, compound tasks, primitive actions, methods, ordering, success/no-plan boundaries, and fixture needs before writing HDDL syntax. | HDDL authoring tutorial |
+| slice06 | `hddl-authoring-tutorial` | Write the detailed HDDL authoring tutorial that turns the Slice05 model into `domain.hddl` and `problem.hddl`, validates syntax/modeling choices, runs parse -> ground -> solve, and explains common authoring mistakes. | CLI reference, README |
+| slice07 | `cli-reference-and-migration` | Write the command reference and behavior-change/migration table for canonical `pandapi-*` names, common options, statuses, unsupported/legacy/future surfaces, and 0.2.0 -> 0.3.0 migration. | README and release prep |
+| slice08 | `architecture-and-source-quality-docs` | Write architecture, dependency, source-quality, generated-code, and third-party-boundary docs from Arc02 and Arc07 without turning measured baselines into public guarantees. | README and release prep |
+| slice09 | `readme-entrypoint-refresh` | Update top-level README as the public entry point into the tutorial/docs suite, keeping release-install wording honest about Arc09-owned publication proof and preserving `make readme-verbatim`. | arc synthesis |
+| slice10 | `docs-synthesis` | Verify the docs suite composes, links are valid, examples run, README points to the right material, Arc09 handoffs are explicit, and Arc08 can close. | Arc09 release prep |
 
 Detailed slice plans after Slice01 may change this breakdown if the
 documentation blueprint surfaces a better order, missing page, or example
@@ -134,7 +136,18 @@ Leaves for Arc09:
   integration with `--supervised`, `--status`, stdout/stderr ownership, final
   `PANDAPI_STATUS`, status/exit classification, ANSI/color behavior, and
   negative outcomes, verifies managed parser, grounder, engine, and pipeline
-  contract gates, and keeps CLI reference and migration details for Slice05.
+  contract gates, and keeps CLI reference and migration details for Slice07.
+- **slice05 real-world-htn-modelling-tutorial - planned next.** This slice
+  will write `docs/tutorial/03-model-a-feature-as-htn.md`. It fills the
+  reader-journey gap between running prepared fixtures and creating useful
+  pandaPI inputs: start from a real-world software feature request, identify
+  the HTN modelling pieces, decide what belongs in the domain versus the
+  problem, and define success/no-plan boundaries before writing HDDL syntax.
+- **slice06 hddl-authoring-tutorial - planned.** This slice will write
+  `docs/tutorial/04-write-hddl-files.md`. It turns the Slice05 model into
+  concrete HDDL domain/problem files, verifies them through the
+  parse -> ground -> solve workflow, and teaches common authoring mistakes
+  without duplicating the later CLI reference.
 
 ## 6. Planned Documentation Surface
 
@@ -166,7 +179,9 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 | A7 | Top-level README becomes a clear entry point into the 0.3.0 docs suite and continues to pass `make readme-verbatim`. | reproduced |
 | A8 | Every tutorial command intended to be runnable is verified through Make-backed or direct local commands, and non-runnable conceptual examples are clearly marked as conceptual. | reproduced |
 | A9 | Arc08 stays out of Arc09 release-publication scope while handing Arc09 concrete docs, migration, release-note, and wolong verification inputs. | reproduced |
-| A10 | The docs suite composes without silent drops: all planned pages exist, internal links resolve where locally checkable, examples are consistent, and the arc closing report walks the delivered suite against A1-A10. | reproduced |
+| A10 | The docs suite composes without silent drops: all planned pages exist, internal links resolve where locally checkable, examples are consistent, and the arc closing report walks the delivered suite against A1-A12. | reproduced |
+| A11 | Real-world modelling docs teach how to turn a prose planning problem, preferably a software engineering feature, into an HTN model with explicit objects, predicates/facts, compound tasks, primitive actions, methods, ordering constraints, and success/no-plan boundaries. | reproduced |
+| A12 | HDDL authoring docs teach how to turn the real-world HTN model into runnable `domain.hddl` and `problem.hddl` files, validate them through `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`, and explain common authoring mistakes with verified examples. | reproduced |
 
 ## 8. Open Questions And Risks
 
@@ -185,9 +200,22 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   links.
 - **OQ5 - wolong boundary.** Arc08 can write migration guidance, but Arc09
   verifies wolong fetch/install/migration against release assets.
+- **OQ6 - modelling/authorship gap resolved as inserted scope.** Slice03
+  proved a prepared-fixture workflow, and Slice04 teaches managed-process
+  integration, but neither teaches how a user creates a planning model. Arc08
+  now inserts Slice05 for real-world HTN modelling and Slice06 for HDDL
+  authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
 
+- **v1.10 - 2026-08-13.** Inserted real-world modelling and HDDL authoring
+  tutorial slices. Surfaced by: operator review of the Arc08 reader journey
+  after Slice03 and Slice04. Why: the current tutorials teach concepts and
+  how to run prepared fixtures, while users also need a bridge from a
+  real-world planning issue, such as a software feature, to an HTN model and
+  then to concrete `domain.hddl`/`problem.hddl` files. The managed-process
+  guide remains Slice04 as an integration/reference page, and CLI reference,
+  migration, architecture, README, and synthesis shift later.
 - **v1.9 - 2026-08-13.** Marked Slice04 managed-process-workflow CC proposed
   done. Surfaced by: public managed-process guide, Slice04 ledger, and
   Slice04 closing report. Why: the guide now teaches supervised execution,

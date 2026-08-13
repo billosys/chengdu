@@ -8,9 +8,10 @@
 > quality high enough that future work happens in a maintainable C/C++
 > monorepo rather than in three inherited islands. The release also establishes
 > a new user-learning surface for the fork: a highly detailed pandaPI 0.3.0
-> tutorial, project workflow guidance, README updates, and architecture
-> documentation that explain the new runtime/CLI shape rather than assuming
-> prior planner or pandaPI experience.
+> tutorial, project workflow guidance, real-world HTN modelling, HDDL
+> authoring, README updates, and architecture documentation that explain the
+> new runtime/CLI shape rather than assuming prior planner or pandaPI
+> experience.
 >
 > Plan-of-record at project scale, per `PROJECT-MANAGEMENT.md` (v2.1).
 > Predecessor: `docs/design-v0.2.0/` (closed 2026-08-09, gate GO). The
@@ -439,9 +440,10 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice04 managed-process-workflow CC proposed done,
-  awaiting CDC verification; Slice03 first-project-workflow CC proposed done,
-  awaiting CDC verification.**
+- **arc08 - active; Slice05 real-world-htn-modelling-tutorial planned next;
+  Slice04 managed-process-workflow CC proposed done, awaiting CDC
+  verification; Slice03 first-project-workflow CC proposed done, awaiting CDC
+  verification.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -472,9 +474,10 @@ handoff.
   [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
-  workflow examples, `pandapi-*` CLI guidance, README updates,
-  architecture/dependency documentation for the new fork shape, and
-  source-quality policy language that reflects Arc07's final classifications.
+  workflow examples, real-world HTN modelling guidance, HDDL authoring
+  guidance, `pandapi-*` CLI guidance, README updates, architecture/dependency
+  documentation for the new fork shape, and source-quality policy language
+  that reflects Arc07's final classifications.
 - **arc09 - roadmap only.** Arc09 remains downstream of Arc06, Arc07, and
   Arc08 and owns release preparation and publication: release assets,
   checksums, manifest/provenance, dependency licensing/NOTICE obligations,
@@ -566,7 +569,7 @@ per-row in this project's `closing-report.md`.
 | P5 | Arc05 closes with all three primary binaries conforming to the accepted process contract through namespaced `pandapi-*` entry points, with inherited-name shims deleted once native new-name builds and tests exist, without library availability expanding optional inherited surfaces. | reproduced |
 | P6 | Arc06 closes with the full local and CI gate suite proving positive and negative behavior under both CLI and pipe-supervised invocation, including expanded process fixtures, coverage evidence, compiler-warning disposition/burndown, and heavier sanitizer/static-analysis gates where supported. | reproduced |
 | P7 | Arc07 closes with parser, grounder, engine, runtime, and Chengdu-owned generators/templates classified and covered by explicit first-party source-quality policy: formatting, static analysis, coverage, unit/seam tests, warning policy, sanitizer triage, generated-code handling, generated-warning root-cause/correctness triage, and third-party exclusions or separately reported evidence. | reproduced |
-| P8 | Arc08 closes with the pandaPI 0.3.0 tutorial and documentation suite: beginner HTN/PDDL/HDDL onboarding, simple-to-intermediate project workflow examples, `pandapi-*` CLI guidance, README updates, architecture docs, dependency rationale, source-quality posture, behavior-change table, and migration notes. | reproduced |
+| P8 | Arc08 closes with the pandaPI 0.3.0 tutorial and documentation suite: beginner HTN/PDDL/HDDL onboarding, simple-to-intermediate project workflow examples, real-world HTN modelling guidance, HDDL authoring guidance, `pandapi-*` CLI guidance, README updates, architecture docs, dependency rationale, source-quality posture, behavior-change table, and migration notes. | reproduced |
 | P9 | `v0.3.0` is published only after release assets, checksums, manifest/provenance, dependency licensing/NOTICE obligations, test-only dependency exclusion, source-quality release gates, release docs, and the new wolong fetch/install/migration path are verified on supported platforms. | reproduced |
 
 ## 7. Open questions and risks
@@ -617,6 +620,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.84 - 2026-08-13.** Inserted Arc08 real-world modelling and HDDL
+  authoring tutorial scope before CLI reference/migration. Surfaced by:
+  operator review of the Arc08 reader journey after prepared-fixture workflow
+  and managed-process docs. Why: the public docs need to teach how a user
+  turns a real-world planning issue into an HTN model and concrete
+  `domain.hddl`/`problem.hddl` files, not only how to run pandaPI on existing
+  fixtures.
 - **v1.83 - 2026-08-13.** Marked Arc08 Slice04
   managed-process-workflow CC proposed done, awaiting CDC verification.
   Surfaced by: `docs/managed-process.md` and the Slice04 closing report.

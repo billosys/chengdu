@@ -16,6 +16,8 @@ under `docs/design-v0.3.0/`.
 |--------|---------|-------------------|-------------------|
 | Beginner concept learner | Learn what HTN planning is, how PDDL/HDDL input relates to pandaPI, and why the pipeline has parser, grounder, and engine stages. | `docs/tutorial/01-htn-hddl-onboarding.md` | The reader can explain domain/problem input, `.htn`, `.sas`, plan output, solved, and no-plan outcomes before seeing dense flags. |
 | CLI workflow user | Run a simple parse -> ground -> solve workflow with `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`. | `docs/tutorial/02-first-project-workflow.md` | The reader can build, run checked-in examples, inspect artifacts, and repeat the workflow locally. |
+| HTN modelling learner | Turn a real-world planning issue into an HTN model before writing syntax. | `docs/tutorial/03-model-a-feature-as-htn.md` | The reader can identify objects, facts, compound tasks, primitive actions, methods, ordering constraints, and solved/no-plan boundaries from prose. |
+| HDDL author | Write runnable `domain.hddl` and `problem.hddl` files from the HTN model. | `docs/tutorial/04-write-hddl-files.md` | The reader can author, validate, parse, ground, and solve a small HDDL project without starting from a prepared fixture. |
 | Managed-process integrator | Integrate supervised process execution using `--supervised`, `--status`, stdout/stderr ownership, exit codes, and final `PANDAPI_STATUS`. | `docs/managed-process.md` | The reader can classify outcomes from exit code and tagged status fields, not human diagnostic prose. |
 | Maintainer/release architecture reader | Understand the 0.3.0 fork shape, source-quality posture, dependency boundaries, Make gates, and Arc09 release handoff. | `docs/architecture.md` | The reader knows what is supported, what remains deferred, and which release claims still require Arc09 proof. |
 
@@ -30,14 +32,16 @@ Recommended file map and page map:
 
 | Path | Owner slice | Purpose |
 |------|-------------|---------|
-| `docs/index.md` | Slice07 README entrypoint refresh or Slice08 synthesis if anchors settle later | Public docs landing page with links to tutorial, reference, migration, managed-process, and architecture pages. |
+| `docs/index.md` | Slice09 README entrypoint refresh or Slice10 synthesis if anchors settle later | Public docs landing page with links to tutorial, reference, migration, managed-process, and architecture pages. |
 | `docs/tutorial/01-htn-hddl-onboarding.md` | Slice02 | Beginner tutorial for HTN, PDDL, HDDL, pipeline concepts, artifacts, solved/no-plan language, and `fixtures/minimal`. |
 | `docs/tutorial/02-first-project-workflow.md` | Slice03 | Runnable CLI tutorial using checked-in fixtures and canonical `pandapi-*` commands. |
 | `docs/managed-process.md` | Slice04 | Supervised integration guide for stdout, stderr, `--supervised`, `--status`, `PANDAPI_STATUS`, exit/status taxonomy, color/TTY, and negative outcomes. |
-| `docs/reference/cli.md` | Slice05 | Command reference for `pandapi-parser`, `pandapi-grounder`, `pandapi-engine`, common options, statuses, and supported surfaces. |
-| `docs/migration.md` | Slice05 | 0.2.0 -> 0.3.0 behavior-change table and migration guidance. |
-| `docs/architecture.md` | Slice06 | Architecture, dependency, source-quality, source-class, generated-code, and third-party boundary documentation. |
-| `README.md` | Slice07 | Short public entry point into the docs suite after stable anchors exist. |
+| `docs/tutorial/03-model-a-feature-as-htn.md` | Slice05 | Real-world modelling tutorial that turns a software feature request into an HTN model before writing HDDL syntax. |
+| `docs/tutorial/04-write-hddl-files.md` | Slice06 | HDDL authoring tutorial that turns the Slice05 model into `domain.hddl` and `problem.hddl`, then validates it through the pandaPI workflow. |
+| `docs/reference/cli.md` | Slice07 | Command reference for `pandapi-parser`, `pandapi-grounder`, `pandapi-engine`, common options, statuses, and supported surfaces. |
+| `docs/migration.md` | Slice07 | 0.2.0 -> 0.3.0 behavior-change table and migration guidance. |
+| `docs/architecture.md` | Slice08 | Architecture, dependency, source-quality, source-class, generated-code, and third-party boundary documentation. |
+| `README.md` | Slice09 | Short public entry point into the docs suite after stable anchors exist. |
 
 ## Evidence Inputs
 
@@ -100,6 +104,26 @@ Intermediate example:
 - Use `broken-syntax` and `broken-reference` only after the happy path, as
   negative examples for syntax and semantic invalid-input outcomes.
 
+Real-world modelling example:
+
+- Use a software engineering feature request as the modelling bridge from
+  prose to HTN. The tutorial should identify the planning question, actors or
+  artifacts as objects, predicates/facts, compound tasks, primitive actions,
+  methods, ordering constraints, and solved/no-plan boundaries before showing
+  HDDL syntax.
+- The modelling page should decide whether it needs a new checked-in fixture.
+  If it does, the fixture must be small, readable, and verified by the
+  authoring tutorial or the same slice if the ledger is amended.
+
+HDDL authoring example:
+
+- Turn the modelling example into `domain.hddl` and `problem.hddl` with a
+  line-by-line explanation of domain sections, problem sections, task network,
+  methods, actions, predicates, and common syntax/modeling mistakes.
+- Verify the files with the canonical local pipeline. If the tutorial
+  generates files in a temporary workspace rather than committing a fixture,
+  the commands must still be runnable from the repository root.
+
 Managed-process example:
 
 - Use the managed fixture records and direct commands with `--supervised` and
@@ -145,20 +169,32 @@ Example gap and later slice work:
 | Beginner HTN/PDDL/HDDL concept docs | Slice02 |
 | First runnable CLI workflow | Slice03 |
 | Managed-process and supervised integration docs | Slice04 |
-| Behavior-change table, CLI reference, command-name migration context | Slice05 |
-| Architecture, dependency, source-quality, source-class, generated-code, and third-party boundary docs | Slice06 |
-| README entry point and `make readme-verbatim` preservation | Slice07 |
-| Docs composition, link/example verification, and final Arc08 close | Slice08 |
+| Real-world issue to HTN model tutorial | Slice05 |
+| HDDL domain/problem authoring tutorial | Slice06 |
+| Behavior-change table, CLI reference, command-name migration context | Slice07 |
+| Architecture, dependency, source-quality, source-class, generated-code, and third-party boundary docs | Slice08 |
+| README entry point and `make readme-verbatim` preservation | Slice09 |
+| Docs composition, link/example verification, and final Arc08 close | Slice10 |
 | Release notes, package assets, release publication, and wolong fetch/install/migration verification | Arc09 |
 
 ## Slice Breakdown Recommendation
 
-No slice breakdown change is recommended. The existing Slice02 through Slice08
-sequence is correct: concepts first, runnable CLI workflow second,
-managed-process workflow third, reference/migration fourth, architecture and
-source-quality fifth, README refresh sixth, and synthesis last.
+Slice breakdown change accepted after Slice03/Slice04 reader-journey review:
+insert a modelling tutorial and an HDDL authoring tutorial before
+reference/migration, architecture, README, and synthesis work.
+
+The implementation sequence preserves the already-completed managed-process
+Slice04, then inserts real-world modelling and HDDL authoring before
+reference/migration, architecture, README, and synthesis work.
+
+The reader-facing tutorial sequence is: concepts first, prepared-fixture CLI
+workflow second, real-world modelling third, and HDDL authoring fourth.
+`docs/managed-process.md` remains a public integration guide outside the
+numbered tutorial path.
 
 The only refinement is tactical: Slice02 and Slice03 should explicitly record
-whether the existing fixture set is enough before adding examples, and Slice05
-should place the 0.2.0 -> 0.3.0 behavior-change table in `migration.md` so
+whether the existing fixture set is enough before adding examples; Slice05 and
+Slice06 should explicitly decide whether their modelling/authoring examples
+need a new checked-in fixture; and Slice07 should place the 0.2.0 -> 0.3.0
+behavior-change table in `migration.md` so
 Arc09 can link release notes and wolong migration proof to one stable page.
