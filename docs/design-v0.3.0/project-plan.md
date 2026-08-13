@@ -411,6 +411,14 @@ documentation/tutorial and release-publication work.
   dispositioned parser gengetopt output without migrating to CLI11. Grounder
   first-party source and dependency-boundary follow-up is the recommended next
   scoped Arc07 ledger.
+  Slice07 grounder-source-quality-boundary is open:
+  [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/slice-doc.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/slice-doc.md),
+  [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/ledger.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/ledger.md),
+  [`arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/cc-prompt.md`](arc07-source-quality-expansion/slice07-grounder-source-quality-boundary/cc-prompt.md).
+  Slice07 should convert grounder source-quality scaffold rows into honest
+  component targets, make the first-party/dependency boundary executable,
+  resolve the `rss.c` classification ambiguity, and preserve managed
+  grounder/pipeline behavior.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -564,6 +572,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.69 - 2026-08-13.** Opened Arc07 Slice07
+  grounder-source-quality-boundary. Surfaced by: Slice06 CDC verification.
+  Why: parser generated scanner warnings are now closed, so Arc07 moves to
+  grounder component gates and dependency-boundary proof before stronger
+  source-quality claims are made over cpddl, H2, nested third-party, generated,
+  copied-build, or build-output warning classes. The slice also forces the
+  `rss.c` classification ambiguity to be resolved explicitly.
 - **v1.68 - 2026-08-13.** Marked Arc07 Slice06
   parser-generated-warning-root-cause closed and CDC-verified. Surfaced by:
   CDC reproduction of CC commit `39c46101`. Why: parser Flex helper warnings
