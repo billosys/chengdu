@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice05 real-world-htn-modelling-tutorial planned next; Slice04 managed-process-workflow CC proposed done, awaiting CDC verification; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
+Status: active; Slice05 real-world-htn-modelling-tutorial implementation proposed done, awaiting CDC verification; Slice06 hddl-authoring-tutorial planned next; Slice04 managed-process-workflow CC proposed done, awaiting CDC verification; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -137,13 +137,19 @@ Leaves for Arc09:
   `PANDAPI_STATUS`, status/exit classification, ANSI/color behavior, and
   negative outcomes, verifies managed parser, grounder, engine, and pipeline
   contract gates, and keeps CLI reference and migration details for Slice07.
-- **slice05 real-world-htn-modelling-tutorial - planned next.** This slice
-  will write `docs/tutorial/03-model-a-feature-as-htn.md`. It fills the
-  reader-journey gap between running prepared fixtures and creating useful
-  pandaPI inputs: start from a real-world software feature request, identify
-  the HTN modelling pieces, decide what belongs in the domain versus the
-  problem, and define success/no-plan boundaries before writing HDDL syntax.
-- **slice06 hddl-authoring-tutorial - planned.** This slice will write
+- **slice05 real-world-htn-modelling-tutorial - implementation proposed done,
+  awaiting CDC verification.** Slice set:
+  [`slice05-real-world-htn-modelling-tutorial/slice-doc.md`](slice05-real-world-htn-modelling-tutorial/slice-doc.md),
+  [`slice05-real-world-htn-modelling-tutorial/ledger.md`](slice05-real-world-htn-modelling-tutorial/ledger.md),
+  [`slice05-real-world-htn-modelling-tutorial/cc-prompt.md`](slice05-real-world-htn-modelling-tutorial/cc-prompt.md),
+  [`../../tutorial/03-model-a-feature-as-htn.md`](../../tutorial/03-model-a-feature-as-htn.md),
+  [`slice05-real-world-htn-modelling-tutorial/closing-report.md`](slice05-real-world-htn-modelling-tutorial/closing-report.md).
+  This slice writes `docs/tutorial/03-model-a-feature-as-htn.md`, teaches how
+  to turn a software feature request into an HTN model, covers objects,
+  facts, compound tasks, primitive actions, methods, ordering constraints,
+  solved/no-plan boundaries, and records that no checked-in fixture is needed
+  before Slice06 writes runnable HDDL.
+- **slice06 hddl-authoring-tutorial - planned next.** This slice will write
   `docs/tutorial/04-write-hddl-files.md`. It turns the Slice05 model into
   concrete HDDL domain/problem files, verifies them through the
   parse -> ground -> solve workflow, and teaches common authoring mistakes
@@ -208,6 +214,15 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.11 - 2026-08-13.** Marked Slice05
+  real-world-htn-modelling-tutorial implementation proposed done, awaiting
+  CDC verification, and routed Slice06 as the next tutorial slice. Surfaced
+  by: `docs/tutorial/03-model-a-feature-as-htn.md`, Slice05 ledger, and
+  Slice05 closing report. Why: the reader journey now has a pre-HDDL bridge
+  from prose software feature request to HTN model, including objects, facts,
+  compound tasks, primitive actions, methods, ordering, solved/no-plan
+  boundaries, and a fixture decision that leaves runnable HDDL proof to
+  Slice06.
 - **v1.10 - 2026-08-13.** Inserted real-world modelling and HDDL authoring
   tutorial slices. Surfaced by: operator review of the Arc08 reader journey
   after Slice03 and Slice04. Why: the current tutorials teach concepts and

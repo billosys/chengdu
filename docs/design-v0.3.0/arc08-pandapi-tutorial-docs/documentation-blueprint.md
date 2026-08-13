@@ -111,9 +111,11 @@ Real-world modelling example:
   artifacts as objects, predicates/facts, compound tasks, primitive actions,
   methods, ordering constraints, and solved/no-plan boundaries before showing
   HDDL syntax.
-- The modelling page should decide whether it needs a new checked-in fixture.
-  If it does, the fixture must be small, readable, and verified by the
-  authoring tutorial or the same slice if the ledger is amended.
+- Slice05 resolved that the modelling page does not need a checked-in fixture:
+  its examples are conceptual and intentionally pre-HDDL. Slice06 should reuse
+  the same `status-summary` feature model and decide whether runnable HDDL
+  proof belongs in a new fixture or in temporary files created by the
+  tutorial commands.
 
 HDDL authoring example:
 

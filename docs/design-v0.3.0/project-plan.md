@@ -440,10 +440,11 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice05 real-world-htn-modelling-tutorial planned next;
-  Slice04 managed-process-workflow CC proposed done, awaiting CDC
-  verification; Slice03 first-project-workflow CC proposed done, awaiting CDC
-  verification.**
+- **arc08 - active; Slice05 real-world-htn-modelling-tutorial implementation
+  proposed done, awaiting CDC verification; Slice06 hddl-authoring-tutorial
+  planned next; Slice04 managed-process-workflow CC proposed done, awaiting
+  CDC verification; Slice03 first-project-workflow CC proposed done, awaiting
+  CDC verification.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -472,6 +473,13 @@ handoff.
   [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cc-prompt.md),
   [`../managed-process.md`](../managed-process.md),
   [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md).
+  Slice05 real-world-htn-modelling-tutorial has implementation close
+  evidence:
+  [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/slice-doc.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/slice-doc.md),
+  [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/ledger.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/ledger.md),
+  [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cc-prompt.md),
+  [`../tutorial/03-model-a-feature-as-htn.md`](../tutorial/03-model-a-feature-as-htn.md),
+  [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, real-world HTN modelling guidance, HDDL authoring
@@ -620,6 +628,14 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.85 - 2026-08-13.** Marked Arc08 Slice05
+  real-world-htn-modelling-tutorial implementation proposed done, awaiting
+  CDC verification, and made Slice06 hddl-authoring-tutorial the planned next
+  docs slice. Surfaced by: `docs/tutorial/03-model-a-feature-as-htn.md`,
+  Slice05 ledger, and Slice05 closing report. Why: the tutorial suite now has
+  the missing pre-HDDL modelling bridge from prose software feature request to
+  HTN model, while concrete `domain.hddl`/`problem.hddl` authoring and
+  runnable command proof remain routed to Slice06.
 - **v1.84 - 2026-08-13.** Inserted Arc08 real-world modelling and HDDL
   authoring tutorial scope before CLI reference/migration. Surfaced by:
   operator review of the Arc08 reader journey after prepared-fixture workflow
