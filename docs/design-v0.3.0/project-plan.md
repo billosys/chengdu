@@ -439,12 +439,14 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice01 open.** Detailed plan:
+- **arc08 - active; Slice01 CC proposed done, awaiting CDC verification.** Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
-  Slice01 docs-information-architecture is open:
+  Slice01 docs-information-architecture has CC close evidence:
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/ledger.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/ledger.md),
-  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cc-prompt.md).
+  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cc-prompt.md),
+  [`arc08-pandapi-tutorial-docs/documentation-blueprint.md`](arc08-pandapi-tutorial-docs/documentation-blueprint.md),
+  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, `pandapi-*` CLI guidance, README updates,
@@ -592,6 +594,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.75 - 2026-08-13.** Marked Arc08 Slice01
+  docs-information-architecture CC proposed done, awaiting CDC verification.
+  Surfaced by: `arc08-pandapi-tutorial-docs/documentation-blueprint.md` and
+  the Slice01 closing report. Why: Arc08 now has a verified-by-CC public docs
+  home recommendation, audience journey map, page map, evidence inventory,
+  example strategy, command-name policy, voice/style rules, and future-slice
+  routing before tutorial pages are written.
 - **v1.74 - 2026-08-13.** Opened Arc08 `pandapi-tutorial-docs` with Slice01
   docs-information-architecture. Surfaced by: Arc07 CDC-verified close and
   project roadmap. Why: source-quality, managed-process, fixture, and

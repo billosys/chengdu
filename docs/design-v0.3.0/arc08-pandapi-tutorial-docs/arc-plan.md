@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice01 open
+Status: active; Slice01 CC proposed done, awaiting CDC verification
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -88,10 +88,15 @@ Leaves for Arc09:
 
 ## 5. Current Status
 
-- **slice01 docs-information-architecture - open.** Slice set:
+- **slice01 docs-information-architecture - CC proposed done, awaiting CDC
+  verification.** Slice set:
   [`slice01-docs-information-architecture/slice-doc.md`](slice01-docs-information-architecture/slice-doc.md),
   [`slice01-docs-information-architecture/ledger.md`](slice01-docs-information-architecture/ledger.md),
-  [`slice01-docs-information-architecture/cc-prompt.md`](slice01-docs-information-architecture/cc-prompt.md).
+  [`slice01-docs-information-architecture/cc-prompt.md`](slice01-docs-information-architecture/cc-prompt.md),
+  [`documentation-blueprint.md`](documentation-blueprint.md),
+  [`slice01-docs-information-architecture/closing-report.md`](slice01-docs-information-architecture/closing-report.md).
+  The blueprint confirmed `docs/pandapi-0.3.0/` as the public docs home and
+  recommended no structural slice breakdown change.
 
 ## 6. Planned Documentation Surface
 
@@ -146,6 +151,11 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.1 - 2026-08-13.** Marked Slice01 docs-information-architecture CC
+  proposed done. Surfaced by: `documentation-blueprint.md` and Slice01 closing
+  report. Why: the public docs home, audience journeys, page map, example
+  strategy, evidence inputs, command-name policy, voice/style rules, and later
+  slice routing are now recorded; no slice breakdown change is recommended.
 - **v1.0 - 2026-08-13.** Opened Arc08 with Slice01
   docs-information-architecture. Surfaced by: Arc07 CDC-verified close and
   project-plan roadmap. Why: source-quality and managed-process evidence now
