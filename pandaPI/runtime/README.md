@@ -209,11 +209,13 @@ Arc05 executable conformance work. This is still no binary adoption.
   success/failure, and a bounded CI-safe harness timeout with a tiny local
   helper command. These tests do not invoke parser, grounder, or engine as
   managed-process conformance proof.
-- Catch2 integration is optional and test-only. `CMakeLists.txt` looks for an
+- Catch2 integration is test-only. By default, `CMakeLists.txt` looks for an
   already installed local Catch2 package and registers `fixture_catch2_smoke`
-  only when available. It never fetches Catch2, never exposes Catch2 from
-  public runtime headers, and the default runtime build continues to pass when
-  Catch2 is absent.
+  only when available. It never fetches Catch2 and never exposes Catch2 from
+  public runtime headers. Core developers should run `make enable-dev-strict`
+  once; future Make invocations then configure runtime builds with
+  `PANDAPI_REQUIRE_CATCH2=ON`, so missing Catch2 fails instead of skipping the
+  seam gate.
 
 The fixture substrate is intended for black-box process fixtures and seam tests
 that Arc05 will own. It does not add `pandapi-*` executable entry points,

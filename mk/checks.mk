@@ -78,7 +78,8 @@ static-analysis-cpp:
 	mkdir -p "$(RUNTIME_STATIC_ANALYSIS_BUILD_DIR)"; \
 	cmake -S "$(RUNTIME_SOURCE_DIR)" -B "$(RUNTIME_STATIC_ANALYSIS_BUILD_DIR)" \
 	  -DCMAKE_BUILD_TYPE=Debug \
-	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON; \
+	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+	  -DPANDAPI_REQUIRE_CATCH2="$(PANDAPI_REQUIRE_CATCH2)"; \
 	compile_db="$(RUNTIME_STATIC_ANALYSIS_BUILD_DIR)/compile_commands.json"; \
 	if [ ! -f "$$compile_db" ]; then \
 	  printf '%b\n' "$(RED)static-analysis-cpp: $$compile_db missing$(RESET)" >&2; \

@@ -3,6 +3,7 @@
 .DEFAULT_GOAL := help
 
 include mk/config.mk
+include mk/dev.mk
 include mk/help.mk
 include mk/format.mk
 include mk/build.mk

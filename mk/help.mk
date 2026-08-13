@@ -34,6 +34,11 @@ help:
 	printf '%b\n' "  $(YELLOW)make smoke-negative$(RESET)     - Run negative smoke test"; \
 	printf '%b\n' "  $(YELLOW)make test-corpus CORPUS_DIR=...$(RESET) - Run optional IPC corpus smoke"; \
 	printf '\n'; \
+	printf '%b\n' "$(GREEN)Developer mode:$(RESET)"; \
+	printf '%b\n' "  $(YELLOW)make enable-dev-strict$(RESET) - Persist strict local developer gates"; \
+	printf '%b\n' "  $(YELLOW)make disable-dev-strict$(RESET) - Remove persisted strict local developer gates"; \
+	printf '%b\n' "  $(YELLOW)make dev-strict-status$(RESET) - Show strict local developer gate status"; \
+	printf '\n'; \
 	printf '%b\n' "$(GREEN)Quality:$(RESET)"; \
 	printf '%b\n' "  $(YELLOW)make check$(RESET)               - Run pre-commit lint, static, safety, test, and provenance gates"; \
 	printf '%b\n' "  $(YELLOW)make actionlint$(RESET)          - Run downloaded actionlint"; \
@@ -107,6 +112,8 @@ info:
 	printf '%s\n' "  Name:       $(PROJECT_NAME)"; \
 	printf '%s\n' "  Platform:   $(PLATFORM)"; \
 	printf '%s\n' "  Build Time: $(BUILD_TIME)"; \
+	printf '%s\n' "  Dev Strict: $(CHENGDU_DEV_STRICT)"; \
+	printf '%s\n' "  Require Catch2: $(PANDAPI_REQUIRE_CATCH2)"; \
 	printf '\n'; \
 	printf '%b\n' "$(GREEN)Paths:$(RESET)"; \
 	printf '%s\n' "  Dist Dir:   $(DIST_DIR)/"; \

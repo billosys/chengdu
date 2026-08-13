@@ -35,6 +35,10 @@ endif()
 
 enable_testing()
 
+option(PANDAPI_REQUIRE_CATCH2
+  "Require the test-only Catch2 seam executable instead of skipping it"
+  OFF)
+
 add_executable(pandapi_runtime_smoke
   tests/runtime_smoke.cpp
 )
@@ -104,7 +108,11 @@ add_test(
   NAME pandapi_fixture_substrate_smoke
   COMMAND pandapi_fixture_substrate_smoke)
 
-find_package(Catch2 QUIET CONFIG)
+if(PANDAPI_REQUIRE_CATCH2)
+  find_package(Catch2 REQUIRED CONFIG)
+else()
+  find_package(Catch2 QUIET CONFIG)
+endif()
 if(Catch2_FOUND)
   add_executable(pandapi_fixture_catch2_smoke
     tests/fixture_catch2_smoke.cpp

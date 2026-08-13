@@ -18,7 +18,8 @@ build-runtime:
 	mkdir -p "$(RUNTIME_BUILD_DIR)"; \
 	cmake -S "$(RUNTIME_SOURCE_DIR)" -B "$(RUNTIME_BUILD_DIR)" \
 	  -DCMAKE_BUILD_TYPE=Release \
-	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON; \
+	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+	  -DPANDAPI_REQUIRE_CATCH2="$(PANDAPI_REQUIRE_CATCH2)"; \
 	cmake --build "$(RUNTIME_BUILD_DIR)" --parallel; \
 	printf '%b\n' "$(GREEN)Runtime build complete: $(RUNTIME_BUILD_DIR)$(RESET)"
 
@@ -50,6 +51,7 @@ sanitize-runtime:
 	cmake -S "$(RUNTIME_SOURCE_DIR)" -B "$(RUNTIME_SANITIZE_BUILD_DIR)" \
 	  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+	  -DPANDAPI_REQUIRE_CATCH2="$(PANDAPI_REQUIRE_CATCH2)" \
 	  -DCMAKE_CXX_COMPILER="$$CXX_BIN" \
 	  -DCMAKE_CXX_FLAGS="$$SANITIZER_FLAGS" \
 	  -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \

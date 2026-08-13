@@ -34,6 +34,9 @@ endif
 
 DIST_DIR := dist/$(PLATFORM)
 BIN_DIR ?= bin
+DEV_STRICT_CONFIG := build/make/dev-strict.d
+CHENGDU_DEV_STRICT ?= 0
+PANDAPI_REQUIRE_CATCH2 = $(if $(filter 1 true TRUE yes YES on ON,$(CHENGDU_DEV_STRICT)),ON,OFF)
 RUNTIME_SOURCE_DIR := pandaPI/runtime
 RUNTIME_INCLUDE_DIR := $(RUNTIME_SOURCE_DIR)/include
 RUNTIME_BUILD_DIR := build/runtime/$(PLATFORM)

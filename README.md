@@ -92,6 +92,18 @@ Full local test suite:
 make test
 ```
 
+Core developer strict mode:
+
+```bash
+make enable-dev-strict
+make dev-strict-status
+make test
+```
+
+Strict mode persists an ignored local Make config under `build/make/` and
+requires test-only developer dependencies such as Catch2. Standard source
+builds and release users do not need those test-only dependencies.
+
 ### Notes
 
 - Source builds use the in-tree `pandaPI/` source and do not clone planner
