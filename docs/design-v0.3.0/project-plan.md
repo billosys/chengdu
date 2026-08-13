@@ -400,6 +400,13 @@ documentation/tutorial and release-publication work.
   [`arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cdc-verification.md`](arc07-source-quality-expansion/slice05-engine-first-party-quality-burndown/cdc-verification.md).
   Slice05 established the engine component target pattern before parser
   generated-warning/root-cause work and later grounder/dependency follow-up.
+  Slice06 parser-generated-warning-root-cause is open:
+  [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/slice-doc.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/slice-doc.md),
+  [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/ledger.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/ledger.md),
+  [`arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/cc-prompt.md`](arc07-source-quality-expansion/slice06-parser-generated-warning-root-cause/cc-prompt.md).
+  Slice06 makes parser generated-warning evidence component-specific, targets
+  Flex scanner helper warnings through the owned scanner input if safe, and
+  dispositions parser gengetopt output without migrating to CLI11.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -553,6 +560,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.67 - 2026-08-13.** Opened Arc07 Slice06
+  parser-generated-warning-root-cause. Surfaced by: Slice05 CDC verification.
+  Why: Arc07 can now move from the engine component target pattern to the
+  remaining parser generated-warning budget, using root-cause and correctness
+  evidence before deciding whether to fix generator inputs, preserve CLI11
+  re-entry, or route third-party skeleton output as an explicit exclusion.
 - **v1.66 - 2026-08-12.** Marked Arc07 Slice05
   engine-first-party-quality-burndown closed and CDC-verified. Surfaced by:
   Slice05 CDC verification. Why: engine first-party source now has executable

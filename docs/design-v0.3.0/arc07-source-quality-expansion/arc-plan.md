@@ -59,7 +59,8 @@ ambiguity:
 | slice03 | `first-party-source-naming-normalization` | Closed and CDC-verified. Normalized first-party maintained C/C++ file and directory names to the accepted lower snake case policy before gate selectors, compile databases, coverage maps, and static-analysis paths become enforcement surfaces. Excluded third-party, dependency-internal, and generated paths unless a ledger row explicitly accepts them. | stable source-quality selectors |
 | slice04 | `first-party-quality-gate-scaffold` | Closed and CDC-verified. Added Make-backed aggregate scaffold targets and durable status/re-entry evidence for first-party format, static analysis, coverage, unit tests, warning policy, sanitizer policy, optional IPC corpus placement, and generated-warning triage without forcing premature thresholds. | component quality slices |
 | slice05 | `engine-first-party-quality-burndown` | Closed and CDC-verified. Converted Slice04 engine report-backed rows into Make-backed executable engine component gates; added focused `visited_list` seam evidence; closed the primary engine warning and duplicate link-library noise; preserved CUDD/generated/copy/build-output exclusions and public behavior. | parser/grounder component burndown |
-| slice06+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice05 determines the engine target pattern. Expected next order is parser generated-warning/root-cause work, then grounder first-party source and dependency-boundary follow-up as later ledgers accept the scope. | release readiness |
+| slice06 | `parser-generated-warning-root-cause` | Open. Make parser generated-warning evidence component-specific; root-cause Flex scanner helper warnings; fix them at the scanner generator/template input if safe; disposition parser gengetopt output without CLI11 migration or public behavior change. | parser/grounder component burndown |
+| slice07+ | `component-source-quality-burndown` | A series of component or subsystem slices, opened one at a time after Slice06 determines the parser generated-warning disposition. Expected next work is grounder first-party source and dependency-boundary follow-up, parser maintained-source burndown, or remaining parser generated-code remediation as the Slice06 bubble-up selects. | release readiness |
 | final | `source-quality-synthesis` | Compose the final source-quality evidence, thresholds, release blockers, remaining budgets, and Arc08/Arc09 handoff. | docs and release prep |
 
 Slice01 is intentionally the only fully-opened slice at arc start. Its report
@@ -144,6 +145,15 @@ Leaves for later arcs:
   Parser generated-warning/root-cause work is the recommended next scoped
   ledger; grounder first-party source and dependency-boundary follow-up remain
   later Arc07 work.
+- **slice06 parser-generated-warning-root-cause - open.** Slice06 turns the
+  parser generated-warning scaffold into component-specific root-cause,
+  correctness, remedy, and re-entry evidence. It targets the current Flex
+  `yyunput`/`yyinput` scanner warnings through the owned scanner input if
+  safe, dispositions parser gengetopt output without migrating to CLI11, and
+  preserves managed parser behavior. Slice set:
+  [`slice06-parser-generated-warning-root-cause/slice-doc.md`](slice06-parser-generated-warning-root-cause/slice-doc.md),
+  [`slice06-parser-generated-warning-root-cause/ledger.md`](slice06-parser-generated-warning-root-cause/ledger.md),
+  [`slice06-parser-generated-warning-root-cause/cc-prompt.md`](slice06-parser-generated-warning-root-cause/cc-prompt.md).
 
 ## 6. Planned Implementation Surface
 
@@ -199,6 +209,12 @@ installation docs, or public tutorial prose except to route handoff evidence.
 
 ## 9. Version History
 
+- **v1.11 - 2026-08-13.** Opened Slice06
+  parser-generated-warning-root-cause. Surfaced by: Slice05 CDC verification.
+  Why: engine component gates now have an executable pattern, and the
+  remaining parser warning budget is generated scanner output that requires
+  Arc07's stricter root-cause/correctness/remedy discipline before generated
+  warnings can become strict or explicitly excluded.
 - **v1.10 - 2026-08-12.** Marked Slice05
   engine-first-party-quality-burndown closed and CDC-verified, and selected
   parser generated-warning/root-cause work as the next scoped ledger. Surfaced
