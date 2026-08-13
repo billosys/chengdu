@@ -422,6 +422,13 @@ documentation/tutorial and release-publication work.
   resolved `rss.c` as first-party maintained copied-origin source with
   warnings fixed, and preserved managed grounder/pipeline behavior.
   Source-quality synthesis is the recommended next scoped Arc07 ledger.
+  Slice08 source-quality-synthesis is open:
+  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/slice-doc.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/slice-doc.md),
+  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/ledger.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/ledger.md),
+  [`arc07-source-quality-expansion/slice08-source-quality-synthesis/cc-prompt.md`](arc07-source-quality-expansion/slice08-source-quality-synthesis/cc-prompt.md).
+  Slice08 composes the completed Arc07 source-quality evidence, reconciles
+  the arc ledger A1-A9, classifies remaining work by release posture, and
+  proposes Arc07 closure only if the evidence honestly composes.
   Arc07 classifies and expands first-party source-quality obligations across
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
@@ -575,6 +582,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.71 - 2026-08-13.** Opened Arc07 Slice08
+  source-quality-synthesis. Surfaced by: Arc07 Slice07 CDC verification and
+  closing-report bubble-up. Why: the completed Arc07 source-quality slices now
+  need an evidence-composition pass to decide whether Arc07 can close, which
+  remaining source-quality items are `v0.3.0` release blockers, which are
+  measured baselines or post-0.3.0 budgets, and what Arc08 documentation plus
+  Arc09 release prep must consume.
 - **v1.70 - 2026-08-13.** Marked Arc07 Slice07
   grounder-source-quality-boundary closed and CDC-verified. Surfaced by:
   Slice07 CDC verification. Why: grounder now has Make-backed source-quality
