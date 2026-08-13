@@ -76,6 +76,13 @@ generated-warning-triage: source-quality-gate-report
 	"$(SOURCE_QUALITY_TOOL)" generated-warning-triage "$(CURDIR)" "$(PLATFORM)"
 	printf '%b\n' "$(GREEN)Generated-warning triage scaffold: $(SOURCE_QUALITY_DIR)/generated-warning-triage.md$(RESET)"
 
+.PHONY: generated-warning-triage-parser
+generated-warning-triage-parser:
+	printf '%b\n' "$(BLUE)Writing parser generated-warning root-cause evidence...$(RESET)"
+	"$(SOURCE_QUALITY_TOOL)" generated-warning-triage-parser "$(CURDIR)" "$(PLATFORM)"
+	printf '%b\n' "$(GREEN)Parser generated-warning report: docs/design-v0.3.0/arc07-source-quality-expansion/parser-generated-warning-root-cause.md$(RESET)"
+	printf '%b\n' "$(GREEN)Parser generated-warning evidence: $(SOURCE_QUALITY_DIR)/generated-warning-triage-parser.md$(RESET)"
+
 .PHONY: test-unit
 test-unit: source-quality-gate-report test-runtime
 	printf '%b\n' "$(GREEN)Unit/seam test scaffold passed$(RESET)"

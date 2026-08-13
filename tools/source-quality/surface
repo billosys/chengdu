@@ -13,6 +13,7 @@ usage:
   tools/source-quality/surface compile-db-summary <repo-root> <platform>
   tools/source-quality/surface gate-report <repo-root> <platform>
   tools/source-quality/surface generated-warning-triage <repo-root> <platform>
+  tools/source-quality/surface generated-warning-triage-parser <repo-root> <platform>
 USAGE
 }
 
@@ -488,6 +489,59 @@ Each generated-warning row must capture: generated file, generator or skeleton, 
 EOF
 }
 
+write_parser_generated_warning_report() {
+  make_out_dir
+  local build_report durable scanner cli_label
+  build_report="$OUT_DIR/generated-warning-triage-parser.md"
+  durable="$REPO_ROOT/docs/design-v0.3.0/arc07-source-quality-expansion/parser-generated-warning-root-cause.md"
+  scanner="$REPO_ROOT/pandaPI/parser/src/hddl-token.l"
+  cli_label="CLI""11"
+
+  if ! rg -n -- '^%option noinput$' "$scanner" >/dev/null; then
+    die "parser generated-warning triage requires %option noinput in pandaPI/parser/src/hddl-token.l"
+  fi
+  if ! rg -n -- '^%option nounput$' "$scanner" >/dev/null; then
+    die "parser generated-warning triage requires %option nounput in pandaPI/parser/src/hddl-token.l"
+  fi
+  if rg -n -- '(^|[^[:alnum:]_])(input|unput)[[:space:]]*\(' "$scanner" >/dev/null; then
+    die "parser scanner still calls input() or unput(); noinput/nounput would change semantics"
+  fi
+
+  {
+    printf '%s\n' "# Parser Generated-Warning Root-Cause"
+    printf '\n'
+    printf '%s\n' "Status: Slice06 implementation report"
+    printf '%s\n' "Platform: $PLATFORM"
+    printf '\n'
+    printf '%s\n' "## Scope"
+    printf '\n'
+    printf '%s\n' "This report is parser-specific generated-warning evidence for Arc07 Slice06."
+    printf '%s\n' "It covers Flex scanner output from \`hddl-token.l\` and parser gengetopt output from \`options.ggo\`."
+    printf '%s\n' "Generated outputs \`hddl-token.cpp\`, \`hddl.cpp\`, \`hddl.hpp\`, \`cmdline.c\`, and \`cmdline.h\` are not hand-edited source."
+    printf '\n'
+    printf '%s\n' "## Parser Generated-Warning Records"
+    printf '\n'
+    printf '%s\n' "| generated file | generator/template or skeleton | ownership class | root cause | correctness impact | chosen remedy | re-entry |"
+    printf '%s\n' "|----------------|--------------------------------|-----------------|------------|--------------------|---------------|----------|"
+    printf '%s\n' "| \`pandaPI/parser/src/hddl-token.cpp\` | \`pandaPI/parser/src/hddl-token.l\` through the Flex skeleton | first-party generator/template plus third-party skeleton output | Flex emits scanner helper functions \`yyunput\` and \`yyinput\` by default unless the scanner declares they are unused. The current scanner rules never call \`unput()\` or \`input()\`. | Accepted parser semantics do not require pushback or direct scanner input helper calls; rules return tokens from matched text, skip whitespace/comments, and assign semantic values from \`yytext\`. | Add \`%option nounput\` and \`%option noinput\` to \`hddl-token.l\`, so Flex omits the unused helpers when regenerating \`hddl-token.cpp\`. | Re-enter if scanner rules add \`unput()\`, \`input()\`, start-condition pushback behavior, or a stricter generated-code policy needs skeleton-level review. |"
+    printf '%s\n' "| \`pandaPI/parser/src/cmdline.c\`, \`cmdline.h\` | \`pandaPI/parser/src/options.ggo\` through gengetopt | first-party generator/template plus third-party generated output | gengetopt emits the parser option parser and human option prose used by the inherited legacy driver; it is not the current \`yyunput\`/\`yyinput\` warning source. | Managed native parser behavior is owned by \`pandapi_parser_native.cpp\`; generated human diagnostic prose is not final managed-process contract evidence. | Preserve \`options.ggo\` and generated \`cmdline.*\` behavior in this slice. Keep option semantics and generated-output strictness as separate follow-up work. | Re-enter for strict generated-code policy, option-spec semantic changes, or the accepted $cli_label replacement slice; do not fold that work into this root-cause cleanup. |"
+    printf '\n'
+    printf '%s\n' "## Flex Evidence"
+    printf '\n'
+    printf '%s\n' "- \`pandaPI/parser/src/hddl-token.l\` contains \`%option noinput\`, \`%option nounput\`, \`%option noyywrap\`, and \`%option yylineno\`."
+    printf '%s\n' "- Repository grep found no scanner-rule use of \`input()\` or \`unput()\` in \`hddl-token.l\`."
+    printf '%s\n' "- The selected remedy changes the generator/template input only. It does not hand-edit \`hddl-token.cpp\`."
+    printf '%s\n' "- The warning-inventory verification gate is \`make warning-inventory-first-party\` followed by the Slice06 negative grep for \`yyunput\` and \`yyinput\`."
+    printf '\n'
+    printf '%s\n' "## Parser Behavior Boundary"
+    printf '\n'
+    printf '%s\n' "The behavior proof remains black-box: \`make build-parser\`, \`make test-contract-parser-managed\`, and \`make test-contract-pipeline-managed\` must pass after the scanner input change. Generated scanner helper omission is accepted only because no scanner rule uses those helpers."
+  } > "$build_report"
+
+  cp "$build_report" "$durable"
+  printf '%s\n' "$build_report"
+}
+
 write_gate_scaffold_report() {
   make_out_dir
   write_gate_evidence_files
@@ -498,7 +552,7 @@ write_gate_scaffold_report() {
   cat > "$report" <<'EOF'
 # Arc07 Source-Quality Gate Scaffold
 
-Status: Slice05 implementation report
+Status: Slice06 implementation report
 
 ## Scaffold Policy
 
@@ -540,10 +594,10 @@ Report-only rows are not empty green gates: each row records the current source 
 | unit | grounder | first-party maintained | Intended `test-unit-grounder`; aggregate `test-unit` today | Report-backed re-entry; contract fixture coverage remains process-level. | `build/source-quality/<platform>/test-unit.md` | Add grounder CTest or Catch2 seams for maintained model/output code. |
 | unit | engine | first-party maintained | `test-unit-engine`; aggregate `test-unit` still available | Executable CTest seam for visited_list payload representation; Catch2 remains optional. | `build/source-quality/<platform>/test-unit-engine.md` | Add more engine CTest or Catch2 seams after risk-bearing internals are selected. |
 | warning | runtime | first-party maintained | `warning-inventory-first-party` -> `warning-inventory` | Executable warning inventory with runtime zero-warning status recorded. | `build/warnings/<platform>/warning-inventory.txt` | Runtime remains zero-warning. |
-| warning | parser | first-party warning and generated warning classes | `warning-inventory-first-party` | Executable inventory; primary parser warnings clear, generated Flex warning budget stays separate. | `build/source-quality/<platform>/warning-inventory-first-party.md` | Convert generated-warning budget only after root cause and correctness triage accepts the remedy. |
+| warning | parser | first-party warning and generated warning classes | `warning-inventory-first-party`; `generated-warning-triage-parser` | Executable inventory; primary parser warnings clear, and Slice06 closes the Flex `yyunput`/`yyinput` generated-warning budget through scanner input options. | `build/source-quality/<platform>/generated-warning-triage-parser.md` | Re-enter if scanner rules begin using `input()`/`unput()` or parser generated output becomes a strict generated-code gate. |
 | warning | grounder | first-party warning, generated, dependency, third-party classes | `warning-inventory-first-party` | Executable inventory; primary warnings clear, dependency budgets remain separate. | `build/source-quality/<platform>/warning-inventory-first-party.md` | Dependency audit or support decision required before dependency warning budget becomes release blocker. |
 | warning | engine | first-party warning plus copied-build path mapping | `warning-inventory-engine`; aggregate `warning-inventory-first-party` still available | Executable engine build inventory records visited_list payload representation status and duplicate link-library status. | `build/source-quality/<platform>/warning-inventory-engine.md` | If duplicate linker diagnostics return, classify libheuristics/libhrc ownership before strict warning policy. |
-| generated-warning | parser | first-party generator/template plus third-party skeleton | `generated-warning-triage` | Make-backed triage records include generated file, generator, skeleton, ownership class, root cause, correctness, chosen remedy, and re-entry. | `build/source-quality/<platform>/generated-warning-triage.md` | Fix Chengdu-owned generator/template defects at the source; exclude third-party skeleton output only with rationale. |
+| generated-warning | parser | first-party generator/template plus third-party skeleton | `generated-warning-triage-parser`; aggregate `generated-warning-triage` still available | Parser-specific root-cause evidence records `hddl-token.cpp`, `hddl-token.l`, Flex `yyunput`/`yyinput`, `options.ggo`, `cmdline.*`, correctness, chosen remedy, and re-entry. | `docs/design-v0.3.0/arc07-source-quality-expansion/parser-generated-warning-root-cause.md` | Keep gengetopt disposition separate from scanner cleanup; re-enter for strict generated-code policy or option-spec replacement. |
 | generated-warning | grounder | first-party generator/template, dependency-internal, third-party generated | `generated-warning-triage` | Make-backed triage records separate gengetopt and dependency classes. | `build/source-quality/<platform>/generated-warning-triage.md` | Accept component or dependency remediation slice before changing generated output. |
 | generated-warning | engine | first-party generator/template and generated output | `generated-warning-triage` | Make-backed triage records route gengetopt output to option source or CLI11 migration. | `build/source-quality/<platform>/generated-warning-triage.md` | Accept CLI11 or generated-code policy slice before strict enforcement. |
 | sanitizer | runtime | first-party maintained | `sanitize-first-party` -> `sanitize-runtime` | Executable ASan/UBSan runtime sanitizer gate. | `build/source-quality/<platform>/sanitize-first-party.md` | Runtime ASan/UBSan already executable. |
@@ -573,6 +627,13 @@ Each generated-warning record must include these fields before a warning is clos
 | `pandaPI/engine/src/cmdline.c`, `cmdline.h` | `pandaPI/engine/src/options.ggo` through gengetopt skeleton | first-party generator/template plus third-party generated output | gengetopt emits legacy helper code around inherited option parsing. | Managed native engine wrapper owns current process behavior; generated prose is not final contract evidence. | Fix option source or native wrapper, not emitted generated output by hand. | CLI11 migration or strict generated-code policy is accepted. |
 | `pandaPI/grounder/h2-fd-preprocessor/src/h2_mutexes.cc` | H2 dependency source | dependency-internal | Build warning budget records unused counters in dependency-internal H2 code. | No accepted default managed behavior depends on H2 as a source-quality surface. | Keep separate dependency budget pending H2 audit or support decision. | H2 becomes default behavior or dependency audit accepts ownership. |
 | `pandaPI/grounder/cpddl/third-party/lpsolve` generated files | lp_solve Flex/Bison and third-party skeleton output | third-party generated inside vendored dependency | Build warning budget records dependency and skeleton warning classes. | Treated as dependency evidence, not first-party semantic proof. | Exclude or suppress only with dependency rationale in a later audit. | Dependency audit accepts cpddl/lpsolve warning obligations. |
+
+## Slice06 Parser Generated-Warning Status
+
+- `generated-warning-triage-parser` writes parser-specific evidence to `build/source-quality/<platform>/generated-warning-triage-parser.md` and `docs/design-v0.3.0/arc07-source-quality-expansion/parser-generated-warning-root-cause.md`.
+- Flex scanner warnings for `yyunput` and `yyinput` are root-caused to default skeleton helper emission.
+- `hddl-token.l` now declares `%option nounput` and `%option noinput`; accepted scanner rules do not call `unput()` or `input()`.
+- `options.ggo` and generated `cmdline.c`/`cmdline.h` are dispositioned separately from the Flex fix, with managed native parser behavior preserved.
 
 ## Optional IPC Corpus Placement
 
@@ -896,7 +957,7 @@ fi
 
 COMMAND="$1"
 case "$COMMAND" in
-  surface|profile-map|naming-report|naming-check|compile-db-summary|gate-report|generated-warning-triage)
+  surface|profile-map|naming-report|naming-check|compile-db-summary|gate-report|generated-warning-triage|generated-warning-triage-parser)
     REPO_ROOT="${2%/}"
     PLATFORM="$3"
     shift 3
@@ -941,5 +1002,8 @@ case "$COMMAND" in
     ;;
   gate-report|generated-warning-triage)
     write_gate_scaffold_report
+    ;;
+  generated-warning-triage-parser)
+    write_parser_generated_warning_report
     ;;
 esac

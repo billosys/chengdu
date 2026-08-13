@@ -1,6 +1,6 @@
 # Arc07 Slice06: parser-generated-warning-root-cause
 
-Status: open
+Status: CC proposed done
 Opened: 2026-08-13
 
 ## Goal

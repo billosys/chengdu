@@ -64,6 +64,7 @@ help:
 	printf '%b\n' "  $(YELLOW)make coverage-first-party$(RESET) - Run/report first-party coverage scaffold"; \
 	printf '%b\n' "  $(YELLOW)make warning-inventory-first-party$(RESET) - Run/report first-party warning scaffold"; \
 	printf '%b\n' "  $(YELLOW)make generated-warning-triage$(RESET) - Write generated-warning root-cause triage"; \
+	printf '%b\n' "  $(YELLOW)make generated-warning-triage-parser$(RESET) - Write parser generated-warning root-cause evidence"; \
 	printf '%b\n' "  $(YELLOW)make test-unit$(RESET)           - Run/report unit and seam test scaffold"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-first-party$(RESET) - Run/report first-party sanitizer scaffold"; \
 	printf '%b\n' "  $(YELLOW)make sanitize-runtime$(RESET)   - Build and run runtime ASan/UBSan gate"; \
