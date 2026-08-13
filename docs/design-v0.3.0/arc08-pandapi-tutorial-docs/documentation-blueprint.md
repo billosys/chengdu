@@ -6,35 +6,37 @@ process contract, or understand the architecture and release posture. The
 suite should turn the verified Arc03 through Arc07 evidence into public
 documentation without copying planning-document noise into user-facing prose.
 
-The preferred public docs home is `docs/pandapi-0.3.0/`. Design evidence
-remains under `docs/design-v0.3.0/arc08-pandapi-tutorial-docs/`.
+The public docs home is `docs/`. Tutorial pages live under `docs/tutorial/`.
+Design, planning, implementation tracking, ledgers, and CDC/CC evidence remain
+under `docs/design-v0.3.0/`.
 
 ## Reader Journeys
 
 | Reader | Journey | First useful page | Success condition |
 |--------|---------|-------------------|-------------------|
-| Beginner concept learner | Learn what HTN planning is, how PDDL/HDDL input relates to pandaPI, and why the pipeline has parser, grounder, and engine stages. | `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md` | The reader can explain domain/problem input, `.htn`, `.sas`, plan output, solved, and no-plan outcomes before seeing dense flags. |
-| CLI workflow user | Run a simple parse -> ground -> solve workflow with `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`. | `docs/pandapi-0.3.0/tutorial/first-project-workflow.md` | The reader can build, run checked-in examples, inspect artifacts, and repeat the workflow locally. |
-| Managed-process integrator | Integrate supervised process execution using `--supervised`, `--status`, stdout/stderr ownership, exit codes, and final `PANDAPI_STATUS`. | `docs/pandapi-0.3.0/managed-process.md` | The reader can classify outcomes from exit code and tagged status fields, not human diagnostic prose. |
-| Maintainer/release architecture reader | Understand the 0.3.0 fork shape, source-quality posture, dependency boundaries, Make gates, and Arc09 release handoff. | `docs/pandapi-0.3.0/architecture.md` | The reader knows what is supported, what remains deferred, and which release claims still require Arc09 proof. |
+| Beginner concept learner | Learn what HTN planning is, how PDDL/HDDL input relates to pandaPI, and why the pipeline has parser, grounder, and engine stages. | `docs/tutorial/htn-hddl-onboarding.md` | The reader can explain domain/problem input, `.htn`, `.sas`, plan output, solved, and no-plan outcomes before seeing dense flags. |
+| CLI workflow user | Run a simple parse -> ground -> solve workflow with `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`. | `docs/tutorial/first-project-workflow.md` | The reader can build, run checked-in examples, inspect artifacts, and repeat the workflow locally. |
+| Managed-process integrator | Integrate supervised process execution using `--supervised`, `--status`, stdout/stderr ownership, exit codes, and final `PANDAPI_STATUS`. | `docs/managed-process.md` | The reader can classify outcomes from exit code and tagged status fields, not human diagnostic prose. |
+| Maintainer/release architecture reader | Understand the 0.3.0 fork shape, source-quality posture, dependency boundaries, Make gates, and Arc09 release handoff. | `docs/architecture.md` | The reader knows what is supported, what remains deferred, and which release claims still require Arc09 proof. |
 
 ## Public Docs Home And Page Map
 
-`docs/pandapi-0.3.0/` is the public docs home because it keeps released user
-docs outside the design ledger while giving README and release notes a stable
-link target.
+`docs/` is the public docs home because it keeps reader-facing project
+documentation outside the design/planning tree while giving README and release
+notes stable link targets. `docs/design-*` paths are for planning, design, and
+implementation tracking artifacts only.
 
 Recommended file map and page map:
 
 | Path | Owner slice | Purpose |
 |------|-------------|---------|
-| `docs/pandapi-0.3.0/index.md` | Slice07 README entrypoint refresh or Slice08 synthesis if anchors settle later | Public docs landing page with links to tutorial, reference, migration, managed-process, and architecture pages. |
-| `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md` | Slice02 | Beginner tutorial for HTN, PDDL, HDDL, pipeline concepts, artifacts, solved/no-plan language, and `fixtures/minimal`. |
-| `docs/pandapi-0.3.0/tutorial/first-project-workflow.md` | Slice03 | Runnable CLI tutorial using checked-in fixtures and canonical `pandapi-*` commands. |
-| `docs/pandapi-0.3.0/managed-process.md` | Slice04 | Supervised integration guide for stdout, stderr, `--supervised`, `--status`, `PANDAPI_STATUS`, exit/status taxonomy, color/TTY, and negative outcomes. |
-| `docs/pandapi-0.3.0/reference/cli.md` | Slice05 | Command reference for `pandapi-parser`, `pandapi-grounder`, `pandapi-engine`, common options, statuses, and supported surfaces. |
-| `docs/pandapi-0.3.0/migration.md` | Slice05 | 0.2.0 -> 0.3.0 behavior-change table and migration guidance. |
-| `docs/pandapi-0.3.0/architecture.md` | Slice06 | Architecture, dependency, source-quality, source-class, generated-code, and third-party boundary documentation. |
+| `docs/index.md` | Slice07 README entrypoint refresh or Slice08 synthesis if anchors settle later | Public docs landing page with links to tutorial, reference, migration, managed-process, and architecture pages. |
+| `docs/tutorial/htn-hddl-onboarding.md` | Slice02 | Beginner tutorial for HTN, PDDL, HDDL, pipeline concepts, artifacts, solved/no-plan language, and `fixtures/minimal`. |
+| `docs/tutorial/first-project-workflow.md` | Slice03 | Runnable CLI tutorial using checked-in fixtures and canonical `pandapi-*` commands. |
+| `docs/managed-process.md` | Slice04 | Supervised integration guide for stdout, stderr, `--supervised`, `--status`, `PANDAPI_STATUS`, exit/status taxonomy, color/TTY, and negative outcomes. |
+| `docs/reference/cli.md` | Slice05 | Command reference for `pandapi-parser`, `pandapi-grounder`, `pandapi-engine`, common options, statuses, and supported surfaces. |
+| `docs/migration.md` | Slice05 | 0.2.0 -> 0.3.0 behavior-change table and migration guidance. |
+| `docs/architecture.md` | Slice06 | Architecture, dependency, source-quality, source-class, generated-code, and third-party boundary documentation. |
 | `README.md` | Slice07 | Short public entry point into the docs suite after stable anchors exist. |
 
 ## Evidence Inputs

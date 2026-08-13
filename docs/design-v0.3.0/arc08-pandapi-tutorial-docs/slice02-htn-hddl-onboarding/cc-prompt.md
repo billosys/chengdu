@@ -22,7 +22,7 @@ softening it.
 
 Write the beginner concept chapter:
 
-- `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md`
+- `docs/tutorial/htn-hddl-onboarding.md`
 
 This page is for a reader who may not know HTN planning, PDDL/HDDL, or
 pandaPI. Teach the concepts before the full command workflow. Use

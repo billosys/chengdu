@@ -15,7 +15,7 @@ or wolong surfaces.
 |-----|--------|----------|
 | F-1 | done | `documentation-blueprint.md` exists and states the pandaPI 0.3.0 tutorial documentation suite goal in reader journey terms. |
 | F-2 | done | The blueprint defines beginner HTN/PDDL/HDDL, CLI workflow, managed-process/supervised, and maintainer/release architecture journeys. |
-| F-3 | done | The blueprint selects `docs/pandapi-0.3.0/` as the public docs home and maps index, tutorial, reference, migration, managed-process, architecture, and README surfaces. |
+| F-3 | done | The blueprint selects `docs/` as the public docs home and maps index, tutorial, reference, migration, managed-process, architecture, and README surfaces. |
 | F-4 | done | The blueprint inventories Arc03, Arc05, Arc06, Arc07, README, fixtures, Make, `make test`, `make smoke`, source-quality, and managed-process contract inputs. |
 | F-5 | done | The blueprint selects `fixtures/minimal`, `fixtures/unsolvable`, `broken-syntax`, and `broken-reference`, and routes example gap decisions to later slice work. |
 | F-6 | done | The blueprint records the 0.3.0 command-name policy: examples use `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`; `pandaPI*` appears only as historical migration context and not compatibility. |
@@ -34,7 +34,7 @@ Commands run:
 ```sh
 test -f docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md && rg -n -- "pandaPI 0\\.3\\.0|tutorial|documentation suite|reader|journey" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md
 rg -n -- "beginner|HTN|PDDL|HDDL|CLI|managed-process|supervised|maintainer|release|architecture" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md
-rg -n -- "docs/pandapi-0\\.3\\.0|public docs home|file map|page map|README|index|tutorial|reference|migration|architecture" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md
+rg -n -- "docs/|docs/tutorial|public docs home|file map|page map|README|index|tutorial|reference|migration|architecture" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md
 rg -n -- "Arc03|Arc05|Arc06|Arc07|README|fixtures|Make|make test|make smoke|source-quality|managed-process contract" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md
 rg -n -- "fixtures/minimal|fixtures/unsolvable|broken-syntax|broken-reference|example gap|later slice|beginner example|intermediate example" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md
 rg -n -- "pandapi-parser|pandapi-grounder|pandapi-engine|pandaPI\\*|historical|migration context|not.*compatibility|0\\.2\\.0|0\\.3\\.0" docs/design-v0.3.0/arc08-pandapi-tutorial-docs/documentation-blueprint.md
@@ -60,5 +60,5 @@ decisions.
 No slice breakdown change is recommended. The only downstream refinements are:
 Slice02 and Slice03 should explicitly decide whether the existing fixture set
 is enough before adding examples, and Slice05 should place the 0.2.0 -> 0.3.0
-behavior-change table in `docs/pandapi-0.3.0/migration.md` for Arc09 release
+behavior-change table in `docs/migration.md` for Arc09 release
 and wolong handoff use.

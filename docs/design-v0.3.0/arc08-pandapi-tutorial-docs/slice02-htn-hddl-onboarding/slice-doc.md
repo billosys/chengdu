@@ -7,7 +7,7 @@ Opened: 2026-08-13
 
 Write the beginner concept chapter for the pandaPI 0.3.0 documentation suite:
 
-- `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md`
+- `docs/tutorial/htn-hddl-onboarding.md`
 
 The page should help a reader who is new to HTN planning, PDDL/HDDL, or
 pandaPI understand the shape of the problem before the workflow tutorial asks
@@ -19,7 +19,7 @@ surface to make the parser/artifact relationship concrete.
 
 ## In Scope
 
-- Create `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md`.
+- Create `docs/tutorial/htn-hddl-onboarding.md`.
 - Explain HTN planning in plain language:
   - tasks describe what needs to be achieved;
   - methods decompose compound tasks into smaller work;
@@ -54,7 +54,7 @@ surface to make the parser/artifact relationship concrete.
 ## Out Of Scope
 
 - Do not write the full CLI workflow page; Slice03 owns
-  `docs/pandapi-0.3.0/tutorial/first-project-workflow.md`.
+  `docs/tutorial/first-project-workflow.md`.
 - Do not write the managed-process guide, CLI reference, migration page,
   architecture/source-quality docs, README refresh, release notes, or docs
   synthesis.
@@ -92,7 +92,7 @@ closing report must state which constituent checks were run and why aggregate
 
 ## Exit Criteria
 
-- `docs/pandapi-0.3.0/tutorial/htn-hddl-onboarding.md` exists.
+- `docs/tutorial/htn-hddl-onboarding.md` exists.
 - The page explains HTN tasks, methods, actions, HDDL/PDDL domain/problem
   roles, and the pandaPI three-stage artifact pipeline.
 - The page uses the checked-in `fixtures/minimal` files as the beginner

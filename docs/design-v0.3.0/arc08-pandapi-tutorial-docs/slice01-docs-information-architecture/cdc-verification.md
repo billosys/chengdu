@@ -51,10 +51,11 @@ checks rather than behavior, build, release, or provenance gates.
 
 ## Findings
 
-The blueprint is accepted as the Arc08 documentation architecture. It selects
-`docs/pandapi-0.3.0/` as the public documentation home, keeps design evidence
-under `docs/design-v0.3.0/arc08-pandapi-tutorial-docs/`, and correctly routes
-README and release-publication work to later slices and Arc09.
+The blueprint is accepted as the Arc08 documentation architecture after the
+2026-08-13 operator path correction. It selects `docs/` as the public
+documentation home, routes tutorial pages under `docs/tutorial/`, keeps design
+evidence under `docs/design-v0.3.0/arc08-pandapi-tutorial-docs/`, and
+correctly routes README and release-publication work to later slices and Arc09.
 
 The command-name policy is correct for 0.3.0: public examples use
 `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine`; inherited
@@ -67,7 +68,7 @@ accepted:
 - Slice02 and Slice03 should explicitly decide whether existing fixtures are
   enough before adding new tutorial examples.
 - Slice05 should place the 0.2.0 -> 0.3.0 behavior-change table in
-  `docs/pandapi-0.3.0/migration.md` for Arc09 release and wolong handoff use.
+  `docs/migration.md` for Arc09 release and wolong handoff use.
 
 ## Bubble-up to Arc08
 
