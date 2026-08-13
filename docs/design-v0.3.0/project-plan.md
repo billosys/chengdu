@@ -439,8 +439,7 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice02 htn-hddl-onboarding closed and CDC-verified.**
-  Detailed plan:
+- **arc08 - active; Slice03 first-project-workflow open.** Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md),
@@ -456,6 +455,10 @@ handoff.
   [`../tutorial/htn-hddl-onboarding.md`](../tutorial/htn-hddl-onboarding.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cdc-verification.md).
+  Slice03 first-project-workflow is open:
+  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md),
+  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md),
+  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, `pandapi-*` CLI guidance, README updates,
@@ -603,6 +606,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.80 - 2026-08-13.** Opened Arc08 Slice03 first-project-workflow.
+  Surfaced by: Slice02 CDC verification and operator docs-home correction.
+  Why: the beginner tutorial now lives in `docs/tutorial/`, so the workflow
+  tutorial can open at `docs/tutorial/first-project-workflow.md` and verify
+  the parse -> ground -> solve path while keeping managed-process, CLI
+  reference, README, and release-publication work in later slices.
 - **v1.79 - 2026-08-13.** Corrected the Arc08 public docs home and marked
   Slice02 htn-hddl-onboarding closed and CDC-verified. Surfaced by: operator
   correction plus Slice02 CDC verification. Why: actual project docs belong

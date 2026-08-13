@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice02 htn-hddl-onboarding closed and CDC-verified; Slice03 next
+Status: active; Slice03 first-project-workflow open
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -111,6 +111,13 @@ Leaves for Arc09:
   HTN/PDDL/HDDL concepts through `fixtures/minimal`, verifies the first parser
   command, and resolves that the minimal fixture is enough before Slice03
   writes the full workflow.
+- **slice03 first-project-workflow - open.** Slice set:
+  [`slice03-first-project-workflow/slice-doc.md`](slice03-first-project-workflow/slice-doc.md),
+  [`slice03-first-project-workflow/ledger.md`](slice03-first-project-workflow/ledger.md),
+  [`slice03-first-project-workflow/cc-prompt.md`](slice03-first-project-workflow/cc-prompt.md).
+  This slice writes `docs/tutorial/first-project-workflow.md`, verifies the
+  parse -> ground -> solve workflow with `fixtures/minimal`, compares it with
+  `fixtures/unsolvable`, and keeps managed-process details for Slice04.
 
 ## 6. Planned Documentation Surface
 
@@ -164,6 +171,12 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.6 - 2026-08-13.** Opened Slice03 first-project-workflow. Surfaced by:
+  Slice02 CDC verification and operator docs-home correction. Why: the
+  beginner concept page is now in `docs/tutorial/`, so the next page should
+  use `docs/tutorial/first-project-workflow.md` and verify the full
+  parse -> ground -> solve workflow without pulling managed-process or README
+  scope forward.
 - **v1.5 - 2026-08-13.** Corrected the public docs home and marked Slice02
   htn-hddl-onboarding closed and CDC-verified. Surfaced by: operator
   correction plus Slice02 CDC verification. Why: public project docs belong
