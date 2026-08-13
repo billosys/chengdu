@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice01 CC proposed done, awaiting CDC verification
+Status: active; Slice01 closed and CDC-verified; Slice02 next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -88,13 +88,14 @@ Leaves for Arc09:
 
 ## 5. Current Status
 
-- **slice01 docs-information-architecture - CC proposed done, awaiting CDC
-  verification.** Slice set:
+- **slice01 docs-information-architecture - closed and CDC-verified.** Slice
+  set:
   [`slice01-docs-information-architecture/slice-doc.md`](slice01-docs-information-architecture/slice-doc.md),
   [`slice01-docs-information-architecture/ledger.md`](slice01-docs-information-architecture/ledger.md),
   [`slice01-docs-information-architecture/cc-prompt.md`](slice01-docs-information-architecture/cc-prompt.md),
   [`documentation-blueprint.md`](documentation-blueprint.md),
-  [`slice01-docs-information-architecture/closing-report.md`](slice01-docs-information-architecture/closing-report.md).
+  [`slice01-docs-information-architecture/closing-report.md`](slice01-docs-information-architecture/closing-report.md),
+  [`slice01-docs-information-architecture/cdc-verification.md`](slice01-docs-information-architecture/cdc-verification.md).
   The blueprint confirmed `docs/pandapi-0.3.0/` as the public docs home and
   recommended no structural slice breakdown change.
 
@@ -132,13 +133,12 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 8. Open Questions And Risks
 
-- **OQ1 - docs home.** Slice01 should confirm whether `docs/pandapi-0.3.0/`
-  is the right public docs home before later slices write into it. The current
-  proposal keeps public docs outside the design-planning tree while preserving
-  design evidence under this arc.
-- **OQ2 - example depth.** Existing fixtures are minimal and contract-focused.
-  Slice01 should decide which examples are enough for beginner and
-  intermediate docs, and which need new checked-in fixtures.
+- **OQ1 - docs home resolved.** Slice01 accepted `docs/pandapi-0.3.0/`
+  as the public docs home. Public docs stay outside the design-planning tree,
+  while design evidence remains under this arc.
+- **OQ2 - example depth routed.** Existing fixtures are minimal and
+  contract-focused. Slice02 and Slice03 must explicitly decide whether those
+  fixtures are enough before adding new checked-in examples.
 - **OQ3 - stale compatibility wording.** Earlier Arc03 documents still contain
   pre-override compatibility language. Arc08 public docs must follow the later
   project-plan/operator decision: 0.3.0 is a breaking interface release with
@@ -151,6 +151,11 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.2 - 2026-08-13.** Marked Slice01 docs-information-architecture closed
+  and CDC-verified. Surfaced by: Slice01 CDC verification. Why: CDC reproduced
+  the F-1 through F-13 ledger evidence, accepted `docs/pandapi-0.3.0/` as the
+  public docs home, accepted the no-breakdown-change recommendation, and routed
+  fixture adequacy plus migration-table details to later slices.
 - **v1.1 - 2026-08-13.** Marked Slice01 docs-information-architecture CC
   proposed done. Surfaced by: `documentation-blueprint.md` and Slice01 closing
   report. Why: the public docs home, audience journeys, page map, example

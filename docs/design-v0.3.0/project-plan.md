@@ -439,14 +439,15 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice01 CC proposed done, awaiting CDC verification.** Detailed plan:
+- **arc08 - active; Slice01 closed and CDC-verified.** Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
-  Slice01 docs-information-architecture has CC close evidence:
+  Slice01 docs-information-architecture is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/ledger.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/ledger.md),
   [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cc-prompt.md),
   [`arc08-pandapi-tutorial-docs/documentation-blueprint.md`](arc08-pandapi-tutorial-docs/documentation-blueprint.md),
-  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md).
+  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/closing-report.md),
+  [`arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice01-docs-information-architecture/cdc-verification.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, `pandapi-*` CLI guidance, README updates,
@@ -594,6 +595,12 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.76 - 2026-08-13.** Marked Arc08 Slice01
+  docs-information-architecture closed and CDC-verified. Surfaced by: Slice01
+  CDC verification. Why: CDC reproduced the docs-planning ledger checks,
+  accepted `docs/pandapi-0.3.0/` as the public docs home, confirmed the
+  docs-only protected boundary, and left Arc08 active with Slice02
+  `htn-hddl-onboarding` next.
 - **v1.75 - 2026-08-13.** Marked Arc08 Slice01
   docs-information-architecture CC proposed done, awaiting CDC verification.
   Surfaced by: `arc08-pandapi-tutorial-docs/documentation-blueprint.md` and
