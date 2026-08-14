@@ -440,11 +440,8 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice05 real-world-htn-modelling-tutorial implementation
-  proposed done, awaiting CDC verification; Slice06 hddl-authoring-tutorial
-  planned next; Slice04 managed-process-workflow CC proposed done, awaiting
-  CDC verification; Slice03 first-project-workflow CC proposed done, awaiting
-  CDC verification.**
+- **arc08 - active; Slice06 hddl-authoring-tutorial planned next; Slices03-05
+  closed and CDC-verified.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -461,25 +458,27 @@ handoff.
   [`../tutorial/01-htn-hddl-onboarding.md`](../tutorial/01-htn-hddl-onboarding.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/closing-report.md),
   [`arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice02-htn-hddl-onboarding/cdc-verification.md).
-  Slice03 first-project-workflow has CC close evidence:
+  Slice03 first-project-workflow is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/ledger.md),
   [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cc-prompt.md),
   [`../tutorial/02-first-project-workflow.md`](../tutorial/02-first-project-workflow.md),
-  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md).
-  Slice04 managed-process-workflow has CC close evidence:
+  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/closing-report.md),
+  [`arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice03-first-project-workflow/cdc-verification.md).
+  Slice04 managed-process-workflow is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/slice-doc.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/ledger.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/ledger.md),
   [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cc-prompt.md),
   [`../managed-process.md`](../managed-process.md),
-  [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md).
-  Slice05 real-world-htn-modelling-tutorial has implementation close
-  evidence:
+  [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/closing-report.md),
+  [`arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice04-managed-process-workflow/cdc-verification.md).
+  Slice05 real-world-htn-modelling-tutorial is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/slice-doc.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/ledger.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/ledger.md),
   [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cc-prompt.md),
   [`../tutorial/03-model-a-feature-as-htn.md`](../tutorial/03-model-a-feature-as-htn.md),
-  [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md).
+  [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md),
+  [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cdc-verification.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, real-world HTN modelling guidance, HDDL authoring
@@ -628,6 +627,14 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.86 - 2026-08-13.** Marked Arc08 Slices03-05 closed and
+  CDC-verified, leaving Slice06 hddl-authoring-tutorial planned next.
+  Surfaced by: CDC verification files for Slice03 first-project-workflow,
+  Slice04 managed-process-workflow, and Slice05 real-world-htn-modelling
+  tutorial. Why: CDC reproduced the runnable workflow, smoke, pipeline,
+  managed-process, and conceptual modelling ledger gates, moving the tutorial
+  suite through the first workflow, supervised integration guide, and
+  pre-HDDL modelling bridge.
 - **v1.85 - 2026-08-13.** Marked Arc08 Slice05
   real-world-htn-modelling-tutorial implementation proposed done, awaiting
   CDC verification, and made Slice06 hddl-authoring-tutorial the planned next

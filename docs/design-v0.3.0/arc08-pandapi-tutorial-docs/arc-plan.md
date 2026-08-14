@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice05 real-world-htn-modelling-tutorial implementation proposed done, awaiting CDC verification; Slice06 hddl-authoring-tutorial planned next; Slice04 managed-process-workflow CC proposed done, awaiting CDC verification; Slice03 first-project-workflow CC proposed done, awaiting CDC verification
+Status: active; Slice06 hddl-authoring-tutorial planned next; Slices03-05 closed and CDC-verified
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -113,37 +113,38 @@ Leaves for Arc09:
   HTN/PDDL/HDDL concepts through `fixtures/minimal`, verifies the first parser
   command, and resolves that the minimal fixture is enough before Slice03
   writes the full workflow.
-- **slice03 first-project-workflow - CC proposed done, awaiting CDC
-  verification.** Slice set:
+- **slice03 first-project-workflow - closed and CDC-verified.** Slice set:
   [`slice03-first-project-workflow/slice-doc.md`](slice03-first-project-workflow/slice-doc.md),
   [`slice03-first-project-workflow/ledger.md`](slice03-first-project-workflow/ledger.md),
   [`slice03-first-project-workflow/cc-prompt.md`](slice03-first-project-workflow/cc-prompt.md),
   [`../../tutorial/02-first-project-workflow.md`](../../tutorial/02-first-project-workflow.md),
-  [`slice03-first-project-workflow/closing-report.md`](slice03-first-project-workflow/closing-report.md).
+  [`slice03-first-project-workflow/closing-report.md`](slice03-first-project-workflow/closing-report.md),
+  [`slice03-first-project-workflow/cdc-verification.md`](slice03-first-project-workflow/cdc-verification.md).
   This slice writes `docs/tutorial/02-first-project-workflow.md`, verifies the
   parse -> ground -> solve workflow with `fixtures/minimal`, compares it with
   `fixtures/unsolvable`, resolves that no intermediate fixture beyond
   `fixtures/unsolvable` is needed, and keeps managed-process details for
   Slice04.
-- **slice04 managed-process-workflow - CC proposed done, awaiting CDC
-  verification.** Slice set:
+- **slice04 managed-process-workflow - closed and CDC-verified.** Slice set:
   [`slice04-managed-process-workflow/slice-doc.md`](slice04-managed-process-workflow/slice-doc.md),
   [`slice04-managed-process-workflow/ledger.md`](slice04-managed-process-workflow/ledger.md),
   [`slice04-managed-process-workflow/cc-prompt.md`](slice04-managed-process-workflow/cc-prompt.md),
   [`../managed-process.md`](../managed-process.md),
-  [`slice04-managed-process-workflow/closing-report.md`](slice04-managed-process-workflow/closing-report.md).
+  [`slice04-managed-process-workflow/closing-report.md`](slice04-managed-process-workflow/closing-report.md),
+  [`slice04-managed-process-workflow/cdc-verification.md`](slice04-managed-process-workflow/cdc-verification.md).
   This slice writes `docs/managed-process.md`, teaches supervised/process
   integration with `--supervised`, `--status`, stdout/stderr ownership, final
   `PANDAPI_STATUS`, status/exit classification, ANSI/color behavior, and
   negative outcomes, verifies managed parser, grounder, engine, and pipeline
   contract gates, and keeps CLI reference and migration details for Slice07.
-- **slice05 real-world-htn-modelling-tutorial - implementation proposed done,
-  awaiting CDC verification.** Slice set:
+- **slice05 real-world-htn-modelling-tutorial - closed and CDC-verified.**
+  Slice set:
   [`slice05-real-world-htn-modelling-tutorial/slice-doc.md`](slice05-real-world-htn-modelling-tutorial/slice-doc.md),
   [`slice05-real-world-htn-modelling-tutorial/ledger.md`](slice05-real-world-htn-modelling-tutorial/ledger.md),
   [`slice05-real-world-htn-modelling-tutorial/cc-prompt.md`](slice05-real-world-htn-modelling-tutorial/cc-prompt.md),
   [`../../tutorial/03-model-a-feature-as-htn.md`](../../tutorial/03-model-a-feature-as-htn.md),
-  [`slice05-real-world-htn-modelling-tutorial/closing-report.md`](slice05-real-world-htn-modelling-tutorial/closing-report.md).
+  [`slice05-real-world-htn-modelling-tutorial/closing-report.md`](slice05-real-world-htn-modelling-tutorial/closing-report.md),
+  [`slice05-real-world-htn-modelling-tutorial/cdc-verification.md`](slice05-real-world-htn-modelling-tutorial/cdc-verification.md).
   This slice writes `docs/tutorial/03-model-a-feature-as-htn.md`, teaches how
   to turn a software feature request into an HTN model, covers objects,
   facts, compound tasks, primitive actions, methods, ordering constraints,
@@ -214,6 +215,13 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.12 - 2026-08-13.** Marked Slices03-05 closed and CDC-verified, leaving
+  Slice06 hddl-authoring-tutorial planned next. Surfaced by: CDC
+  verification files for Slice03, Slice04, and Slice05. Why: CDC reproduced
+  the first project workflow, managed-process workflow, and real-world HTN
+  modelling ledger gates, including runnable workflow/smoke/contract evidence
+  for Slice03, supervised managed-process evidence for Slice04, and
+  conceptual/pre-HDDL modelling evidence for Slice05.
 - **v1.11 - 2026-08-13.** Marked Slice05
   real-world-htn-modelling-tutorial implementation proposed done, awaiting
   CDC verification, and routed Slice06 as the next tutorial slice. Surfaced
