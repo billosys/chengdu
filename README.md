@@ -8,18 +8,40 @@
 
 ## Overview
 
-This repo provides provides several things:
+chengdu is the public fork and release home for the pandaPI HTN planning
+toolchain. It keeps the product source in tree under `pandaPI/` and builds the
+three-stage HDDL workflow:
 
-- a monorepo of the three PANDA HTN repos, with community patches applied
-- a CI matrix for Linux and macOS
-- pre-built binaries for Linux and macOS for the three primary PANDA executables
+1. `pandapi-parser` reads HDDL domain/problem files and writes a parser
+   artifact.
+2. `pandapi-grounder` reads the parser artifact and writes a grounded planner
+   artifact.
+3. `pandapi-engine` reads the grounded artifact and writes a plan when search
+   finds one.
 
-## Install from the `chengdu` Release:
+The active source roots are `pandaPI/parser`, `pandaPI/grounder`,
+`pandaPI/engine`, and `pandaPI/runtime`. The runtime provides shared
+managed-process behavior: clear stdout/stderr ownership, final
+`PANDAPI_STATUS` records, color/TTY policy, version/provenance output, and
+consistent local/CI behavior through Make.
 
-No build tools required. Download → checksum-verify → extract → run a
-real `--verify` against the shipped fixtures, in 4 commands. Replace
-`v0.2.0` with the release you want; asset names, `SHA256SUMS`, and this
-command shape are frozen as of v0.1.0 — this is wolong's fetch spec.
+## Documentation
+
+Start here:
+
+- [HTN and HDDL onboarding](docs/tutorial/01-htn-hddl-onboarding.md)
+- [First project workflow](docs/tutorial/02-first-project-workflow.md)
+- [Model a software feature as an HTN](docs/tutorial/03-model-a-feature-as-htn.md)
+- [Write HDDL files for a small HTN project](docs/tutorial/04-write-hddl-files.md)
+- [Managed process integration](docs/managed-process.md)
+- [CLI command reference](docs/reference/cli.md)
+- [Migration from 0.2.0 to 0.3.0](docs/migration.md)
+- [Architecture and source quality](docs/architecture.md)
+
+## Published Release Install
+
+The currently published install example is v0.2.0. These assets use the
+published v0.2.0 release shape and checksum flow.
 
 **Linux (x86_64):**
 
@@ -41,18 +63,18 @@ shasum -a 256 -c SHA256SUMS --ignore-missing
 tar xzf pandapi-v0.2.0-macos-arm64.tar.gz
 ```
 
-The extracted release contains the planner executables, fixtures,
-`provenance.txt`, and release license files. See `THIRD-PARTY-LICENSES`
-(downloadable from the same release) for licensing, and
-`docs/license-audit-v0.2.0.md` for the current audit behind it. The 0.3.0
-source-build surface below uses the canonical `pandapi-*` command names and
-managed-process contract.
+The extracted release contains planner executables, fixtures,
+`provenance.txt`, and release license files. See
+[`THIRD-PARTY-LICENSES`](https://github.com/billosys/chengdu/releases/download/v0.2.0/THIRD-PARTY-LICENSES).
 
+The 0.3.0 release assets are not published yet. 0.3.0 checksums, manifest,
+license/NOTICE bundles, and wolong fetch/install proof remain release
+preparation work until the release. When released, 0.3.0 install instructions
+should be verified against the published assets.
 
-## Build from Source
+## Build From Source
 
-If you don't want to use the pre-built binaries, you can build from scratch on
-Linux or macOS by following the instructions in this section.
+Use this path for the current 0.3.0 source tree.
 
 ### Prerequisites
 
@@ -68,31 +90,55 @@ sudo apt-get install -y g++ make cmake flex bison gengetopt zip git
 brew install gcc make cmake flex bison gengetopt zip
 ```
 
-### Build + smoke test
+### Build and Smoke Test
 
 ```bash
 make readme-verbatim
 ```
 
 On success, `./bin/` contains `pandapi-parser`, `pandapi-grounder`, and
-`pandapi-engine` for local use. Build provenance is recorded for CI and release
-packaging.
+`pandapi-engine`.
 
-Negative-gate check (missing file, broken syntax, broken reference,
-provably-unsolvable — each a distinct outcome, none collapsed into a
-generic failure):
+Run the local pipeline:
 
 ```bash
+tmp="$(mktemp -d)"
+
+./bin/pandapi-parser \
+  --status=stderr \
+  --output "$tmp/minimal.htn" \
+  fixtures/minimal/domain.hddl \
+  fixtures/minimal/problem.hddl
+
+./bin/pandapi-grounder \
+  --status=stderr \
+  --output "$tmp/minimal.sas" \
+  "$tmp/minimal.htn"
+
+./bin/pandapi-engine \
+  --status=stderr \
+  --output "$tmp/minimal.plan" \
+  "$tmp/minimal.sas"
+
+cat "$tmp/minimal.plan"
+```
+
+Run positive and negative smoke gates:
+
+```bash
+make smoke
 make smoke-negative
 ```
 
-Full local test suite:
+Run the full local test suite:
 
 ```bash
 make test
 ```
 
-Core developer strict mode:
+Strict developer mode persists an ignored local Make config under
+`build/make/` and enables stricter local gates when developer-only
+dependencies such as Catch2 are installed:
 
 ```bash
 make enable-dev-strict
@@ -100,88 +146,24 @@ make dev-strict-status
 make test
 ```
 
-Strict mode persists an ignored local Make config under `build/make/` and
-requires test-only developer dependencies such as Catch2. Standard source
-builds and release users do not need those test-only dependencies.
+Standard source builds and release users do not need those test-only
+dependencies. Run `make help` for the current build, test, quality, CI, and
+release-preparation entrypoints.
 
-### Notes
+## Maintaining chengdu
 
-- Source builds use the in-tree `pandaPI/` source and do not clone planner
-  source.
-- The macOS grounder compiler defaults to clang (`GROUNDER_CC=cc
-  GROUNDER_CXX=c++`); override via those two env vars if you need brew gcc.
-- `make help` lists the local build, quality, and CI-equivalent entrypoints.
-- `make test-corpus CORPUS_DIR=DIR` additionally runs the IPC 2023 Transport
-  `pfile01` domain through the full chain, given an `ipc2023-domains`
-  checkout at `DIR`. Optional — not part of the required gate.
-- Vendored source identity is recorded in `vendor.env`: the current build
-  source is the chengdu commit, and upstream SHAs are import identities.
-  `pins.env` remains historical 0.1.0/import-point evidence only.
+Make is the local and CI entrypoint. CI runs Make-backed build, test, smoke,
+format, safety, actionlint, provenance, and README-verbatim gates on Linux and
+macOS. Release workflows reuse the same Make-backed build matrix before any
+publication step.
 
-## Maintaining `chengdu`
-
-### Continuous integration
-
-`.github/workflows/build.yml` runs on every push, PR, and manual dispatch,
-across the full support matrix:
-
-- **`build` (Linux)** — matrixed over `ubuntu-22.04` (canonical — what
-  the release workflow packages) and `ubuntu-24.04` (forward-compat
-  check only).
-- **`build (macos-15)`** — the macOS arm64 leg, pinned to `macos-15`
-  (the oldest currently-maintained GA arm64 GitHub-hosted image;
-  `macos-14` is deprecated, `macos-latest`/`macos-26` is the newest —
-  `macos-15` is this project's macOS build/compat floor, chosen the same
-  way `ubuntu-22.04` was for Linux).
-- **`cross-compat` / `cross-compat-macos`** — the canonical-runner
-  artifact (`ubuntu-22.04` / `macos-15`) proven to also run `--help`
-  cleanly on the newest maintained runner of its platform
-  (`ubuntu-24.04` / `macos-26`), on a real GitHub-hosted runner rather
-  than an emulated one.
-
-Every build leg runs the same top-level Makefile entrypoints used locally:
-Linux runs `make ci-linux`; macOS runs `make ci-macos`. Those targets run
-format checks, build, run `make test`, validate provenance, and upload the
-platform build output, including `provenance.txt`, as a workflow artifact per
-runner. `make test` covers the runtime CTest suite, baseline
-contract fixtures, and positive and negative smoke tests. `make
-provenance-check` fails the run if any
-component's `chengdu_commit`, `source_prefix`, import identity,
-`patches=none`, or compiler field does not match `vendor.env` and Git
-state — the provenance file is no longer just attested, it's
-CI-enforced. Two `readme-verbatim*` jobs
-(`ubuntu-22.04` and `macos-15`) run this file's own prerequisite line and
-documented Makefile target, unmodified, on a clean runner per platform — if
-this README and the workflow drift, those jobs go red. `actionlint` gates the
-workflow file itself.
-
-Brew-installed dependency versions (bison, flex, etc.) float with the
-Homebrew formulae rather than being pinned — an accepted risk at 0.1.0;
-the smoke gate is what catches any resulting breakage.
-
-Both `build.yml` and `.github/workflows/release.yml` call the same
-reusable workflow (`build-reusable.yml`) for this matrix — no build
-logic is duplicated between "every push" and "on a release tag."
-
-### Releases
-
-`.github/workflows/release.yml` triggers on pushing a tag matching
-`v*`. It runs the identical build+gate matrix described above; only if
-every leg is green does it package per-platform tarballs (binaries +
-`provenance.txt` + `fixtures/`), `SHA256SUMS`, `release-manifest.txt`
-(the aggregated provenance manifest), and `THIRD-PARTY-LICENSES`, then
-publish a GitHub Release — a red build has no path to a published release, by
-construction (the publish job depends on the whole matrix succeeding).
-Publishing is direct (the gates are the approval); switching to a
-draft-then-promote model is a one-line change in
-the `make publish-release` target. Re-running a tag's workflow after its
-release already exists fails loudly rather than overwriting anything —
-see the workflow file's header for the exact contract. Every release's
-licensing is backed by an evidence-based linkage audit:
-[`docs/license-audit-v0.2.0.md`](docs/license-audit-v0.2.0.md).
+For architecture, dependency, source-quality, generated-code, and
+third-party-boundary details, see
+[Architecture and source quality](docs/architecture.md). For command-name and
+behavior changes between 0.2.0 and 0.3.0, see
+[Migration from 0.2.0 to 0.3.0](docs/migration.md).
 
 [//]: ---Named-Links---
 
 [logo]: assets/images/anshun-bridge-y250.png
 [logo-large]: assets/images/anshun-bridge.png
-[panda]: https://panda-planner-dev.github.io/

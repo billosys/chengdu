@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice09 readme-entrypoint-refresh open; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice10 docs-synthesis next
+Status: active; Slice09 readme-entrypoint-refresh implementation proposed done; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice10 docs-synthesis next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -194,16 +194,20 @@ Leaves for Arc09:
   budgets, and release-preparation handoffs. CDC reproduced the static public
   docs checks, current Make target checks, source-quality evidence anchors,
   safety checks, actionlint, protected-boundary checks, and whitespace checks.
-- **slice09 readme-entrypoint-refresh - open.** Slice set:
+- **slice09 readme-entrypoint-refresh - implementation proposed done.** Slice
+  set:
   [`slice09-readme-entrypoint-refresh/slice-doc.md`](slice09-readme-entrypoint-refresh/slice-doc.md),
   [`slice09-readme-entrypoint-refresh/ledger.md`](slice09-readme-entrypoint-refresh/ledger.md),
-  [`slice09-readme-entrypoint-refresh/cc-prompt.md`](slice09-readme-entrypoint-refresh/cc-prompt.md).
+  [`slice09-readme-entrypoint-refresh/cc-prompt.md`](slice09-readme-entrypoint-refresh/cc-prompt.md),
+  [`../../../README.md`](../../../README.md),
+  [`slice09-readme-entrypoint-refresh/closing-report.md`](slice09-readme-entrypoint-refresh/closing-report.md).
   This slice refreshes `README.md` as the public entry point into the
   now-stable tutorial, managed-process, CLI reference, migration, and
   architecture docs; preserves `make readme-verbatim`; keeps source builds
-  centered on `./bin/pandapi-*`; decides whether `docs/index.md` is needed;
-  and leaves release asset, checksum, manifest, wolong, and publication proof
-  for Arc09. Slice10 docs-synthesis remains next.
+  centered on `./bin/pandapi-*`; defers `docs/index.md` because the README
+  remains concise while linking the public docs suite directly; and leaves
+  release asset, checksum, manifest, wolong, and publication proof for Arc09.
+  Slice10 docs-synthesis remains next.
 
 ## 6. Planned Documentation Surface
 
@@ -263,6 +267,17 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.22 - 2026-08-14.** Marked Slice09
+  readme-entrypoint-refresh implementation proposed done and kept Slice10
+  docs-synthesis next. Surfaced by: `README.md`,
+  `slice09-readme-entrypoint-refresh/ledger.md`, and
+  `slice09-readme-entrypoint-refresh/closing-report.md`. Why: the README now
+  gives a concise public overview, links the tutorial/docs suite, preserves
+  the Make-backed source-build and smoke path, distinguishes published v0.2.0
+  install examples from 0.3.0 release-preparation proof, and defers
+  `docs/index.md` until Slice10 composition review if a separate docs landing
+  page is still needed.
 
 - **v1.21 - 2026-08-14.** Opened Slice09
   readme-entrypoint-refresh, preserving Slices06-08 as closed and
