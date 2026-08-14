@@ -440,9 +440,8 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice06 hddl-authoring-tutorial implementation proposed
-  done, awaiting CDC verification; Slice07 cli-reference-and-migration planned
-  next.**
+- **arc08 - active; Slice07 cli-reference-and-migration open; Slice06
+  hddl-authoring-tutorial awaiting CDC verification.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -486,6 +485,10 @@ handoff.
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md),
   [`../tutorial/04-write-hddl-files.md`](../tutorial/04-write-hddl-files.md),
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md).
+  Slice07 cli-reference-and-migration is open:
+  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/slice-doc.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/slice-doc.md),
+  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/ledger.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/ledger.md),
+  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cc-prompt.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, real-world HTN modelling guidance, HDDL authoring
@@ -634,6 +637,13 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.88 - 2026-08-14.** Opened Arc08 Slice07
+  cli-reference-and-migration. Surfaced by: Slice06 implementation close and
+  operator approval of the Slice07 framing. Why: the docs suite is ready for
+  public command-reference and migration anchors after the tutorial path now
+  reaches concrete HDDL authoring, and Slice07 must encode the later 0.3.0
+  no-compatibility command-name policy before README and release-preparation
+  wording consume those anchors.
 - **v1.87 - 2026-08-14.** Marked Arc08 Slice06
   hddl-authoring-tutorial implementation proposed done, awaiting CDC
   verification, and kept Arc08 Slice07 cli-reference-and-migration as the next

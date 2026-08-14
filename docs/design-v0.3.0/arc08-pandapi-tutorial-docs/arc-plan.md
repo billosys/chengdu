@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice06 hddl-authoring-tutorial implementation proposed done, awaiting CDC verification; Slice07 cli-reference-and-migration planned next
+Status: active; Slice07 cli-reference-and-migration open; Slice06 hddl-authoring-tutorial awaiting CDC verification
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -163,10 +163,14 @@ Leaves for Arc09:
   explains valid no-plan versus invalid-input authoring mistakes, and records
   that no checked-in fixture is needed because the tutorial creates temporary
   files from the repository root.
-- **slice07 cli-reference-and-migration - planned next.** This slice will
-  write the command reference and 0.2.0 -> 0.3.0 migration docs for canonical
-  `pandapi-*` names, common options, statuses, unsupported/legacy/future
-  surfaces, and behavior changes.
+- **slice07 cli-reference-and-migration - open.** Slice set:
+  [`slice07-cli-reference-and-migration/slice-doc.md`](slice07-cli-reference-and-migration/slice-doc.md),
+  [`slice07-cli-reference-and-migration/ledger.md`](slice07-cli-reference-and-migration/ledger.md),
+  [`slice07-cli-reference-and-migration/cc-prompt.md`](slice07-cli-reference-and-migration/cc-prompt.md).
+  This slice will write `docs/reference/cli.md` and `docs/migration.md` for
+  canonical `pandapi-*` names, common options, statuses, unsupported/legacy/
+  experimental/future surfaces, behavior changes, and the 0.2.0 -> 0.3.0
+  no-compatibility command-name migration.
 
 ## 6. Planned Documentation Surface
 
@@ -227,6 +231,13 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.14 - 2026-08-14.** Opened Slice07 cli-reference-and-migration.
+  Surfaced by: Slice06 implementation close and operator approval of the
+  CLI-reference/migration slice framing. Why: the tutorial path now reaches
+  concrete HDDL authoring, so Arc08 can add stable public reference and
+  migration anchors before README, architecture/source-quality docs, and docs
+  synthesis. This update also records the later no-compatibility command-name
+  policy as load-bearing for Slice07 public migration wording.
 - **v1.13 - 2026-08-14.** Marked Slice06 hddl-authoring-tutorial
   implementation proposed done, awaiting CDC verification, and preserved
   Slice07 cli-reference-and-migration as the planned next slice. Surfaced by:
