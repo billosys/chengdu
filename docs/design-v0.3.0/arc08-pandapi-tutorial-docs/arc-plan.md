@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice06 hddl-authoring-tutorial planned next; Slices03-05 closed and CDC-verified
+Status: active; Slice06 hddl-authoring-tutorial implementation proposed done, awaiting CDC verification; Slice07 cli-reference-and-migration planned next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -150,11 +150,23 @@ Leaves for Arc09:
   facts, compound tasks, primitive actions, methods, ordering constraints,
   solved/no-plan boundaries, and records that no checked-in fixture is needed
   before Slice06 writes runnable HDDL.
-- **slice06 hddl-authoring-tutorial - planned next.** This slice will write
-  `docs/tutorial/04-write-hddl-files.md`. It turns the Slice05 model into
-  concrete HDDL domain/problem files, verifies them through the
-  parse -> ground -> solve workflow, and teaches common authoring mistakes
-  without duplicating the later CLI reference.
+- **slice06 hddl-authoring-tutorial - implementation proposed done, awaiting
+  CDC verification.** Slice set:
+  [`slice06-hddl-authoring-tutorial/slice-doc.md`](slice06-hddl-authoring-tutorial/slice-doc.md),
+  [`slice06-hddl-authoring-tutorial/ledger.md`](slice06-hddl-authoring-tutorial/ledger.md),
+  [`slice06-hddl-authoring-tutorial/cc-prompt.md`](slice06-hddl-authoring-tutorial/cc-prompt.md),
+  [`../../tutorial/04-write-hddl-files.md`](../../tutorial/04-write-hddl-files.md),
+  [`slice06-hddl-authoring-tutorial/closing-report.md`](slice06-hddl-authoring-tutorial/closing-report.md).
+  This slice writes `docs/tutorial/04-write-hddl-files.md`, turns the Slice05
+  feature-shipping model into concrete `domain.hddl` and `problem.hddl`
+  files, verifies the authored files through parse -> ground -> solve,
+  explains valid no-plan versus invalid-input authoring mistakes, and records
+  that no checked-in fixture is needed because the tutorial creates temporary
+  files from the repository root.
+- **slice07 cli-reference-and-migration - planned next.** This slice will
+  write the command reference and 0.2.0 -> 0.3.0 migration docs for canonical
+  `pandapi-*` names, common options, statuses, unsupported/legacy/future
+  surfaces, and behavior changes.
 
 ## 6. Planned Documentation Surface
 
@@ -215,6 +227,15 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.13 - 2026-08-14.** Marked Slice06 hddl-authoring-tutorial
+  implementation proposed done, awaiting CDC verification, and preserved
+  Slice07 cli-reference-and-migration as the planned next slice. Surfaced by:
+  `docs/tutorial/04-write-hddl-files.md`, Slice06 ledger, and Slice06 closing
+  report. Why: the reader journey now has concrete `domain.hddl` and
+  `problem.hddl` authoring from the Slice05 model, verified through parse ->
+  ground -> solve plus no-plan and invalid-input authoring examples, while
+  CLI reference, migration, README, architecture, and release-publication
+  scope remain in later slices/arcs.
 - **v1.12 - 2026-08-13.** Marked Slices03-05 closed and CDC-verified, leaving
   Slice06 hddl-authoring-tutorial planned next. Surfaced by: CDC
   verification files for Slice03, Slice04, and Slice05. Why: CDC reproduced

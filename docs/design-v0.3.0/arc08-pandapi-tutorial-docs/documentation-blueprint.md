@@ -125,6 +125,11 @@ HDDL authoring example:
 - Verify the files with the canonical local pipeline. If the tutorial
   generates files in a temporary workspace rather than committing a fixture,
   the commands must still be runnable from the repository root.
+- Slice06 resolved the fixture decision: no checked-in fixture is needed for
+  the HDDL authoring tutorial. `docs/tutorial/04-write-hddl-files.md` creates
+  temporary `domain.hddl` and `problem.hddl` files from the repository root,
+  verifies parse -> ground -> solve, and includes verified missing-initial-fact
+  no-plan and broken-syntax invalid-input examples.
 
 Managed-process example:
 

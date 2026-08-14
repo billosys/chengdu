@@ -440,8 +440,9 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice06 hddl-authoring-tutorial planned next; Slices03-05
-  closed and CDC-verified.**
+- **arc08 - active; Slice06 hddl-authoring-tutorial implementation proposed
+  done, awaiting CDC verification; Slice07 cli-reference-and-migration planned
+  next.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -479,6 +480,12 @@ handoff.
   [`../tutorial/03-model-a-feature-as-htn.md`](../tutorial/03-model-a-feature-as-htn.md),
   [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md),
   [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cdc-verification.md).
+  Slice06 hddl-authoring-tutorial has implementation close evidence:
+  [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/slice-doc.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/slice-doc.md),
+  [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/ledger.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/ledger.md),
+  [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md),
+  [`../tutorial/04-write-hddl-files.md`](../tutorial/04-write-hddl-files.md),
+  [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md).
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, real-world HTN modelling guidance, HDDL authoring
@@ -627,6 +634,16 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.87 - 2026-08-14.** Marked Arc08 Slice06
+  hddl-authoring-tutorial implementation proposed done, awaiting CDC
+  verification, and kept Arc08 Slice07 cli-reference-and-migration as the next
+  docs slice. Surfaced by: `docs/tutorial/04-write-hddl-files.md`, Slice06
+  ledger, and Slice06 closing report. Why: the tutorial suite now carries the
+  reader from pre-HDDL modelling into concrete `domain.hddl` and
+  `problem.hddl` files, with verified parse -> ground -> solve, no-plan, and
+  invalid-input examples, while CLI reference, migration, README,
+  architecture, docs synthesis, and Arc09 release-publication work remain
+  separately routed.
 - **v1.86 - 2026-08-13.** Marked Arc08 Slices03-05 closed and
   CDC-verified, leaving Slice06 hddl-authoring-tutorial planned next.
   Surfaced by: CDC verification files for Slice03 first-project-workflow,
