@@ -169,9 +169,9 @@ releases:
 | arc08 | `pandapi-tutorial-docs` | Create the pandaPI 0.3.0 tutorial and documentation suite: HTN/PDDL/HDDL onboarding, project workflow examples, `pandapi-*` CLI guidance, README updates, and architecture/dependency docs. | arc05, arc06, arc07 |
 | arc09 | `release-prep-publication` | Verify release assets, checksums, manifest/provenance, dependency licensing/NOTICE, test-only dependency exclusion, wolong fetch/install/migration, source-quality release gates, and publish `v0.3.0`. | arc06, arc07, arc08 |
 
-Detailed planning is closed through Arc08. Arc09 remains roadmap only and is
-next to plan from the verified public tutorial/docs suite and release-prep
-documentation handoff.
+Detailed planning is open through Arc09 Slice01. Later Arc09 slices may be
+amended after the release-readiness inventory maps the current package,
+license, quality-gate, wolong, publication, and release-doc gaps.
 
 ## 5. Current status
 
@@ -543,12 +543,17 @@ documentation handoff.
   guidance, `pandapi-*` CLI guidance, README updates, architecture/dependency
   documentation for the new fork shape, and source-quality policy language
   that reflects Arc07's final classifications.
-- **arc09 - roadmap only.** Arc09 remains downstream of Arc06, Arc07, and
-  Arc08 and owns release preparation and publication: release assets,
-  checksums, manifest/provenance, dependency licensing/NOTICE obligations,
-  test-only dependency exclusion, source-quality release gate verification,
-  wolong fetch/install/migration verification, and the actual `v0.3.0`
-  release.
+- **arc09 - active; Slice01 release-readiness-inventory open.** Detailed
+  plan:
+  [`arc09-release-prep-publication/arc-plan.md`](arc09-release-prep-publication/arc-plan.md).
+  Slice01 release-readiness-inventory is open:
+  [`arc09-release-prep-publication/slice01-release-readiness-inventory/slice-doc.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/slice-doc.md),
+  [`arc09-release-prep-publication/slice01-release-readiness-inventory/ledger.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/ledger.md),
+  [`arc09-release-prep-publication/slice01-release-readiness-inventory/cc-prompt.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/cc-prompt.md).
+  Arc09 owns release preparation and publication: release assets, checksums,
+  manifest/provenance, dependency licensing/NOTICE obligations, test-only
+  dependency exclusion, source-quality release gate verification, wolong
+  fetch/install/migration verification, and the actual `v0.3.0` release.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -684,6 +689,13 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.101 - 2026-08-14.** Opened Arc09
+  `release-prep-publication` with Slice01 release-readiness-inventory.
+  Surfaced by: Arc08 CDC-verified close and project ledger P9. Why: the public
+  docs suite is ready, and `v0.3.0` now needs release-readiness inventory
+  before package, license/NOTICE, quality-gate, wolong, publication, and final
+  release synthesis work begins.
 
 - **v1.100 - 2026-08-14.** Marked Arc08 `pandapi-tutorial-docs` closed and
   CDC-verified, with Slice10 docs-synthesis closed and CDC-verified.
