@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice09 readme-entrypoint-refresh next
+Status: active; Slice09 readme-entrypoint-refresh open; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice10 docs-synthesis next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -194,7 +194,16 @@ Leaves for Arc09:
   budgets, and release-preparation handoffs. CDC reproduced the static public
   docs checks, current Make target checks, source-quality evidence anchors,
   safety checks, actionlint, protected-boundary checks, and whitespace checks.
-  Slice09 readme-entrypoint-refresh remains next.
+- **slice09 readme-entrypoint-refresh - open.** Slice set:
+  [`slice09-readme-entrypoint-refresh/slice-doc.md`](slice09-readme-entrypoint-refresh/slice-doc.md),
+  [`slice09-readme-entrypoint-refresh/ledger.md`](slice09-readme-entrypoint-refresh/ledger.md),
+  [`slice09-readme-entrypoint-refresh/cc-prompt.md`](slice09-readme-entrypoint-refresh/cc-prompt.md).
+  This slice refreshes `README.md` as the public entry point into the
+  now-stable tutorial, managed-process, CLI reference, migration, and
+  architecture docs; preserves `make readme-verbatim`; keeps source builds
+  centered on `./bin/pandapi-*`; decides whether `docs/index.md` is needed;
+  and leaves release asset, checksum, manifest, wolong, and publication proof
+  for Arc09. Slice10 docs-synthesis remains next.
 
 ## 6. Planned Documentation Surface
 
@@ -254,6 +263,17 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.21 - 2026-08-14.** Opened Slice09
+  readme-entrypoint-refresh, preserving Slices06-08 as closed and
+  CDC-verified and making Slice10 docs-synthesis next. Surfaced by:
+  `slice09-readme-entrypoint-refresh/slice-doc.md`,
+  `slice09-readme-entrypoint-refresh/ledger.md`, and
+  `slice09-readme-entrypoint-refresh/cc-prompt.md`. Why: the tutorial,
+  managed-process, CLI, migration, and architecture anchors now exist, so the
+  README can become the public entry point while preserving
+  `make readme-verbatim` and keeping 0.3.0 release-publication proof in
+  Arc09.
 
 - **v1.20 - 2026-08-14.** Marked Slice06 hddl-authoring-tutorial closed and
   CDC-verified after the later Slice07 and Slice08 closeouts, preserving both

@@ -440,10 +440,11 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice08 architecture-and-source-quality-docs closed and
-  CDC-verified; Slice07 cli-reference-and-migration closed
-  and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified;
-  Slice09 readme-entrypoint-refresh next.**
+- **arc08 - active; Slice09 readme-entrypoint-refresh open; Slice08
+  architecture-and-source-quality-docs closed and CDC-verified; Slice07
+  cli-reference-and-migration closed and CDC-verified; Slice06
+  hddl-authoring-tutorial closed and CDC-verified; Slice10 docs-synthesis
+  next.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -508,8 +509,15 @@ handoff.
   [`arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/closing-report.md`](arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/closing-report.md),
   [`arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/cdc-verification.md).
   Slice08 writes public A6 architecture, dependency, generated-code,
-  source-quality, and third-party boundary prose. Slice09 README
-  entrypoint-refresh remains next.
+  source-quality, and third-party boundary prose.
+  Slice09 readme-entrypoint-refresh is open:
+  [`arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/slice-doc.md`](arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/slice-doc.md),
+  [`arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/ledger.md`](arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/ledger.md),
+  [`arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/cc-prompt.md).
+  Slice09 refreshes `README.md` as the public entry point into the stable
+  tutorial/docs suite, preserves `make readme-verbatim`, decides whether
+  `docs/index.md` is needed, and keeps release asset, checksum, manifest,
+  wolong, and publication proof in Arc09. Slice10 docs-synthesis remains next.
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, real-world HTN modelling guidance, HDDL authoring
@@ -657,6 +665,18 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.95 - 2026-08-14.** Opened Arc08 Slice09
+  readme-entrypoint-refresh, preserving Slices06-08 as closed and
+  CDC-verified and making Slice10 docs-synthesis next. Surfaced by:
+  `arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/slice-doc.md`,
+  `arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/ledger.md`,
+  and
+  `arc08-pandapi-tutorial-docs/slice09-readme-entrypoint-refresh/cc-prompt.md`.
+  Why: Arc08 now has stable tutorial, managed-process, CLI, migration, and
+  architecture anchors, so the README can be refreshed as the public entry
+  point while release asset, checksum, manifest, wolong, and publication proof
+  remain in Arc09.
 
 - **v1.94 - 2026-08-14.** Marked Arc08 Slice06
   hddl-authoring-tutorial closed and CDC-verified after the later Slice07 and
