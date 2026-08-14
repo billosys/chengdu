@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice08 architecture-and-source-quality-docs implementation proposed done; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification; Slice09 readme-entrypoint-refresh next
+Status: active; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification; Slice09 readme-entrypoint-refresh next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -178,18 +178,21 @@ Leaves for Arc09:
   0.2.0 -> 0.3.0 no-compatibility command-name migration. CDC reproduced the
   static docs checks, live help/version/provenance probes, smoke gates, and
   managed pipeline contract.
-- **slice08 architecture-and-source-quality-docs - implementation proposed
-  done, awaiting CDC verification.** Slice set:
+- **slice08 architecture-and-source-quality-docs - closed and CDC-verified.**
+  Slice set:
   [`slice08-architecture-and-source-quality-docs/slice-doc.md`](slice08-architecture-and-source-quality-docs/slice-doc.md),
   [`slice08-architecture-and-source-quality-docs/ledger.md`](slice08-architecture-and-source-quality-docs/ledger.md),
   [`slice08-architecture-and-source-quality-docs/cc-prompt.md`](slice08-architecture-and-source-quality-docs/cc-prompt.md),
   [`../../architecture.md`](../../architecture.md),
-  [`slice08-architecture-and-source-quality-docs/closing-report.md`](slice08-architecture-and-source-quality-docs/closing-report.md).
+  [`slice08-architecture-and-source-quality-docs/closing-report.md`](slice08-architecture-and-source-quality-docs/closing-report.md),
+  [`slice08-architecture-and-source-quality-docs/cdc-verification.md`](slice08-architecture-and-source-quality-docs/cdc-verification.md).
   This slice writes `docs/architecture.md` for the 0.3.0 product shape,
   dependency posture, source classes, generated-code policy, third-party
   boundaries, Make-backed source-quality gates, measured baselines, remaining
-  budgets, and release-preparation handoffs. Slice09
-  readme-entrypoint-refresh remains next after CDC review.
+  budgets, and release-preparation handoffs. CDC reproduced the static public
+  docs checks, current Make target checks, source-quality evidence anchors,
+  safety checks, actionlint, protected-boundary checks, and whitespace checks.
+  Slice09 readme-entrypoint-refresh remains next.
 
 ## 6. Planned Documentation Surface
 
@@ -249,6 +252,15 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.19 - 2026-08-14.** Marked Slice08
+  architecture-and-source-quality-docs closed and CDC-verified, preserved
+  Slice06 HDDL authoring as awaiting CDC verification, and kept Slice09
+  readme-entrypoint-refresh as next. Surfaced by:
+  `slice08-architecture-and-source-quality-docs/cdc-verification.md`. Why:
+  CDC reproduced the static public docs checks, current Make target checks,
+  source-quality evidence anchors, safety checks, actionlint, protected scope,
+  and whitespace evidence for the public A6 architecture/source-quality page.
 
 - **v1.18 - 2026-08-14.** Marked Slice08
   architecture-and-source-quality-docs implementation proposed done, preserved
