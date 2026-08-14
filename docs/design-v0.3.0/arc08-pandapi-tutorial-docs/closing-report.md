@@ -1,12 +1,12 @@
 # Arc08 Closing Report: pandapi-tutorial-docs
 
-Status: implementation proposed done
+Status: closed and CDC-verified
 Date: 2026-08-14
 
 ## Composition Verdict
 
 Arc08 delivers the pandaPI 0.3.0 public documentation suite at
-implementation-proposed-done strength. The suite now has:
+CDC-verified strength. The suite now has:
 
 - a concise README entry point;
 - a public `docs/index.md` landing page;
@@ -57,7 +57,7 @@ history, and do not claim unpublished 0.3.0 release assets or release proof.
   entry point, preserved `make readme-verbatim`, kept source builds centered
   on `./bin/pandapi-*`, and deferred `docs/index.md` to Slice10 composition.
   CDC verified the slice.
-- **Slice10 docs-synthesis - implementation proposed done.** Created
+- **Slice10 docs-synthesis - closed and CDC-verified.** Created
   `docs/index.md`, verified composition, added `docs-synthesis.md`, wrote this
   arc close report, and updated project/arc status for Arc09 handoff.
 
@@ -119,7 +119,7 @@ bundle, or wolong integration work was silently absorbed into Arc08.
 
 ## Verification Summary
 
-Slice10 reran the docs-composition gates, `make readme-verbatim`,
+Slice10 and CDC reran the docs-composition gates, `make readme-verbatim`,
 `make smoke && make smoke-negative`, `make test-contract-pipeline-managed`,
 live help/version/provenance probes for all three `./bin/pandapi-*` binaries,
 `make safety-checks && make actionlint`, protected-boundary checks, and
@@ -132,9 +132,8 @@ CLI reference probes, workflow lint/safety posture, and protected scope.
 
 ## Bubble-up to Project
 
-Project ledger P8 is implementation proposed done for Arc08. The public
-pandaPI 0.3.0 tutorial/docs suite is ready for CDC review and then for Arc09
-release-preparation consumption.
+Project ledger P8 is CDC-verified done for Arc08. The public pandaPI 0.3.0
+tutorial/docs suite is ready for Arc09 release-preparation consumption.
 
 ## Arc09 Handoff
 

@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: implementation proposed done; Slice10 docs-synthesis implementation proposed done; Slice09 readme-entrypoint-refresh closed and CDC-verified; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Arc09 release-prep-publication next
+Status: closed and CDC-verified; Slice10 docs-synthesis closed and CDC-verified; Arc09 release-prep-publication next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -211,19 +211,23 @@ Leaves for Arc09:
   CDC reproduced the README static checks, local-link check, public-vocabulary
   fences, `make readme-verbatim`, smoke gates, Make target check, and
   whitespace evidence.
-- **slice10 docs-synthesis - implementation proposed done.** Slice set:
+- **slice10 docs-synthesis - closed and CDC-verified.** Slice set:
   [`slice10-docs-synthesis/slice-doc.md`](slice10-docs-synthesis/slice-doc.md),
   [`slice10-docs-synthesis/ledger.md`](slice10-docs-synthesis/ledger.md),
   [`slice10-docs-synthesis/cc-prompt.md`](slice10-docs-synthesis/cc-prompt.md),
   [`../../index.md`](../../index.md),
   [`docs-synthesis.md`](docs-synthesis.md),
   [`closing-report.md`](closing-report.md),
-  [`slice10-docs-synthesis/closing-report.md`](slice10-docs-synthesis/closing-report.md).
+  [`slice10-docs-synthesis/closing-report.md`](slice10-docs-synthesis/closing-report.md),
+  [`slice10-docs-synthesis/cdc-verification.md`](slice10-docs-synthesis/cdc-verification.md).
   This slice performs the final docs composition pass, creates
   `docs/index.md`, verifies links and runnable examples across the public docs
-  suite, creates `docs-synthesis.md`, writes the Arc08 closing report at
-  implementation-proposed-done strength, and hands concrete release-prep
-  inputs to Arc09. Arc09 release-prep-publication is next.
+  suite, creates `docs-synthesis.md`, writes the Arc08 closing report, and
+  hands concrete release-prep inputs to Arc09. CDC reproduced the public-doc
+  composition checks, README-verbatim path, smoke gates, managed pipeline
+  contract, live binary probes, safety/actionlint gates, protected-boundary
+  checks, and whitespace checks. Arc08 is closed and CDC-verified; Arc09
+  release-prep-publication is next.
 
 ## 6. Planned Documentation Surface
 
@@ -283,6 +287,15 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.26 - 2026-08-14.** Marked Slice10 docs-synthesis closed and
+  CDC-verified, and marked Arc08 closed and CDC-verified. Surfaced by:
+  `slice10-docs-synthesis/cdc-verification.md`. Why: CDC independently
+  reproduced the Slice10 docs-composition ledger checks, README-verbatim
+  path, smoke gates, managed pipeline contract, live binary probes,
+  safety/actionlint gates, protected-boundary checks, and whitespace checks.
+  The public docs suite composes and Arc09 release-prep-publication remains
+  next.
 
 - **v1.25 - 2026-08-14.** Marked Slice10 docs-synthesis implementation
   proposed done and marked Arc08 implementation proposed done, routing Arc09
