@@ -440,9 +440,10 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice08 architecture-and-source-quality-docs open;
-  Slice07 cli-reference-and-migration closed and CDC-verified; Slice06
-  hddl-authoring-tutorial awaiting CDC verification.**
+- **arc08 - active; Slice08 architecture-and-source-quality-docs
+  implementation proposed done; Slice07 cli-reference-and-migration closed
+  and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC
+  verification; Slice09 readme-entrypoint-refresh next.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -498,13 +499,16 @@ handoff.
   `pandapi-*` names, common options, status/exit summaries, non-supported
   surface boundaries, behavior changes, and the 0.2.0 -> 0.3.0
   no-compatibility command-name migration.
-  Slice08 architecture-and-source-quality-docs is open:
+  Slice08 architecture-and-source-quality-docs has implementation close
+  evidence:
   [`arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/slice-doc.md`](arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/ledger.md`](arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/ledger.md),
-  [`arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/cc-prompt.md).
+  [`arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/cc-prompt.md),
+  [`../architecture.md`](../architecture.md),
+  [`arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/closing-report.md`](arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/closing-report.md).
   Slice08 writes public A6 architecture, dependency, generated-code,
   source-quality, and third-party boundary prose. Slice09 README
-  entrypoint-refresh remains next after Slice08 closes.
+  entrypoint-refresh remains next after CDC review.
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, real-world HTN modelling guidance, HDDL authoring
@@ -652,6 +656,16 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.92 - 2026-08-14.** Marked Arc08 Slice08
+  architecture-and-source-quality-docs implementation proposed done,
+  preserved Slice06 HDDL authoring as awaiting CDC verification, and kept
+  Slice09 readme-entrypoint-refresh as next. Surfaced by:
+  [`../architecture.md`](../architecture.md) and
+  `arc08-pandapi-tutorial-docs/slice08-architecture-and-source-quality-docs/closing-report.md`.
+  Why: Arc08 now has the public A6 architecture, dependency, generated-code,
+  source-quality, and third-party boundary anchor needed before README
+  refresh and release-preparation handoffs.
 
 - **v1.91 - 2026-08-14.** Opened Arc08 Slice08
   architecture-and-source-quality-docs, preserved Slice06 HDDL authoring as

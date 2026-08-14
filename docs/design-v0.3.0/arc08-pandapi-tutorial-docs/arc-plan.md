@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice08 architecture-and-source-quality-docs open; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification
+Status: active; Slice08 architecture-and-source-quality-docs implementation proposed done; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification; Slice09 readme-entrypoint-refresh next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -178,15 +178,18 @@ Leaves for Arc09:
   0.2.0 -> 0.3.0 no-compatibility command-name migration. CDC reproduced the
   static docs checks, live help/version/provenance probes, smoke gates, and
   managed pipeline contract.
-- **slice08 architecture-and-source-quality-docs - open.** Slice set:
+- **slice08 architecture-and-source-quality-docs - implementation proposed
+  done, awaiting CDC verification.** Slice set:
   [`slice08-architecture-and-source-quality-docs/slice-doc.md`](slice08-architecture-and-source-quality-docs/slice-doc.md),
   [`slice08-architecture-and-source-quality-docs/ledger.md`](slice08-architecture-and-source-quality-docs/ledger.md),
-  [`slice08-architecture-and-source-quality-docs/cc-prompt.md`](slice08-architecture-and-source-quality-docs/cc-prompt.md).
+  [`slice08-architecture-and-source-quality-docs/cc-prompt.md`](slice08-architecture-and-source-quality-docs/cc-prompt.md),
+  [`../../architecture.md`](../../architecture.md),
+  [`slice08-architecture-and-source-quality-docs/closing-report.md`](slice08-architecture-and-source-quality-docs/closing-report.md).
   This slice writes `docs/architecture.md` for the 0.3.0 product shape,
   dependency posture, source classes, generated-code policy, third-party
   boundaries, Make-backed source-quality gates, measured baselines, remaining
   budgets, and release-preparation handoffs. Slice09
-  readme-entrypoint-refresh remains next after Slice08 closes.
+  readme-entrypoint-refresh remains next after CDC review.
 
 ## 6. Planned Documentation Surface
 
@@ -246,6 +249,16 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.18 - 2026-08-14.** Marked Slice08
+  architecture-and-source-quality-docs implementation proposed done, preserved
+  Slice06 HDDL authoring as awaiting CDC verification, and kept Slice09
+  readme-entrypoint-refresh as next. Surfaced by:
+  [`../../architecture.md`](../../architecture.md) and
+  `slice08-architecture-and-source-quality-docs/closing-report.md`. Why:
+  public A6 architecture, dependency, generated-code, source-quality, and
+  third-party boundary prose now exists for README and release-preparation
+  handoff work.
 
 - **v1.17 - 2026-08-14.** Opened Slice08
   architecture-and-source-quality-docs, preserved Slice06 HDDL authoring as
