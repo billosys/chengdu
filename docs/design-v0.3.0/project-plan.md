@@ -440,8 +440,8 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice07 cli-reference-and-migration implementation
-  proposed done; Slice06 hddl-authoring-tutorial awaiting CDC verification;
+- **arc08 - active; Slice07 cli-reference-and-migration closed and
+  CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification;
   Slice08 architecture-and-source-quality-docs next.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
@@ -486,13 +486,14 @@ handoff.
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md),
   [`../tutorial/04-write-hddl-files.md`](../tutorial/04-write-hddl-files.md),
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md).
-  Slice07 cli-reference-and-migration has implementation close evidence:
+  Slice07 cli-reference-and-migration is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/slice-doc.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/ledger.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/ledger.md),
   [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cc-prompt.md),
   [`../reference/cli.md`](../reference/cli.md),
   [`../migration.md`](../migration.md),
-  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/closing-report.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/closing-report.md).
+  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/closing-report.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/closing-report.md),
+  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cdc-verification.md).
   Slice07 writes the public CLI reference and migration guide for canonical
   `pandapi-*` names, common options, status/exit summaries, non-supported
   surface boundaries, behavior changes, and the 0.2.0 -> 0.3.0
@@ -646,6 +647,15 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.90 - 2026-08-14.** Marked Arc08 Slice07
+  cli-reference-and-migration closed and CDC-verified, kept Slice06
+  hddl-authoring-tutorial awaiting CDC verification, and preserved Slice08
+  architecture-and-source-quality-docs as next. Surfaced by:
+  `arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cdc-verification.md`.
+  Why: CDC reproduced the Slice07 static docs gates, live `pandapi-*`
+  help/version/provenance probes, smoke gates, and managed pipeline contract
+  for the public CLI reference and migration guide.
 
 - **v1.89 - 2026-08-14.** Marked Arc08 Slice07
   cli-reference-and-migration implementation proposed done, awaiting CDC

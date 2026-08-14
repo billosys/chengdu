@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice07 cli-reference-and-migration implementation proposed done; Slice06 hddl-authoring-tutorial awaiting CDC verification; Slice08 architecture-and-source-quality-docs next
+Status: active; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification; Slice08 architecture-and-source-quality-docs next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -163,18 +163,21 @@ Leaves for Arc09:
   explains valid no-plan versus invalid-input authoring mistakes, and records
   that no checked-in fixture is needed because the tutorial creates temporary
   files from the repository root.
-- **slice07 cli-reference-and-migration - implementation proposed done,
-  awaiting CDC verification.** Slice set:
+- **slice07 cli-reference-and-migration - closed and CDC-verified.** Slice
+  set:
   [`slice07-cli-reference-and-migration/slice-doc.md`](slice07-cli-reference-and-migration/slice-doc.md),
   [`slice07-cli-reference-and-migration/ledger.md`](slice07-cli-reference-and-migration/ledger.md),
   [`slice07-cli-reference-and-migration/cc-prompt.md`](slice07-cli-reference-and-migration/cc-prompt.md),
   [`../../reference/cli.md`](../../reference/cli.md),
   [`../../migration.md`](../../migration.md),
-  [`slice07-cli-reference-and-migration/closing-report.md`](slice07-cli-reference-and-migration/closing-report.md).
+  [`slice07-cli-reference-and-migration/closing-report.md`](slice07-cli-reference-and-migration/closing-report.md),
+  [`slice07-cli-reference-and-migration/cdc-verification.md`](slice07-cli-reference-and-migration/cdc-verification.md).
   This slice writes `docs/reference/cli.md` and `docs/migration.md` for
   canonical `pandapi-*` names, common options, status/exit summaries,
   unsupported/legacy/experimental/future surfaces, behavior changes, and the
-  0.2.0 -> 0.3.0 no-compatibility command-name migration.
+  0.2.0 -> 0.3.0 no-compatibility command-name migration. CDC reproduced the
+  static docs checks, live help/version/provenance probes, smoke gates, and
+  managed pipeline contract.
   Slice08 architecture-and-source-quality-docs remains next for architecture,
   dependency, generated-code, source-quality, and third-party boundary prose.
 
@@ -236,6 +239,15 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.16 - 2026-08-14.** Marked Slice07
+  cli-reference-and-migration closed and CDC-verified, kept Slice06
+  hddl-authoring-tutorial awaiting CDC verification, and preserved Slice08
+  architecture-and-source-quality-docs as next. Surfaced by:
+  `slice07-cli-reference-and-migration/cdc-verification.md`. Why: CDC
+  reproduced the static docs gates, live `pandapi-*` help/version/provenance
+  probes, smoke gates, and managed pipeline contract for the public CLI
+  reference and migration guide.
 
 - **v1.15 - 2026-08-14.** Marked Slice07
   cli-reference-and-migration implementation proposed done, awaiting CDC
