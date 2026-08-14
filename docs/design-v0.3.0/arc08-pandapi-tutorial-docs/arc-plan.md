@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification; Slice08 architecture-and-source-quality-docs next
+Status: active; Slice08 architecture-and-source-quality-docs open; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -178,8 +178,15 @@ Leaves for Arc09:
   0.2.0 -> 0.3.0 no-compatibility command-name migration. CDC reproduced the
   static docs checks, live help/version/provenance probes, smoke gates, and
   managed pipeline contract.
-  Slice08 architecture-and-source-quality-docs remains next for architecture,
-  dependency, generated-code, source-quality, and third-party boundary prose.
+- **slice08 architecture-and-source-quality-docs - open.** Slice set:
+  [`slice08-architecture-and-source-quality-docs/slice-doc.md`](slice08-architecture-and-source-quality-docs/slice-doc.md),
+  [`slice08-architecture-and-source-quality-docs/ledger.md`](slice08-architecture-and-source-quality-docs/ledger.md),
+  [`slice08-architecture-and-source-quality-docs/cc-prompt.md`](slice08-architecture-and-source-quality-docs/cc-prompt.md).
+  This slice writes `docs/architecture.md` for the 0.3.0 product shape,
+  dependency posture, source classes, generated-code policy, third-party
+  boundaries, Make-backed source-quality gates, measured baselines, remaining
+  budgets, and release-preparation handoffs. Slice09
+  readme-entrypoint-refresh remains next after Slice08 closes.
 
 ## 6. Planned Documentation Surface
 
@@ -239,6 +246,17 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.17 - 2026-08-14.** Opened Slice08
+  architecture-and-source-quality-docs, preserved Slice06 HDDL authoring as
+  awaiting CDC verification, and set Slice09 readme-entrypoint-refresh as the
+  next slice after Slice08 closes. Surfaced by:
+  `slice08-architecture-and-source-quality-docs/slice-doc.md`,
+  `slice08-architecture-and-source-quality-docs/ledger.md`, and
+  `slice08-architecture-and-source-quality-docs/cc-prompt.md`. Why: Arc08 A6
+  now needs public architecture, dependency, generated-code, source-quality,
+  and third-party boundary prose before the README can become the docs-suite
+  entry point.
 
 - **v1.16 - 2026-08-14.** Marked Slice07
   cli-reference-and-migration closed and CDC-verified, kept Slice06
