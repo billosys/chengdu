@@ -442,8 +442,8 @@ handoff.
   dependency audit accepts that boundary.
 - **arc08 - active; Slice08 architecture-and-source-quality-docs closed and
   CDC-verified; Slice07 cli-reference-and-migration closed
-  and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC
-  verification; Slice09 readme-entrypoint-refresh next.**
+  and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified;
+  Slice09 readme-entrypoint-refresh next.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -481,12 +481,13 @@ handoff.
   [`../tutorial/03-model-a-feature-as-htn.md`](../tutorial/03-model-a-feature-as-htn.md),
   [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/closing-report.md),
   [`arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice05-real-world-htn-modelling-tutorial/cdc-verification.md).
-  Slice06 hddl-authoring-tutorial has implementation close evidence:
+  Slice06 hddl-authoring-tutorial is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/slice-doc.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/ledger.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/ledger.md),
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md),
   [`../tutorial/04-write-hddl-files.md`](../tutorial/04-write-hddl-files.md),
-  [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md).
+  [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md),
+  [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cdc-verification.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cdc-verification.md).
   Slice07 cli-reference-and-migration is closed and CDC-verified:
   [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/slice-doc.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/ledger.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/ledger.md),
@@ -656,6 +657,15 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.94 - 2026-08-14.** Marked Arc08 Slice06
+  hddl-authoring-tutorial closed and CDC-verified after the later Slice07 and
+  Slice08 closeouts, preserving both later slices as closed and keeping Slice09
+  readme-entrypoint-refresh as next. Surfaced by:
+  `arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cdc-verification.md`.
+  Why: CDC reproduced the static page checks, temporary HDDL authoring happy
+  path, no-plan and broken-syntax examples, managed pipeline contract,
+  protected scope, and whitespace evidence for public A12.
 
 - **v1.93 - 2026-08-14.** Marked Arc08 Slice08
   architecture-and-source-quality-docs closed and CDC-verified, preserved

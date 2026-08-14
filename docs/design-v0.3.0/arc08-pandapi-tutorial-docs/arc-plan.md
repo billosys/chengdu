@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial awaiting CDC verification; Slice09 readme-entrypoint-refresh next
+Status: active; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice09 readme-entrypoint-refresh next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -150,19 +150,21 @@ Leaves for Arc09:
   facts, compound tasks, primitive actions, methods, ordering constraints,
   solved/no-plan boundaries, and records that no checked-in fixture is needed
   before Slice06 writes runnable HDDL.
-- **slice06 hddl-authoring-tutorial - implementation proposed done, awaiting
-  CDC verification.** Slice set:
+- **slice06 hddl-authoring-tutorial - closed and CDC-verified.** Slice set:
   [`slice06-hddl-authoring-tutorial/slice-doc.md`](slice06-hddl-authoring-tutorial/slice-doc.md),
   [`slice06-hddl-authoring-tutorial/ledger.md`](slice06-hddl-authoring-tutorial/ledger.md),
   [`slice06-hddl-authoring-tutorial/cc-prompt.md`](slice06-hddl-authoring-tutorial/cc-prompt.md),
   [`../../tutorial/04-write-hddl-files.md`](../../tutorial/04-write-hddl-files.md),
-  [`slice06-hddl-authoring-tutorial/closing-report.md`](slice06-hddl-authoring-tutorial/closing-report.md).
+  [`slice06-hddl-authoring-tutorial/closing-report.md`](slice06-hddl-authoring-tutorial/closing-report.md),
+  [`slice06-hddl-authoring-tutorial/cdc-verification.md`](slice06-hddl-authoring-tutorial/cdc-verification.md).
   This slice writes `docs/tutorial/04-write-hddl-files.md`, turns the Slice05
   feature-shipping model into concrete `domain.hddl` and `problem.hddl`
   files, verifies the authored files through parse -> ground -> solve,
   explains valid no-plan versus invalid-input authoring mistakes, and records
   that no checked-in fixture is needed because the tutorial creates temporary
-  files from the repository root.
+  files from the repository root. CDC reproduced the static page checks,
+  happy-path authoring workflow, no-plan and broken-syntax examples, managed
+  pipeline contract gate, protected-boundary checks, and whitespace checks.
 - **slice07 cli-reference-and-migration - closed and CDC-verified.** Slice
   set:
   [`slice07-cli-reference-and-migration/slice-doc.md`](slice07-cli-reference-and-migration/slice-doc.md),
@@ -252,6 +254,14 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.20 - 2026-08-14.** Marked Slice06 hddl-authoring-tutorial closed and
+  CDC-verified after the later Slice07 and Slice08 closeouts, preserving both
+  later slices as closed and keeping Slice09 readme-entrypoint-refresh as next.
+  Surfaced by: `slice06-hddl-authoring-tutorial/cdc-verification.md`. Why:
+  CDC reproduced the static page checks, temporary HDDL authoring happy path,
+  no-plan and broken-syntax examples, managed pipeline contract, protected
+  scope, and whitespace evidence for public A12.
 
 - **v1.19 - 2026-08-14.** Marked Slice08
   architecture-and-source-quality-docs closed and CDC-verified, preserved
