@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice07 cli-reference-and-migration open; Slice06 hddl-authoring-tutorial awaiting CDC verification
+Status: active; Slice07 cli-reference-and-migration implementation proposed done; Slice06 hddl-authoring-tutorial awaiting CDC verification; Slice08 architecture-and-source-quality-docs next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -163,14 +163,20 @@ Leaves for Arc09:
   explains valid no-plan versus invalid-input authoring mistakes, and records
   that no checked-in fixture is needed because the tutorial creates temporary
   files from the repository root.
-- **slice07 cli-reference-and-migration - open.** Slice set:
+- **slice07 cli-reference-and-migration - implementation proposed done,
+  awaiting CDC verification.** Slice set:
   [`slice07-cli-reference-and-migration/slice-doc.md`](slice07-cli-reference-and-migration/slice-doc.md),
   [`slice07-cli-reference-and-migration/ledger.md`](slice07-cli-reference-and-migration/ledger.md),
-  [`slice07-cli-reference-and-migration/cc-prompt.md`](slice07-cli-reference-and-migration/cc-prompt.md).
-  This slice will write `docs/reference/cli.md` and `docs/migration.md` for
-  canonical `pandapi-*` names, common options, statuses, unsupported/legacy/
-  experimental/future surfaces, behavior changes, and the 0.2.0 -> 0.3.0
-  no-compatibility command-name migration.
+  [`slice07-cli-reference-and-migration/cc-prompt.md`](slice07-cli-reference-and-migration/cc-prompt.md),
+  [`../../reference/cli.md`](../../reference/cli.md),
+  [`../../migration.md`](../../migration.md),
+  [`slice07-cli-reference-and-migration/closing-report.md`](slice07-cli-reference-and-migration/closing-report.md).
+  This slice writes `docs/reference/cli.md` and `docs/migration.md` for
+  canonical `pandapi-*` names, common options, status/exit summaries,
+  unsupported/legacy/experimental/future surfaces, behavior changes, and the
+  0.2.0 -> 0.3.0 no-compatibility command-name migration.
+  Slice08 architecture-and-source-quality-docs remains next for architecture,
+  dependency, generated-code, source-quality, and third-party boundary prose.
 
 ## 6. Planned Documentation Surface
 
@@ -231,6 +237,15 @@ slice ledger is explicitly amended and the operator accepts the scope change.
 
 ## 9. Version History
 
+- **v1.15 - 2026-08-14.** Marked Slice07
+  cli-reference-and-migration implementation proposed done, awaiting CDC
+  verification, and preserved Slice08 architecture-and-source-quality-docs as
+  next. Surfaced by: `docs/reference/cli.md`, `docs/migration.md`, Slice07
+  ledger, and Slice07 closing report. Why: Arc08 A5 now has public anchors for
+  canonical `pandapi-*` command behavior, common options, status/exit
+  summaries, non-supported surface boundaries, and the 0.2.0 -> 0.3.0
+  no-compatibility migration before README and release handoff wording consume
+  those anchors; A6 remains Slice08-owned.
 - **v1.14 - 2026-08-14.** Opened Slice07 cli-reference-and-migration.
   Surfaced by: Slice06 implementation close and operator approval of the
   CLI-reference/migration slice framing. Why: the tutorial path now reaches

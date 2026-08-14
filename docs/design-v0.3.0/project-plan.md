@@ -440,8 +440,9 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice07 cli-reference-and-migration open; Slice06
-  hddl-authoring-tutorial awaiting CDC verification.**
+- **arc08 - active; Slice07 cli-reference-and-migration implementation
+  proposed done; Slice06 hddl-authoring-tutorial awaiting CDC verification;
+  Slice08 architecture-and-source-quality-docs next.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -485,10 +486,19 @@ handoff.
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/cc-prompt.md),
   [`../tutorial/04-write-hddl-files.md`](../tutorial/04-write-hddl-files.md),
   [`arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md`](arc08-pandapi-tutorial-docs/slice06-hddl-authoring-tutorial/closing-report.md).
-  Slice07 cli-reference-and-migration is open:
+  Slice07 cli-reference-and-migration has implementation close evidence:
   [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/slice-doc.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/slice-doc.md),
   [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/ledger.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/ledger.md),
-  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cc-prompt.md).
+  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/cc-prompt.md),
+  [`../reference/cli.md`](../reference/cli.md),
+  [`../migration.md`](../migration.md),
+  [`arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/closing-report.md`](arc08-pandapi-tutorial-docs/slice07-cli-reference-and-migration/closing-report.md).
+  Slice07 writes the public CLI reference and migration guide for canonical
+  `pandapi-*` names, common options, status/exit summaries, non-supported
+  surface boundaries, behavior changes, and the 0.2.0 -> 0.3.0
+  no-compatibility command-name migration. Slice08
+  architecture-and-source-quality-docs remains next for A6 architecture,
+  dependency, generated-code, source-quality, and third-party boundary prose.
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, real-world HTN modelling guidance, HDDL authoring
@@ -637,6 +647,15 @@ per-row in this project's `closing-report.md`.
 
 ## 8. Version history
 
+- **v1.89 - 2026-08-14.** Marked Arc08 Slice07
+  cli-reference-and-migration implementation proposed done, awaiting CDC
+  verification, and preserved Slice08 architecture-and-source-quality-docs as
+  next. Surfaced by: `docs/reference/cli.md`, `docs/migration.md`, Slice07
+  ledger, and Slice07 closing report. Why: the docs suite now has public A5
+  anchors for canonical `pandapi-*` command behavior, common options,
+  status/exit summaries, non-supported surfaces, behavior changes, and the
+  0.2.0 -> 0.3.0 no-compatibility migration while README, architecture, and
+  release-publication work remain separately routed.
 - **v1.88 - 2026-08-14.** Opened Arc08 Slice07
   cli-reference-and-migration. Surfaced by: Slice06 implementation close and
   operator approval of the Slice07 framing. Why: the docs suite is ready for
