@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice10 docs-synthesis open; Slice09 readme-entrypoint-refresh closed and CDC-verified; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified
+Status: implementation proposed done; Slice10 docs-synthesis implementation proposed done; Slice09 readme-entrypoint-refresh closed and CDC-verified; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Arc09 release-prep-publication next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -129,7 +129,7 @@ Leaves for Arc09:
   [`slice04-managed-process-workflow/slice-doc.md`](slice04-managed-process-workflow/slice-doc.md),
   [`slice04-managed-process-workflow/ledger.md`](slice04-managed-process-workflow/ledger.md),
   [`slice04-managed-process-workflow/cc-prompt.md`](slice04-managed-process-workflow/cc-prompt.md),
-  [`../managed-process.md`](../managed-process.md),
+  [`../../managed-process.md`](../../managed-process.md),
   [`slice04-managed-process-workflow/closing-report.md`](slice04-managed-process-workflow/closing-report.md),
   [`slice04-managed-process-workflow/cdc-verification.md`](slice04-managed-process-workflow/cdc-verification.md).
   This slice writes `docs/managed-process.md`, teaches supervised/process
@@ -211,15 +211,19 @@ Leaves for Arc09:
   CDC reproduced the README static checks, local-link check, public-vocabulary
   fences, `make readme-verbatim`, smoke gates, Make target check, and
   whitespace evidence.
-- **slice10 docs-synthesis - open.** Slice set:
+- **slice10 docs-synthesis - implementation proposed done.** Slice set:
   [`slice10-docs-synthesis/slice-doc.md`](slice10-docs-synthesis/slice-doc.md),
   [`slice10-docs-synthesis/ledger.md`](slice10-docs-synthesis/ledger.md),
-  [`slice10-docs-synthesis/cc-prompt.md`](slice10-docs-synthesis/cc-prompt.md).
+  [`slice10-docs-synthesis/cc-prompt.md`](slice10-docs-synthesis/cc-prompt.md),
+  [`../../index.md`](../../index.md),
+  [`docs-synthesis.md`](docs-synthesis.md),
+  [`closing-report.md`](closing-report.md),
+  [`slice10-docs-synthesis/closing-report.md`](slice10-docs-synthesis/closing-report.md).
   This slice performs the final docs composition pass, creates
   `docs/index.md`, verifies links and runnable examples across the public docs
   suite, creates `docs-synthesis.md`, writes the Arc08 closing report at
   implementation-proposed-done strength, and hands concrete release-prep
-  inputs to Arc09.
+  inputs to Arc09. Arc09 release-prep-publication is next.
 
 ## 6. Planned Documentation Surface
 
@@ -279,6 +283,17 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.25 - 2026-08-14.** Marked Slice10 docs-synthesis implementation
+  proposed done and marked Arc08 implementation proposed done, routing Arc09
+  release-prep-publication as next. Surfaced by: `docs/index.md`,
+  `docs-synthesis.md`, `closing-report.md`,
+  `slice10-docs-synthesis/ledger.md`, and
+  `slice10-docs-synthesis/closing-report.md`. Why: the public docs suite now
+  composes across README, docs index, tutorials, managed-process, CLI
+  reference, migration, and architecture pages; Slice10 also verifies the
+  README-verbatim path, smoke gates, managed pipeline contract, live binary
+  probes, safety/actionlint gates, protected scope, and Arc09 handoff.
 
 - **v1.24 - 2026-08-14.** Opened Slice10 docs-synthesis,
   preserving Slices06-09 as closed and CDC-verified. Surfaced by:

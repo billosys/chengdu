@@ -187,7 +187,7 @@ Accepted measured baseline examples:
 - engine and grounder format/static-analysis evidence is baseline evidence
   until stricter component gates are accepted.
 
-No global coverage floor is set. The project also makes no global
+No project-wide coverage threshold is set. The project also makes no global
 zero-warning claim. Those are budget and re-entry decisions, not facts created
 by the current evidence.
 

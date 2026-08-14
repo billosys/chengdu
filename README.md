@@ -29,6 +29,7 @@ consistent local/CI behavior through Make.
 
 Start here:
 
+- [Documentation home](docs/index.md)
 - [HTN and HDDL onboarding](docs/tutorial/01-htn-hddl-onboarding.md)
 - [First project workflow](docs/tutorial/02-first-project-workflow.md)
 - [Model a software feature as an HTN](docs/tutorial/03-model-a-feature-as-htn.md)
