@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice09 readme-entrypoint-refresh implementation proposed done; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice10 docs-synthesis next
+Status: active; Slice09 readme-entrypoint-refresh closed and CDC-verified; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice10 docs-synthesis next
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -194,19 +194,23 @@ Leaves for Arc09:
   budgets, and release-preparation handoffs. CDC reproduced the static public
   docs checks, current Make target checks, source-quality evidence anchors,
   safety checks, actionlint, protected-boundary checks, and whitespace checks.
-- **slice09 readme-entrypoint-refresh - implementation proposed done.** Slice
+- **slice09 readme-entrypoint-refresh - closed and CDC-verified.** Slice
   set:
   [`slice09-readme-entrypoint-refresh/slice-doc.md`](slice09-readme-entrypoint-refresh/slice-doc.md),
   [`slice09-readme-entrypoint-refresh/ledger.md`](slice09-readme-entrypoint-refresh/ledger.md),
   [`slice09-readme-entrypoint-refresh/cc-prompt.md`](slice09-readme-entrypoint-refresh/cc-prompt.md),
   [`../../../README.md`](../../../README.md),
-  [`slice09-readme-entrypoint-refresh/closing-report.md`](slice09-readme-entrypoint-refresh/closing-report.md).
+  [`slice09-readme-entrypoint-refresh/closing-report.md`](slice09-readme-entrypoint-refresh/closing-report.md),
+  [`slice09-readme-entrypoint-refresh/cdc-verification.md`](slice09-readme-entrypoint-refresh/cdc-verification.md).
   This slice refreshes `README.md` as the public entry point into the
   now-stable tutorial, managed-process, CLI reference, migration, and
   architecture docs; preserves `make readme-verbatim`; keeps source builds
   centered on `./bin/pandapi-*`; defers `docs/index.md` because the README
   remains concise while linking the public docs suite directly; and leaves
   release asset, checksum, manifest, wolong, and publication proof for Arc09.
+  CDC reproduced the README static checks, local-link check, public-vocabulary
+  fences, `make readme-verbatim`, smoke gates, Make target check, and
+  whitespace evidence.
   Slice10 docs-synthesis remains next.
 
 ## 6. Planned Documentation Surface
@@ -267,6 +271,15 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.23 - 2026-08-14.** Marked Slice09
+  readme-entrypoint-refresh closed and CDC-verified, preserving Slice10
+  docs-synthesis as next. Surfaced by:
+  `slice09-readme-entrypoint-refresh/cdc-verification.md`. Why: CDC
+  reproduced the README static checks, docs-link resolution, public-vocabulary
+  fences, `make readme-verbatim`, positive and negative smoke gates, Make
+  target check, clean-worktree/protected-scope evidence, and whitespace checks
+  for public A7.
 
 - **v1.22 - 2026-08-14.** Marked Slice09
   readme-entrypoint-refresh implementation proposed done and kept Slice10
