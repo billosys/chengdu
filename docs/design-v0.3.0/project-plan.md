@@ -440,11 +440,11 @@ handoff.
   parser, grounder, engine, runtime, and Chengdu-owned generators/templates,
   while excluding third-party code from first-party obligations unless a later
   dependency audit accepts that boundary.
-- **arc08 - active; Slice09 readme-entrypoint-refresh closed and
-  CDC-verified; Slice08 architecture-and-source-quality-docs closed and
-  CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified;
-  Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice10
-  docs-synthesis next.**
+- **arc08 - active; Slice10 docs-synthesis open; Slice09
+  readme-entrypoint-refresh closed and CDC-verified; Slice08
+  architecture-and-source-quality-docs closed and CDC-verified; Slice07
+  cli-reference-and-migration closed and CDC-verified; Slice06
+  hddl-authoring-tutorial closed and CDC-verified.**
   Detailed plan:
   [`arc08-pandapi-tutorial-docs/arc-plan.md`](arc08-pandapi-tutorial-docs/arc-plan.md).
   Slice01 docs-information-architecture is closed and CDC-verified:
@@ -524,7 +524,16 @@ handoff.
   asset, checksum, manifest, wolong, and publication proof in Arc09. CDC
   reproduced the README static checks, local-link check, public-vocabulary
   fences, `make readme-verbatim`, smoke gates, Make target check, and
-  whitespace evidence. Slice10 docs-synthesis remains next.
+  whitespace evidence.
+  Slice10 docs-synthesis is open:
+  [`arc08-pandapi-tutorial-docs/slice10-docs-synthesis/slice-doc.md`](arc08-pandapi-tutorial-docs/slice10-docs-synthesis/slice-doc.md),
+  [`arc08-pandapi-tutorial-docs/slice10-docs-synthesis/ledger.md`](arc08-pandapi-tutorial-docs/slice10-docs-synthesis/ledger.md),
+  [`arc08-pandapi-tutorial-docs/slice10-docs-synthesis/cc-prompt.md`](arc08-pandapi-tutorial-docs/slice10-docs-synthesis/cc-prompt.md).
+  Slice10 performs the final docs composition pass, creates `docs/index.md`,
+  verifies links and runnable examples across the public docs suite, creates
+  durable docs synthesis, writes the Arc08 closing report at
+  implementation-proposed-done strength, and hands concrete release-prep
+  inputs to Arc09.
   Arc08 creates the user-facing pandaPI 0.3.0 tutorial and documentation
   suite: beginner HTN/PDDL/HDDL material, simple-to-intermediate project
   workflow examples, real-world HTN modelling guidance, HDDL authoring
@@ -672,6 +681,16 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.98 - 2026-08-14.** Opened Arc08 Slice10 docs-synthesis,
+  preserving Slices06-09 as closed and CDC-verified. Surfaced by:
+  `arc08-pandapi-tutorial-docs/slice10-docs-synthesis/slice-doc.md`,
+  `arc08-pandapi-tutorial-docs/slice10-docs-synthesis/ledger.md`, and
+  `arc08-pandapi-tutorial-docs/slice10-docs-synthesis/cc-prompt.md`.
+  Why: Arc08 now has all planned public docs anchors through README, so the
+  final slice can verify suite composition, add `docs/index.md`, write durable
+  docs synthesis, produce the Arc08 closing report, and hand
+  release-preparation inputs to Arc09.
 
 - **v1.97 - 2026-08-14.** Marked Arc08 Slice09
   readme-entrypoint-refresh closed and CDC-verified, preserving Slice10

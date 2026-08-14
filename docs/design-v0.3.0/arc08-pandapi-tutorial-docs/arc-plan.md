@@ -1,6 +1,6 @@
 # Arc08 Plan: pandapi-tutorial-docs
 
-Status: active; Slice09 readme-entrypoint-refresh closed and CDC-verified; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified; Slice10 docs-synthesis next
+Status: active; Slice10 docs-synthesis open; Slice09 readme-entrypoint-refresh closed and CDC-verified; Slice08 architecture-and-source-quality-docs closed and CDC-verified; Slice07 cli-reference-and-migration closed and CDC-verified; Slice06 hddl-authoring-tutorial closed and CDC-verified
 Opened: 2026-08-13
 
 ## 1. Capability
@@ -211,7 +211,15 @@ Leaves for Arc09:
   CDC reproduced the README static checks, local-link check, public-vocabulary
   fences, `make readme-verbatim`, smoke gates, Make target check, and
   whitespace evidence.
-  Slice10 docs-synthesis remains next.
+- **slice10 docs-synthesis - open.** Slice set:
+  [`slice10-docs-synthesis/slice-doc.md`](slice10-docs-synthesis/slice-doc.md),
+  [`slice10-docs-synthesis/ledger.md`](slice10-docs-synthesis/ledger.md),
+  [`slice10-docs-synthesis/cc-prompt.md`](slice10-docs-synthesis/cc-prompt.md).
+  This slice performs the final docs composition pass, creates
+  `docs/index.md`, verifies links and runnable examples across the public docs
+  suite, creates `docs-synthesis.md`, writes the Arc08 closing report at
+  implementation-proposed-done strength, and hands concrete release-prep
+  inputs to Arc09.
 
 ## 6. Planned Documentation Surface
 
@@ -271,6 +279,15 @@ slice ledger is explicitly amended and the operator accepts the scope change.
   authoring before CLI reference, README, and synthesis work.
 
 ## 9. Version History
+
+- **v1.24 - 2026-08-14.** Opened Slice10 docs-synthesis,
+  preserving Slices06-09 as closed and CDC-verified. Surfaced by:
+  `slice10-docs-synthesis/slice-doc.md`,
+  `slice10-docs-synthesis/ledger.md`, and
+  `slice10-docs-synthesis/cc-prompt.md`. Why: Arc08 now has all planned
+  public docs anchors through README, so the final slice can verify suite
+  composition, add `docs/index.md`, write durable docs synthesis, produce the
+  Arc08 closing report, and hand release-preparation inputs to Arc09.
 
 - **v1.23 - 2026-08-14.** Marked Slice09
   readme-entrypoint-refresh closed and CDC-verified, preserving Slice10
