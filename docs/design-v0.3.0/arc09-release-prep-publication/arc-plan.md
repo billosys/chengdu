@@ -1,6 +1,6 @@
 # Arc09 Plan: release-prep-publication
 
-Status: active; Slice01 release-readiness-inventory open
+Status: active; Slice01 release-readiness-inventory blocked by wolong stdin contract blockers
 Opened: 2026-08-14
 
 ## 1. Capability
@@ -49,6 +49,10 @@ announcement after the assets and re-run behavior are verified.
 
 | Slice | Slug | Scope | Load-bearing for |
 |-------|------|-------|------------------|
+| blocker | `blocker-stdio-contract-design` | Amend the managed-process contract for stdin input semantics, parser two-input roles, stdout/status ownership, unsupported forms, and shared implementation handoff. | Slice01 release-readiness, wolong proof |
+| blocker | `blocker-stdin-artifact-io` | Implement accepted stdin input forms through shared runtime/helper I/O, preserving existing file-input, stdout artifact, stderr status, and no-plan behavior. | stdin fixtures, wolong proof |
+| blocker | `blocker-stdio-contract-fixtures` | Add Make-backed stdin component and supervised pipeline contract fixtures, CI coverage, and current public managed-process/CLI docs for the implemented contract. | wolong proof, release gates |
+| blocker | `blocker-wolong-supervision-proof` | Verify wolong can consume the supported stdin/stdout/stderr contract, or record a concrete remaining external blocker before Slice01 resumes. | Slice01 release-readiness |
 | slice01 | `release-readiness-inventory` | Inventory the current release/package/publish/CI/docs/licensing/wolong surfaces, classify gaps against P9 and the Arc08 handoff, and recommend final slice ordering. No release behavior changes yet. | all Arc09 slices |
 | slice02 | `package-shape-and-manifest` | Update and verify package contents, archive names, canonical executable names, executable bits, checksums, release manifest, provenance, and package-local smoke probes. | license, docs, wolong, publication |
 | slice03 | `license-notice-source-availability` | Audit shipped binary contents against license texts, NOTICE/source-availability obligations, release notes language, and package assets; fix stale names or paths. | release notes, publication |
@@ -58,8 +62,12 @@ announcement after the assets and re-run behavior are verified.
 | slice07 | `publication-workflow-proof` | Prove release workflow/publish behavior, dry-run or sandbox publication checks, tag/pre-release/final-release semantics, idempotency, and CI entrypoints through Make targets. | final publication |
 | slice08 | `release-candidate-synthesis` | Reproduce the full release-candidate gate set, publish `v0.3.0` when authorized, verify downloaded assets, and close Arc09/project P9. | project close |
 
-Detailed slice plans after Slice01 may adjust this breakdown if the inventory
-finds stale release tooling, licensing gaps, missing Make targets, or wolong
+The unnumbered blocker slices are a scope insertion prompted by wolong's
+2026-08-20 stdin-contract blocker report. They intentionally precede Slice01:
+the release-readiness inventory cannot honestly classify wolong proof while
+the required stdin process contract is absent. Detailed release slices after
+Slice01 may still adjust this breakdown if the inventory finds stale release
+tooling, licensing gaps, missing Make targets, or additional wolong
 integration requirements. Any change must update this plan and its Version
 History before the next slice is opened.
 
@@ -90,7 +98,35 @@ Leaves:
 
 ## 5. Current Status
 
-- **slice01 release-readiness-inventory - open.** Slice set:
+- **blocker-stdio-contract-design - open; blocks Slice01.** Slice set:
+  [`blocker-stdio-contract-design/slice-doc.md`](blocker-stdio-contract-design/slice-doc.md),
+  [`blocker-stdio-contract-design/ledger.md`](blocker-stdio-contract-design/ledger.md),
+  [`blocker-stdio-contract-design/cc-prompt.md`](blocker-stdio-contract-design/cc-prompt.md).
+  This slice decides the supported and rejected stdin input contract before
+  code changes.
+- **blocker-stdin-artifact-io - open; blocked by stdio-contract-design.**
+  Slice set:
+  [`blocker-stdin-artifact-io/slice-doc.md`](blocker-stdin-artifact-io/slice-doc.md),
+  [`blocker-stdin-artifact-io/ledger.md`](blocker-stdin-artifact-io/ledger.md),
+  [`blocker-stdin-artifact-io/cc-prompt.md`](blocker-stdin-artifact-io/cc-prompt.md).
+  This slice implements the accepted stdin forms through shared runtime/helper
+  code.
+- **blocker-stdio-contract-fixtures - open; blocked by stdin-artifact-io.**
+  Slice set:
+  [`blocker-stdio-contract-fixtures/slice-doc.md`](blocker-stdio-contract-fixtures/slice-doc.md),
+  [`blocker-stdio-contract-fixtures/ledger.md`](blocker-stdio-contract-fixtures/ledger.md),
+  [`blocker-stdio-contract-fixtures/cc-prompt.md`](blocker-stdio-contract-fixtures/cc-prompt.md).
+  This slice proves the stdin contract with Make-backed managed fixtures and
+  current process docs.
+- **blocker-wolong-supervision-proof - open; blocked by stdio fixtures.**
+  Slice set:
+  [`blocker-wolong-supervision-proof/slice-doc.md`](blocker-wolong-supervision-proof/slice-doc.md),
+  [`blocker-wolong-supervision-proof/ledger.md`](blocker-wolong-supervision-proof/ledger.md),
+  [`blocker-wolong-supervision-proof/cc-prompt.md`](blocker-wolong-supervision-proof/cc-prompt.md).
+  This slice verifies wolong can resume its paused Arc03 work from the
+  supported Chengdu contract.
+- **slice01 release-readiness-inventory - open, blocked by the wolong stdin
+  contract blocker set.** Slice set:
   [`slice01-release-readiness-inventory/slice-doc.md`](slice01-release-readiness-inventory/slice-doc.md),
   [`slice01-release-readiness-inventory/ledger.md`](slice01-release-readiness-inventory/ledger.md),
   [`slice01-release-readiness-inventory/cc-prompt.md`](slice01-release-readiness-inventory/cc-prompt.md).
@@ -115,7 +151,9 @@ Arc09 may create or edit:
 
 Arc09 should not change parser, grounder, engine, or runtime product behavior
 unless a release-blocking defect is found and the operator accepts a
-remediation slice or scope amendment.
+remediation slice or scope amendment. The wolong stdin contract blocker is now
+accepted as that release-blocking defect for the unnumbered blocker slices
+above.
 
 ## 7. Arc Ledger
 
@@ -149,6 +187,10 @@ remediation slice or scope amendment.
 - **OQ5 - wolong boundary.** wolong verification may require coordinated edits
   in the wolong workspace. Slice06 should keep chengdu release behavior and
   wolong consumer changes clearly separated.
+- **OQ5a - stdin process contract.** Wolong's Arc03 report reproduced that
+  `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine` reject `-` as
+  stdin input with `status=cli_usage_error`. Arc09 must close the unnumbered
+  stdin blockers before release-readiness inventory resumes.
 - **OQ6 - publication authorization.** Actual GitHub publication may require
   operator approval, credentials, and network access. Arc09 should prove as
   much as possible before that gate and record any blocked external action with
@@ -156,6 +198,15 @@ remediation slice or scope amendment.
 
 ## 9. Version History
 
+- **v1.1 - 2026-08-20.** Inserted unnumbered wolong stdin contract blocker
+  slices before Slice01 release-readiness-inventory. Surfaced by:
+  `/Users/oubiwann/lab/billosys/wolong/docs/design-v0.1.0/arc03-stdio-pipeline/chengdu-stdin-contract-blocker.md`
+  and Chengdu audit evidence in `wolong-stdin-contract-audit.md`. Why:
+  current `pandapi-*` binaries support stdout artifacts and stderr final
+  status but reject stdin input forms, blocking wolong's supervised
+  stdin/stdout/stderr acceptance path and making release-readiness inventory
+  incomplete until the contract is designed, implemented, tested, documented,
+  and verified against wolong.
 - **v1.0 - 2026-08-14.** Opened Arc09 release-prep-publication with Slice01
   release-readiness-inventory. Surfaced by: Arc08 closed and CDC-verified,
   project ledger P9, and the Arc08 release-preparation handoff. Why: the

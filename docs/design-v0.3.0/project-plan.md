@@ -543,9 +543,16 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   guidance, `pandapi-*` CLI guidance, README updates, architecture/dependency
   documentation for the new fork shape, and source-quality policy language
   that reflects Arc07's final classifications.
-- **arc09 - active; Slice01 release-readiness-inventory open.** Detailed
-  plan:
+- **arc09 - active; Slice01 release-readiness-inventory blocked by wolong
+  stdin contract blockers.** Detailed plan:
   [`arc09-release-prep-publication/arc-plan.md`](arc09-release-prep-publication/arc-plan.md).
+  Wolong blocker audit:
+  [`arc09-release-prep-publication/wolong-stdin-contract-audit.md`](arc09-release-prep-publication/wolong-stdin-contract-audit.md).
+  Open unnumbered blocker slices:
+  [`arc09-release-prep-publication/blocker-stdio-contract-design/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-design/slice-doc.md),
+  [`arc09-release-prep-publication/blocker-stdin-artifact-io/slice-doc.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/slice-doc.md),
+  [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md),
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md).
   Slice01 release-readiness-inventory is open:
   [`arc09-release-prep-publication/slice01-release-readiness-inventory/slice-doc.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/slice-doc.md),
   [`arc09-release-prep-publication/slice01-release-readiness-inventory/ledger.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/ledger.md),
@@ -554,6 +561,9 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   manifest/provenance, dependency licensing/NOTICE obligations, test-only
   dependency exclusion, source-quality release gate verification, wolong
   fetch/install/migration verification, and the actual `v0.3.0` release.
+  Release-readiness inventory must not close until the wolong stdin contract
+  blockers are designed, implemented, fixture-proven, documented, and verified
+  against wolong's paused Arc03 re-entry condition.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -689,6 +699,17 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.102 - 2026-08-20.** Inserted Arc09 unnumbered wolong stdin contract
+  blocker slices before Slice01 release-readiness-inventory. Surfaced by:
+  wolong's `chengdu-stdin-contract-blocker.md` and Chengdu audit evidence in
+  `arc09-release-prep-publication/wolong-stdin-contract-audit.md`. Why:
+  `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine` currently reject
+  stdin input forms with `status=cli_usage_error`, so wolong's supervised
+  stdin/stdout/stderr acceptance path is not implemented and Arc09 cannot
+  honestly close release-readiness inventory until the contract is designed,
+  implemented through shared helpers, fixture-proven, documented, and
+  verified against wolong.
 
 - **v1.101 - 2026-08-14.** Opened Arc09
   `release-prep-publication` with Slice01 release-readiness-inventory.

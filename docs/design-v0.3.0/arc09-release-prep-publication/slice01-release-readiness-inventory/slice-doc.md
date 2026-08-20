@@ -1,6 +1,6 @@
 # Arc09 Slice01: release-readiness-inventory
 
-Status: open
+Status: open; blocked by wolong stdin contract blockers
 Opened: 2026-08-14
 
 ## Goal
@@ -14,6 +14,11 @@ P9 and Arc09 A1-A10.
 This slice does not fix release behavior. It makes the release surface
 inspectable, names stale or missing pieces, and recommends the exact next
 slice order before package, docs, CI, wolong, or publication changes begin.
+
+As of 2026-08-20, this slice is blocked by wolong's stdin contract report.
+Arc09 must first close the unnumbered wolong stdin blocker slices opened in
+the arc plan, because release readiness cannot honestly classify wolong proof
+while `pandapi-*` stdin input behavior is absent.
 
 ## Scope
 
