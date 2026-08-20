@@ -1,7 +1,9 @@
 # Arc09 Blocker Slice: stdio-contract-design
 
-Status: open; blocks Slice01 release-readiness-inventory
+Status: closed; blocks Slice01 release-readiness-inventory until the follow-on
+stdin implementation, fixture, and wolong proof blockers close
 Opened: 2026-08-20
+Closed: 2026-08-20
 
 ## Goal
 
@@ -17,6 +19,9 @@ pandapi-parser -> pandapi-grounder -> pandapi-engine
 ```
 
 This slice decides the contract before product code changes.
+
+Accepted design:
+[`stdin-contract-design.md`](stdin-contract-design.md).
 
 ## Scope
 
@@ -69,3 +74,16 @@ result rather than an accidental parser option failure.
   implementation.
 - The implementation blocker slice has enough detail for CC to implement
   without rediscovering the design.
+
+## Closure
+
+The design decision is closed. Parser supports exactly one stdin role at a
+time, either domain from stdin or problem from stdin; parser `- -` is rejected
+because no 0.3.0 framing exists. Grounder accepts one parser-generated `.htn`
+artifact from stdin. Engine accepts one grounder-generated `.sas` artifact from
+stdin and must preserve `domain_no_plan` / `no_plan` classification for valid
+no-plan input. Repeated stdin materialization and path-role behavior belong to
+shared runtime/helper code.
+
+No product code, public docs, packaging, publication, wolong workspace, or
+`cdc-verification.md` changes are part of this slice.

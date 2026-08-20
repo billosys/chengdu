@@ -65,11 +65,11 @@ announcement after the assets and re-run behavior are verified.
 The unnumbered blocker slices are a scope insertion prompted by wolong's
 2026-08-20 stdin-contract blocker report. They intentionally precede Slice01:
 the release-readiness inventory cannot honestly classify wolong proof while
-the required stdin process contract is absent. Detailed release slices after
-Slice01 may still adjust this breakdown if the inventory finds stale release
-tooling, licensing gaps, missing Make targets, or additional wolong
-integration requirements. Any change must update this plan and its Version
-History before the next slice is opened.
+the accepted stdin process contract remains unimplemented and unproven.
+Detailed release slices after Slice01 may still adjust this breakdown if the
+inventory finds stale release tooling, licensing gaps, missing Make targets,
+or additional wolong integration requirements. Any change must update this
+plan and its Version History before the next slice is opened.
 
 ## 4. Dependencies And Inputs
 
@@ -98,13 +98,23 @@ Leaves:
 
 ## 5. Current Status
 
-- **blocker-stdio-contract-design - open; blocks Slice01.** Slice set:
+- **blocker-stdio-contract-design - closed; blocks Slice01 release-readiness-inventory
+  until follow-on stdin blockers close.** Slice set:
   [`blocker-stdio-contract-design/slice-doc.md`](blocker-stdio-contract-design/slice-doc.md),
   [`blocker-stdio-contract-design/ledger.md`](blocker-stdio-contract-design/ledger.md),
-  [`blocker-stdio-contract-design/cc-prompt.md`](blocker-stdio-contract-design/cc-prompt.md).
-  This slice decides the supported and rejected stdin input contract before
-  code changes.
-- **blocker-stdin-artifact-io - open; blocked by stdio-contract-design.**
+  [`blocker-stdio-contract-design/cc-prompt.md`](blocker-stdio-contract-design/cc-prompt.md),
+  [`blocker-stdio-contract-design/stdin-contract-design.md`](blocker-stdio-contract-design/stdin-contract-design.md).
+  Accepted design: parser supports exactly one stdin role, either domain from
+  stdin or problem from stdin; parser both inputs from stdin are rejected
+  because no 0.3.0 framing exists. Grounder supports stdin for one
+  parser-generated `.htn` artifact. Engine supports stdin for one
+  grounder-generated `.sas` artifact and must preserve `domain_no_plan` /
+  `no_plan` classification. The follow-on implementation must use shared
+  runtime/helper reuse for stdin materialization and path-role behavior while
+  preserving `--output -`, `--status=stderr`, stderr `PANDAPI_STATUS`, and
+  stdout ownership rules.
+- **blocker-stdin-artifact-io - open; ready to implement accepted stdin
+  design.**
   Slice set:
   [`blocker-stdin-artifact-io/slice-doc.md`](blocker-stdin-artifact-io/slice-doc.md),
   [`blocker-stdin-artifact-io/ledger.md`](blocker-stdin-artifact-io/ledger.md),
@@ -198,6 +208,15 @@ above.
 
 ## 9. Version History
 
+- **v1.2 - 2026-08-20.** Closed `blocker-stdio-contract-design` with accepted
+  stdin contract in
+  `blocker-stdio-contract-design/stdin-contract-design.md`. Surfaced by:
+  wolong's paused supervised stdin/stdout/stderr pipeline and the Chengdu
+  audit showing all `pandapi-*` stdin forms currently reject as
+  `cli_usage_error`. Why: Arc09 needs explicit supported/rejected stdin forms,
+  parser two-input role semantics, shared helper ownership, and stdout/stderr
+  status preservation before product implementation or release-readiness
+  inventory can resume.
 - **v1.1 - 2026-08-20.** Inserted unnumbered wolong stdin contract blocker
   slices before Slice01 release-readiness-inventory. Surfaced by:
   `/Users/oubiwann/lab/billosys/wolong/docs/design-v0.1.0/arc03-stdio-pipeline/chengdu-stdin-contract-blocker.md`

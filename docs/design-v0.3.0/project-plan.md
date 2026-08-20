@@ -543,13 +543,15 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   guidance, `pandapi-*` CLI guidance, README updates, architecture/dependency
   documentation for the new fork shape, and source-quality policy language
   that reflects Arc07's final classifications.
-- **arc09 - active; Slice01 release-readiness-inventory blocked by wolong
-  stdin contract blockers.** Detailed plan:
+- **arc09 - active; Slice01 release-readiness-inventory blocked by remaining
+  wolong stdin contract blockers.** Detailed plan:
   [`arc09-release-prep-publication/arc-plan.md`](arc09-release-prep-publication/arc-plan.md).
   Wolong blocker audit:
   [`arc09-release-prep-publication/wolong-stdin-contract-audit.md`](arc09-release-prep-publication/wolong-stdin-contract-audit.md).
-  Open unnumbered blocker slices:
+  Closed design blocker:
   [`arc09-release-prep-publication/blocker-stdio-contract-design/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-design/slice-doc.md),
+  [`arc09-release-prep-publication/blocker-stdio-contract-design/stdin-contract-design.md`](arc09-release-prep-publication/blocker-stdio-contract-design/stdin-contract-design.md).
+  Open follow-on blocker slices:
   [`arc09-release-prep-publication/blocker-stdin-artifact-io/slice-doc.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/slice-doc.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md),
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md).
@@ -561,9 +563,9 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   manifest/provenance, dependency licensing/NOTICE obligations, test-only
   dependency exclusion, source-quality release gate verification, wolong
   fetch/install/migration verification, and the actual `v0.3.0` release.
-  Release-readiness inventory must not close until the wolong stdin contract
-  blockers are designed, implemented, fixture-proven, documented, and verified
-  against wolong's paused Arc03 re-entry condition.
+  Release-readiness inventory must not close until the accepted wolong stdin
+  contract is implemented, fixture-proven, documented, and verified against
+  wolong's paused Arc03 re-entry condition.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -699,6 +701,15 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.103 - 2026-08-20.** Closed Arc09
+  `blocker-stdio-contract-design` with an accepted stdin contract. Surfaced by:
+  the wolong stdin blocker and Arc09 audit evidence. Why: parser domain from
+  stdin, parser problem from stdin, parser both-stdin rejection/framing,
+  grounder `.htn` stdin, engine `.sas` stdin, stdout/stderr status ownership,
+  and shared runtime/helper stdin materialization are now designed, while
+  Slice01 release-readiness-inventory remains blocked on implementation,
+  fixtures, documentation, and wolong proof.
 
 - **v1.102 - 2026-08-20.** Inserted Arc09 unnumbered wolong stdin contract
   blocker slices before Slice01 release-readiness-inventory. Surfaced by:
