@@ -1,5 +1,6 @@
 #include "pandapi/runtime/status.hpp"
 #include "pandapi/runtime/status_io.hpp"
+#include "pandapi/runtime/stdin_materialization.hpp"
 
 #include <cerrno>
 #include <cstdio>
@@ -7,6 +8,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -21,13 +23,29 @@ int pandaPIgrounder_legacy_main(int argc, char** argv);
 namespace {
 
 using pandapi::runtime::Component;
+using pandapi::runtime::InputPathRole;
+using pandapi::runtime::MaterializedStdin;
 using pandapi::runtime::PartialOutputPolicy;
 using pandapi::runtime::ProcessStatus;
 using pandapi::runtime::StatusCode;
 using pandapi::runtime::StatusRecord;
+using pandapi::runtime::StdinMaterializationRequest;
 using pandapi::runtime::SurfaceDisposition;
 
 constexpr std::string_view hidden_driver = "--pandapi-grounder-legacy-driver";
+
+class ProcessExit {
+public:
+  explicit ProcessExit(int exit_code) noexcept
+      : exit_code_{exit_code}
+  {
+  }
+
+  [[nodiscard]] int exit_code() const noexcept { return exit_code_; }
+
+private:
+  int exit_code_;
+};
 
 enum class StatusTarget {
   None,
@@ -97,7 +115,7 @@ private:
 
 [[nodiscard]] bool is_directory(const std::string& path)
 {
-  struct stat st {};
+  struct stat st{};
   return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
 }
 
@@ -164,9 +182,9 @@ private:
   return haystack.find(needle) != std::string_view::npos;
 }
 
-[[nodiscard]] ProcessStatus make_status(StatusCode code,
-                                        SurfaceDisposition disposition =
-                                            SurfaceDisposition::Supported)
+[[nodiscard]] ProcessStatus
+make_status(StatusCode code,
+            SurfaceDisposition disposition = SurfaceDisposition::Supported)
 {
   return ProcessStatus::from_code(code, Component::Grounder, disposition);
 }
@@ -200,9 +218,8 @@ void emit_status(StatusTarget target, StatusCode code, PartialOutputPolicy polic
     return;
   }
 
-  auto record_result =
-      StatusRecord::create(make_status(code, surface_disposition(code)),
-                           status_surface(code));
+  auto record_result = StatusRecord::create(
+      make_status(code, surface_disposition(code)), status_surface(code));
   if (!record_result.has_value()) {
     return;
   }
@@ -225,8 +242,8 @@ void emit_status(StatusTarget target, StatusCode code, PartialOutputPolicy polic
                          const std::vector<pandapi::runtime::StatusField>& fields = {})
 {
   emit_status(target, code, policy, fields);
-  std::exit(pandapi::runtime::exit_code(
-      make_status(code, surface_disposition(code))));
+  throw ProcessExit{
+      pandapi::runtime::exit_code(make_status(code, surface_disposition(code)))};
 }
 
 [[noreturn]] void usage_error(std::string_view message, StatusTarget target)
@@ -268,8 +285,7 @@ void set_info_command(Options& options, std::string command)
     } else if (arg == "--status=stdout") {
       options.status_target = StatusTarget::Stdout;
     } else if (arg.rfind("--status=", 0) == 0) {
-      usage_error("invalid --status value: " + arg.substr(9),
-                  options.status_target);
+      usage_error("invalid --status value: " + arg.substr(9), options.status_target);
     } else if (arg == "--output") {
       if (options.output_given) {
         usage_error("--output specified more than once", options.status_target);
@@ -299,8 +315,7 @@ void set_info_command(Options& options, std::string command)
       options.verbose = true;
     } else if (arg == "--color") {
       if (i + 1 >= argc) {
-        usage_error("--color requires auto, always, or never",
-                    options.status_target);
+        usage_error("--color requires auto, always, or never", options.status_target);
       }
       options.color_mode = argv[++i];
     } else if (arg.rfind("--color=", 0) == 0) {
@@ -310,9 +325,8 @@ void set_info_command(Options& options, std::string command)
       options.color_mode = "never";
     } else if (arg == "--h2" || arg == "-2") {
       options.fenced_surface = StatusCode::ExperimentalSurface;
-    } else if (arg == "--invariants" || arg == "-i" ||
-               arg == "--output-domain" || arg == "-O" ||
-               arg == "--sasplus" || arg == "-s" || arg == "--hddl" ||
+    } else if (arg == "--invariants" || arg == "-i" || arg == "--output-domain" ||
+               arg == "-O" || arg == "--sasplus" || arg == "-s" || arg == "--hddl" ||
                arg == "-H" || arg == "--no-output" || arg == "-g") {
       options.fenced_surface = StatusCode::LegacySurface;
     } else if (arg == "--plan") {
@@ -328,6 +342,8 @@ void set_info_command(Options& options, std::string command)
         options.operands.emplace_back(argv[i]);
       }
       break;
+    } else if (pandapi::runtime::is_stdin_sentinel(arg)) {
+      options.operands.push_back(arg);
     } else if (!arg.empty() && arg.front() == '-') {
       usage_error("unknown option: " + arg, options.status_target);
     } else {
@@ -337,8 +353,7 @@ void set_info_command(Options& options, std::string command)
 
   if (options.color_mode != "auto" && options.color_mode != "always" &&
       options.color_mode != "never") {
-    usage_error("invalid --color value: " + options.color_mode,
-                options.status_target);
+    usage_error("invalid --color value: " + options.color_mode, options.status_target);
   }
 
   return options;
@@ -346,31 +361,30 @@ void set_info_command(Options& options, std::string command)
 
 void print_help()
 {
-  std::cout
-      << "Usage: pandapi-grounder [COMMON] [--output OUT.sas|-] INPUT.htn\n\n"
-      << "Supported surface:\n"
-      << "  Normal parser-generated .htn grounding to pandaPI .sas output.\n\n"
-      << "Common options:\n"
-      << "  --output PATH|-        Write the grounder artifact to PATH, or to "
-         "stdout with -.\n"
-      << "  --status[=stderr]     Emit one final PANDAPI_STATUS record on "
-         "stderr.\n"
-      << "  --status=stdout       Emit final status on stdout only when stdout "
-         "is otherwise empty.\n"
-      << "  --supervised          Suppress inherited human prose, progress, "
-         "statistics, and ANSI behavior.\n"
-      << "  --quiet               Suppress non-fatal human diagnostics.\n"
-      << "  --verbose             Permit additional human diagnostics on "
-         "stderr.\n"
-      << "  --color=auto|always|never\n"
-      << "  --no-color, --no-colour\n"
-      << "  --help                Show this help.\n"
-      << "  --version             Show version fields.\n"
-      << "  --provenance          Show provenance fields.\n\n"
-      << "Compatibility:\n"
-      << "  H2 is experimental, and cpddl/FAM inference remains a legacy "
-         "surface; neither is supported normal grounding behavior through "
-         "pandapi-grounder.\n";
+  std::cout << "Usage: pandapi-grounder [COMMON] [--output OUT.sas|-] INPUT.htn|-\n\n"
+            << "Supported surface:\n"
+            << "  Normal parser-generated .htn grounding to pandaPI .sas output.\n\n"
+            << "Common options:\n"
+            << "  --output PATH|-        Write the grounder artifact to PATH, or to "
+               "stdout with -.\n"
+            << "  --status[=stderr]     Emit one final PANDAPI_STATUS record on "
+               "stderr.\n"
+            << "  --status=stdout       Emit final status on stdout only when stdout "
+               "is otherwise empty.\n"
+            << "  --supervised          Suppress inherited human prose, progress, "
+               "statistics, and ANSI behavior.\n"
+            << "  --quiet               Suppress non-fatal human diagnostics.\n"
+            << "  --verbose             Permit additional human diagnostics on "
+               "stderr.\n"
+            << "  --color=auto|always|never\n"
+            << "  --no-color, --no-colour\n"
+            << "  --help                Show this help.\n"
+            << "  --version             Show version fields.\n"
+            << "  --provenance          Show provenance fields.\n\n"
+            << "Compatibility:\n"
+            << "  H2 is experimental, and cpddl/FAM inference remains a legacy "
+               "surface; neither is supported normal grounding behavior through "
+               "pandapi-grounder.\n";
 }
 
 [[nodiscard]] std::vector<std::string> provenance_lines()
@@ -380,8 +394,7 @@ void print_help()
   std::string line;
   bool in_grounder = false;
   while (std::getline(in, line)) {
-    if (line == "component=pandapi-grounder" ||
-        line == "component=pandaPIgrounder") {
+    if (line == "component=pandapi-grounder" || line == "component=pandaPIgrounder") {
       in_grounder = true;
       continue;
     }
@@ -391,10 +404,8 @@ void print_help()
     if (!in_grounder) {
       continue;
     }
-    if (line.rfind("chengdu_commit=", 0) == 0 ||
-        line.rfind("upstream_sha=", 0) == 0 ||
-        line.rfind("import_commit=", 0) == 0 ||
-        line.rfind("compiler=", 0) == 0) {
+    if (line.rfind("chengdu_commit=", 0) == 0 || line.rfind("upstream_sha=", 0) == 0 ||
+        line.rfind("import_commit=", 0) == 0 || line.rfind("compiler=", 0) == 0) {
       lines.push_back(line);
     }
   }
@@ -442,8 +453,8 @@ void print_provenance()
       _exit(127);
     }
 
-    std::vector<std::string> args{self, std::string{hidden_driver}, "--quiet",
-                                  input, legacy_out};
+    std::vector<std::string> args{self, std::string{hidden_driver}, "--quiet", input,
+                                  legacy_out};
     std::vector<char*> exec_args;
     exec_args.reserve(args.size() + 1);
     for (auto& arg : args) {
@@ -483,6 +494,7 @@ int run_hidden_driver(int argc, char** argv)
 } // namespace
 
 int main(int argc, char** argv)
+try
 {
   std::ios::sync_with_stdio(false);
 
@@ -542,8 +554,7 @@ int main(int argc, char** argv)
       usage_error("too many positional arguments", options.status_target);
     }
   } else if (options.operands.size() != 1) {
-    usage_error("exactly INPUT.htn is required with --output",
-                options.status_target);
+    usage_error("exactly INPUT.htn is required with --output", options.status_target);
   }
 
   if (options.status_target == StatusTarget::Stdout && options.output_path == "-") {
@@ -563,14 +574,53 @@ int main(int argc, char** argv)
     options.color_mode = "never";
   }
 
-  const auto& input = options.operands[0];
+  std::string input = options.operands[0];
+  std::optional<MaterializedStdin> materialized_stdin;
+  if (pandapi::runtime::is_stdin_sentinel(input)) {
+    auto materialized = pandapi::runtime::materialize_stdin(
+        std::cin,
+        StdinMaterializationRequest{Component::Grounder, InputPathRole::GrounderHtn,
+                                    "pandapi-grounder-stdin"});
+    if (!materialized.has_value()) {
+      const auto fields = pandapi::runtime::stdin_status_fields(
+          InputPathRole::GrounderHtn,
+          pandapi::runtime::stdin_failure_operation(materialized.status()));
+      if (!options.quiet) {
+        std::cerr << "pandapi-grounder: cannot materialize stdin input\n";
+      }
+      finish(options.status_target, materialized.status().code(),
+             PartialOutputPolicy::Absent, fields);
+    }
+    materialized_stdin = std::move(materialized.value());
+    input = materialized_stdin->path();
+  }
+
+  const auto cleanup_materialized_stdin = [&]() {
+    if (materialized_stdin && !materialized_stdin->cleanup()) {
+      finish(options.status_target, StatusCode::OutputUnavailable,
+             PartialOutputPolicy::Absent,
+             pandapi::runtime::stdin_status_fields(
+                 materialized_stdin->path_role(),
+                 pandapi::runtime::StdinOperation::Cleanup));
+    }
+  };
+  const auto append_stdin_status_fields =
+      [&](std::vector<pandapi::runtime::StatusField>& fields) {
+        if (materialized_stdin) {
+          auto stdin_fields = pandapi::runtime::stdin_status_fields(
+              materialized_stdin->path_role(), pandapi::runtime::StdinOperation::Read);
+          fields.insert(fields.end(), stdin_fields.begin(), stdin_fields.end());
+        }
+      };
+
   if (!is_readable_file(input)) {
     if (!options.quiet) {
-      std::cerr << "pandapi-grounder: cannot read input: " << input << '\n';
+      std::cerr << "pandapi-grounder: cannot read input: " << options.operands[0]
+                << '\n';
     }
+    cleanup_materialized_stdin();
     finish(options.status_target, StatusCode::InputUnavailable,
-           PartialOutputPolicy::Absent,
-           {{"path_role", "htn"}, {"operation", "open"}});
+           PartialOutputPolicy::Absent, {{"path_role", "htn"}, {"operation", "open"}});
   }
 
   if (!probe_writable_output(options.output_path)) {
@@ -578,6 +628,7 @@ int main(int argc, char** argv)
       std::cerr << "pandapi-grounder: cannot write output: " << options.output_path
                 << '\n';
     }
+    cleanup_materialized_stdin();
     finish(options.status_target, StatusCode::OutputUnavailable,
            PartialOutputPolicy::Absent,
            {{"path_role", "output"}, {"operation", "open"}});
@@ -594,6 +645,7 @@ int main(int argc, char** argv)
   const auto legacy_stderr = work.file("stderr.txt");
   const auto child =
       run_legacy_child(argv[0], input, legacy_out, legacy_stdout, legacy_stderr);
+  cleanup_materialized_stdin();
 
   if (child.exit_code != 0) {
     if (options.output_path != "-") {
@@ -619,7 +671,7 @@ int main(int argc, char** argv)
            PartialOutputPolicy::Discarded);
   }
 
-  struct stat st {};
+  struct stat st{};
   if (stat(legacy_out.c_str(), &st) != 0 || st.st_size == 0) {
     if (!options.quiet) {
       std::cerr << "pandapi-grounder: legacy grounder produced no output artifact\n";
@@ -631,15 +683,16 @@ int main(int argc, char** argv)
   if (options.output_path == "-") {
     std::cout << read_file(legacy_out);
   } else {
-    const auto tmp_output =
-        options.output_path + ".tmp." + std::to_string(static_cast<long long>(getpid()));
+    const auto tmp_output = options.output_path + ".tmp." +
+                            std::to_string(static_cast<long long>(getpid()));
     std::remove(tmp_output.c_str());
-    if (!copy_file(legacy_out, tmp_output) || !move_file(tmp_output, options.output_path)) {
+    if (!copy_file(legacy_out, tmp_output) ||
+        !move_file(tmp_output, options.output_path)) {
       std::remove(tmp_output.c_str());
       std::remove(options.output_path.c_str());
       if (!options.quiet) {
-        std::cerr << "pandapi-grounder: cannot finalize output: "
-                  << options.output_path << '\n';
+        std::cerr << "pandapi-grounder: cannot finalize output: " << options.output_path
+                  << '\n';
       }
       finish(options.status_target, StatusCode::OutputUnavailable,
              PartialOutputPolicy::Discarded,
@@ -651,13 +704,14 @@ int main(int argc, char** argv)
     std::cerr << read_file(child.stderr_path);
   }
 
-  std::vector<pandapi::runtime::StatusField> fields{{"artifact",
-                                                     options.output_path == "-"
-                                                         ? "stdout"
-                                                         : "file"}};
+  std::vector<pandapi::runtime::StatusField> fields{
+      {"artifact", options.output_path == "-" ? "stdout" : "file"}};
   if (options.positional_output_alias) {
     fields.push_back({"positional_output_alias", "true"});
   }
-  finish(options.status_target, StatusCode::Ok, PartialOutputPolicy::Complete,
-         fields);
+  append_stdin_status_fields(fields);
+  finish(options.status_target, StatusCode::Ok, PartialOutputPolicy::Complete, fields);
+}
+catch (const ProcessExit& process_exit) {
+  return process_exit.exit_code();
 }

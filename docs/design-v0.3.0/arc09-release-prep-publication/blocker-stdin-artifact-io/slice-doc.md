@@ -1,7 +1,8 @@
 # Arc09 Blocker Slice: stdin-artifact-io
 
-Status: open; blocks Slice01 release-readiness-inventory
+Status: closed; Slice01 remains blocked by follow-on stdin fixtures and wolong proof
 Opened: 2026-08-20
+Closed: 2026-08-20
 
 ## Goal
 
@@ -50,3 +51,27 @@ and failure status are tested.
 - Existing managed contract, smoke, sanitizer, static-analysis, and
   source-quality gates remain green or have explicit release-blocker evidence.
 - Unsupported stdin forms return stable documented status and exit code.
+
+## Closure Evidence
+
+The implementation closes the accepted stdin contract from
+`blocker-stdio-contract-design/stdin-contract-design.md` for the product
+entrypoints:
+
+- `pandapi-parser` accepts exactly one stdin role: domain from stdin or
+  problem from stdin. Parser `- -` is rejected with `cli_usage_error`.
+- `pandapi-grounder` accepts one parser-generated `.htn` artifact on stdin.
+- `pandapi-engine` accepts one grounder-generated `.sas` artifact on stdin and
+  preserves `domain_no_plan` / `outcome=no_plan` for unsolvable stdin input.
+
+Shared runtime code owns stdin materialization, path-role status fields,
+temporary-file cleanup, and materialization failure status mapping:
+
+- `pandaPI/runtime/include/pandapi/runtime/stdin_materialization.hpp`
+- `pandaPI/runtime/src/stdin_materialization.cpp`
+- `pandaPI/runtime/tests/stdin_materialization_smoke.cpp`
+
+Exact closure commands and results are recorded in
+[`ledger.md`](ledger.md). The next blocker slice must turn these implemented
+stdin behaviors into Make-backed managed fixtures, CI coverage, and current
+public process documentation before wolong supervision proof can resume.

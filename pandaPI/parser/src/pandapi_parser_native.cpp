@@ -1,5 +1,6 @@
 #include "pandapi/runtime/status.hpp"
 #include "pandapi/runtime/status_io.hpp"
+#include "pandapi/runtime/stdin_materialization.hpp"
 
 #include <cerrno>
 #include <cstdio>
@@ -7,6 +8,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -21,14 +23,30 @@ int pandaPIparser_legacy_main(int argc, char** argv);
 namespace {
 
 using pandapi::runtime::Component;
+using pandapi::runtime::InputPathRole;
+using pandapi::runtime::MaterializedStdin;
 using pandapi::runtime::PartialOutputPolicy;
 using pandapi::runtime::ProcessStatus;
 using pandapi::runtime::StatusCode;
 using pandapi::runtime::StatusRecord;
 using pandapi::runtime::StatusStream;
+using pandapi::runtime::StdinMaterializationRequest;
 using pandapi::runtime::SurfaceDisposition;
 
 constexpr std::string_view hidden_driver = "--pandapi-parser-legacy-driver";
+
+class ProcessExit {
+public:
+  explicit ProcessExit(int exit_code) noexcept
+      : exit_code_{exit_code}
+  {
+  }
+
+  [[nodiscard]] int exit_code() const noexcept { return exit_code_; }
+
+private:
+  int exit_code_;
+};
 
 enum class StatusTarget {
   None,
@@ -98,7 +116,7 @@ private:
 
 [[nodiscard]] bool is_directory(const std::string& path)
 {
-  struct stat st {};
+  struct stat st{};
   return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
 }
 
@@ -168,15 +186,51 @@ private:
 [[nodiscard]] bool is_legacy_surface_option(std::string_view arg)
 {
   static constexpr std::string_view options[] = {
-      "-c", "--panda-converter", "-p", "--properties", "-v", "--verify",
-      "-V", "--vverify", "-W", "--vvverify", "-l", "--lenient", "-o",
-      "--verify-no-order", "-E", "--verification-encoding", "-S", "--shop",
-      "-1", "--shop1", "-H", "--hpdl", "-R", "--hppdl", "-h", "--hddl",
-      "-P", "--processed-hddl", "-i", "--internal-hddl",
-      "--no-domain-constants", "--remove-method-preconditions", "-m",
-      "--goal-action", "-g", "--encode-disjunctive-preconditions-in-htn", "-D",
-      "--keep-conditional-effects", "-k", "--linear-conditional-effect", "-L",
-      "--no-split-parameters", "-s", "--debug", "-d"};
+      "-c",
+      "--panda-converter",
+      "-p",
+      "--properties",
+      "-v",
+      "--verify",
+      "-V",
+      "--vverify",
+      "-W",
+      "--vvverify",
+      "-l",
+      "--lenient",
+      "-o",
+      "--verify-no-order",
+      "-E",
+      "--verification-encoding",
+      "-S",
+      "--shop",
+      "-1",
+      "--shop1",
+      "-H",
+      "--hpdl",
+      "-R",
+      "--hppdl",
+      "-h",
+      "--hddl",
+      "-P",
+      "--processed-hddl",
+      "-i",
+      "--internal-hddl",
+      "--no-domain-constants",
+      "--remove-method-preconditions",
+      "-m",
+      "--goal-action",
+      "-g",
+      "--encode-disjunctive-preconditions-in-htn",
+      "-D",
+      "--keep-conditional-effects",
+      "-k",
+      "--linear-conditional-effect",
+      "-L",
+      "--no-split-parameters",
+      "-s",
+      "--debug",
+      "-d"};
 
   for (const auto option : options) {
     if (arg == option) {
@@ -186,9 +240,9 @@ private:
   return false;
 }
 
-[[nodiscard]] ProcessStatus make_status(StatusCode code,
-                                        SurfaceDisposition disposition =
-                                            SurfaceDisposition::Supported)
+[[nodiscard]] ProcessStatus
+make_status(StatusCode code,
+            SurfaceDisposition disposition = SurfaceDisposition::Supported)
 {
   return ProcessStatus::from_code(code, Component::Parser, disposition);
 }
@@ -235,9 +289,9 @@ void emit_status(StatusTarget target, StatusCode code, PartialOutputPolicy polic
                          const std::vector<pandapi::runtime::StatusField>& fields = {})
 {
   emit_status(target, code, policy, fields);
-  std::exit(pandapi::runtime::exit_code(make_status(
+  throw ProcessExit{pandapi::runtime::exit_code(make_status(
       code, code == StatusCode::LegacySurface ? SurfaceDisposition::Legacy
-                                              : SurfaceDisposition::Supported)));
+                                              : SurfaceDisposition::Supported))};
 }
 
 [[noreturn]] void usage_error(std::string_view message, StatusTarget target)
@@ -279,8 +333,7 @@ void set_info_command(Options& options, std::string command)
     } else if (arg == "--status=stdout") {
       options.status_target = StatusTarget::Stdout;
     } else if (arg.rfind("--status=", 0) == 0) {
-      usage_error("invalid --status value: " + arg.substr(9),
-                  options.status_target);
+      usage_error("invalid --status value: " + arg.substr(9), options.status_target);
     } else if (arg == "--output") {
       if (options.output_given) {
         usage_error("--output specified more than once", options.status_target);
@@ -310,8 +363,7 @@ void set_info_command(Options& options, std::string command)
       options.verbose = true;
     } else if (arg == "--color") {
       if (i + 1 >= argc) {
-        usage_error("--color requires auto, always, or never",
-                    options.status_target);
+        usage_error("--color requires auto, always, or never", options.status_target);
       }
       options.color_mode = argv[++i];
     } else if (arg.rfind("--color=", 0) == 0) {
@@ -324,6 +376,8 @@ void set_info_command(Options& options, std::string command)
         options.operands.emplace_back(argv[i]);
       }
       break;
+    } else if (pandapi::runtime::is_stdin_sentinel(arg)) {
+      options.operands.push_back(arg);
     } else if (!arg.empty() && arg.front() == '-') {
       if (is_legacy_surface_option(arg)) {
         legacy_surface(options.status_target);
@@ -336,8 +390,7 @@ void set_info_command(Options& options, std::string command)
 
   if (options.color_mode != "auto" && options.color_mode != "always" &&
       options.color_mode != "never") {
-    usage_error("invalid --color value: " + options.color_mode,
-                options.status_target);
+    usage_error("invalid --color value: " + options.color_mode, options.status_target);
   }
 
   return options;
@@ -345,31 +398,32 @@ void set_info_command(Options& options, std::string command)
 
 void print_help()
 {
-  std::cout
-      << "Usage: pandapi-parser [COMMON] [--output OUT.htn|-] DOMAIN.hddl "
-         "PROBLEM.hddl\n\n"
-      << "Supported surface:\n"
-      << "  Normal HDDL domain/problem parsing to pandaPI .htn output.\n\n"
-      << "Common options:\n"
-      << "  --output PATH|-        Write the parser artifact to PATH, or to "
-         "stdout with -.\n"
-      << "  --status[=stderr]     Emit one final PANDAPI_STATUS record on "
-         "stderr.\n"
-      << "  --status=stdout       Emit final status on stdout only when stdout "
-         "is otherwise empty.\n"
-      << "  --supervised          Suppress inherited human prose and ANSI "
-         "behavior.\n"
-      << "  --quiet               Suppress non-fatal human diagnostics.\n"
-      << "  --verbose             Permit additional human diagnostics on "
-         "stderr.\n"
-      << "  --color=auto|always|never\n"
-      << "  --no-color, --no-colour\n"
-      << "  --help                Show this help.\n"
-      << "  --version             Show version fields.\n"
-      << "  --provenance          Show provenance fields.\n\n"
-      << "Compatibility:\n"
-      << "  Inherited parser helper modes are not supported managed-process "
-         "surfaces through pandapi-parser.\n";
+  std::cout << "Usage: pandapi-parser [COMMON] [--output OUT.htn|-] DOMAIN.hddl "
+               "PROBLEM.hddl\n"
+            << "       pandapi-parser [COMMON] [--output OUT.htn|-] - PROBLEM.hddl\n"
+            << "       pandapi-parser [COMMON] [--output OUT.htn|-] DOMAIN.hddl -\n\n"
+            << "Supported surface:\n"
+            << "  Normal HDDL domain/problem parsing to pandaPI .htn output.\n\n"
+            << "Common options:\n"
+            << "  --output PATH|-        Write the parser artifact to PATH, or to "
+               "stdout with -.\n"
+            << "  --status[=stderr]     Emit one final PANDAPI_STATUS record on "
+               "stderr.\n"
+            << "  --status=stdout       Emit final status on stdout only when stdout "
+               "is otherwise empty.\n"
+            << "  --supervised          Suppress inherited human prose and ANSI "
+               "behavior.\n"
+            << "  --quiet               Suppress non-fatal human diagnostics.\n"
+            << "  --verbose             Permit additional human diagnostics on "
+               "stderr.\n"
+            << "  --color=auto|always|never\n"
+            << "  --no-color, --no-colour\n"
+            << "  --help                Show this help.\n"
+            << "  --version             Show version fields.\n"
+            << "  --provenance          Show provenance fields.\n\n"
+            << "Compatibility:\n"
+            << "  Inherited parser helper modes are not supported managed-process "
+               "surfaces through pandapi-parser.\n";
 }
 
 [[nodiscard]] std::vector<std::string> provenance_lines()
@@ -389,10 +443,8 @@ void print_help()
     if (!in_parser) {
       continue;
     }
-    if (line.rfind("chengdu_commit=", 0) == 0 ||
-        line.rfind("upstream_sha=", 0) == 0 ||
-        line.rfind("import_commit=", 0) == 0 ||
-        line.rfind("compiler=", 0) == 0) {
+    if (line.rfind("chengdu_commit=", 0) == 0 || line.rfind("upstream_sha=", 0) == 0 ||
+        line.rfind("import_commit=", 0) == 0 || line.rfind("compiler=", 0) == 0) {
       lines.push_back(line);
     }
   }
@@ -430,8 +482,7 @@ void print_provenance()
       continue;
     }
     auto cursor = marker + std::string{"(:include"}.size();
-    while (cursor < line.size() &&
-           (line[cursor] == ' ' || line[cursor] == '\t')) {
+    while (cursor < line.size() && (line[cursor] == ' ' || line[cursor] == '\t')) {
       ++cursor;
     }
     const auto start = cursor;
@@ -449,12 +500,10 @@ void print_provenance()
   return false;
 }
 
-[[nodiscard]] ChildResult run_legacy_child(const std::string& self,
-                                           const std::string& domain,
-                                           const std::string& problem,
-                                           const std::string& legacy_out,
-                                           const std::string& stdout_path,
-                                           const std::string& stderr_path)
+[[nodiscard]] ChildResult
+run_legacy_child(const std::string& self, const std::string& domain,
+                 const std::string& problem, const std::string& legacy_out,
+                 const std::string& stdout_path, const std::string& stderr_path)
 {
   const pid_t pid = fork();
   if (pid < 0) {
@@ -468,8 +517,8 @@ void print_provenance()
       _exit(127);
     }
 
-    std::vector<std::string> args{self, std::string{hidden_driver}, "-C", domain,
-                                  problem, legacy_out};
+    std::vector<std::string> args{
+        self, std::string{hidden_driver}, "-C", domain, problem, legacy_out};
     std::vector<char*> exec_args;
     exec_args.reserve(args.size() + 1);
     for (auto& arg : args) {
@@ -509,6 +558,7 @@ int run_hidden_driver(int argc, char** argv)
 } // namespace
 
 int main(int argc, char** argv)
+try
 {
   std::ios::sync_with_stdio(false);
 
@@ -576,20 +626,74 @@ int main(int argc, char** argv)
     options.color_mode = "never";
   }
 
-  const auto& domain = options.operands[0];
-  const auto& problem = options.operands[1];
+  std::string domain = options.operands[0];
+  std::string problem = options.operands[1];
+  const bool domain_from_stdin = pandapi::runtime::is_stdin_sentinel(domain);
+  const bool problem_from_stdin = pandapi::runtime::is_stdin_sentinel(problem);
+  if (domain_from_stdin && problem_from_stdin) {
+    usage_error("parser cannot read both domain and problem from stdin without "
+                "an accepted framing contract",
+                options.status_target);
+  }
+
+  std::optional<MaterializedStdin> materialized_stdin;
+  if (domain_from_stdin || problem_from_stdin) {
+    const auto path_role =
+        domain_from_stdin ? InputPathRole::ParserDomain : InputPathRole::ParserProblem;
+    auto materialized = pandapi::runtime::materialize_stdin(
+        std::cin, StdinMaterializationRequest{Component::Parser, path_role,
+                                              "pandapi-parser-stdin"});
+    if (!materialized.has_value()) {
+      const auto fields = pandapi::runtime::stdin_status_fields(
+          path_role, pandapi::runtime::stdin_failure_operation(materialized.status()));
+      if (!options.quiet) {
+        std::cerr << "pandapi-parser: cannot materialize stdin input\n";
+      }
+      finish(options.status_target, materialized.status().code(),
+             PartialOutputPolicy::Absent, fields);
+    }
+    materialized_stdin = std::move(materialized.value());
+    if (domain_from_stdin) {
+      domain = materialized_stdin->path();
+    } else {
+      problem = materialized_stdin->path();
+    }
+  }
+
+  const auto cleanup_materialized_stdin = [&]() {
+    if (materialized_stdin && !materialized_stdin->cleanup()) {
+      finish(options.status_target, StatusCode::OutputUnavailable,
+             PartialOutputPolicy::Absent,
+             pandapi::runtime::stdin_status_fields(
+                 materialized_stdin->path_role(),
+                 pandapi::runtime::StdinOperation::Cleanup));
+    }
+  };
+  const auto append_stdin_status_fields =
+      [&](std::vector<pandapi::runtime::StatusField>& fields) {
+        if (materialized_stdin) {
+          auto stdin_fields = pandapi::runtime::stdin_status_fields(
+              materialized_stdin->path_role(), pandapi::runtime::StdinOperation::Read);
+          fields.insert(fields.end(), stdin_fields.begin(), stdin_fields.end());
+        }
+      };
+
   if (!is_readable_file(domain)) {
     if (!options.quiet) {
-      std::cerr << "pandapi-parser: cannot read domain: " << domain << '\n';
+      std::cerr << "pandapi-parser: cannot read domain: " << options.operands[0]
+                << '\n';
     }
+    cleanup_materialized_stdin();
     finish(options.status_target, StatusCode::InputUnavailable,
            PartialOutputPolicy::Absent,
            {{"path_role", "domain"}, {"operation", "open"}});
   }
   if (!is_readable_file(problem)) {
     if (!options.quiet) {
-      std::cerr << "pandapi-parser: cannot read problem: " << problem << '\n';
+      std::cerr << "pandapi-parser: cannot read problem: " << options.operands[1]
+                << '\n';
     }
+    cleanup_materialized_stdin();
     finish(options.status_target, StatusCode::InputUnavailable,
            PartialOutputPolicy::Absent,
            {{"path_role", "problem"}, {"operation", "open"}});
@@ -598,9 +702,9 @@ int main(int argc, char** argv)
   std::string include_name;
   if (missing_include(domain, include_name) || missing_include(problem, include_name)) {
     if (!options.quiet) {
-      std::cerr << "pandapi-parser: cannot read include: " << include_name
-                << ".hddl\n";
+      std::cerr << "pandapi-parser: cannot read include: " << include_name << ".hddl\n";
     }
+    cleanup_materialized_stdin();
     finish(options.status_target, StatusCode::InputUnavailable,
            PartialOutputPolicy::Absent,
            {{"path_role", "include"},
@@ -613,6 +717,7 @@ int main(int argc, char** argv)
       std::cerr << "pandapi-parser: cannot write output: " << options.output_path
                 << '\n';
     }
+    cleanup_materialized_stdin();
     finish(options.status_target, StatusCode::OutputUnavailable,
            PartialOutputPolicy::Absent,
            {{"path_role", "output"}, {"operation", "open"}});
@@ -627,8 +732,9 @@ int main(int argc, char** argv)
   const auto legacy_out = work.file("parser.htn");
   const auto legacy_stdout = work.file("stdout.txt");
   const auto legacy_stderr = work.file("stderr.txt");
-  const auto child =
-      run_legacy_child(argv[0], domain, problem, legacy_out, legacy_stdout, legacy_stderr);
+  const auto child = run_legacy_child(argv[0], domain, problem, legacy_out,
+                                      legacy_stdout, legacy_stderr);
+  cleanup_materialized_stdin();
 
   if (child.exit_code != 0) {
     if (options.output_path != "-") {
@@ -652,7 +758,7 @@ int main(int argc, char** argv)
            PartialOutputPolicy::Discarded);
   }
 
-  struct stat st {};
+  struct stat st{};
   if (stat(legacy_out.c_str(), &st) != 0 || st.st_size == 0) {
     if (!options.quiet) {
       std::cerr << "pandapi-parser: legacy parser produced no output artifact\n";
@@ -664,15 +770,16 @@ int main(int argc, char** argv)
   if (options.output_path == "-") {
     std::cout << read_file(legacy_out);
   } else {
-    const auto tmp_output =
-        options.output_path + ".tmp." + std::to_string(static_cast<long long>(getpid()));
+    const auto tmp_output = options.output_path + ".tmp." +
+                            std::to_string(static_cast<long long>(getpid()));
     std::remove(tmp_output.c_str());
-    if (!copy_file(legacy_out, tmp_output) || !move_file(tmp_output, options.output_path)) {
+    if (!copy_file(legacy_out, tmp_output) ||
+        !move_file(tmp_output, options.output_path)) {
       std::remove(tmp_output.c_str());
       std::remove(options.output_path.c_str());
       if (!options.quiet) {
-        std::cerr << "pandapi-parser: cannot finalize output: "
-                  << options.output_path << '\n';
+        std::cerr << "pandapi-parser: cannot finalize output: " << options.output_path
+                  << '\n';
       }
       finish(options.status_target, StatusCode::OutputUnavailable,
              PartialOutputPolicy::Discarded,
@@ -684,13 +791,14 @@ int main(int argc, char** argv)
     std::cerr << read_file(child.stderr_path);
   }
 
-  std::vector<pandapi::runtime::StatusField> fields{{"artifact",
-                                                     options.output_path == "-"
-                                                         ? "stdout"
-                                                         : "file"}};
+  std::vector<pandapi::runtime::StatusField> fields{
+      {"artifact", options.output_path == "-" ? "stdout" : "file"}};
   if (options.positional_output_alias) {
     fields.push_back({"positional_output_alias", "true"});
   }
-  finish(options.status_target, StatusCode::Ok, PartialOutputPolicy::Complete,
-         fields);
+  append_stdin_status_fields(fields);
+  finish(options.status_target, StatusCode::Ok, PartialOutputPolicy::Complete, fields);
+}
+catch (const ProcessExit& process_exit) {
+  return process_exit.exit_code();
 }

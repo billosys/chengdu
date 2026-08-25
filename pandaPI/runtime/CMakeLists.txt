@@ -11,6 +11,7 @@ add_library(pandapi_runtime STATIC
   src/runtime.cpp
   src/status.cpp
   src/status_io.cpp
+  src/stdin_materialization.cpp
   src/tty.cpp
 )
 add_library(pandapi::runtime ALIAS pandapi_runtime)
@@ -77,6 +78,21 @@ set_target_properties(pandapi_status_io_smoke PROPERTIES
 )
 
 add_test(NAME pandapi_status_io_smoke COMMAND pandapi_status_io_smoke)
+
+add_executable(pandapi_stdin_materialization_smoke
+  tests/stdin_materialization_smoke.cpp
+)
+target_link_libraries(pandapi_stdin_materialization_smoke PRIVATE pandapi::runtime)
+
+set_target_properties(pandapi_stdin_materialization_smoke PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO
+)
+
+add_test(
+  NAME pandapi_stdin_materialization_smoke
+  COMMAND pandapi_stdin_materialization_smoke)
 
 add_executable(pandapi_cli_tty_provenance_smoke
   tests/cli_tty_provenance_smoke.cpp

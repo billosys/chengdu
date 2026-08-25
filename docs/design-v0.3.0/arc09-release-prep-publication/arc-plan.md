@@ -1,6 +1,6 @@
 # Arc09 Plan: release-prep-publication
 
-Status: active; Slice01 release-readiness-inventory blocked by wolong stdin contract blockers
+Status: active; Slice01 release-readiness-inventory blocked by remaining wolong stdin contract blockers
 Opened: 2026-08-14
 
 ## 1. Capability
@@ -113,15 +113,21 @@ Leaves:
   runtime/helper reuse for stdin materialization and path-role behavior while
   preserving `--output -`, `--status=stderr`, stderr `PANDAPI_STATUS`, and
   stdout ownership rules.
-- **blocker-stdin-artifact-io - open; ready to implement accepted stdin
-  design.**
+- **blocker-stdin-artifact-io - closed; implemented accepted stdin artifact
+  IO contract.**
   Slice set:
   [`blocker-stdin-artifact-io/slice-doc.md`](blocker-stdin-artifact-io/slice-doc.md),
   [`blocker-stdin-artifact-io/ledger.md`](blocker-stdin-artifact-io/ledger.md),
-  [`blocker-stdin-artifact-io/cc-prompt.md`](blocker-stdin-artifact-io/cc-prompt.md).
-  This slice implements the accepted stdin forms through shared runtime/helper
-  code.
-- **blocker-stdio-contract-fixtures - open; blocked by stdin-artifact-io.**
+  [`blocker-stdin-artifact-io/cc-prompt.md`](blocker-stdin-artifact-io/cc-prompt.md),
+  [`blocker-stdin-artifact-io/closing-report.md`](blocker-stdin-artifact-io/closing-report.md).
+  This slice implemented parser domain/problem stdin, rejected parser
+  both-stdin input, implemented grounder `.htn` stdin, implemented engine
+  `.sas` stdin, and preserved engine `domain_no_plan` / `outcome=no_plan`
+  semantics through shared runtime stdin materialization and cleanup helpers.
+  CDC review repaired the original staged `std::exit` cleanup bypass before
+  commit so materialized stdin paths unwind and explicit cleanup failures can
+  be reported.
+- **blocker-stdio-contract-fixtures - open; ready after stdin-artifact-io.**
   Slice set:
   [`blocker-stdio-contract-fixtures/slice-doc.md`](blocker-stdio-contract-fixtures/slice-doc.md),
   [`blocker-stdio-contract-fixtures/ledger.md`](blocker-stdio-contract-fixtures/ledger.md),
@@ -208,6 +214,15 @@ above.
 
 ## 9. Version History
 
+- **v1.3 - 2026-08-20.** Closed `blocker-stdin-artifact-io` by implementing
+  the accepted stdin artifact IO contract through shared runtime helpers.
+  Surfaced by: the design blocker's accepted parser/grounder/engine stdin
+  contract and wolong's supervised pipeline blocker. Why: parser, grounder,
+  and engine now accept the supported `-` stdin forms without quick-patching
+  three separate materialization paths, while existing file inputs, stdout
+  artifacts, stderr status, stdout/status conflicts, and engine no-plan
+  behavior remain covered by managed contracts and smoke gates. CDC review
+  repaired the staged `std::exit` cleanup bypass before commit.
 - **v1.2 - 2026-08-20.** Closed `blocker-stdio-contract-design` with accepted
   stdin contract in
   `blocker-stdio-contract-design/stdin-contract-design.md`. Surfaced by:

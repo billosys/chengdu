@@ -551,8 +551,11 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   Closed design blocker:
   [`arc09-release-prep-publication/blocker-stdio-contract-design/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-design/slice-doc.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-design/stdin-contract-design.md`](arc09-release-prep-publication/blocker-stdio-contract-design/stdin-contract-design.md).
-  Open follow-on blocker slices:
+  Closed implementation blocker:
   [`arc09-release-prep-publication/blocker-stdin-artifact-io/slice-doc.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/slice-doc.md),
+  [`arc09-release-prep-publication/blocker-stdin-artifact-io/ledger.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/ledger.md),
+  [`arc09-release-prep-publication/blocker-stdin-artifact-io/closing-report.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/closing-report.md).
+  Open follow-on blocker slices:
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md),
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md).
   Slice01 release-readiness-inventory is open:
@@ -564,8 +567,8 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   dependency exclusion, source-quality release gate verification, wolong
   fetch/install/migration verification, and the actual `v0.3.0` release.
   Release-readiness inventory must not close until the accepted wolong stdin
-  contract is implemented, fixture-proven, documented, and verified against
-  wolong's paused Arc03 re-entry condition.
+  contract is fixture-proven, documented, and verified against wolong's paused
+  Arc03 re-entry condition.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -701,6 +704,14 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.104 - 2026-08-20.** Closed Arc09
+  `blocker-stdin-artifact-io` with shared runtime stdin materialization and
+  parser/grounder/engine support for the accepted stdin artifact contract.
+  Surfaced by: the Arc09 design blocker and wolong supervised pipeline
+  blocker. Why: the release-readiness inventory no longer waits on product
+  implementation of stdin artifact IO, but it remains blocked until stdin
+  fixture/docs coverage and wolong supervision proof close.
 
 - **v1.103 - 2026-08-20.** Closed Arc09
   `blocker-stdio-contract-design` with an accepted stdin contract. Surfaced by:
