@@ -139,15 +139,16 @@ Leaves:
   This slice proves accepted parser stdin forms, rejected parser both-stdin,
   grounder stdin `.htn`, engine stdin `.sas`, solved stdio pipeline, and
   no-plan stdio pipeline behavior through `make test-contract-stdio-managed`.
-- **blocker-wolong-supervision-proof - open; ready after stdio fixtures.**
+- **blocker-wolong-supervision-proof - open and active after stdio fixture
+  CDC verification.**
   Slice set:
   [`blocker-wolong-supervision-proof/slice-doc.md`](blocker-wolong-supervision-proof/slice-doc.md),
   [`blocker-wolong-supervision-proof/ledger.md`](blocker-wolong-supervision-proof/ledger.md),
   [`blocker-wolong-supervision-proof/cc-prompt.md`](blocker-wolong-supervision-proof/cc-prompt.md).
   This slice verifies wolong can resume its paused Arc03 work from the
   supported Chengdu contract.
-- **slice01 release-readiness-inventory - open, blocked by the wolong stdin
-  contract blocker set.** Slice set:
+- **slice01 release-readiness-inventory - open, blocked by wolong supervision
+  proof.** Slice set:
   [`slice01-release-readiness-inventory/slice-doc.md`](slice01-release-readiness-inventory/slice-doc.md),
   [`slice01-release-readiness-inventory/ledger.md`](slice01-release-readiness-inventory/ledger.md),
   [`slice01-release-readiness-inventory/cc-prompt.md`](slice01-release-readiness-inventory/cc-prompt.md).
@@ -219,6 +220,13 @@ above.
 
 ## 9. Version History
 
+- **v1.6 - 2026-08-25.** Activated
+  `blocker-wolong-supervision-proof` after CDC verification closed Chengdu's
+  stdio fixture/docs blocker. Surfaced by: `blocker-stdio-contract-fixtures`
+  CDC close. Why: the remaining release-readiness blocker is now the consumer
+  proof itself: Wolong must either consume the supported stdin/stdout/stderr
+  contract through erlexec/argv-list supervision or record a concrete
+  Wolong-owned re-entry blocker.
 - **v1.5 - 2026-08-25.** CDC-verified
   `blocker-stdio-contract-fixtures` after reproducing the stdio contract
   component, existing managed contract/smoke gates, release-quality wayfinding

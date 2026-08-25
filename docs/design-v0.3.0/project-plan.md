@@ -561,9 +561,12 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/ledger.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/ledger.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/cdc-verification.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/cdc-verification.md).
-  Open follow-on wolong proof blocker:
-  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md).
-  Slice01 release-readiness-inventory is open:
+  Active follow-on wolong proof blocker:
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md),
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/ledger.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/ledger.md),
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/cc-prompt.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/cc-prompt.md).
+  Slice01 release-readiness-inventory is open and blocked by wolong supervision
+  proof:
   [`arc09-release-prep-publication/slice01-release-readiness-inventory/slice-doc.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/slice-doc.md),
   [`arc09-release-prep-publication/slice01-release-readiness-inventory/ledger.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/ledger.md),
   [`arc09-release-prep-publication/slice01-release-readiness-inventory/cc-prompt.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/cc-prompt.md).
@@ -708,6 +711,13 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.107 - 2026-08-25.** Activated Arc09
+  `blocker-wolong-supervision-proof` after CDC verification closed Chengdu's
+  stdio fixture/docs blocker. Surfaced by: Arc09 blocker close sequencing.
+  Why: the only remaining known blocker before release-readiness inventory can
+  resume is Wolong consumer proof through erlexec/argv-list supervision, or a
+  concrete Wolong-owned external blocker with re-entry conditions.
 
 - **v1.106 - 2026-08-25.** CDC-verified Arc09
   `blocker-stdio-contract-fixtures` by reproducing the new stdio contract
