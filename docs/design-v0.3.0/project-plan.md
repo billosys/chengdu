@@ -543,8 +543,8 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   guidance, `pandapi-*` CLI guidance, README updates, architecture/dependency
   documentation for the new fork shape, and source-quality policy language
   that reflects Arc07's final classifications.
-- **arc09 - active; Slice01 release-readiness-inventory blocked by remaining
-  wolong stdin contract blockers.** Detailed plan:
+- **arc09 - active; Slice01 release-readiness-inventory blocked by wolong
+  supervision proof.** Detailed plan:
   [`arc09-release-prep-publication/arc-plan.md`](arc09-release-prep-publication/arc-plan.md).
   Wolong blocker audit:
   [`arc09-release-prep-publication/wolong-stdin-contract-audit.md`](arc09-release-prep-publication/wolong-stdin-contract-audit.md).
@@ -556,10 +556,11 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   [`arc09-release-prep-publication/blocker-stdin-artifact-io/ledger.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/ledger.md),
   [`arc09-release-prep-publication/blocker-stdin-artifact-io/closing-report.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/closing-report.md),
   [`arc09-release-prep-publication/blocker-stdin-artifact-io/cdc-verification.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/cdc-verification.md).
-  Closed fixture/docs blocker:
+  Closed and CDC-verified fixture/docs blocker:
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/ledger.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/ledger.md),
-  [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md).
+  [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md),
+  [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/cdc-verification.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/cdc-verification.md).
   Open follow-on wolong proof blocker:
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md).
   Slice01 release-readiness-inventory is open:
@@ -707,6 +708,13 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.106 - 2026-08-25.** CDC-verified Arc09
+  `blocker-stdio-contract-fixtures` by reproducing the new stdio contract
+  gate, existing managed contract/smoke gates, release-quality wayfinding,
+  docs/CI greps, and boundary checks. Surfaced by: Arc09 blocker close
+  verification. Why: release-readiness inventory now waits only on wolong
+  supervision proof, not on unverified Chengdu stdin fixture/docs coverage.
 
 - **v1.105 - 2026-08-25.** Closed Arc09
   `blocker-stdio-contract-fixtures` with Make-backed managed stdio fixtures,

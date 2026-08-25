@@ -1,6 +1,6 @@
 # Arc09 Plan: release-prep-publication
 
-Status: active; Slice01 release-readiness-inventory blocked by remaining wolong stdin contract blockers
+Status: active; Slice01 release-readiness-inventory blocked by wolong supervision proof
 Opened: 2026-08-14
 
 ## 1. Capability
@@ -128,13 +128,14 @@ Leaves:
   CDC review repaired the original staged `std::exit` cleanup bypass before
   commit so materialized stdin paths unwind and explicit cleanup failures can
   be reported.
-- **blocker-stdio-contract-fixtures - closed; implemented Make-backed stdio
-  managed fixtures and docs updates.**
+- **blocker-stdio-contract-fixtures - closed and CDC-verified; implemented
+  Make-backed stdio managed fixtures and docs updates.**
   Slice set:
   [`blocker-stdio-contract-fixtures/slice-doc.md`](blocker-stdio-contract-fixtures/slice-doc.md),
   [`blocker-stdio-contract-fixtures/ledger.md`](blocker-stdio-contract-fixtures/ledger.md),
   [`blocker-stdio-contract-fixtures/cc-prompt.md`](blocker-stdio-contract-fixtures/cc-prompt.md),
-  [`blocker-stdio-contract-fixtures/closing-report.md`](blocker-stdio-contract-fixtures/closing-report.md).
+  [`blocker-stdio-contract-fixtures/closing-report.md`](blocker-stdio-contract-fixtures/closing-report.md),
+  [`blocker-stdio-contract-fixtures/cdc-verification.md`](blocker-stdio-contract-fixtures/cdc-verification.md).
   This slice proves accepted parser stdin forms, rejected parser both-stdin,
   grounder stdin `.htn`, engine stdin `.sas`, solved stdio pipeline, and
   no-plan stdio pipeline behavior through `make test-contract-stdio-managed`.
@@ -218,6 +219,12 @@ above.
 
 ## 9. Version History
 
+- **v1.5 - 2026-08-25.** CDC-verified
+  `blocker-stdio-contract-fixtures` after reproducing the stdio contract
+  component, existing managed contract/smoke gates, release-quality wayfinding
+  chain, docs/CI greps, and boundary checks. Surfaced by: slice close
+  verification. Why: Slice01 now waits only on wolong supervision proof rather
+  than on unverified Chengdu stdio fixture/docs coverage.
 - **v1.4 - 2026-08-25.** Closed `blocker-stdio-contract-fixtures` by adding
   Make-backed managed stdio fixtures, including parser one-role stdin,
   parser both-stdin rejection, grounder stdin `.htn`, engine stdin `.sas`,
