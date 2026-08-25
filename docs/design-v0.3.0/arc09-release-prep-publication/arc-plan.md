@@ -113,13 +113,14 @@ Leaves:
   runtime/helper reuse for stdin materialization and path-role behavior while
   preserving `--output -`, `--status=stderr`, stderr `PANDAPI_STATUS`, and
   stdout ownership rules.
-- **blocker-stdin-artifact-io - closed; implemented accepted stdin artifact
-  IO contract.**
+- **blocker-stdin-artifact-io - closed and CDC-verified; implemented
+  accepted stdin artifact IO contract.**
   Slice set:
   [`blocker-stdin-artifact-io/slice-doc.md`](blocker-stdin-artifact-io/slice-doc.md),
   [`blocker-stdin-artifact-io/ledger.md`](blocker-stdin-artifact-io/ledger.md),
   [`blocker-stdin-artifact-io/cc-prompt.md`](blocker-stdin-artifact-io/cc-prompt.md),
-  [`blocker-stdin-artifact-io/closing-report.md`](blocker-stdin-artifact-io/closing-report.md).
+  [`blocker-stdin-artifact-io/closing-report.md`](blocker-stdin-artifact-io/closing-report.md),
+  [`blocker-stdin-artifact-io/cdc-verification.md`](blocker-stdin-artifact-io/cdc-verification.md).
   This slice implemented parser domain/problem stdin, rejected parser
   both-stdin input, implemented grounder `.htn` stdin, implemented engine
   `.sas` stdin, and preserved engine `domain_no_plan` / `outcome=no_plan`

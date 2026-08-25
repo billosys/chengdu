@@ -551,10 +551,11 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   Closed design blocker:
   [`arc09-release-prep-publication/blocker-stdio-contract-design/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-design/slice-doc.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-design/stdin-contract-design.md`](arc09-release-prep-publication/blocker-stdio-contract-design/stdin-contract-design.md).
-  Closed implementation blocker:
+  Closed and CDC-verified implementation blocker:
   [`arc09-release-prep-publication/blocker-stdin-artifact-io/slice-doc.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/slice-doc.md),
   [`arc09-release-prep-publication/blocker-stdin-artifact-io/ledger.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/ledger.md),
-  [`arc09-release-prep-publication/blocker-stdin-artifact-io/closing-report.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/closing-report.md).
+  [`arc09-release-prep-publication/blocker-stdin-artifact-io/closing-report.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/closing-report.md),
+  [`arc09-release-prep-publication/blocker-stdin-artifact-io/cdc-verification.md`](arc09-release-prep-publication/blocker-stdin-artifact-io/cdc-verification.md).
   Open follow-on blocker slices:
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/slice-doc.md),
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md).
