@@ -65,6 +65,42 @@ person debug the command, but it is not the integration contract. Do not scrape
 human prose or diagnostic prose to classify outcomes. Use the exit code and
 the tagged status fields.
 
+## Input From Standard Input
+
+The positional token `-` means "read this input role from standard input."
+Stdin is supported only where the command synopsis has an explicit input role;
+omitting a required path never implies stdin.
+
+Supported forms:
+
+```text
+pandapi-parser [COMMON] [--output OUT.htn|-] - PROBLEM.hddl
+pandapi-parser [COMMON] [--output OUT.htn|-] DOMAIN.hddl -
+pandapi-grounder [COMMON] [--output OUT.sas|-] -
+pandapi-engine [COMMON] [--output PLAN|-] -
+```
+
+Unsupported form:
+
+```text
+pandapi-parser [COMMON] [--output OUT.htn|-] - -
+```
+
+The parser has two logical inputs, domain and problem. It accepts exactly one
+of those from stdin. Reading both from stdin is unsupported in 0.3.0 because
+there is no accepted framing for two HDDL documents in one byte stream; the
+command fails before parsing with `cli_usage_error`, exit `10`.
+
+For grounder stdin, standard input must contain one complete parser-generated
+`.htn` artifact. For engine stdin, standard input must contain one complete
+grounder-generated `.sas` artifact. Malformed stdin bytes are classified the
+same way as malformed file-backed input for that component.
+
+When stdin is accepted, final status records keep the logical caller path:
+`path=-`, with `path_role=domain`, `path_role=problem`, `path_role=htn`, or
+`path_role=engine_input`, and `operation=read`. Any temporary materialization
+path used internally is not part of the public contract.
+
 ## Final `PANDAPI_STATUS`
 
 When status output is enabled, the final record is a single tagged text line:
@@ -165,6 +201,26 @@ The supervisor can classify this as parser success from exit `0` and
 `status=ok`, `component=parser`, `surface_disposition=supported`, and
 `class=success`.
 
+## Successful Parser With Domain on Stdin
+
+This command reads the domain HDDL from stdin, reads the problem from a file,
+writes a `.htn` artifact to stdout, and writes status to stderr:
+
+```sh
+./bin/pandapi-parser \
+  --supervised \
+  --status=stderr \
+  --output - \
+  - \
+  fixtures/minimal/problem.hddl \
+  <fixtures/minimal/domain.hddl \
+  >"$tmp/minimal.htn" \
+  2>"$tmp/parser.stderr"
+
+test -s "$tmp/minimal.htn"
+grep -E 'path_role=domain.*path=-.*operation=read' "$tmp/parser.stderr"
+```
+
 ## Supervised Pipeline
 
 This supervised pipeline keeps each generated artifact in the temporary
@@ -206,6 +262,44 @@ grep -E '^PANDAPI_STATUS	status=ok	component=engine' "$tmp/engine.stderr"
 
 Treat each process independently. A later step should run only after the prior
 artifact is complete and the prior status is acceptable for that integration.
+
+## Supervised stdio Pipeline
+
+This supervised pipeline uses stdout artifacts as the byte source for the next
+process's stdin. Each component still writes its final status to stderr:
+
+```sh
+./bin/pandapi-parser \
+  --supervised \
+  --status=stderr \
+  --output - \
+  fixtures/minimal/domain.hddl \
+  fixtures/minimal/problem.hddl \
+  >"$tmp/minimal.htn" \
+  2>"$tmp/parser.stderr"
+
+./bin/pandapi-grounder \
+  --supervised \
+  --status=stderr \
+  --output - \
+  - \
+  <"$tmp/minimal.htn" \
+  >"$tmp/minimal.sas" \
+  2>"$tmp/grounder.stderr"
+
+./bin/pandapi-engine \
+  --supervised \
+  --status=stderr \
+  --output - \
+  - \
+  <"$tmp/minimal.sas" \
+  >"$tmp/minimal.plan" \
+  2>"$tmp/engine.stderr"
+
+test -s "$tmp/minimal.plan"
+grep -E '^PANDAPI_STATUS	status=ok	component=grounder' "$tmp/grounder.stderr"
+grep -E '^PANDAPI_STATUS	status=ok	component=engine' "$tmp/engine.stderr"
+```
 
 ## Valid No-Plan Outcome
 

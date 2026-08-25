@@ -28,9 +28,9 @@ pandaPI 0.3.0 supports one normal surface per binary:
 
 | Command | Supported surface | Input | Output artifact |
 |---------|-------------------|-------|-----------------|
-| `pandapi-parser` | Normal HDDL domain/problem parsing to parser output. | `DOMAIN.hddl` and `PROBLEM.hddl` | `OUT.htn` |
-| `pandapi-grounder` | Normal parser-generated `.htn` grounding to planner input. | `INPUT.htn` | `OUT.sas` |
-| `pandapi-engine` | Normal search over parser/grounder-produced planner input. | `INPUT.sas` | `PLAN` plan artifact |
+| `pandapi-parser` | Normal HDDL domain/problem parsing to parser output. | `DOMAIN.hddl` and `PROBLEM.hddl`; exactly one may be `-` for stdin | `OUT.htn` |
+| `pandapi-grounder` | Normal parser-generated `.htn` grounding to planner input. | `INPUT.htn`, or `-` for stdin | `OUT.sas` |
+| `pandapi-engine` | Normal search over parser/grounder-produced planner input. | `INPUT.sas`, or `-` for stdin | `PLAN` plan artifact |
 
 Other inherited or dormant surfaces are fenced. Parser helper modes are
 legacy behavior. Grounder H2 is experimental; cpddl and FAM inference are
@@ -43,13 +43,14 @@ are not supported normal behavior for the 0.3.0 command reference.
 The live help output uses these supported forms:
 
 ```text
-pandapi-parser [COMMON] [--output OUT.htn|-] DOMAIN.hddl PROBLEM.hddl
-pandapi-grounder [COMMON] [--output OUT.sas|-] INPUT.htn
-pandapi-engine [COMMON] [--output PLAN|-] INPUT.sas
+pandapi-parser [COMMON] [--output OUT.htn|-] (DOMAIN.hddl|-) (PROBLEM.hddl|-)
+pandapi-grounder [COMMON] [--output OUT.sas|-] (INPUT.htn|-)
+pandapi-engine [COMMON] [--output PLAN|-] (INPUT.sas|-)
 ```
 
 `--output PATH` writes the selected artifact to a file. `--output -` writes the
 artifact to stdout, so stdout is no longer available for a status stream.
+For positional inputs, `-` reads that input role from standard input.
 
 ## Common Options
 
@@ -105,6 +106,28 @@ For artifact files, the usual process-manager pattern is:
 The artifact is written to `$tmp/minimal.htn`, stdout stays empty, and stderr
 contains the final status record.
 
+## Standard Input
+
+The positional token `-` is supported as standard input for these forms:
+
+```text
+pandapi-parser [COMMON] [--output OUT.htn|-] - PROBLEM.hddl
+pandapi-parser [COMMON] [--output OUT.htn|-] DOMAIN.hddl -
+pandapi-grounder [COMMON] [--output OUT.sas|-] -
+pandapi-engine [COMMON] [--output PLAN|-] -
+```
+
+`pandapi-parser` does not support `- -`. A single stdin stream has no accepted
+0.3.0 framing for two HDDL documents, so that form fails before parsing with
+`cli_usage_error`, exit `10`.
+
+For managed process use, combine stdin inputs with `--output -` and
+`--status=stderr` when stdout should carry the artifact and stderr should
+carry the final status. Accepted stdin status records include the logical
+caller path `path=-`, `operation=read`, and the input role:
+`path_role=domain`, `path_role=problem`, `path_role=htn`, or
+`path_role=engine_input`.
+
 ## Status and Exit Summary
 
 Use exit codes and status names for programmatic classification. Do not scrape
@@ -138,7 +161,7 @@ internal failure.
 Usage:
 
 ```text
-pandapi-parser [COMMON] [--output OUT.htn|-] DOMAIN.hddl PROBLEM.hddl
+pandapi-parser [COMMON] [--output OUT.htn|-] (DOMAIN.hddl|-) (PROBLEM.hddl|-)
 ```
 
 `pandapi-parser` reads one HDDL domain and one HDDL problem, then writes a
@@ -153,6 +176,18 @@ Runnable example:
   fixtures/minimal/domain.hddl \
   fixtures/minimal/problem.hddl
 test -s "$tmp/minimal.htn"
+```
+
+To read the problem from stdin:
+
+```sh
+./bin/pandapi-parser \
+  --status=stderr \
+  --output "$tmp/problem-stdin.htn" \
+  fixtures/minimal/domain.hddl \
+  - \
+  <fixtures/minimal/problem.hddl
+test -s "$tmp/problem-stdin.htn"
 ```
 
 To stream the parser artifact to stdout, use `--output -` and do not also ask
@@ -173,7 +208,7 @@ test -s "$tmp/minimal.htn"
 Usage:
 
 ```text
-pandapi-grounder [COMMON] [--output OUT.sas|-] INPUT.htn
+pandapi-grounder [COMMON] [--output OUT.sas|-] (INPUT.htn|-)
 ```
 
 `pandapi-grounder` reads a parser-generated `.htn` artifact and writes a
@@ -189,12 +224,24 @@ Runnable example:
 test -s "$tmp/minimal.sas"
 ```
 
+To read the `.htn` artifact from stdin and write `.sas` to stdout:
+
+```sh
+./bin/pandapi-grounder \
+  --status=stderr \
+  --output - \
+  - \
+  <"$tmp/minimal.htn" \
+  >"$tmp/minimal.sas"
+test -s "$tmp/minimal.sas"
+```
+
 ## Engine Reference
 
 Usage:
 
 ```text
-pandapi-engine [COMMON] [--output PLAN|-] INPUT.sas
+pandapi-engine [COMMON] [--output PLAN|-] (INPUT.sas|-)
 ```
 
 `pandapi-engine` reads a grounded planner artifact and writes a plan artifact
@@ -209,6 +256,18 @@ Runnable example:
   "$tmp/minimal.sas"
 test -s "$tmp/minimal.plan"
 cat "$tmp/minimal.plan"
+```
+
+To read the `.sas` artifact from stdin and write the plan to stdout:
+
+```sh
+./bin/pandapi-engine \
+  --status=stderr \
+  --output - \
+  - \
+  <"$tmp/minimal.sas" \
+  >"$tmp/minimal.plan"
+test -s "$tmp/minimal.plan"
 ```
 
 For a valid no-plan case:

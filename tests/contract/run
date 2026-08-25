@@ -16,6 +16,7 @@ Use Make targets:
   make test-contract-engine-managed
   make test-contract-pipeline
   make test-contract-pipeline-managed
+  make test-contract-stdio-managed
 
   --baseline   run current inherited-binary baseline fixtures.
   --contract   run managed-process contract fixtures.
@@ -82,7 +83,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 case "$COMPONENT" in
-  all|parser|grounder|engine|pipeline) ;;
+  all|parser|grounder|engine|pipeline|stdio) ;;
   *)
     echo "contract-run: invalid --component: $COMPONENT" >&2
     usage >&2
@@ -193,6 +194,18 @@ pipeline pipeline-grounder-stdout-to-engine
 pipeline pipeline-supervised-positive
 EOF
   fi
+  if [ "$COMPONENT" = "all" ] || [ "$COMPONENT" = "stdio" ]; then
+    cat <<'EOF'
+stdio stdio-parser-domain-stdin
+stdio stdio-parser-problem-stdin
+stdio stdio-parser-both-stdin-unsupported
+stdio stdio-grounder-stdin-stdout-status
+stdio stdio-engine-stdin-solved
+stdio stdio-engine-stdin-no-plan
+stdio stdio-pipeline-supervised-solved
+stdio stdio-pipeline-supervised-no-plan
+EOF
+  fi
 }
 
 if [ "$LIST" -eq 1 ]; then
@@ -238,7 +251,7 @@ if [ "$MODE" = "contract" ]; then
       exit 1
     fi
   fi
-  if [ "$COMPONENT" = "pipeline" ]; then
+  if [ "$COMPONENT" = "pipeline" ] || [ "$COMPONENT" = "stdio" ]; then
     for bin in "$PC" "$GC" "$E"; do
       if [ ! -x "$bin" ]; then
         echo "contract-run: missing binary: $bin; run make build first" >&2
@@ -292,6 +305,18 @@ run_capture() {
   OBS_ERR="$WORK/${OBS_ID}.stderr"
   set +e
   "$@" >"$OBS_OUT" 2>"$OBS_ERR"
+  OBS_RC=$?
+  set -e
+}
+
+run_capture_stdin() {
+  OBS_ID="$1"
+  local stdin_file="$2"
+  shift 2
+  OBS_OUT="$WORK/${OBS_ID}.stdout"
+  OBS_ERR="$WORK/${OBS_ID}.stderr"
+  set +e
+  "$@" <"$stdin_file" >"$OBS_OUT" 2>"$OBS_ERR"
   OBS_RC=$?
   set -e
 }
@@ -1525,6 +1550,232 @@ run_pipeline_contract_fixtures() {
   run_pipeline_contract_case "pipeline-supervised-positive" pipeline_contract_supervised_positive
 }
 
+run_stdio_contract_case() {
+  local id="$1"
+  shift
+  if contract_case_selected "$id"; then
+    "$@"
+  fi
+}
+
+expect_stdin_final_fields() {
+  local id="$1" stream="$2" path_role="$3"
+  local line
+  line="$(status_lines "$stream")"
+  expect_status_field "$id" "$line" "path_role" "$path_role"
+  expect_status_field "$id" "$line" "path" "-"
+  expect_status_field "$id" "$line" "operation" "read"
+}
+
+stdio_contract_parser_domain_stdin() {
+  local id="stdio-parser-domain-stdin"
+  local artifact="$WORK/$id.htn"
+  run_capture_stdin "$id" "$FIXTURES_DIR/minimal/domain.hddl" \
+    "$PC" --supervised --status=stderr --output "$artifact" - \
+    "$FIXTURES_DIR/minimal/problem.hddl"
+  expect_exit "$id" 0
+  expect_artifact_complete "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_final_status "$id" "stderr" "ok" "0" "success"
+  expect_stdin_final_fields "$id" "stderr" "domain"
+}
+
+stdio_contract_parser_problem_stdin() {
+  local id="stdio-parser-problem-stdin"
+  local artifact="$WORK/$id.htn"
+  run_capture_stdin "$id" "$FIXTURES_DIR/minimal/problem.hddl" \
+    "$PC" --supervised --status=stderr --output "$artifact" \
+    "$FIXTURES_DIR/minimal/domain.hddl" -
+  expect_exit "$id" 0
+  expect_artifact_complete "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_final_status "$id" "stderr" "ok" "0" "success"
+  expect_stdin_final_fields "$id" "stderr" "problem"
+}
+
+stdio_contract_parser_both_stdin_unsupported() {
+  local id="stdio-parser-both-stdin-unsupported"
+  local artifact="$WORK/$id.htn"
+  run_capture_stdin "$id" "$FIXTURES_DIR/minimal/domain.hddl" \
+    "$PC" --supervised --status=stderr --output "$artifact" - -
+  expect_exit "$id" 10
+  expect_artifact_absent "$id" "$artifact"
+  expect_stdout_empty "$id"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_final_status "$id" "stderr" "cli_usage_error" "10" "caller_error"
+}
+
+stdio_contract_grounder_stdin_stdout_status() {
+  local id="stdio-grounder-stdin-stdout-status"
+  local htn="$WORK/$id.htn"
+  prepare_minimal_htn "$htn" || return
+  run_capture_stdin "$id" "$htn" \
+    "$GC" --supervised --status=stderr --output - -
+  expect_exit "$id" 0
+  expect_artifact_complete "$id stdout" "$OBS_OUT"
+  expect_stdout_not_contains "$id" "PANDAPI_STATUS"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout artifact"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_grounder_final_status "$id" "stderr" "ok" "0" "success"
+  expect_stdin_final_fields "$id" "stderr" "htn"
+}
+
+stdio_contract_engine_stdin_solved() {
+  local id="stdio-engine-stdin-solved"
+  local sas="$WORK/$id.sas"
+  prepare_minimal_sas "$sas" || return
+  run_capture_stdin "$id" "$sas" \
+    "$E" --supervised --status=stderr --output - -
+  expect_exit "$id" 0
+  expect_artifact_complete "$id stdout" "$OBS_OUT"
+  expect_stdout_contains "$id" "^- Status: Solved$"
+  expect_stdout_not_contains "$id" "PANDAPI_STATUS"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout artifact"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id" "stderr" "ok" "0" "success"
+  expect_stdin_final_fields "$id" "stderr" "engine_input"
+}
+
+stdio_contract_engine_stdin_no_plan() {
+  local id="stdio-engine-stdin-no-plan"
+  local sas="$WORK/$id.sas"
+  prepare_unsolvable_sas "$sas" || return
+  run_capture_stdin "$id" "$sas" \
+    "$E" --supervised --status=stderr --output - -
+  expect_exit "$id" 2
+  expect_stdout_empty "$id"
+  expect_no_ansi "$id" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id" "stderr" "domain_no_plan" "2" \
+    "expected_domain_outcome"
+  local line
+  line="$(status_lines stderr)"
+  expect_status_field "$id" "$line" "partial_output_policy" "absent"
+  expect_status_field "$id" "$line" "outcome" "no_plan"
+  expect_stdin_final_fields "$id" "stderr" "engine_input"
+}
+
+stdio_contract_pipeline_supervised_solved() {
+  local id="stdio-pipeline-supervised-solved"
+  local parser_htn grounder_sas
+
+  run_capture "$id-parser" \
+    "$PC" --supervised --status=stderr --output - \
+    "$FIXTURES_DIR/minimal/domain.hddl" "$FIXTURES_DIR/minimal/problem.hddl"
+  parser_htn="$OBS_OUT"
+  expect_exit "$id parser stdout" 0
+  expect_artifact_complete "$id parser stdout" "$parser_htn"
+  expect_stdout_not_contains "$id parser stdout" "PANDAPI_STATUS"
+  expect_no_ansi "$id parser stdout" "$parser_htn" "stdout artifact"
+  expect_no_ansi "$id parser stdout" "$OBS_ERR" "stderr"
+  expect_final_status "$id parser stdout" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture_stdin "$id-grounder" "$parser_htn" \
+    "$GC" --supervised --status=stderr --output - -
+  grounder_sas="$OBS_OUT"
+  expect_exit "$id grounder stdin stdout" 0
+  expect_artifact_complete "$id grounder stdin stdout" "$grounder_sas"
+  expect_stdout_not_contains "$id grounder stdin stdout" "PANDAPI_STATUS"
+  expect_no_ansi "$id grounder stdin stdout" "$grounder_sas" "stdout artifact"
+  expect_no_ansi "$id grounder stdin stdout" "$OBS_ERR" "stderr"
+  expect_grounder_final_status "$id grounder stdin stdout" "stderr" "ok" "0" \
+    "success"
+  expect_stdin_final_fields "$id grounder stdin stdout" "stderr" "htn"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture_stdin "$id-engine" "$grounder_sas" \
+    "$E" --supervised --status=stderr --output - -
+  expect_exit "$id engine stdin stdout" 0
+  expect_artifact_complete "$id engine stdin stdout" "$OBS_OUT"
+  expect_stdout_contains "$id engine stdin stdout" "^- Status: Solved$"
+  expect_stdout_not_contains "$id engine stdin stdout" "PANDAPI_STATUS"
+  expect_no_ansi "$id engine stdin stdout" "$OBS_OUT" "stdout artifact"
+  expect_no_ansi "$id engine stdin stdout" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id engine stdin stdout" "stderr" "ok" "0" \
+    "success"
+  expect_stdin_final_fields "$id engine stdin stdout" "stderr" "engine_input"
+}
+
+stdio_contract_pipeline_supervised_no_plan() {
+  local id="stdio-pipeline-supervised-no-plan"
+  local parser_htn grounder_sas
+
+  run_capture "$id-parser" \
+    "$PC" --supervised --status=stderr --output - \
+    "$FIXTURES_DIR/unsolvable/domain.hddl" "$FIXTURES_DIR/unsolvable/problem.hddl"
+  parser_htn="$OBS_OUT"
+  expect_exit "$id parser stdout" 0
+  expect_artifact_complete "$id parser stdout" "$parser_htn"
+  expect_stdout_not_contains "$id parser stdout" "PANDAPI_STATUS"
+  expect_no_ansi "$id parser stdout" "$parser_htn" "stdout artifact"
+  expect_no_ansi "$id parser stdout" "$OBS_ERR" "stderr"
+  expect_final_status "$id parser stdout" "stderr" "ok" "0" "success"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture_stdin "$id-grounder" "$parser_htn" \
+    "$GC" --supervised --status=stderr --output - -
+  grounder_sas="$OBS_OUT"
+  expect_exit "$id grounder stdin stdout" 0
+  expect_artifact_complete "$id grounder stdin stdout" "$grounder_sas"
+  expect_stdout_not_contains "$id grounder stdin stdout" "PANDAPI_STATUS"
+  expect_no_ansi "$id grounder stdin stdout" "$grounder_sas" "stdout artifact"
+  expect_no_ansi "$id grounder stdin stdout" "$OBS_ERR" "stderr"
+  expect_grounder_final_status "$id grounder stdin stdout" "stderr" "ok" "0" \
+    "success"
+  expect_stdin_final_fields "$id grounder stdin stdout" "stderr" "htn"
+  if [ "$OBS_RC" -ne 0 ]; then
+    return
+  fi
+
+  run_capture_stdin "$id-engine" "$grounder_sas" \
+    "$E" --supervised --status=stderr --output - -
+  expect_exit "$id engine stdin stdout no_plan" 2
+  expect_stdout_empty "$id engine stdin stdout no_plan"
+  expect_no_ansi "$id engine stdin stdout no_plan" "$OBS_OUT" "stdout"
+  expect_no_ansi "$id engine stdin stdout no_plan" "$OBS_ERR" "stderr"
+  expect_engine_final_status "$id engine stdin stdout no_plan" "stderr" \
+    "domain_no_plan" "2" "expected_domain_outcome"
+  local line
+  line="$(status_lines stderr)"
+  expect_status_field "$id engine stdin stdout no_plan" "$line" \
+    "partial_output_policy" "absent"
+  expect_status_field "$id engine stdin stdout no_plan" "$line" "outcome" \
+    "no_plan"
+  expect_stdin_final_fields "$id engine stdin stdout no_plan" "stderr" \
+    "engine_input"
+}
+
+run_stdio_contract_fixtures() {
+  run_stdio_contract_case "stdio-parser-domain-stdin" \
+    stdio_contract_parser_domain_stdin
+  run_stdio_contract_case "stdio-parser-problem-stdin" \
+    stdio_contract_parser_problem_stdin
+  run_stdio_contract_case "stdio-parser-both-stdin-unsupported" \
+    stdio_contract_parser_both_stdin_unsupported
+  run_stdio_contract_case "stdio-grounder-stdin-stdout-status" \
+    stdio_contract_grounder_stdin_stdout_status
+  run_stdio_contract_case "stdio-engine-stdin-solved" \
+    stdio_contract_engine_stdin_solved
+  run_stdio_contract_case "stdio-engine-stdin-no-plan" \
+    stdio_contract_engine_stdin_no_plan
+  run_stdio_contract_case "stdio-pipeline-supervised-solved" \
+    stdio_contract_pipeline_supervised_solved
+  run_stdio_contract_case "stdio-pipeline-supervised-no-plan" \
+    stdio_contract_pipeline_supervised_no_plan
+}
+
 if [ "$MODE" = "contract" ]; then
   echo "contract-run: platform=$PLATFORM mode=contract component=$COMPONENT case=$CASE_ID"
   if [ "$COMPONENT" = "parser" ] || [ "$COMPONENT" = "all" ]; then
@@ -1538,6 +1789,9 @@ if [ "$MODE" = "contract" ]; then
   fi
   if [ "$COMPONENT" = "pipeline" ] || [ "$COMPONENT" = "all" ]; then
     run_pipeline_contract_fixtures
+  fi
+  if [ "$COMPONENT" = "stdio" ] || [ "$COMPONENT" = "all" ]; then
+    run_stdio_contract_fixtures
   fi
   echo "contract-run: SUMMARY: $PASS_COUNT passed, $FAIL_COUNT failed (contract, $COMPONENT, $PLATFORM)"
   if [ "$FAIL_COUNT" -ne 0 ]; then

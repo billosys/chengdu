@@ -37,9 +37,10 @@ Cover at least:
   license-audit or inherited-name references.
 - User dependencies versus developer-only/test-only dependencies, including
   Catch2 exclusion from release artifacts.
-- Release-quality gates: behavior fixtures, smoke, managed contracts, static
-  analysis, format, warning inventory, coverage baselines, sanitizer gates,
-  provenance, README-verbatim, Linux LSan, and platform limitations.
+- Release-quality gates: behavior fixtures, smoke, managed contracts,
+  `make test-contract-stdio-managed`, static analysis, format, warning
+  inventory, coverage baselines, sanitizer gates, provenance, README-verbatim,
+  Linux LSan, and platform limitations.
 - Release notes, README/public docs install wording, migration/reference links,
   and public overclaim risks.
 - wolong fetch/install/migration verification needs, kept separate from

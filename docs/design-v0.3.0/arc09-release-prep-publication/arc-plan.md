@@ -128,14 +128,17 @@ Leaves:
   CDC review repaired the original staged `std::exit` cleanup bypass before
   commit so materialized stdin paths unwind and explicit cleanup failures can
   be reported.
-- **blocker-stdio-contract-fixtures - open; ready after stdin-artifact-io.**
+- **blocker-stdio-contract-fixtures - closed; implemented Make-backed stdio
+  managed fixtures and docs updates.**
   Slice set:
   [`blocker-stdio-contract-fixtures/slice-doc.md`](blocker-stdio-contract-fixtures/slice-doc.md),
   [`blocker-stdio-contract-fixtures/ledger.md`](blocker-stdio-contract-fixtures/ledger.md),
-  [`blocker-stdio-contract-fixtures/cc-prompt.md`](blocker-stdio-contract-fixtures/cc-prompt.md).
-  This slice proves the stdin contract with Make-backed managed fixtures and
-  current process docs.
-- **blocker-wolong-supervision-proof - open; blocked by stdio fixtures.**
+  [`blocker-stdio-contract-fixtures/cc-prompt.md`](blocker-stdio-contract-fixtures/cc-prompt.md),
+  [`blocker-stdio-contract-fixtures/closing-report.md`](blocker-stdio-contract-fixtures/closing-report.md).
+  This slice proves accepted parser stdin forms, rejected parser both-stdin,
+  grounder stdin `.htn`, engine stdin `.sas`, solved stdio pipeline, and
+  no-plan stdio pipeline behavior through `make test-contract-stdio-managed`.
+- **blocker-wolong-supervision-proof - open; ready after stdio fixtures.**
   Slice set:
   [`blocker-wolong-supervision-proof/slice-doc.md`](blocker-wolong-supervision-proof/slice-doc.md),
   [`blocker-wolong-supervision-proof/ledger.md`](blocker-wolong-supervision-proof/ledger.md),
@@ -215,6 +218,14 @@ above.
 
 ## 9. Version History
 
+- **v1.4 - 2026-08-25.** Closed `blocker-stdio-contract-fixtures` by adding
+  Make-backed managed stdio fixtures, including parser one-role stdin,
+  parser both-stdin rejection, grounder stdin `.htn`, engine stdin `.sas`,
+  solved stdin/stdout/stderr pipeline, no-plan stdin/stdout/stderr pipeline,
+  and public managed-process/CLI documentation. Surfaced by: wolong's
+  supervised process shape requiring stdin artifact handoff and stderr
+  status. Why: Slice01 release-readiness inventory cannot resume until
+  Chengdu's accepted stdin contract is fixture-proven and visible to CI.
 - **v1.3 - 2026-08-20.** Closed `blocker-stdin-artifact-io` by implementing
   the accepted stdin artifact IO contract through shared runtime helpers.
   Surfaced by: the design blocker's accepted parser/grounder/engine stdin

@@ -17,7 +17,8 @@ Fixture records use a dependency-free, YAML-like documentation format in
 [`parser-contract-records.md`](parser-contract-records.md) and
 [`grounder-contract-records.md`](grounder-contract-records.md) and
 [`engine-contract-records.md`](engine-contract-records.md) and
-[`pipeline-contract-records.md`](pipeline-contract-records.md). The fields
+[`pipeline-contract-records.md`](pipeline-contract-records.md) and
+[`stdio-contract-records.md`](stdio-contract-records.md). The fields
 mirror the accepted Arc04 runtime fixture vocabulary:
 
 - `id`: stable fixture identifier used by the runner output.
@@ -78,10 +79,12 @@ The runner uses `mktemp` work directories and removes them by default.
 fixtures use a bounded harness timeout so a spinning inherited process reports
 as a fixture failure instead of hanging CI.
 
-The Arc04 stdin/full-duplex caveat remains active. Baseline fixtures here use
-empty stdin only. Stdin-heavy fixtures are deferred until the process runner
-has focused regression coverage or a full-duplex stdin/stdout/stderr
-observation loop.
+Baseline fixtures here use empty stdin only. Managed stdio fixtures exercise
+the accepted Arc09 stdin contract with bounded one-shot stdin writes, captured
+stdout artifacts, stderr status records, and isolated temporary files. The
+runner remains sequential rather than an unbounded streaming/full-duplex
+process harness; each fixture records the same process-boundary behavior a
+supervisor observes without relying on concurrent protocol chatter.
 
 ## Running
 
@@ -94,6 +97,7 @@ make test-contract-parser-managed
 make test-contract-grounder-managed
 make test-contract-engine-managed
 make test-contract-pipeline-managed
+make test-contract-stdio-managed
 make test-contract-list
 make test-contract-list-managed
 ```
