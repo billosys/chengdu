@@ -144,14 +144,15 @@ Leaves:
   This slice proves accepted parser stdin forms, rejected parser both-stdin,
   grounder stdin `.htn`, engine stdin `.sas`, solved stdio pipeline, and
   no-plan stdio pipeline behavior through `make test-contract-stdio-managed`.
-- **blocker-wolong-supervision-proof - closed; external Wolong runner/API
-  blocker recorded.**
+- **blocker-wolong-supervision-proof - closed and CDC-verified; external
+  Wolong runner/API blocker recorded.**
   Slice set:
   [`blocker-wolong-supervision-proof/slice-doc.md`](blocker-wolong-supervision-proof/slice-doc.md),
   [`blocker-wolong-supervision-proof/ledger.md`](blocker-wolong-supervision-proof/ledger.md),
   [`blocker-wolong-supervision-proof/cc-prompt.md`](blocker-wolong-supervision-proof/cc-prompt.md),
   [`blocker-wolong-supervision-proof/wolong-supervision-proof.md`](blocker-wolong-supervision-proof/wolong-supervision-proof.md),
-  [`blocker-wolong-supervision-proof/closing-report.md`](blocker-wolong-supervision-proof/closing-report.md).
+  [`blocker-wolong-supervision-proof/closing-report.md`](blocker-wolong-supervision-proof/closing-report.md),
+  [`blocker-wolong-supervision-proof/cdc-verification.md`](blocker-wolong-supervision-proof/cdc-verification.md).
   This slice proves Chengdu's supported stdin/stdout/stderr contract, direct
   Chengdu probes, and raw Wolong erlexec argv-list stdin supervision against a
   real Chengdu binary. It also records the remaining external blocker:
@@ -234,6 +235,14 @@ above.
 
 ## 9. Version History
 
+- **v1.8 - 2026-08-25.** CDC-verified
+  `blocker-wolong-supervision-proof` by reproducing the stdio fixture gate,
+  existing managed contract/smoke chain, release-quality wayfinding, raw
+  Wolong erlexec argv-list stdin proof, Wolong compile/test/static gates, and
+  boundary checks. Surfaced by:
+  `blocker-wolong-supervision-proof/cdc-verification.md`. Why: the Chengdu
+  proof/routing slice is verified, but Slice01 remains blocked until Wolong
+  exposes stdin bytes and EOF through its public `wolong-exec` runner/API.
 - **v1.7 - 2026-08-25.** Closed
   `blocker-wolong-supervision-proof` as a proof and routing slice while
   keeping Slice01 release-readiness-inventory blocked by Wolong Arc03

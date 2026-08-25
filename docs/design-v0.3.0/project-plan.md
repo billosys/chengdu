@@ -562,12 +562,13 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/ledger.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/ledger.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/cdc-verification.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/cdc-verification.md).
-  Closed wolong proof/routing blocker:
+  Closed and CDC-verified wolong proof/routing blocker:
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md),
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/ledger.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/ledger.md),
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/cc-prompt.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/cc-prompt.md),
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/wolong-supervision-proof.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/wolong-supervision-proof.md),
-  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/closing-report.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/closing-report.md).
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/closing-report.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/closing-report.md),
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/cdc-verification.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/cdc-verification.md).
   This slice proves Chengdu's supported stdin/stdout/stderr contract, direct
   Chengdu probes, and raw Wolong erlexec argv-list stdin supervision against a
   real Chengdu binary. It also records the remaining external blocker:
@@ -721,6 +722,16 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.109 - 2026-08-25.** CDC-verified Arc09
+  `blocker-wolong-supervision-proof` by reproducing the stdio fixture gate,
+  existing managed contract/smoke chain, release-quality wayfinding, raw
+  Wolong erlexec argv-list stdin proof, Wolong compile/test/static gates, and
+  boundary checks. Surfaced by:
+  `arc09-release-prep-publication/blocker-wolong-supervision-proof/cdc-verification.md`.
+  Why: the Chengdu proof/routing slice is verified, but Arc09 Slice01 remains
+  blocked until Wolong exposes stdin bytes and EOF through its public
+  `wolong-exec` runner/API.
 
 - **v1.108 - 2026-08-25.** Closed Arc09
   `blocker-wolong-supervision-proof` as a proof and routing slice while
