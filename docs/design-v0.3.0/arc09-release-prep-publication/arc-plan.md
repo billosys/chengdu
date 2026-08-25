@@ -1,6 +1,7 @@
 # Arc09 Plan: release-prep-publication
 
-Status: active; Slice01 release-readiness-inventory blocked by wolong supervision proof
+Status: active; Slice01 release-readiness-inventory blocked by Wolong Arc03
+`slice02-stdio-runner` stdin runner/API implementation
 Opened: 2026-08-14
 
 ## 1. Capability
@@ -65,11 +66,15 @@ announcement after the assets and re-run behavior are verified.
 The unnumbered blocker slices are a scope insertion prompted by wolong's
 2026-08-20 stdin-contract blocker report. They intentionally precede Slice01:
 the release-readiness inventory cannot honestly classify wolong proof while
-the accepted stdin process contract remains unimplemented and unproven.
-Detailed release slices after Slice01 may still adjust this breakdown if the
-inventory finds stale release tooling, licensing gaps, missing Make targets,
-or additional wolong integration requirements. Any change must update this
-plan and its Version History before the next slice is opened.
+the accepted stdin process contract remains unimplemented, unproven, or
+unconsumable through Wolong's public runner/API. The Chengdu-side contract,
+implementation, fixture, and supervision-proof routing blockers are now
+closed; Slice01 remains blocked by the Wolong-owned Arc03
+`slice02-stdio-runner` stdin runner/API implementation. Detailed release
+slices after Slice01 may still adjust this breakdown if the inventory finds
+stale release tooling, licensing gaps, missing Make targets, or additional
+wolong integration requirements. Any change must update this plan and its
+Version History before the next slice is opened.
 
 ## 4. Dependencies And Inputs
 
@@ -139,16 +144,22 @@ Leaves:
   This slice proves accepted parser stdin forms, rejected parser both-stdin,
   grounder stdin `.htn`, engine stdin `.sas`, solved stdio pipeline, and
   no-plan stdio pipeline behavior through `make test-contract-stdio-managed`.
-- **blocker-wolong-supervision-proof - open and active after stdio fixture
-  CDC verification.**
+- **blocker-wolong-supervision-proof - closed; external Wolong runner/API
+  blocker recorded.**
   Slice set:
   [`blocker-wolong-supervision-proof/slice-doc.md`](blocker-wolong-supervision-proof/slice-doc.md),
   [`blocker-wolong-supervision-proof/ledger.md`](blocker-wolong-supervision-proof/ledger.md),
-  [`blocker-wolong-supervision-proof/cc-prompt.md`](blocker-wolong-supervision-proof/cc-prompt.md).
-  This slice verifies wolong can resume its paused Arc03 work from the
-  supported Chengdu contract.
-- **slice01 release-readiness-inventory - open, blocked by wolong supervision
-  proof.** Slice set:
+  [`blocker-wolong-supervision-proof/cc-prompt.md`](blocker-wolong-supervision-proof/cc-prompt.md),
+  [`blocker-wolong-supervision-proof/wolong-supervision-proof.md`](blocker-wolong-supervision-proof/wolong-supervision-proof.md),
+  [`blocker-wolong-supervision-proof/closing-report.md`](blocker-wolong-supervision-proof/closing-report.md).
+  This slice proves Chengdu's supported stdin/stdout/stderr contract, direct
+  Chengdu probes, and raw Wolong erlexec argv-list stdin supervision against a
+  real Chengdu binary. It also records the remaining external blocker:
+  Wolong's current `wolong-exec:run/3` runner/API does not expose stdin bytes
+  or EOF, so Wolong Arc03 `slice02-stdio-runner` must implement and verify
+  that public runner/API behavior before Arc09 Slice01 can resume.
+- **slice01 release-readiness-inventory - open, blocked by Wolong Arc03
+  `slice02-stdio-runner` stdin runner/API implementation.** Slice set:
   [`slice01-release-readiness-inventory/slice-doc.md`](slice01-release-readiness-inventory/slice-doc.md),
   [`slice01-release-readiness-inventory/ledger.md`](slice01-release-readiness-inventory/ledger.md),
   [`slice01-release-readiness-inventory/cc-prompt.md`](slice01-release-readiness-inventory/cc-prompt.md).
@@ -209,10 +220,13 @@ above.
 - **OQ5 - wolong boundary.** wolong verification may require coordinated edits
   in the wolong workspace. Slice06 should keep chengdu release behavior and
   wolong consumer changes clearly separated.
-- **OQ5a - stdin process contract.** Wolong's Arc03 report reproduced that
-  `pandapi-parser`, `pandapi-grounder`, and `pandapi-engine` reject `-` as
-  stdin input with `status=cli_usage_error`. Arc09 must close the unnumbered
-  stdin blockers before release-readiness inventory resumes.
+- **OQ5a - stdin runner/API re-entry.** Chengdu's stdin contract,
+  implementation, fixtures, and proof/routing blockers are closed from the
+  Chengdu side. Raw Wolong erlexec argv-list stdin supervision works, but
+  Wolong's current `wolong-exec:run/3` public runner/API does not expose stdin
+  artifact bytes or EOF. Arc09 Slice01 remains blocked until Wolong Arc03
+  `slice02-stdio-runner` closes that external blocker and Chengdu reruns the
+  proof.
 - **OQ6 - publication authorization.** Actual GitHub publication may require
   operator approval, credentials, and network access. Arc09 should prove as
   much as possible before that gate and record any blocked external action with
@@ -220,6 +234,15 @@ above.
 
 ## 9. Version History
 
+- **v1.7 - 2026-08-25.** Closed
+  `blocker-wolong-supervision-proof` as a proof and routing slice while
+  keeping Slice01 release-readiness-inventory blocked by Wolong Arc03
+  `slice02-stdio-runner`. Surfaced by:
+  `blocker-wolong-supervision-proof/wolong-supervision-proof.md` and
+  `blocker-wolong-supervision-proof/closing-report.md`. Why: Chengdu's
+  supported stdin/stdout/stderr contract and raw erlexec argv-list stdin
+  supervision now pass, but Wolong's public `wolong-exec:run/3` runner/API
+  still lacks stdin bytes and EOF handling.
 - **v1.6 - 2026-08-25.** Activated
   `blocker-wolong-supervision-proof` after CDC verification closed Chengdu's
   stdio fixture/docs blocker. Surfaced by: `blocker-stdio-contract-fixtures`

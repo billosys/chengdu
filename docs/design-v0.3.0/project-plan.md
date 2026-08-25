@@ -543,8 +543,9 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   guidance, `pandapi-*` CLI guidance, README updates, architecture/dependency
   documentation for the new fork shape, and source-quality policy language
   that reflects Arc07's final classifications.
-- **arc09 - active; Slice01 release-readiness-inventory blocked by wolong
-  supervision proof.** Detailed plan:
+- **arc09 - active; Slice01 release-readiness-inventory blocked by Wolong
+  Arc03 `slice02-stdio-runner` stdin runner/API implementation.** Detailed
+  plan:
   [`arc09-release-prep-publication/arc-plan.md`](arc09-release-prep-publication/arc-plan.md).
   Wolong blocker audit:
   [`arc09-release-prep-publication/wolong-stdin-contract-audit.md`](arc09-release-prep-publication/wolong-stdin-contract-audit.md).
@@ -561,12 +562,20 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/ledger.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/ledger.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/closing-report.md),
   [`arc09-release-prep-publication/blocker-stdio-contract-fixtures/cdc-verification.md`](arc09-release-prep-publication/blocker-stdio-contract-fixtures/cdc-verification.md).
-  Active follow-on wolong proof blocker:
+  Closed wolong proof/routing blocker:
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/slice-doc.md),
   [`arc09-release-prep-publication/blocker-wolong-supervision-proof/ledger.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/ledger.md),
-  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/cc-prompt.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/cc-prompt.md).
-  Slice01 release-readiness-inventory is open and blocked by wolong supervision
-  proof:
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/cc-prompt.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/cc-prompt.md),
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/wolong-supervision-proof.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/wolong-supervision-proof.md),
+  [`arc09-release-prep-publication/blocker-wolong-supervision-proof/closing-report.md`](arc09-release-prep-publication/blocker-wolong-supervision-proof/closing-report.md).
+  This slice proves Chengdu's supported stdin/stdout/stderr contract, direct
+  Chengdu probes, and raw Wolong erlexec argv-list stdin supervision against a
+  real Chengdu binary. It also records the remaining external blocker:
+  Wolong's current `wolong-exec:run/3` runner/API does not expose stdin bytes
+  or EOF, so Wolong Arc03 `slice02-stdio-runner` must implement and verify
+  that behavior before Arc09 Slice01 can resume.
+  Slice01 release-readiness-inventory is open and blocked by Wolong Arc03
+  `slice02-stdio-runner` stdin runner/API implementation:
   [`arc09-release-prep-publication/slice01-release-readiness-inventory/slice-doc.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/slice-doc.md),
   [`arc09-release-prep-publication/slice01-release-readiness-inventory/ledger.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/ledger.md),
   [`arc09-release-prep-publication/slice01-release-readiness-inventory/cc-prompt.md`](arc09-release-prep-publication/slice01-release-readiness-inventory/cc-prompt.md).
@@ -574,8 +583,9 @@ license, quality-gate, wolong, publication, and release-doc gaps.
   manifest/provenance, dependency licensing/NOTICE obligations, test-only
   dependency exclusion, source-quality release gate verification, wolong
   fetch/install/migration verification, and the actual `v0.3.0` release.
-  Release-readiness inventory must not close until the accepted wolong stdin
-  contract is verified against wolong's paused Arc03 re-entry condition.
+  Release-readiness inventory must not close until the Wolong stdin runner/API
+  external blocker is implemented and verified against Wolong's paused Arc03
+  re-entry condition.
 
 ## 5.1 Arc02 Findings Carried Forward
 
@@ -711,6 +721,17 @@ per-row in this project's `closing-report.md`.
   audit explicitly accepts that boundary.
 
 ## 8. Version history
+
+- **v1.108 - 2026-08-25.** Closed Arc09
+  `blocker-wolong-supervision-proof` as a proof and routing slice while
+  keeping Arc09 Slice01 release-readiness-inventory blocked by Wolong Arc03
+  `slice02-stdio-runner`. Surfaced by:
+  `arc09-release-prep-publication/blocker-wolong-supervision-proof/wolong-supervision-proof.md`
+  and
+  `arc09-release-prep-publication/blocker-wolong-supervision-proof/closing-report.md`.
+  Why: Chengdu's supported stdin/stdout/stderr contract and raw Wolong erlexec
+  argv-list stdin supervision now pass, but Wolong's public
+  `wolong-exec:run/3` runner/API still lacks stdin bytes and EOF handling.
 
 - **v1.107 - 2026-08-25.** Activated Arc09
   `blocker-wolong-supervision-proof` after CDC verification closed Chengdu's

@@ -1,8 +1,10 @@
 # Arc09 Blocker Slice: wolong-supervision-proof
 
-Status: open; active after `blocker-stdio-contract-fixtures` CDC verification; blocks Slice01 release-readiness-inventory
+Status: closed; proof and routing complete; external Wolong runner/API blocker
+still blocks Slice01 release-readiness-inventory
 Opened: 2026-08-20
 Activated: 2026-08-25
+Closed: 2026-08-25
 
 ## Goal
 
@@ -71,3 +73,20 @@ Out of scope:
   ambiguity.
 - The closing report bubbles up whether the next work is Arc09 Slice01,
   a Wolong Arc03 slice, or another explicit Chengdu blocker.
+
+## Closure
+
+This proof slice is closed as a Chengdu-side routing artifact. Chengdu's
+supported stdin/stdout/stderr contract is fixture-proven and direct-probe
+verified, and raw Wolong erlexec argv-list stdin handling works against a real
+`pandapi-grounder` child process.
+
+Arc09 Slice01 remains blocked because Wolong's current `wolong-exec:run/3`
+runner/API does not expose stdin artifact bytes, does not enable erlexec
+`stdin`, and does not send EOF. The next required work is a Wolong-owned Arc03
+`slice02-stdio-runner` implementation or equivalent runner/API slice, followed
+by a renewed Arc09 proof run.
+
+Close artifacts:
+[`wolong-supervision-proof.md`](wolong-supervision-proof.md) and
+[`closing-report.md`](closing-report.md).
