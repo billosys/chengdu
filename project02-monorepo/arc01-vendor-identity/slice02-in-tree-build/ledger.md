@@ -1,0 +1,38 @@
+# Slice 02: in-tree-build
+
+> Ledger per `LEDGER-DISCIPLINE.md` (v2.0), Section A. All rows open at
+> slice start, 2026-08-07. Closer: CC. Verifier: CDC. This slice repoints
+> builds to in-tree source while preserving the 0.1.0 compatibility patch
+> bridge.
+
+## Ledger
+
+| ID | Criterion | Verify | Significance | Origin | Status | Evidence | Notes |
+|----|-----------|--------|--------------|--------|--------|----------|-------|
+| F-1 | Slice starts from `release/0.2.x` with slice01 closed and worktree clean. | `git branch --show-current`; `git status --short`; `test -f docs/design-v0.2.0/arc01-vendor-identity/slice01-subtree-import/cdc-verification.md` | serious | arc-plan section 2 | done | attested: start branch `release/0.2.x`; clean worktree; start commit `3998315b9ea9d2345bef30ba9cfbca11de7418dd`; slice01 CDC file present. | |
+| F-2 | Build scripts consume in-tree source under `pandaPI/`, not `upstream/`, and no active build script tells users to run `retired upstream-fetch helper`. | `rg 'upstream/pandaPI|fetch-upstream\\.sh' scripts/build-*.sh scripts/lib-platform.sh` returns no active build-path references | serious | slice-doc section 2 | done | attested: implementation commit `fde8c10650e8186e3bfca3d2194846d1e26afa5e`; final `rg` returned no matches in active build scripts/lib. | Historical comments are allowed only if they do not describe the active build path. |
+| F-3 | Builds use disposable ignored copies, and a build leaves `pandaPI/` clean: no patch residue, generated objects, binaries, or build dirs under vendored source. | clean `build/ dist/`; run build scripts; `git status --short -- pandaPI` empty; `find pandaPI -type f \\( -name '*.o' -o -name pandaPIparser -o -name pandaPIgrounder -o -name pandaPIengine \\) -print` shows no generated build outputs | serious | arc-plan OQ2 v1.2 | done | attested: `/build/` added to `.gitignore`; clean final builds used `build/macos-arm64/source/pandaPI{parser,grounder,engine}`; `git status --short -- pandaPI` and generated-output `find` both returned empty. | |
+| F-4 | Parser builds from in-tree source and emits `dist/<platform>/pandaPIparser` whose provenance SHA matches `PARSER_SHA`. | clean run `./scripts/build-parser.sh`; `dist/*/pandaPIparser --help`; inspect `dist/*/provenance.txt` parser block | serious | slice-doc section 2 | done | attested: clean `./scripts/build-parser.sh` passed; `dist/macos-arm64/pandaPIparser --help` exited 0; provenance parser SHA `88c0995c72c5ce2685e9546ec153a3545977ed81`. | |
+| F-5 | Engine builds from in-tree source and emits `dist/<platform>/pandaPIengine` whose provenance SHA matches `ENGINE_SHA`. | clean run `./scripts/build-engine.sh`; `dist/*/pandaPIengine --help`; inspect `dist/*/provenance.txt` engine block | serious | slice-doc section 2 | done | attested: clean `./scripts/build-engine.sh` passed; `dist/macos-arm64/pandaPIengine --help` exited 0; provenance engine SHA `810f04388667db5e3e4f114e960a4efbb43b1ac0`. | |
+| F-6 | Grounder builds from in-tree source using the compatibility patch bridge in the disposable copy, emits `dist/<platform>/pandaPIgrounder`, and records the same platform patch list expected by `check-provenance.sh`. | clean run `./scripts/build-grounder.sh`; `dist/*/pandaPIgrounder --help`; `./scripts/check-provenance.sh`; inspect grounder patch list | serious | slice-doc section 2; arc-plan OQ2 v1.2 | done | attested: clean `./scripts/build-grounder.sh` passed; `dist/macos-arm64/pandaPIgrounder --help` exited 0; `check-provenance.sh` passed; provenance records `0002-makefile.patch,0001-Removed-non-macos-call-in-unused-function.patch,0001-boruvka-endian.patch,bliss-0.73-cxx11-string-literal.patch`. | Patches still apply during build in slice02; retiring them is slice03. |
+| F-7 | Full local source-build gate passes without running `retired upstream-fetch helper`: parser build, grounder build, engine build, provenance check, positive smoke, negative smoke. | from clean `build/ dist/`: `./scripts/build-parser.sh`; `./scripts/build-grounder.sh`; `./scripts/build-engine.sh`; `./scripts/check-provenance.sh`; `./scripts/smoke-test.sh`; `./scripts/smoke-test.sh --negative` | serious | arc-plan A4 precursor | done | attested: from clean `build/ dist/`, parser, grounder, engine, `check-provenance.sh`, positive smoke `5 passed, 0 failed`, and negative smoke `4 passed, 0 failed` all passed; no fetch command run. | |
+| F-8 | GitHub Actions build and README-verbatim jobs no longer fetch planner source before building. | `rg 'fetch-upstream\\.sh|git clone|git submodule' .github/workflows` has no planner-source fetch in build/readme jobs; inspect `build-reusable.yml` steps | correctness | arc-plan A3 precursor | done | attested: implementation commit removes `Fetch upstream` and README-verbatim fetch steps; final workflow `rg` returned no matches. | `actions/checkout`, artifact actions, and actionlint installer are allowed. |
+| F-9 | README source-build instructions describe the in-tree build path and mirror workflow commands; release install/fetch spec remains unchanged. | inspect README source-build command block; compare to readme-verbatim jobs; `git diff` confirms release install URLs/asset shape were not changed | correctness | project-plan P5; slice-doc section 3 | done | attested: README source build is now four commands matching README-verbatim jobs; diff only changes source-build/CI wording; release install URLs and asset names remain `v0.1.0` Linux/macOS tarballs. | |
+| F-10 | `retired upstream-fetch helper` is no longer an active build dependency; if retained, docs mark it historical/source-inspection only. | `rg 'fetch-upstream\\.sh' README.md .github/workflows scripts/*.sh docs/design-v0.2.0/arc01-vendor-identity/slice02-in-tree-build` and inspect every hit | correctness | slice-doc section 2 | done | attested: final hit set is README historical note, the retained script itself, and slice02 planning/ledger docs; no workflow or active build-script hits. | `retired upstream-fetch helper` retained without widening the slice. |
+| F-11 | Local release packaging dry-run still succeeds from in-tree-built `dist/` and preserves existing asset shape for present platforms. | after local gate, `./scripts/package-release.sh v0.2.0-slice02-smoke`; inspect `release/` for `pandapi-v0.2.0-slice02-smoke-<platform>.tar.gz`, `SHA256SUMS`, `release-manifest.txt`, `THIRD-PARTY-LICENSES` | correctness | project-plan P5 precursor | done | attested: `./scripts/package-release.sh v0.2.0-slice02-smoke` passed for `macos-arm64`; `release/` contains tarball, `SHA256SUMS`, `release-manifest.txt`, `THIRD-PARTY-LICENSES`, `notes.md`, and `PRERELEASE`. | Not published; `release/` remains ignored. |
+| F-12 | Shell scripts and workflow syntax remain lintable. | `shellcheck scripts/*.sh`; actionlint on `.github/workflows/*.yml` if available, otherwise record unavailable tool and run YAML/static inspection | polish | local quality gate | done | attested: `bash -n scripts/*.sh`, `shellcheck scripts/*.sh`, `actionlint .github/workflows/*.yml`, and `git diff --check` all passed. | |
+
+## What Worked
+
+- Keeping all build-time mutation under `build/<platform>/source/` preserved
+  the slice02 bridge behavior without dirtying the vendored source tree.
+- Reading provenance from `pins.env` kept `check-provenance.sh` compatible
+  while source copies no longer carry component `.git` histories.
+- Using `patch -p1` for the disposable cpddl copy made the compatibility patch
+  application observable and idempotent in the copied tree.
+
+## Closure
+
+Closed at implementation commit `fde8c10650e8186e3bfca3d2194846d1e26afa5e` on
+2026-08-06. Verified by: pending CDC.
+Rows: 12. Done: 12. Deferred: 0. No-op: 0.
