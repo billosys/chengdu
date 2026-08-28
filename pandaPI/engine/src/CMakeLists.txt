@@ -61,10 +61,10 @@ include_directories("translation")
 if (PANDAPI_RUNTIME_INCLUDE)
 	include_directories("${PANDAPI_RUNTIME_INCLUDE}")
 endif()
+add_subdirectory(int_data_structures)
 add_subdirectory(search)
 add_subdirectory(symbolic_search)
 add_subdirectory(heuristics)
-add_subdirectory(int_data_structures)
 add_subdirectory(translation)
 
 
@@ -122,9 +122,6 @@ if (SAT)
 	include_directories("sat")
 	target_link_libraries(pandapi-engine PUBLIC sat)
 endif (SAT)
-
-## must be added *after* SAT due to the use of the printMemory function, which is currently defined in the SAT module ... this is probably not a good idea.
-target_link_libraries(pandapi-engine PUBLIC intDataStructures)
 
 add_executable(pandapi_engine_visited_list_payload_test tests/visited_list_payload_test.cpp)
 target_compile_options(pandapi_engine_visited_list_payload_test PRIVATE ${compiler_flags})

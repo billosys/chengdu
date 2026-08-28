@@ -110,7 +110,7 @@ CLANG_TIDY_CHECKS ?= -*,clang-analyzer-*
 CLANG_TIDY_HEADER_FILTER ?= (^|.*/)pandaPI/runtime/(include|src|tests)/.*
 OWNED_CPP_DIRS := $(RUNTIME_INCLUDE_DIR) $(RUNTIME_SOURCE_DIR)/src $(RUNTIME_SOURCE_DIR)/tests
 OWNED_CPP_FIND := find $(OWNED_CPP_DIRS) -type f \( -name '*.h' -o -name '*.hpp' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) -print
-SHELL_SCRIPTS := $(shell find scripts -type f -name '*.sh' -print) tests/contract/run tests/smoke/run tools/release/package tools/provenance/check tools/shared/platform $(SOURCE_QUALITY_TOOL)
+SHELL_SCRIPTS := $(shell if [ -d scripts ]; then find scripts -type f -name '*.sh' -print; fi) tests/contract/run tests/smoke/run tools/release/package tools/provenance/check tools/shared/platform $(SOURCE_QUALITY_TOOL)
 
 define banner
 printf '\n'

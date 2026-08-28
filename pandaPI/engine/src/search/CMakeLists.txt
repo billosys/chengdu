@@ -3,6 +3,7 @@ file(GLOB search_SRC "*.h" "*.cpp" "fringes/*.h" "fringes/*.cpp")
 add_library(search ${search_SRC})
 target_compile_options(search PUBLIC ${compiler_flags})
 target_link_options(search PUBLIC ${linker_flags})
+target_link_libraries(search PUBLIC intDataStructures)
 
 if (CPLEX_SOURCE_DIR)
 	add_library(cplex SHARED IMPORTED) 
@@ -31,4 +32,3 @@ if (CPLEX_SOURCE_DIR)
 	target_link_libraries(search pthread)
 	target_link_libraries(search dl)
 endif (CPLEX_SOURCE_DIR)
-
