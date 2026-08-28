@@ -39,6 +39,13 @@ Start here:
 - [Migration from 0.2.0 to 0.3.0](docs/migration.md)
 - [Architecture and source quality](docs/architecture.md)
 
+Project planning lives off the release/source branches in the dedicated
+`planning` branch/worktree. In a local development checkout, use
+`git worktree list` to locate the planning worktree before reading or updating
+project, arc, slice, ledger, closing-report, or CDC verification artifacts.
+Those planning files are intentionally kept separate from the public
+documentation in `docs/`.
+
 ## Published Release Install
 
 The currently published install example is v0.2.0. These assets use the
